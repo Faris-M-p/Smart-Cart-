@@ -1,22 +1,26 @@
-using Ecommerce.Controllers;
+﻿using Ecommerce.Controllers;
 using Ecommerce.DataAccess;
 using Ecommerce.Interface;
 using Ecommerce.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container (optional).
+// =========================
+// Add services to container
+// =========================
 builder.Services.AddControllersWithViews();
 
-// Register DataAccessDapper
-builder.Services.AddScoped<DataAccessDapper>();  // Add this line
+// Register DataAccess
+builder.Services.AddScoped<DataAccessDapper>();
 
-// Register custom services, including ShopRepository
+// Register custom services
 builder.Services.AddCustomServices();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// =========================
+// Configure pipeline
+// =========================
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -34,22 +38,29 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-// Configure default route.
+// =========================
+// ROUTING (IMPORTANT PART)
+// =========================
+
+
+
+// ✅ NORMAL ROUTE (USER)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
 
+
+// =========================
+// Dependency Injection Setup
+// =========================
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCustomServices(this IServiceCollection services)
     {
-        // Register DataAccessDapper with Scoped lifetime
-        services.AddScoped<DataAccessDapper>();  // Add this line
-
+        services.AddScoped<DataAccessDapper>();
         services.AddTransient<ShopInterface, ShopRepository>();
-
         return services;
     }
 }
