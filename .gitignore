@@ -1,0 +1,10 @@
+# Ignore Visual Studio temporary files
+.vs/
+*.user
+*.suo
+*.vcxproj.user
+
+# Ignore build outputs
+bin/
+obj/
+/Ecommerce/Ecommerce.csproj
