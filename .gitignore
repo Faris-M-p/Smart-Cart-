@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Ignore Visual Studio temporary files
 .vs/
 *.user
@@ -8,3 +9,12 @@
 bin/
 obj/
 /Ecommerce/Ecommerce.csproj
+=======
+bin/
+obj/
+.vs/
+*.user
+*.suo
+appsettings.json
+appsettings.*.json
+>>>>>>> c542edf09da9255d08f4bb0a7d8b3229922578fd
