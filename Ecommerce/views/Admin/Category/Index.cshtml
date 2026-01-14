@@ -2,29 +2,26 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<!-- [ Main Content ] start -->
-<div class="pc-container">
-    <div class="pc-content">
-        <!-- [ breadcrumb ] start -->
-        <div class="page-header">
-            <div class="page-block">
-                <div class="row align-items-center">
-                    <div class="col-md-12">
-                        <div class="page-header-title">
-                            <h5 class="m-b-10">Category Management</h5>
-                        </div>
-                        <ul class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
-                            <li class="breadcrumb-item"><a href="javascript: void(0)">Category</a></li>
-                            <li class="breadcrumb-item" aria-current="page">List</li>
-                        </ul>
-                    </div>
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Category Management</h5>
                 </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="javascript: void(0)">Category</a></li>
+                    <li class="breadcrumb-item" aria-current="page">List</li>
+                </ul>
             </div>
         </div>
-        <!-- [ breadcrumb ] end -->
-        
-        <!-- [ Main Content ] start -->
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<!-- [ Main Content ] start -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -104,9 +101,7 @@
                 </div>
             </div>
         </div>
-        <!-- [ Main Content ] end -->
-    </div>
-</div>
+<!-- [ Main Content ] end -->
 
 <!-- Category Modal (Create/Edit) -->
 <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
@@ -408,4 +403,3 @@
         return div.innerHTML;
     }
 </script>
-<!-- [ Main Content ] end -->
