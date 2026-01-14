@@ -65,11 +65,26 @@ namespace Ecommerce.DataAccess
                     //test
                 }
             }
-
-
-
         }
-        // Method to execute a stored procedure and return multiple result sets
+
+        // Method to execute a stored procedure and return CommonResponse (for Insert/Update/Delete operations)
+        public async Task<CommonResponse> ExecuteStoredProcedure<T>(string storedProcedureName, T parameter)
+        {
+            using (var connection = CreateConnection())
+            {
+                var result = await connection.QueryFirstOrDefaultAsync<CommonResponse>(
+                    storedProcedureName, 
+                    parameter, 
+                    commandType: CommandType.StoredProcedure
+                );
+                return result ?? new CommonResponse 
+                { 
+                    ResponseCode = -1, 
+                    StatusCode = false, 
+                    ResponseMsg = "No response from stored procedure." 
+                };
+            }
+        }
 
     }
 }

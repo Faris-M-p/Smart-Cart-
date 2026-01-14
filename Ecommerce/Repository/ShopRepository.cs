@@ -1,5 +1,4 @@
-﻿using Ecommerce.DataAccess;
-using Ecommerce.Interface;
+﻿using Ecommerce.Interface;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.ProductModel;
 
@@ -9,9 +8,9 @@ namespace Ecommerce.Repository
     public class ShopRepository:ShopInterface
     {
 
-        private readonly DataAccessDapper _dataAccessDapper;
+        private readonly IDataAccessDapper _dataAccessDapper;
 
-        public ShopRepository(DataAccessDapper dataAccessDapper)
+        public ShopRepository(IDataAccessDapper dataAccessDapper)
         {
             _dataAccessDapper = dataAccessDapper;
         }

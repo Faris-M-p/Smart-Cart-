@@ -2,6 +2,8 @@
 using Ecommerce.DataAccess;
 using Ecommerce.Interface;
 using Ecommerce.Repository;
+using Ecommerce.Interface.Admin;
+using Ecommerce.Repository.Admin;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Register DataAccess
-builder.Services.AddScoped<DataAccessDapper>();
+builder.Services.AddScoped<IDataAccessDapper, DataAccessDapper>();
 
 // Register custom services
 builder.Services.AddCustomServices();
@@ -59,8 +61,20 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCustomServices(this IServiceCollection services)
     {
-        services.AddScoped<DataAccessDapper>();
+        // IDataAccessDapper is already registered above, no need to register again
         services.AddTransient<ShopInterface, ShopRepository>();
+        
+        // Admin Services
+        services.AddTransient<ICategoryInterface, CategoryRepository>();
+        services.AddTransient<ISubCategoryInterface, SubCategoryRepository>();
+        services.AddTransient<IProductInterface, ProductRepository>();
+        services.AddTransient<IBrandInterface, BrandRepository>();
+        services.AddTransient<ISupplierInterface, SupplierRepository>();
+        services.AddTransient<IVariantInterface, VariantRepository>();
+        services.AddTransient<IVariantValueInterface, VariantValueRepository>();
+        services.AddTransient<IProductVariantInterface, ProductVariantRepository>();
+        services.AddTransient<IPurchaseInterface, PurchaseRepository>();
+        
         return services;
     }
 }

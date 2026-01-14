@@ -12,5 +12,7 @@ namespace Ecommerce.Interface
       
         Task<CommonModel.TableOutput<U>> GetMultipleListByStoredProcedure<U, T>(string storedProcedureName, T parameter);
 
+        Task<CommonModel.CommonResponse> ExecuteStoredProcedure<T>(string storedProcedureName, T parameter);
+
     }
 }

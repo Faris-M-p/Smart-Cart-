@@ -1,0 +1,808 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ Main Content ] start -->
+<div class="pc-container">
+    <div class="pc-content">
+        <!-- [ breadcrumb ] start -->
+        <div class="page-header">
+            <div class="page-block">
+                <div class="row align-items-center">
+                    <div class="col-md-12">
+                        <div class="page-header-title">
+                            <h5 class="m-b-10">Purchase & Stock Management</h5>
+                        </div>
+                        <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                            <li class="breadcrumb-item"><a href="javascript: void(0)">Purchase</a></li>
+                            <li class="breadcrumb-item" aria-current="page">List</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- [ breadcrumb ] end -->
+        
+        <!-- [ Main Content ] start -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5>Purchase List</h5>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal" onclick="openCreateModal()">
+                                <i class="ti ti-plus"></i> Add New Purchase
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Search and Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <input type="text" id="searchText" class="form-control" placeholder="Search by supplier or invoice...">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filterSupplier" class="form-select">
+                                    <option value="">All Suppliers</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="date" id="fromDate" class="form-control" placeholder="From Date">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="date" id="toDate" class="form-control" placeholder="To Date">
+                            </div>
+                            <div class="col-md-1">
+                                <select id="pageSize" class="form-select">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-secondary w-100" onclick="loadPurchases()">
+                                    <i class="ti ti-search"></i> Search
+                                </button>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                                    <i class="ti ti-refresh"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Purchase Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless mb-0" id="purchaseTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Invoice Number</th>
+                                        <th>Supplier</th>
+                                        <th>Purchase Date</th>
+                                        <th>Total Amount</th>
+                                        <th>Created Date</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="purchaseTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div id="paginationInfo" class="text-muted"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-end" id="pagination">
+                                        <!-- Pagination will be generated here -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- [ Main Content ] end -->
+    </div>
+</div>
+
+<!-- Purchase Modal (Create/Edit) -->
+<div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="purchaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="purchaseModalLabel">Add Purchase</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="purchaseForm">
+                    <input type="hidden" id="purchaseID" name="ID_Purchase" value="0">
+                    
+                    <!-- Purchase Header -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="fkSupplier" class="form-label">Supplier <span class="text-danger">*</span></label>
+                            <select class="form-select" id="fkSupplier" name="FK_Supplier" required>
+                                <option value="">Select Supplier</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="purchaseDate" class="form-label">Purchase Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="purchaseDate" name="PurchaseDate" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="invoiceNumber" class="form-label">Invoice Number</label>
+                            <input type="text" class="form-control" id="invoiceNumber" name="InvoiceNumber" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="Notes" rows="2" maxlength="500"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Purchase Details -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Purchase Details <span class="text-danger">*</span></label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPurchaseDetailRow()">
+                                <i class="ti ti-plus"></i> Add Item
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="purchaseDetailsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 25%">Product</th>
+                                        <th style="width: 25%">SKU</th>
+                                        <th style="width: 10%">Quantity</th>
+                                        <th style="width: 12%">Purchase Price</th>
+                                        <th style="width: 12%">MRP</th>
+                                        <th style="width: 10%">Expiry Date</th>
+                                        <th style="width: 6%">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="purchaseDetailsTableBody">
+                                    <!-- Rows will be added dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="savePurchase()">Save Purchase</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Purchase Details Modal -->
+<div class="modal fade" id="viewPurchaseModal" tabindex="-1" aria-labelledby="viewPurchaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewPurchaseModalLabel">Purchase Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="viewPurchaseModalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Purchase</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this purchase? This will also cancel related stock entries.</p>
+                <div class="mb-3">
+                    <label for="deleteReason" class="form-label">Reason for deletion</label>
+                    <textarea class="form-control" id="deleteReason" rows="3" placeholder="Optional"></textarea>
+                </div>
+                <input type="hidden" id="deletePurchaseID" value="0">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let suppliers = [];
+    let products = [];
+    let productVariants = {}; // Map productId to variants
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSuppliers();
+        loadProducts();
+        loadPurchases();
+        
+        document.getElementById('searchText')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadPurchases();
+            }
+        });
+    });
+
+    async function loadSuppliers() {
+        try {
+            const response = await fetch('/Admin/Purchase/GetSuppliers');
+            if (!response.ok) throw new Error('Failed to fetch suppliers');
+
+            suppliers = await response.json();
+            const dropdown = document.getElementById('fkSupplier');
+            const filterDropdown = document.getElementById('filterSupplier');
+            
+            dropdown.innerHTML = '<option value="">Select Supplier</option>';
+            filterDropdown.innerHTML = '<option value="">All Suppliers</option>';
+            
+            suppliers.forEach(s => {
+                dropdown.add(new Option(s.SupplierName, s.ID_Supplier));
+                filterDropdown.add(new Option(s.SupplierName, s.ID_Supplier));
+            });
+        } catch (error) {
+            console.error('Error loading suppliers:', error);
+        }
+    }
+
+    async function loadProducts() {
+        try {
+            const response = await fetch('/Admin/Purchase/GetProducts');
+            if (!response.ok) throw new Error('Failed to fetch products');
+
+            products = await response.json();
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+
+    async function loadProductVariants(productId, selectElement) {
+        if (!productId || productId <= 0) {
+            selectElement.innerHTML = '<option value="">Select SKU</option>';
+            return;
+        }
+
+        try {
+            if (!productVariants[productId]) {
+                const response = await fetch(`/Admin/Purchase/GetProductVariants/${productId}`);
+                if (!response.ok) throw new Error('Failed to fetch product variants');
+                productVariants[productId] = await response.json();
+            }
+
+            const variants = productVariants[productId];
+            selectElement.innerHTML = '<option value="">Select SKU</option>';
+            variants.forEach(v => {
+                const option = new Option(v.AttributeSignature || `SKU #${v.ID_ProductVariant}`, v.ID_ProductVariant);
+                selectElement.add(option);
+            });
+        } catch (error) {
+            console.error('Error loading product variants:', error);
+            selectElement.innerHTML = '<option value="">Error loading SKUs</option>';
+        }
+    }
+
+    async function loadPurchases(page = 1) {
+        currentPage = page;
+        pageSize = parseInt(document.getElementById('pageSize')?.value) || 20;
+        const searchText = document.getElementById('searchText')?.value || '';
+        const filterSupplierID = document.getElementById('filterSupplier')?.value || '';
+        const fromDate = document.getElementById('fromDate')?.value || '';
+        const toDate = document.getElementById('toDate')?.value || '';
+
+        let filterSupplierIDs = '';
+        if (filterSupplierID) {
+            filterSupplierIDs = `[{"ID_Value":${filterSupplierID}}]`;
+        }
+
+        const input = {
+            SearchText: searchText,
+            FilterSupplierIDs: filterSupplierIDs,
+            FromDate: fromDate || null,
+            ToDate: toDate || null,
+            PageIndex: page,
+            PageSize: pageSize,
+            SortColumn: '',
+            SortMode: 'DESC'
+        };
+
+        try {
+            const response = await fetch('/Admin/Purchase/GetPurchaseList', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const data = await response.json();
+            displayPurchases(data.TableData || []);
+            displayPagination(data.TableSettings);
+        } catch (error) {
+            console.error('Error loading purchases:', error);
+            document.getElementById('purchaseTableBody').innerHTML = 
+                '<tr><td colspan="8" class="text-center text-danger">Error loading purchases. Please try again.</td></tr>';
+        }
+    }
+
+    function displayPurchases(purchases) {
+        const tbody = document.getElementById('purchaseTableBody');
+        
+        if (!purchases || purchases.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No purchases found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = purchases.map(p => `
+            <tr>
+                <td>${p.ID_Purchase}</td>
+                <td>${escapeHtml(p.InvoiceNumber || '-')}</td>
+                <td>${escapeHtml(p.SupplierName || 'N/A')}</td>
+                <td>${p.PurchaseDate ? new Date(p.PurchaseDate).toLocaleDateString() : '-'}</td>
+                <td>${p.TotalAmount?.toFixed(2) || '0.00'}</td>
+                <td>${p.CreatedOn ? new Date(p.CreatedOn).toLocaleDateString() : '-'}</td>
+                <td>
+                    <span class="badge ${p.Cancelled ? 'bg-danger' : 'bg-success'}">
+                        ${p.Cancelled ? 'Cancelled' : 'Active'}
+                    </span>
+                </td>
+                <td class="text-end">
+                    ${p.Cancelled ? '' : `
+                        <button class="btn btn-sm btn-info" onclick="viewPurchase(${p.ID_Purchase})" title="View">
+                            <i class="ti ti-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${p.ID_Purchase})" title="Edit">
+                            <i class="ti ti-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${p.ID_Purchase})" title="Delete">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                    `}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function displayPagination(settings) {
+        if (!settings) return;
+
+        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
+        const pagination = document.getElementById('pagination');
+        const paginationInfo = document.getElementById('paginationInfo');
+
+        paginationInfo.textContent = `Showing ${((settings.PageIndex - 1) * settings.PageSize) + 1} to ${Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount)} of ${settings.TotalCount} entries`;
+
+        let paginationHTML = '';
+        
+        paginationHTML += `<li class="page-item ${settings.PageIndex <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadPurchases(${settings.PageIndex - 1}); return false;">Previous</a>
+        </li>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 2 && i <= settings.PageIndex + 2)) {
+                paginationHTML += `<li class="page-item ${i === settings.PageIndex ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadPurchases(${i}); return false;">${i}</a>
+                </li>`;
+            } else if (i === settings.PageIndex - 3 || i === settings.PageIndex + 3) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        paginationHTML += `<li class="page-item ${settings.PageIndex >= totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadPurchases(${settings.PageIndex + 1}); return false;">Next</a>
+        </li>`;
+
+        pagination.innerHTML = paginationHTML;
+    }
+
+    function openCreateModal() {
+        document.getElementById('purchaseModalLabel').textContent = 'Add Purchase';
+        document.getElementById('purchaseForm').reset();
+        document.getElementById('purchaseID').value = '0';
+        document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('purchaseDetailsTableBody').innerHTML = '';
+        addPurchaseDetailRow();
+    }
+
+    async function openEditModal(purchaseID) {
+        try {
+            const response = await fetch(`/Admin/Purchase/GetById/${purchaseID}`);
+            if (!response.ok) throw new Error('Failed to fetch purchase');
+
+            const purchaseData = await response.json();
+            const purchase = purchaseData.PurchaseHeader;
+            const details = purchaseData.PurchaseDetails || [];
+            
+            document.getElementById('purchaseModalLabel').textContent = 'Edit Purchase';
+            document.getElementById('purchaseID').value = purchase.ID_Purchase;
+            document.getElementById('fkSupplier').value = purchase.FK_Supplier;
+            document.getElementById('purchaseDate').value = purchase.PurchaseDate ? new Date(purchase.PurchaseDate).toISOString().split('T')[0] : '';
+            document.getElementById('invoiceNumber').value = purchase.InvoiceNumber || '';
+            document.getElementById('notes').value = purchase.Notes || '';
+            
+            // Populate purchase details
+            const tbody = document.getElementById('purchaseDetailsTableBody');
+            tbody.innerHTML = '';
+            if (details.length > 0) {
+                for (const detail of details) {
+                    await addPurchaseDetailRow(detail.ID_PurchaseDetail, detail.FK_Product, detail.FK_ProductVariant, detail.Quantity, detail.PurchasePrice, detail.MRP, detail.ExpiryDate);
+                }
+            } else {
+                addPurchaseDetailRow();
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('purchaseModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error loading purchase:', error);
+            alert('Error loading purchase details.');
+        }
+    }
+
+    async function viewPurchase(purchaseID) {
+        try {
+            const response = await fetch(`/Admin/Purchase/GetById/${purchaseID}`);
+            if (!response.ok) throw new Error('Failed to fetch purchase');
+
+            const purchaseData = await response.json();
+            const purchase = purchaseData.PurchaseHeader;
+            const details = purchaseData.PurchaseDetails || [];
+            const stockBatches = purchaseData.StockBatches || [];
+            
+            let html = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Invoice Number:</strong> ${escapeHtml(purchase.InvoiceNumber || '-')}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Supplier:</strong> ${escapeHtml(purchase.SupplierName || 'N/A')}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Purchase Date:</strong> ${purchase.PurchaseDate ? new Date(purchase.PurchaseDate).toLocaleDateString() : '-'}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Total Amount:</strong> ${purchase.TotalAmount?.toFixed(2) || '0.00'}
+                    </div>
+                </div>
+                ${purchase.Notes ? `<div class="row mb-3"><div class="col-md-12"><strong>Notes:</strong> ${escapeHtml(purchase.Notes)}</div></div>` : ''}
+                <hr>
+                <h6>Purchase Details</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU Attributes</th>
+                                <th>Quantity</th>
+                                <th>Purchase Price</th>
+                                <th>MRP</th>
+                                <th>Expiry Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            details.forEach(detail => {
+                html += `
+                    <tr>
+                        <td>${escapeHtml(detail.ProductName || 'N/A')}</td>
+                        <td>${escapeHtml(detail.VariantAttributes || '-')}</td>
+                        <td>${detail.Quantity}</td>
+                        <td>${detail.PurchasePrice?.toFixed(2) || '0.00'}</td>
+                        <td>${detail.MRP?.toFixed(2) || '-'}</td>
+                        <td>${detail.ExpiryDate ? new Date(detail.ExpiryDate).toLocaleDateString() : '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (stockBatches.length > 0) {
+                html += `
+                    <hr>
+                    <h6>Stock Batches</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Stock ID</th>
+                                    <th>SKU</th>
+                                    <th>Quantity</th>
+                                    <th>Created On</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                stockBatches.forEach(stock => {
+                    html += `
+                        <tr>
+                            <td>${stock.ID_Stock}</td>
+                            <td>SKU #${stock.FK_ProductVariant}</td>
+                            <td>${stock.Quantity}</td>
+                            <td>${stock.CreatedOn ? new Date(stock.CreatedOn).toLocaleDateString() : '-'}</td>
+                            <td>
+                                <span class="badge ${stock.Cancelled ? 'bg-danger' : 'bg-success'}">
+                                    ${stock.Cancelled ? 'Cancelled' : 'Active'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('viewPurchaseModalBody').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('viewPurchaseModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error loading purchase:', error);
+            alert('Error loading purchase details.');
+        }
+    }
+
+    async function addPurchaseDetailRow(purchaseDetailId = 0, productId = null, productVariantId = null, quantity = 0, purchasePrice = 0, mrp = null, expiryDate = null) {
+        const tbody = document.getElementById('purchaseDetailsTableBody');
+        const row = document.createElement('tr');
+        row.className = 'purchase-detail-row';
+        row.innerHTML = `
+            <td>
+                <select class="form-select product-select" onchange="onProductChange(this)" required>
+                    <option value="">Select Product</option>
+                </select>
+                <input type="hidden" class="purchase-detail-id" value="${purchaseDetailId}">
+            </td>
+            <td>
+                <select class="form-select product-variant-select" required>
+                    <option value="">Select SKU</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" class="form-control quantity-input" min="1" value="${quantity || ''}" required>
+            </td>
+            <td>
+                <input type="number" step="0.01" class="form-control purchase-price-input" min="0" value="${purchasePrice || ''}" required>
+            </td>
+            <td>
+                <input type="number" step="0.01" class="form-control mrp-input" min="0" value="${mrp || ''}">
+            </td>
+            <td>
+                <input type="date" class="form-control expiry-date-input" value="${expiryDate ? new Date(expiryDate).toISOString().split('T')[0] : ''}">
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="removePurchaseDetailRow(this)">
+                    <i class="ti ti-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        
+        const productSelect = row.querySelector('.product-select');
+        const variantSelect = row.querySelector('.product-variant-select');
+        
+        // Populate products
+        products.forEach(p => {
+            if (!p.Cancelled) {
+                const option = new Option(p.Name, p.ID_Product);
+                if (productId && p.ID_Product === productId) {
+                    option.selected = true;
+                }
+                productSelect.add(option);
+            }
+        });
+        
+        // If product is selected, load variants
+        if (productId) {
+            loadProductVariants(productId, variantSelect).then(() => {
+                if (productVariantId) {
+                    variantSelect.value = productVariantId;
+                }
+            });
+        }
+    }
+
+    async function onProductChange(select) {
+        const row = select.closest('.purchase-detail-row');
+        const variantSelect = row.querySelector('.product-variant-select');
+        const productId = parseInt(select.value);
+        await loadProductVariants(productId, variantSelect);
+    }
+
+    function removePurchaseDetailRow(button) {
+        const tbody = document.getElementById('purchaseDetailsTableBody');
+        if (tbody.children.length > 1) {
+            button.closest('.purchase-detail-row').remove();
+        } else {
+            alert('At least one purchase detail is required.');
+        }
+    }
+
+    function openDeleteModal(purchaseID) {
+        document.getElementById('deletePurchaseID').value = purchaseID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
+    async function savePurchase() {
+        const purchaseID = parseInt(document.getElementById('purchaseID').value);
+        const fkSupplier = parseInt(document.getElementById('fkSupplier').value);
+        const purchaseDate = document.getElementById('purchaseDate').value;
+        const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
+        const notes = document.getElementById('notes').value.trim();
+
+        if (!fkSupplier || fkSupplier <= 0) {
+            alert('Please select a supplier.');
+            return;
+        }
+
+        if (!purchaseDate) {
+            alert('Please select purchase date.');
+            return;
+        }
+
+        // Collect purchase details
+        const purchaseDetails = [];
+        const rows = document.querySelectorAll('.purchase-detail-row');
+        rows.forEach(row => {
+            const productSelect = row.querySelector('.product-select');
+            const variantSelect = row.querySelector('.product-variant-select');
+            const quantityInput = row.querySelector('.quantity-input');
+            const purchasePriceInput = row.querySelector('.purchase-price-input');
+            const mrpInput = row.querySelector('.mrp-input');
+            const expiryDateInput = row.querySelector('.expiry-date-input');
+            const purchaseDetailId = parseInt(row.querySelector('.purchase-detail-id').value) || 0;
+            
+            const productVariantId = parseInt(variantSelect.value);
+            const quantity = parseInt(quantityInput.value);
+            const purchasePrice = parseFloat(purchasePriceInput.value);
+            const mrp = mrpInput.value ? parseFloat(mrpInput.value) : null;
+            const expiryDate = expiryDateInput.value || null;
+            
+            if (productVariantId && quantity > 0 && purchasePrice >= 0) {
+                purchaseDetails.push({
+                    ID_PurchaseDetail: purchaseDetailId,
+                    FK_ProductVariant: productVariantId,
+                    Quantity: quantity,
+                    PurchasePrice: purchasePrice,
+                    MRP: mrp,
+                    ExpiryDate: expiryDate
+                });
+            }
+        });
+
+        if (purchaseDetails.length === 0) {
+            alert('Please add at least one valid purchase detail.');
+            return;
+        }
+
+        const input = {
+            ID_Purchase: purchaseID,
+            FK_Supplier: fkSupplier,
+            PurchaseDate: purchaseDate,
+            InvoiceNumber: invoiceNumber,
+            Notes: notes,
+            PurchaseDetails: purchaseDetails
+        };
+
+        const url = purchaseID === 0 ? '/Admin/Purchase/Create' : '/Admin/Purchase/Update';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
+                modal.hide();
+                loadPurchases(currentPage);
+                alert(result.ResponseMsg || 'Purchase saved successfully.');
+            } else {
+                if (result.errors && result.errors.length > 0) {
+                    alert('Validation errors:\n' + result.errors.join('\n'));
+                } else {
+                    alert(result.ResponseMsg || 'Error saving purchase.');
+                }
+            }
+        } catch (error) {
+            console.error('Error saving purchase:', error);
+            alert('Error saving purchase. Please try again.');
+        }
+    }
+
+    async function confirmDelete() {
+        const purchaseID = parseInt(document.getElementById('deletePurchaseID').value);
+        const reason = document.getElementById('deleteReason').value.trim();
+
+        const input = {
+            ID_Purchase: purchaseID,
+            CancelledReason: reason
+        };
+
+        try {
+            const response = await fetch('/Admin/Purchase/Delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
+                loadPurchases(currentPage);
+                alert(result.ResponseMsg || 'Purchase deleted successfully.');
+            } else {
+                alert(result.ResponseMsg || 'Error deleting purchase.');
+            }
+        } catch (error) {
+            console.error('Error deleting purchase:', error);
+            alert('Error deleting purchase. Please try again.');
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('searchText').value = '';
+        document.getElementById('filterSupplier').value = '';
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+        document.getElementById('pageSize').value = '20';
+        loadPurchases(1);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+<!-- [ Main Content ] end -->

@@ -1,0 +1,411 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ Main Content ] start -->
+<div class="pc-container">
+    <div class="pc-content">
+        <!-- [ breadcrumb ] start -->
+        <div class="page-header">
+            <div class="page-block">
+                <div class="row align-items-center">
+                    <div class="col-md-12">
+                        <div class="page-header-title">
+                            <h5 class="m-b-10">Category Management</h5>
+                        </div>
+                        <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                            <li class="breadcrumb-item"><a href="javascript: void(0)">Category</a></li>
+                            <li class="breadcrumb-item" aria-current="page">List</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- [ breadcrumb ] end -->
+        
+        <!-- [ Main Content ] start -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5>Category List</h5>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#categoryModal" onclick="openCreateModal()">
+                                <i class="ti ti-plus"></i> Add New Category
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Search and Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="text" id="searchText" class="form-control" placeholder="Search by category name...">
+                            </div>
+                            <div class="col-md-2">
+                                <select id="pageSize" class="form-select">
+                                    <option value="10">10 per page</option>
+                                    <option value="25">25 per page</option>
+                                    <option value="50">50 per page</option>
+                                    <option value="100">100 per page</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-secondary w-100" onclick="loadCategories()">
+                                    <i class="ti ti-search"></i> Search
+                                </button>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                                    <i class="ti ti-refresh"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Category Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless mb-0" id="categoryTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Category Name</th>
+                                        <th>Description</th>
+                                        <th>Created Date</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div id="paginationInfo" class="text-muted"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-end" id="pagination">
+                                        <!-- Pagination will be generated here -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- [ Main Content ] end -->
+    </div>
+</div>
+
+<!-- Category Modal (Create/Edit) -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalLabel">Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <input type="hidden" id="categoryID" name="CategoryID" value="0">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryName" name="CategoryName" required>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this category?</p>
+                <div class="mb-3">
+                    <label for="deleteReason" class="form-label">Reason for deletion</label>
+                    <textarea class="form-control" id="deleteReason" rows="3" placeholder="Optional"></textarea>
+                </div>
+                <input type="hidden" id="deleteCategoryID" value="0">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 10;
+
+    // Load categories on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCategories();
+        
+        // Enter key search
+        document.getElementById('searchText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadCategories();
+            }
+        });
+    });
+
+    async function loadCategories(page = 1) {
+        currentPage = page;
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        const searchText = document.getElementById('searchText').value || '';
+
+        const input = {
+            SearchText: searchText,
+            FilterCategoryIDs: '',
+            PageIndex: page,
+            PageSize: pageSize,
+            SortColumn: '',
+            SortMode: ''
+        };
+
+        try {
+            const response = await fetch('/Admin/Category/GetCategoryList', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+            displayCategories(data.TableData || []);
+            displayPagination(data.TableSettings);
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            document.getElementById('categoryTableBody').innerHTML = 
+                '<tr><td colspan="6" class="text-center text-danger">Error loading categories. Please try again.</td></tr>';
+        }
+    }
+
+    function displayCategories(categories) {
+        const tbody = document.getElementById('categoryTableBody');
+        
+        if (!categories || categories.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No categories found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = categories.map(category => `
+            <tr>
+                <td>${category.CategoryID}</td>
+                <td>${escapeHtml(category.CategoryName)}</td>
+                <td>${escapeHtml(category.Description || '')}</td>
+                <td>${category.CreatedDate ? new Date(category.CreatedDate).toLocaleDateString() : '-'}</td>
+                <td>
+                    <span class="badge ${category.Cancelled ? 'bg-danger' : 'bg-success'}">
+                        ${category.Cancelled ? 'Deleted' : 'Active'}
+                    </span>
+                </td>
+                <td class="text-end">
+                    ${category.Cancelled ? '' : `
+                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${category.CategoryID})" title="Edit">
+                            <i class="ti ti-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${category.CategoryID})" title="Delete">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                    `}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function displayPagination(settings) {
+        if (!settings) return;
+
+        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
+        const pagination = document.getElementById('pagination');
+        const paginationInfo = document.getElementById('paginationInfo');
+
+        paginationInfo.textContent = `Showing ${((settings.PageIndex - 1) * settings.PageSize) + 1} to ${Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount)} of ${settings.TotalCount} entries`;
+
+        let paginationHTML = '';
+        
+        // Previous button
+        paginationHTML += `<li class="page-item ${settings.PageIndex <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadCategories(${settings.PageIndex - 1}); return false;">Previous</a>
+        </li>`;
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 2 && i <= settings.PageIndex + 2)) {
+                paginationHTML += `<li class="page-item ${i === settings.PageIndex ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadCategories(${i}); return false;">${i}</a>
+                </li>`;
+            } else if (i === settings.PageIndex - 3 || i === settings.PageIndex + 3) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        // Next button
+        paginationHTML += `<li class="page-item ${settings.PageIndex >= totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadCategories(${settings.PageIndex + 1}); return false;">Next</a>
+        </li>`;
+
+        pagination.innerHTML = paginationHTML;
+    }
+
+    function openCreateModal() {
+        document.getElementById('categoryModalLabel').textContent = 'Add Category';
+        document.getElementById('categoryForm').reset();
+        document.getElementById('categoryID').value = '0';
+    }
+
+    async function openEditModal(categoryID) {
+        try {
+            const response = await fetch(`/Admin/Category/GetById/${categoryID}`);
+            if (!response.ok) throw new Error('Failed to fetch category');
+
+            const category = await response.json();
+            
+            document.getElementById('categoryModalLabel').textContent = 'Edit Category';
+            document.getElementById('categoryID').value = category.CategoryID;
+            document.getElementById('categoryName').value = category.CategoryName || '';
+            document.getElementById('description').value = category.Description || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error loading category:', error);
+            alert('Error loading category details.');
+        }
+    }
+
+    function openDeleteModal(categoryID) {
+        document.getElementById('deleteCategoryID').value = categoryID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
+    async function saveCategory() {
+        const categoryID = parseInt(document.getElementById('categoryID').value);
+        const categoryName = document.getElementById('categoryName').value.trim();
+        const description = document.getElementById('description').value.trim();
+
+        if (!categoryName) {
+            alert('Please enter category name.');
+            return;
+        }
+
+        const input = {
+            UserAction: categoryID === 0 ? 1 : 2,
+            CategoryID: categoryID,
+            CategoryName: categoryName,
+            Description: description,
+            EnterBy: 1 // TODO: Get from session
+        };
+
+        const url = categoryID === 0 ? '/Admin/Category/Create' : '/Admin/Category/Update';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+                modal.hide();
+                loadCategories(currentPage);
+                alert(result.ResponseMsg || 'Category saved successfully.');
+            } else {
+                alert(result.ResponseMsg || 'Error saving category.');
+            }
+        } catch (error) {
+            console.error('Error saving category:', error);
+            alert('Error saving category. Please try again.');
+        }
+    }
+
+    async function confirmDelete() {
+        const categoryID = parseInt(document.getElementById('deleteCategoryID').value);
+        const reason = document.getElementById('deleteReason').value.trim();
+
+        const input = {
+            CategoryID: categoryID,
+            CancelledReason: reason,
+            EnterBy: 1 // TODO: Get from session
+        };
+
+        try {
+            const response = await fetch('/Admin/Category/Delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
+                loadCategories(currentPage);
+                alert(result.ResponseMsg || 'Category deleted successfully.');
+            } else {
+                alert(result.ResponseMsg || 'Error deleting category.');
+            }
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            alert('Error deleting category. Please try again.');
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('searchText').value = '';
+        document.getElementById('pageSize').value = '10';
+        loadCategories(1);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+<!-- [ Main Content ] end -->
