@@ -494,8 +494,7 @@
             displayPagination(data.TableSettings);
         } catch (error) {
             console.error('Error loading products:', error);
-            document.getElementById('productTableBody').innerHTML = 
-                '<tr><td colspan="6" class="text-center text-danger">Error loading products. Please try again.</td></tr>';
+            emptyState.showError('productTableBody', error, {}, 6);
         }
     }
 
@@ -503,7 +502,12 @@
         const tbody = document.getElementById('productTableBody');
         
         if (!products || products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No products found.</td></tr>';
+            emptyState.showNoData('productTableBody', {
+                title: 'No products found',
+                message: 'We can\'t find any products matching your search.<br>Try adjusting your filters or search terms.',
+                onReset: 'resetFilters()',
+                onClear: 'clearSearch()'
+            }, 6);
             return;
         }
 
@@ -778,7 +782,10 @@
         document.getElementById('filterCategory').value = '';
         document.getElementById('filterSubCategory').value = '';
         document.getElementById('filterBrand').value = '';
-        document.getElementById('pageSize').value = '10';
+        const pageSizeEl = document.getElementById('pageSize');
+        if (pageSizeEl) {
+            pageSizeEl.value = '10';
+        }
         loadSubCategories();
         loadProducts(1);
     }

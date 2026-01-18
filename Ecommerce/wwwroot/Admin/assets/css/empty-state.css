@@ -1,0 +1,599 @@
+/* Empty State Component - Direct CSS (No SCSS compilation needed) */
+
+.empty-state {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.empty-state:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    transform: translateY(-4px);
+}
+
+/* Icons Container */
+.empty-icon {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* No Data Icon */
+.no-data-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+.search-circle {
+    width: 100px;
+    height: 100px;
+    border: 6px solid #e2e8f0;
+    border-radius: 50%;
+    position: relative;
+}
+
+.search-handle {
+    width: 6px;
+    height: 50px;
+    background: #e2e8f0;
+    position: absolute;
+    bottom: -35px;
+    right: -10px;
+    transform: rotate(-45deg);
+    border-radius: 3px;
+}
+
+.x-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5rem;
+    color: #cbd5e1;
+}
+
+/* No Internet Icon */
+.no-internet-icon {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.wifi-symbol {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.wifi-arc {
+    position: absolute;
+    border: 6px solid #e2e8f0;
+    border-radius: 50%;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    transform: rotate(45deg);
+}
+
+.wifi-arc-1 {
+    width: 40px;
+    height: 40px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.wifi-arc-2 {
+    width: 70px;
+    height: 70px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.wifi-arc-3 {
+    width: 100px;
+    height: 100px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.wifi-slash {
+    position: absolute;
+    width: 6px;
+    height: 140px;
+    background: #ef4444;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    border-radius: 3px;
+}
+
+/* Server Error Icon */
+.server-error-icon {
+    animation: shake 3s ease-in-out infinite;
+}
+
+.server-box {
+    width: 100px;
+    height: 80px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    position: relative;
+    border: 4px solid #e2e8f0;
+    margin: 0 auto;
+}
+
+.server-line {
+    width: 60px;
+    height: 4px;
+    background: #cbd5e1;
+    margin: 12px auto;
+    border-radius: 2px;
+}
+
+.server-x {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 50px;
+    height: 50px;
+    background: #fef2f2;
+    border: 4px solid #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #ef4444;
+    font-weight: 700;
+}
+
+/* Maintenance Icon */
+.maintenance-icon {
+    animation: rotate 4s linear infinite;
+}
+
+.gear {
+    width: 100px;
+    height: 100px;
+    background: #f59e0b;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.gear-center {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 4px solid #f59e0b;
+}
+
+.wrench {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    font-size: 2.5rem;
+    color: #64748b;
+    transform: rotate(-45deg);
+}
+
+/* 404 Icon */
+.not-found-icon {
+    font-size: 5rem;
+    font-weight: 900;
+    color: #e2e8f0;
+    line-height: 1;
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Permission Denied Icon */
+.permission-icon {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.shield {
+    width: 100px;
+    height: 120px;
+    background: #fef2f2;
+    border: 6px solid #ef4444;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    position: relative;
+}
+
+.shield-x {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: #ef4444;
+    font-weight: 700;
+}
+
+/* Coming Soon Icon */
+.coming-soon-icon {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.rocket {
+    font-size: 5rem;
+    color: #3b82f6;
+}
+
+/* Session Expired Icon */
+.session-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+.clock-circle {
+    width: 100px;
+    height: 100px;
+    background: #fef3c7;
+    border: 6px solid #f59e0b;
+    border-radius: 50%;
+    position: relative;
+}
+
+.clock-hand-hour {
+    width: 4px;
+    height: 30px;
+    background: #f59e0b;
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+.clock-hand-minute {
+    width: 3px;
+    height: 40px;
+    background: #f59e0b;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(90deg);
+    border-radius: 2px;
+    transform-origin: bottom center;
+}
+
+/* Animations */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Text Styles */
+.empty-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.empty-message {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+/* Buttons */
+.empty-state .action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.empty-state .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.empty-state .btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.empty-state .btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.empty-state .btn-secondary {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.empty-state .btn-secondary:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.empty-state .btn-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.empty-state .btn-warning:hover {
+    background: #d97706;
+}
+
+.empty-state .btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.empty-state .btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.375rem 0.875rem;
+    border-radius: 2rem;
+    font-size: 0.813rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.badge-error {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #f59e0b;
+}
+
+.badge-info {
+    background: #dbeafe;
+    color: #3b82f6;
+}
+
+/* Compact version for table rows */
+.empty-state-compact {
+    padding: 2.5rem 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin: 0 auto !important;
+    max-width: 450px;
+    width: auto;
+    text-align: center;
+    display: inline-block !important;
+}
+
+.empty-state-compact .empty-icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.25rem;
+}
+
+.empty-state-compact .search-circle {
+    width: 70px;
+    height: 70px;
+    border-width: 5px;
+}
+
+.empty-state-compact .search-handle {
+    height: 35px;
+    width: 5px;
+    bottom: -25px;
+    right: -8px;
+}
+
+.empty-state-compact .x-mark {
+    font-size: 2rem;
+}
+
+.empty-state-compact .empty-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-compact .empty-message {
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+}
+
+.empty-state-compact .server-box {
+    width: 70px;
+    height: 55px;
+    border-width: 3px;
+}
+
+.empty-state-compact .server-line {
+    width: 45px;
+    height: 3px;
+    margin: 8px auto;
+}
+
+.empty-state-compact .server-x {
+    width: 35px;
+    height: 35px;
+    top: -12px;
+    right: -12px;
+    font-size: 1.25rem;
+    border-width: 3px;
+}
+
+.empty-state-compact .wifi-symbol {
+    width: 80px;
+    height: 80px;
+}
+
+.empty-state-compact .wifi-arc-1 {
+    width: 25px;
+    height: 25px;
+}
+
+.empty-state-compact .wifi-arc-2 {
+    width: 45px;
+    height: 45px;
+}
+
+.empty-state-compact .wifi-arc-3 {
+    width: 65px;
+    height: 65px;
+}
+
+.empty-state-compact .wifi-slash {
+    width: 4px;
+    height: 95px;
+}
+
+.empty-state-compact .gear {
+    width: 70px;
+    height: 70px;
+}
+
+.empty-state-compact .gear-center {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+}
+
+.empty-state-compact .wrench {
+    font-size: 1.75rem;
+}
+
+.empty-state-compact .not-found-icon {
+    font-size: 3.5rem;
+}
+
+.empty-state-compact .shield {
+    width: 70px;
+    height: 85px;
+    border-width: 4px;
+}
+
+.empty-state-compact .shield-x {
+    font-size: 2rem;
+}
+
+.empty-state-compact .rocket {
+    font-size: 3.5rem;
+}
+
+.empty-state-compact .clock-circle {
+    width: 70px;
+    height: 70px;
+    border-width: 4px;
+}
+
+.empty-state-compact .clock-hand-hour {
+    width: 3px;
+    height: 20px;
+    top: 12px;
+}
+
+.empty-state-compact .clock-hand-minute {
+    width: 2.5px;
+    height: 28px;
+    top: 6px;
+}
+
+.empty-state-compact .btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+}
+
+.empty-state-compact .status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    margin-bottom: 0.875rem;
+}
+
+/* Table cell styling for empty states */
+td.p-0 {
+    padding: 2rem 0 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+td.p-0 .empty-state-compact {
+    margin: 0 auto !important;
+    display: inline-block !important;
+    text-align: center !important;
+}
+
+table td .empty-state-compact {
+    display: inline-block !important;
+    width: auto !important;
+    max-width: 450px;
+    margin: 0 auto !important;
+}
+
+table tbody tr td {
+    text-align: center !important;
+}
+
+table tbody tr td.p-0 {
+    text-align: center !important;
+    padding: 2rem 0 !important;
+}
+
+table tbody tr td .empty-state-compact {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: inline-block !important;
+}
+
+@media (max-width: 768px) {
+    .empty-state {
+        padding: 2rem 1.5rem;
+    }
+
+    .empty-state .action-buttons {
+        flex-direction: column;
+    }
+
+    .empty-state .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .empty-state-compact {
+        padding: 2rem 1.5rem;
+    }
+}

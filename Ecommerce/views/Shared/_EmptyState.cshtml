@@ -1,0 +1,40 @@
+@* Empty State Component - Compact version for tables *@
+@{
+    string title = ViewBag.EmptyTitle ?? "No result found";
+    string message = ViewBag.EmptyMessage ?? "We can't find any item matching your search.<br>Try adjusting your filters or search terms.";
+    bool showResetButton = ViewBag.ShowResetButton ?? true;
+    bool showClearButton = ViewBag.ShowClearButton ?? true;
+    string resetFunction = ViewBag.ResetFunction ?? "resetFilters()";
+    string clearFunction = ViewBag.ClearFunction ?? "clearSearch()";
+}
+
+<div class="empty-state empty-state-compact">
+    <div class="empty-icon">
+        <div class="search-circle"></div>
+        <div class="search-handle"></div>
+        <div class="x-mark">✕</div>
+    </div>
+    
+    <h3 class="empty-title">@Html.Raw(title)</h3>
+    <p class="empty-message">@Html.Raw(message)</p>
+    
+    @if (showResetButton || showClearButton)
+    {
+        <div class="action-buttons">
+            @if (showResetButton)
+            {
+                <button class="btn btn-secondary" onclick="@resetFunction">
+                    <i class="ti ti-arrow-clockwise"></i>
+                    Reset filter
+                </button>
+            }
+            @if (showClearButton)
+            {
+                <button class="btn btn-primary" onclick="@clearFunction">
+                    <i class="ti ti-x"></i>
+                    Clear search
+                </button>
+            }
+        </div>
+    }
+</div>
