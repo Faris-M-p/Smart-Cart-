@@ -3,20 +3,19 @@
 ==========================  **/
 
 .empty-state {
-    background: white;
+    background: transparent;
     padding: 3rem 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 0;
+    box-shadow: none;
     text-align: center;
-    transition: all 0.3s ease;
     max-width: 500px;
     width: 100%;
     margin: 2rem auto;
 }
 
 .empty-state:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    transform: translateY(-4px);
+    box-shadow: none;
+    transform: none;
 }
 
 /* Icons Container */
@@ -415,9 +414,9 @@
 /* Compact version for table rows */
 .empty-state-compact {
     padding: 2.5rem 2rem;
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     margin: 0 auto !important;
     max-width: 450px;
     width: auto;

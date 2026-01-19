@@ -23,8 +23,8 @@ namespace Ecommerce.DataAccess
     
         public IDbConnection CreateConnection()
         {
-            // Hardcoded connection string with the specified database name
-            string connectionString = "Server=LAPTOP-E0RPFDLS\\\\SQLEXPRESS;Database=Ecommerse;Integrated Security=True;";
+            // Get connection string from configuration
+            string connectionString = _configuration.GetConnectionString(_connectionStringName);
 
             // Check if the connection string is empty or null
             if (string.IsNullOrEmpty(connectionString))
@@ -32,7 +32,7 @@ namespace Ecommerce.DataAccess
                 throw new ArgumentException("Connection string is empty or not defined.");
             }
 
-            // Create and return a new SqlConnection with the hardcoded connection string
+            // Create and return a new SqlConnection
             return new SqlConnection(connectionString);
         }
         public IDbConnection GetCatalogDatabase()

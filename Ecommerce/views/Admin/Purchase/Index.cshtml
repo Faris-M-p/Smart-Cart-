@@ -33,78 +33,107 @@
                             </button>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <!-- Search and Filter -->
-                        <div class="row mb-3">
-                            <div class="col-md-3">
-                                <input type="text" id="searchText" class="form-control" placeholder="Search by supplier or invoice...">
+                    <div class="card-body pt-3">
+                        <!-- Filter and Search Bar -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                            <!-- Filter Button -->
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                                <i class="ti ti-filter"></i> Filter
+                            </button>
+                            
+                            <!-- Search Box -->
+                            <div class="flex-grow-1 mx-3 search-input">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="ti ti-search"></i>
+                                    </span>
+                                    <input type="text" id="searchText" class="form-control" placeholder="Search purchases...">
+                                </div>
                             </div>
-                            <div class="col-md-2">
-                                <select id="filterSupplier" class="form-select">
-                                    <option value="">All Suppliers</option>
-                                </select>
+                        </div>
+
+                        <!-- Collapsible Filter Section -->
+                        <div class="collapse mb-3" id="filterCollapse">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">Supplier</label>
+                                        <select id="filterSupplier" class="form-select">
+                                            <option value="">All Suppliers</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">From Date</label>
+                                        <input type="date" id="fromDate" class="form-control">
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">To Date</label>
+                                        <input type="date" id="toDate" class="form-control">
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadPurchases()">
+                                                <i class="ti ti-check"></i> Apply
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                                                <i class="ti ti-refresh"></i> Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-2">
-                                <input type="date" id="fromDate" class="form-control" placeholder="From Date">
+                        </div>
+
+                        <!-- Purchase Table -->
+                        <div class="table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table table-hover align-middle mb-0" id="purchaseTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-muted">ID</th>
+                                            <th class="text-muted">Invoice Number</th>
+                                            <th class="text-muted">Supplier</th>
+                                            <th class="text-muted">Purchase Date</th>
+                                            <th class="text-muted">Total Amount</th>
+                                            <th class="text-muted">Created Date</th>
+                                            <th class="text-muted">Status</th>
+                                            <th class="text-muted text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="purchaseTableBody">
+                                        <tr>
+                                            <td colspan="8" class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="col-md-2">
-                                <input type="date" id="toDate" class="form-control" placeholder="To Date">
-                            </div>
-                            <div class="col-md-1">
-                                <select id="pageSize" class="form-select">
+                        </div>
+
+                        <!-- Pagination Section -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Show</span>
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadPurchases()">
                                     <option value="10">10</option>
                                     <option value="20" selected>20</option>
                                     <option value="50">50</option>
                                     <option value="100">100</option>
                                 </select>
+                                <span class="text-muted small">per page</span>
                             </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-secondary w-100" onclick="loadPurchases()">
-                                    <i class="ti ti-search"></i> Search
-                                </button>
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                                    <i class="ti ti-refresh"></i> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Purchase Table -->
-                        <div class="table-responsive">
-                            <table class="table table-hover table-borderless mb-0" id="purchaseTable">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Invoice Number</th>
-                                        <th>Supplier</th>
-                                        <th>Purchase Date</th>
-                                        <th>Total Amount</th>
-                                        <th>Created Date</th>
-                                        <th>Status</th>
-                                        <th class="text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="purchaseTableBody">
-                                    <tr>
-                                        <td colspan="8" class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination -->
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <div id="paginationInfo" class="text-muted"></div>
-                            </div>
-                            <div class="col-md-6">
+                            
+                            <div class="d-flex align-items-center gap-3">
+                                <span id="paginationInfo" class="text-muted small"></span>
                                 <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end" id="pagination">
+                                    <ul class="pagination pagination-sm mb-0" id="pagination">
                                         <!-- Pagination will be generated here -->
                                     </ul>
                                 </nav>
@@ -346,8 +375,16 @@
             displayPagination(data.TableSettings);
         } catch (error) {
             console.error('Error loading purchases:', error);
-            document.getElementById('purchaseTableBody').innerHTML = 
-                '<tr><td colspan="8" class="text-center text-danger">Error loading purchases. Please try again.</td></tr>';
+            const tbody = document.getElementById('purchaseTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state">
+                        <i class="ti ti-alert-circle"></i>
+                        <h5>Error loading purchases</h5>
+                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading purchases. Please try again.')}</p>
+                    </td>
+                </tr>
+            `;
         }
     }
 
@@ -355,38 +392,51 @@
         const tbody = document.getElementById('purchaseTableBody');
         
         if (!purchases || purchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No purchases found.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="empty-state">
+                        <i class="ti ti-package-off"></i>
+                        <h5>No purchases found</h5>
+                        <p class="text-muted">Try adjusting your filters or search term</p>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
-        tbody.innerHTML = purchases.map(p => `
-            <tr>
-                <td>${p.ID_Purchase}</td>
-                <td>${escapeHtml(p.InvoiceNumber || '-')}</td>
-                <td>${escapeHtml(p.SupplierName || 'N/A')}</td>
-                <td>${p.PurchaseDate ? new Date(p.PurchaseDate).toLocaleDateString() : '-'}</td>
-                <td>${p.TotalAmount?.toFixed(2) || '0.00'}</td>
-                <td>${p.CreatedOn ? new Date(p.CreatedOn).toLocaleDateString() : '-'}</td>
-                <td>
-                    <span class="badge ${p.Cancelled ? 'bg-danger' : 'bg-success'}">
-                        ${p.Cancelled ? 'Cancelled' : 'Active'}
-                    </span>
-                </td>
-                <td class="text-end">
-                    ${p.Cancelled ? '' : `
-                        <button class="btn btn-sm btn-info" onclick="viewPurchase(${p.ID_Purchase})" title="View">
-                            <i class="ti ti-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${p.ID_Purchase})" title="Edit">
-                            <i class="ti ti-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${p.ID_Purchase})" title="Delete">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    `}
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = purchases.map(p => {
+            const statusClass = p.Cancelled ? 'badge-inactive' : 'badge-active';
+            const statusText = p.Cancelled ? 'Cancelled' : 'Active';
+            
+            return `
+                <tr>
+                    <td>${p.ID_Purchase}</td>
+                    <td>${escapeHtml(p.InvoiceNumber || '-')}</td>
+                    <td>${escapeHtml(p.SupplierName || 'N/A')}</td>
+                    <td>${p.PurchaseDate ? new Date(p.PurchaseDate).toLocaleDateString() : '-'}</td>
+                    <td><strong>$${p.TotalAmount?.toFixed(2) || '0.00'}</strong></td>
+                    <td>${p.CreatedOn ? new Date(p.CreatedOn).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        ${p.Cancelled ? '' : `
+                            <button class="btn-action btn-view" onclick="viewPurchase(${p.ID_Purchase})" title="View">
+                                <i class="ti ti-eye"></i>
+                            </button>
+                            <button class="btn-action btn-edit" onclick="openEditModal(${p.ID_Purchase})" title="Edit">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="openDeleteModal(${p.ID_Purchase})" title="Delete">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     function displayPagination(settings) {
@@ -396,27 +446,46 @@
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
 
-        paginationInfo.textContent = `Showing ${((settings.PageIndex - 1) * settings.PageSize) + 1} to ${Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount)} of ${settings.TotalCount} entries`;
+        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
+        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
+        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
 
         let paginationHTML = '';
         
-        paginationHTML += `<li class="page-item ${settings.PageIndex <= 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadPurchases(${settings.PageIndex - 1}); return false;">Previous</a>
-        </li>`;
+        // Previous button
+        if (settings.PageIndex <= 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadPurchases(${settings.PageIndex - 1}); return false;">Previous</a>
+            </li>`;
+        }
 
+        // Page numbers
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 2 && i <= settings.PageIndex + 2)) {
-                paginationHTML += `<li class="page-item ${i === settings.PageIndex ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadPurchases(${i}); return false;">${i}</a>
-                </li>`;
-            } else if (i === settings.PageIndex - 3 || i === settings.PageIndex + 3) {
+            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
+                if (i === settings.PageIndex) {
+                    paginationHTML += `<li class="page-item active">
+                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
+                    </li>`;
+                } else {
+                    paginationHTML += `<li class="page-item">
+                        <a class="page-link" href="#!" onclick="loadPurchases(${i}); return false;">${i}</a>
+                    </li>`;
+                }
+            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
-        paginationHTML += `<li class="page-item ${settings.PageIndex >= totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadPurchases(${settings.PageIndex + 1}); return false;">Next</a>
-        </li>`;
+        // Next button
+        if (settings.PageIndex >= totalPages) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadPurchases(${settings.PageIndex + 1}); return false;">Next</a>
+            </li>`;
+        }
 
         pagination.innerHTML = paginationHTML;
     }

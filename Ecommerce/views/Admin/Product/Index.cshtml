@@ -95,27 +95,29 @@
 
                 <!-- Product Table -->
                 <div class="table-container">
-                    <table class="table table-hover align-middle mb-0" id="productTable">
-                        <thead>
-                            <tr>
-                                <th class="text-muted">Product</th>
-                                <th class="text-muted">Category</th>
-                                <th class="text-muted">Stock</th>
-                                <th class="text-muted">Price</th>
-                                <th class="text-muted">Status</th>
-                                <th class="text-muted text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productTableBody">
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover align-middle mb-0" id="productTable">
+                            <thead>
+                                <tr>
+                                    <th class="text-muted">Product</th>
+                                    <th class="text-muted">Category</th>
+                                    <th class="text-muted">Stock</th>
+                                    <th class="text-muted">Price</th>
+                                    <th class="text-muted">Status</th>
+                                    <th class="text-muted text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Pagination Section -->
@@ -573,29 +575,39 @@
         let paginationHTML = '';
         
         // Previous button
-        paginationHTML += `<li class="page-item ${settings.PageIndex <= 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadProducts(${settings.PageIndex - 1}); return false;">
-                <i class="ti ti-chevron-left"></i>
-            </a>
-        </li>`;
+        if (settings.PageIndex <= 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadProducts(${settings.PageIndex - 1}); return false;">Previous</a>
+            </li>`;
+        }
 
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                paginationHTML += `<li class="page-item ${i === settings.PageIndex ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadProducts(${i}); return false;">${i}</a>
-                </li>`;
+                if (i === settings.PageIndex) {
+                    paginationHTML += `<li class="page-item active">
+                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
+                    </li>`;
+                } else {
+                    paginationHTML += `<li class="page-item">
+                        <a class="page-link" href="#!" onclick="loadProducts(${i}); return false;">${i}</a>
+                    </li>`;
+                }
             } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
         // Next button
-        paginationHTML += `<li class="page-item ${settings.PageIndex >= totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadProducts(${settings.PageIndex + 1}); return false;">
-                <i class="ti ti-chevron-right"></i>
-            </a>
-        </li>`;
+        if (settings.PageIndex >= totalPages) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadProducts(${settings.PageIndex + 1}); return false;">Next</a>
+            </li>`;
+        }
 
         pagination.innerHTML = paginationHTML;
     }

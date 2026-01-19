@@ -33,65 +33,88 @@
                             </button>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <!-- Search and Filter -->
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <input type="text" id="searchText" class="form-control" placeholder="Search by variant name...">
+                    <div class="card-body pt-3">
+                        <!-- Filter and Search Bar -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                            <!-- Filter Button -->
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                                <i class="ti ti-filter"></i> Filter
+                            </button>
+                            
+                            <!-- Search Box -->
+                            <div class="flex-grow-1 mx-3 search-input">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="ti ti-search"></i>
+                                    </span>
+                                    <input type="text" id="searchText" class="form-control" placeholder="Search variants...">
+                                </div>
                             </div>
-                            <div class="col-md-2">
-                                <select id="pageSize" class="form-select">
-                                    <option value="10">10 per page</option>
-                                    <option value="25">25 per page</option>
-                                    <option value="50">50 per page</option>
-                                    <option value="100">100 per page</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-secondary w-100" onclick="loadVariants()">
-                                    <i class="ti ti-search"></i> Search
-                                </button>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                                    <i class="ti ti-refresh"></i> Reset
-                                </button>
+                        </div>
+
+                        <!-- Collapsible Filter Section -->
+                        <div class="collapse mb-3" id="filterCollapse">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadVariants()">
+                                                <i class="ti ti-check"></i> Apply
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                                                <i class="ti ti-refresh"></i> Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Variant Table -->
-                        <div class="table-responsive">
-                            <table class="table table-hover table-borderless mb-0" id="variantTable">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Variant Name</th>
-                                        <th>Description</th>
-                                        <th>Display Order</th>
-                                        <th>Status</th>
-                                        <th class="text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="variantTableBody">
-                                    <tr>
-                                        <td colspan="6" class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table table-hover align-middle mb-0" id="variantTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-muted">ID</th>
+                                            <th class="text-muted">Variant Name</th>
+                                            <th class="text-muted">Description</th>
+                                            <th class="text-muted">Display Order</th>
+                                            <th class="text-muted">Status</th>
+                                            <th class="text-muted text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="variantTableBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <!-- Pagination -->
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <div id="paginationInfo" class="text-muted"></div>
+                        <!-- Pagination Section -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Show</span>
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadVariants()">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span class="text-muted small">per page</span>
                             </div>
-                            <div class="col-md-6">
+                            
+                            <div class="d-flex align-items-center gap-3">
+                                <span id="paginationInfo" class="text-muted small"></span>
                                 <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end" id="pagination">
+                                    <ul class="pagination pagination-sm mb-0" id="pagination">
                                         <!-- Pagination will be generated here -->
                                     </ul>
                                 </nav>
@@ -203,8 +226,16 @@
             displayPagination(data.TableSettings);
         } catch (error) {
             console.error('Error loading variants:', error);
-            document.getElementById('variantTableBody').innerHTML = 
-                '<tr><td colspan="6" class="text-center text-danger">Error loading variants. Please try again.</td></tr>';
+            const tbody = document.getElementById('variantTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="ti ti-alert-circle"></i>
+                        <h5>Error loading variants</h5>
+                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading variants. Please try again.')}</p>
+                    </td>
+                </tr>
+            `;
         }
     }
 
@@ -212,33 +243,46 @@
         const tbody = document.getElementById('variantTableBody');
         
         if (!variants || variants.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No variants found.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="ti ti-package-off"></i>
+                        <h5>No variants found</h5>
+                        <p class="text-muted">Try adjusting your filters or search term</p>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
-        tbody.innerHTML = variants.map(v => `
-            <tr>
-                <td>${v.ID_Variant}</td>
-                <td>${escapeHtml(v.VariantName)}</td>
-                <td>${escapeHtml(v.Description || '')}</td>
-                <td>${v.DisplayOrder}</td>
-                <td>
-                    <span class="badge ${v.Cancelled ? 'bg-danger' : 'bg-success'}">
-                        ${v.Cancelled ? 'Deleted' : 'Active'}
-                    </span>
-                </td>
-                <td class="text-end">
-                    ${v.Cancelled ? '' : `
-                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${v.ID_Variant})" title="Edit">
-                            <i class="ti ti-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${v.ID_Variant})" title="Delete">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    `}
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = variants.map(v => {
+            const statusClass = v.Cancelled ? 'badge-inactive' : 'badge-active';
+            const statusText = v.Cancelled ? 'Deleted' : 'Active';
+            
+            return `
+                <tr>
+                    <td>${v.ID_Variant}</td>
+                    <td>${escapeHtml(v.VariantName)}</td>
+                    <td>${escapeHtml(v.Description || '')}</td>
+                    <td>${v.DisplayOrder}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        ${v.Cancelled ? '' : `
+                            <button class="btn-action" onclick="openEditModal(${v.ID_Variant})" title="Edit">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button class="btn-action" onclick="openDeleteModal(${v.ID_Variant})" title="Delete">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     function displayPagination(settings) {
@@ -248,27 +292,46 @@
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
 
-        paginationInfo.textContent = `Showing ${((settings.PageIndex - 1) * settings.PageSize) + 1} to ${Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount)} of ${settings.TotalCount} entries`;
+        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
+        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
+        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
 
         let paginationHTML = '';
         
-        paginationHTML += `<li class="page-item ${settings.PageIndex <= 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadVariants(${settings.PageIndex - 1}); return false;">Previous</a>
-        </li>`;
+        // Previous button
+        if (settings.PageIndex <= 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadVariants(${settings.PageIndex - 1}); return false;">Previous</a>
+            </li>`;
+        }
 
+        // Page numbers
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 2 && i <= settings.PageIndex + 2)) {
-                paginationHTML += `<li class="page-item ${i === settings.PageIndex ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadVariants(${i}); return false;">${i}</a>
-                </li>`;
-            } else if (i === settings.PageIndex - 3 || i === settings.PageIndex + 3) {
+            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
+                if (i === settings.PageIndex) {
+                    paginationHTML += `<li class="page-item active">
+                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
+                    </li>`;
+                } else {
+                    paginationHTML += `<li class="page-item">
+                        <a class="page-link" href="#!" onclick="loadVariants(${i}); return false;">${i}</a>
+                    </li>`;
+                }
+            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
-        paginationHTML += `<li class="page-item ${settings.PageIndex >= totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadVariants(${settings.PageIndex + 1}); return false;">Next</a>
-        </li>`;
+        // Next button
+        if (settings.PageIndex >= totalPages) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadVariants(${settings.PageIndex + 1}); return false;">Next</a>
+            </li>`;
+        }
 
         pagination.innerHTML = paginationHTML;
     }

@@ -33,65 +33,64 @@
                             </button>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <!-- Search and Filter -->
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <input type="text" id="searchText" class="form-control" placeholder="Search by category name...">
-                            </div>
-                            <div class="col-md-2">
-                                <select id="pageSize" class="form-select">
-                                    <option value="10">10 per page</option>
-                                    <option value="25">25 per page</option>
-                                    <option value="50">50 per page</option>
-                                    <option value="100">100 per page</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-secondary w-100" onclick="loadCategories()">
-                                    <i class="ti ti-search"></i> Search
-                                </button>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                                    <i class="ti ti-refresh"></i> Reset
-                                </button>
+                    <div class="card-body pt-3">
+                        <!-- Search Bar -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                            <!-- Search Box -->
+                            <div class="flex-grow-1 mx-3 search-input">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="ti ti-search"></i>
+                                    </span>
+                                    <input type="text" id="searchText" class="form-control" placeholder="Search categories...">
+                                </div>
                             </div>
                         </div>
 
                         <!-- Category Table -->
-                        <div class="table-responsive">
-                            <table class="table table-hover table-borderless mb-0" id="categoryTable">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Category Name</th>
-                                        <th>Description</th>
-                                        <th>Created Date</th>
-                                        <th>Status</th>
-                                        <th class="text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="categoryTableBody">
-                                    <tr>
-                                        <td colspan="6" class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table align-middle mb-0" id="categoryTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-muted">ID</th>
+                                            <th class="text-muted">Category Name</th>
+                                            <th class="text-muted">Description</th>
+                                            <th class="text-muted">Created Date</th>
+                                            <th class="text-muted">Status</th>
+                                            <th class="text-muted text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="categoryTableBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <!-- Pagination -->
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <div id="paginationInfo" class="text-muted"></div>
+                        <!-- Pagination Section -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Show</span>
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadCategories()">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span class="text-muted small">per page</span>
                             </div>
-                            <div class="col-md-6">
+                            
+                            <div class="d-flex align-items-center gap-3">
+                                <span id="paginationInfo" class="text-muted small"></span>
                                 <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end" id="pagination">
+                                    <ul class="pagination pagination-sm mb-0" id="pagination">
                                         <!-- Pagination will be generated here -->
                                     </ul>
                                 </nav>
@@ -197,16 +196,45 @@
             });
 
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                // Create error object with status for proper error detection
+                const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+                error.status = response.status;
+                error.response = response;
+                throw error;
             }
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                // Handle JSON parsing errors
+                const error = new Error('Invalid response format from server');
+                error.originalError = jsonError;
+                throw error;
+            }
+            
+            // Check if data is valid
+            if (!data || typeof data !== 'object') {
+                throw new Error('Invalid response from server');
+            }
+            
             displayCategories(data.TableData || []);
             displayPagination(data.TableSettings);
         } catch (error) {
             console.error('Error loading categories:', error);
-            document.getElementById('categoryTableBody').innerHTML = 
-                '<tr><td colspan="6" class="text-center text-danger">Error loading categories. Please try again.</td></tr>';
+            
+            // Clear pagination on error
+            const pagination = document.getElementById('pagination');
+            const paginationInfo = document.getElementById('paginationInfo');
+            if (pagination) pagination.innerHTML = '';
+            if (paginationInfo) paginationInfo.textContent = '';
+            
+            // Use emptyState utility for proper error handling
+            // It will auto-detect network errors, server errors, etc.
+            emptyState.showError('categoryTableBody', error, {
+                onRetry: 'loadCategories()',
+                title: 'Error loading categories'
+            }, 6);
         }
     }
 
@@ -214,33 +242,43 @@
         const tbody = document.getElementById('categoryTableBody');
         
         if (!categories || categories.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No categories found.</td></tr>';
+            // Use emptyState utility for no data
+            emptyState.showNoData('categoryTableBody', {
+                title: 'No categories found',
+                message: 'We can\'t find any categories matching your search.<br>Try adjusting your search term.',
+                onClear: 'clearSearch()'
+            }, 6);
             return;
         }
 
-        tbody.innerHTML = categories.map(category => `
-            <tr>
-                <td>${category.CategoryID}</td>
-                <td>${escapeHtml(category.CategoryName)}</td>
-                <td>${escapeHtml(category.Description || '')}</td>
-                <td>${category.CreatedDate ? new Date(category.CreatedDate).toLocaleDateString() : '-'}</td>
-                <td>
-                    <span class="badge ${category.Cancelled ? 'bg-danger' : 'bg-success'}">
-                        ${category.Cancelled ? 'Deleted' : 'Active'}
-                    </span>
-                </td>
-                <td class="text-end">
-                    ${category.Cancelled ? '' : `
-                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${category.CategoryID})" title="Edit">
-                            <i class="ti ti-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${category.CategoryID})" title="Delete">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    `}
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = categories.map(category => {
+            const statusClass = category.Cancelled ? 'badge-inactive' : 'badge-active';
+            const statusText = category.Cancelled ? 'Deleted' : 'Active';
+            
+            return `
+                <tr>
+                    <td>${category.CategoryID}</td>
+                    <td>${escapeHtml(category.CategoryName)}</td>
+                    <td>${escapeHtml(category.Description || '')}</td>
+                    <td>${category.CreatedDate ? new Date(category.CreatedDate).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        ${category.Cancelled ? '' : `
+                            <button class="btn-action" onclick="openEditModal(${category.CategoryID})" title="Edit">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button class="btn-action" onclick="openDeleteModal(${category.CategoryID})" title="Delete">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     function displayPagination(settings) {
@@ -250,30 +288,46 @@
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
 
-        paginationInfo.textContent = `Showing ${((settings.PageIndex - 1) * settings.PageSize) + 1} to ${Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount)} of ${settings.TotalCount} entries`;
+        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
+        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
+        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
 
         let paginationHTML = '';
         
         // Previous button
-        paginationHTML += `<li class="page-item ${settings.PageIndex <= 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadCategories(${settings.PageIndex - 1}); return false;">Previous</a>
-        </li>`;
+        if (settings.PageIndex <= 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadCategories(${settings.PageIndex - 1}); return false;">Previous</a>
+            </li>`;
+        }
 
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 2 && i <= settings.PageIndex + 2)) {
-                paginationHTML += `<li class="page-item ${i === settings.PageIndex ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadCategories(${i}); return false;">${i}</a>
-                </li>`;
-            } else if (i === settings.PageIndex - 3 || i === settings.PageIndex + 3) {
+            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
+                if (i === settings.PageIndex) {
+                    paginationHTML += `<li class="page-item active">
+                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
+                    </li>`;
+                } else {
+                    paginationHTML += `<li class="page-item">
+                        <a class="page-link" href="#!" onclick="loadCategories(${i}); return false;">${i}</a>
+                    </li>`;
+                }
+            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
         // Next button
-        paginationHTML += `<li class="page-item ${settings.PageIndex >= totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadCategories(${settings.PageIndex + 1}); return false;">Next</a>
-        </li>`;
+        if (settings.PageIndex >= totalPages) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadCategories(${settings.PageIndex + 1}); return false;">Next</a>
+            </li>`;
+        }
 
         pagination.innerHTML = paginationHTML;
     }
@@ -394,6 +448,11 @@
     function resetFilters() {
         document.getElementById('searchText').value = '';
         document.getElementById('pageSize').value = '10';
+        loadCategories(1);
+    }
+
+    function clearSearch() {
+        document.getElementById('searchText').value = '';
         loadCategories(1);
     }
 
