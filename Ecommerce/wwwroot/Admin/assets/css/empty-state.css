@@ -4,13 +4,13 @@
     background: white;
     padding: 3rem 2rem;
     border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+   /* box-shadow: 0 2px 8px rgba(0,0,0,0.05);*/
     text-align: center;
     transition: all 0.3s ease;
 }
 
 .empty-state:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+   /* box-shadow: 0 8px 24px rgba(0,0,0,0.1);*/
     transform: translateY(-4px);
 }
 
@@ -333,7 +333,7 @@
 .empty-state .btn-primary:hover {
     background: #2563eb;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+   /* box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);*/
 }
 
 .empty-state .btn-secondary {
@@ -394,7 +394,7 @@
     padding: 2.5rem 2rem;
     background: white;
     border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  /*  box-shadow: 0 2px 8px rgba(0,0,0,0.05);*/
     margin: 0 auto !important;
     max-width: 450px;
     width: auto;

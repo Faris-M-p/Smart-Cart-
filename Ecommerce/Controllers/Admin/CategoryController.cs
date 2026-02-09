@@ -9,6 +9,7 @@ namespace Ecommerce.Controllers.Admin
     public class CategoryController : Controller
     {
         private readonly ICategoryInterface _categoryInterface;
+        private object _logger;
 
         public CategoryController(ICategoryInterface categoryInterface)
         {
@@ -24,20 +25,32 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetCategoryList")]
-        public async Task<IActionResult> GetCategoryList([FromBody] CategoryListInputVIEW viewInput)
+        public async Task<IActionResult> GetCategoryList(
+            [FromBody] CategoryListInputVIEW viewInput)
         {
             try
             {
+                //----------------------------------
+                // VALIDATION
+                //----------------------------------
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return BadRequest(new { message = "Validation failed.", errors });
+
+                    return BadRequest(new ApiResponse<TableOutput<Category>>
+                    {
+                        Success = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                // Map VIEW model to Procedure Input model
+                //----------------------------------
+                // MAPPING
+                //----------------------------------
                 var input = new CategoryListInput
                 {
                     SearchText = viewInput.SearchText,
@@ -48,14 +61,37 @@ namespace Ecommerce.Controllers.Admin
                     SortMode = viewInput.SortMode
                 };
 
-                var result = await _categoryInterface.GetCategoryListAsync(input);
-                return Ok(result);
+                //----------------------------------
+                // SERVICE CALL
+                //----------------------------------
+                var result = await _categoryInterface
+                    .GetCategoryListAsync(input);
+
+                //----------------------------------
+                // SUCCESS
+                //----------------------------------
+                return Ok(new ApiResponse<TableOutput<Category>>
+                {
+                    Success = true,
+                    Message = "Categories loaded successfully",
+                    Data = result
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                //_logger.LogError(ex, "Unhandled error");
+
+                //----------------------------------
+                // SERVER FAILURE
+                //----------------------------------
+                return StatusCode(500, new ApiResponse<TableOutput<Category>>
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
             }
         }
+
 
         [HttpPost]
         [Route("Create")]
@@ -199,5 +235,8 @@ namespace Ecommerce.Controllers.Admin
                 return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
             }
         }
+       
+
+
     }
 }
