@@ -1,0 +1,134 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\Admin\assets\fonts\feather\feather.svg" />
+    <None Include="wwwroot\Admin\assets\fonts\fontawesome\fa-brands-400.svg" />
+    <None Include="wwwroot\Admin\assets\fonts\fontawesome\fa-brands-400.woff2" />
+    <None Include="wwwroot\Admin\assets\fonts\fontawesome\fa-regular-400.svg" />
+    <None Include="wwwroot\Admin\assets\fonts\fontawesome\fa-regular-400.woff2" />
+    <None Include="wwwroot\Admin\assets\fonts\fontawesome\fa-solid-900.svg" />
+    <None Include="wwwroot\Admin\assets\fonts\fontawesome\fa-solid-900.woff2" />
+    <None Include="wwwroot\Admin\assets\fonts\inter\Inter-italic.var.woff2" />
+    <None Include="wwwroot\Admin\assets\fonts\inter\Inter-roman.var.woff2" />
+    <None Include="wwwroot\Admin\assets\fonts\material\material.woff2" />
+    <None Include="wwwroot\Admin\assets\fonts\phosphor\duotone\Phosphor-Duotone.svg" />
+    <None Include="wwwroot\Admin\assets\fonts\tabler\tabler-icons.svg" />
+    <None Include="wwwroot\Admin\assets\fonts\tabler\tabler-icons.woff2" />
+    <None Include="wwwroot\Admin\assets\images\authentication\facebook.svg" />
+    <None Include="wwwroot\Admin\assets\images\authentication\google.svg" />
+    <None Include="wwwroot\Admin\assets\images\authentication\img-auth-bg.svg" />
+    <None Include="wwwroot\Admin\assets\images\authentication\twitter.svg" />
+    <None Include="wwwroot\Admin\assets\images\favicon.svg" />
+    <None Include="wwwroot\Admin\assets\images\logo-dark.svg" />
+    <None Include="wwwroot\Admin\assets\images\logo-icon.svg" />
+    <None Include="wwwroot\Admin\assets\images\logo-white.svg" />
+    <None Include="wwwroot\Admin\assets\js\fonts\custom-font.js" />
+    <None Include="wwwroot\Admin\assets\js\pages\dashboard-default.js" />
+    <None Include="wwwroot\Admin\assets\js\pcoded.js" />
+    <None Include="wwwroot\Admin\assets\scss\landing.scss" />
+    <None Include="wwwroot\Admin\assets\scss\settings\_bootstrap-variables.scss" />
+    <None Include="wwwroot\Admin\assets\scss\settings\_color-variables.scss" />
+    <None Include="wwwroot\Admin\assets\scss\settings\_theme-variables.scss" />
+    <!-- style.scss and style-preset.scss are automatically included as Content by the SDK -->
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_avtar.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_badge.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_button.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_card.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_dropdown.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_form.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_progress.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_table.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_tabs.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\components\_widget.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-common.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-compact.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-footer.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-header.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-horizontal.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-sidebar.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_pc-tab.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_style-dark.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_style-rtl-utility.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\layouts\_style-rtl.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_application.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_authentication.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_calendar.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_chat.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_e-commerce.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_icon-pages.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_mail.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_maintaince.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_pages.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_price.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\pages\_user.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_data-tables.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_daterange.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_lightbox.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_modal.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_notification.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_perfect-scrollbar.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_rangeslider.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_slider.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_sweatalert.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_switches.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\plugins\_tags-input.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\_general.scss" />
+    <None Include="wwwroot\Admin\assets\scss\themes\_generic.scss" />
+    <None Include="wwwroot\js\plugins\glightbox.min.js" />
+    <None Include="wwwroot\js\plugins\swiper-bundle.min.js" />
+    <None Include="wwwroot\js\script.js" />
+    <None Include="wwwroot\js\vendor\bootstrap.min.js" />
+    <None Include="wwwroot\js\vendor\popper.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.SassCompiler" Version="1.97.1" />
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclude landing.scss from automatic compilation as it's not part of main build -->
+    <Content Remove="wwwroot\Admin\assets\scss\landing.scss" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <!-- Exclude landing.scss from compilation -->
+    <SassExclude>**/landing.scss</SassExclude>
+    <!-- Configure Sass compiler to find Bootstrap from node_modules -->
+    <SassIncludePaths>$(MSBuildProjectDirectory)\node_modules</SassIncludePaths>
+  </PropertyGroup>
+  
+  <!-- Copy compiled style.css from scss directory to css directory -->
+  <Target Name="CopyStyleCss" AfterTargets="Build">
+    <Copy SourceFiles="wwwroot\Admin\assets\scss\style.css" DestinationFiles="wwwroot\Admin\assets\css\style.css" Condition="Exists('wwwroot\Admin\assets\scss\style.css')" />
+    <Copy SourceFiles="wwwroot\Admin\assets\scss\style-preset.css" DestinationFiles="wwwroot\Admin\assets\css\style-preset.css" Condition="Exists('wwwroot\Admin\assets\scss\style-preset.css')" />
+  </Target>
+
+  <ItemGroup>
+    <Folder Include="Controllers\User\" />
+    <Folder Include="Interface\Admin\" />
+    <Folder Include="Interface\User\" />
+    <Folder Include="Models\Admin\" />
+    <Folder Include="Models\User\" />
+    <Folder Include="Repository\Admin\" />
+    <Folder Include="Repository\User\" />
+    <Folder Include="views\Admin\Dashboard\" />
+    <Folder Include="views\User\" />
+    <Folder Include="wwwroot\User\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\Admin\assets\js\common\pagination.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

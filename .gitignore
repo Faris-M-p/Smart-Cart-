@@ -1,20 +1,12 @@
-<<<<<<< HEAD
-# Ignore Visual Studio temporary files
-.vs/
-*.user
-*.suo
-*.vcxproj.user
+# Build outputs
+bin/
+obj/
 
-# Ignore build outputs
-bin/
-obj/
-/Ecommerce/Ecommerce.csproj
-=======
-bin/
-obj/
+# VS files
 .vs/
 *.user
 *.suo
+
+# Config (optional – careful!)
 appsettings.json
 appsettings.*.json
->>>>>>> c542edf09da9255d08f4bb0a7d8b3229922578fd
