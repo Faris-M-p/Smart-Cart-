@@ -4,6 +4,7 @@ using Ecommerce.Interface;
 using Ecommerce.Repository;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Repository.Admin;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,11 @@ builder.Services.AddControllersWithViews();
 
 // Register DataAccess
 builder.Services.AddScoped<IDataAccessDapper, DataAccessDapper>();
+
+var ecommerceConnection = builder.Configuration.GetConnectionString("Ecommerse")
+    ?? throw new InvalidOperationException("Connection string 'Ecommerse' is not configured.");
+builder.Services.AddDbContext<EcommerceDbContext>(options =>
+    options.UseSqlServer(ecommerceConnection));
 
 // Register custom services
 builder.Services.AddCustomServices();
