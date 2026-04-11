@@ -243,15 +243,22 @@
     let variants = [];
     let variantValues = [];
     let variantValueMap = {}; // Map variant ID to its values
+    let productVariantSearchTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadProducts();
         loadVariants();
-        
-        document.getElementById('searchText')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadProductVariants();
-            }
+
+        document.getElementById('searchText')?.addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(productVariantSearchTimeout);
+            productVariantSearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    if ((parseInt(document.getElementById('selectProduct').value, 10) || 0) > 0) {
+                        loadProductVariants(1);
+                    }
+                }
+            }, 500);
         });
     });
 

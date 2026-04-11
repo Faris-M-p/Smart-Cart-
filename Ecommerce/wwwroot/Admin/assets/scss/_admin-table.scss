@@ -1,0 +1,138 @@
+// Reusable admin master list tables (Category, SubCategory, etc.)
+
+.admin-master-list-table {
+  table-layout: fixed;
+  width: 100%;
+
+  th,
+  td {
+    text-align: inherit;
+  }
+
+  thead th {
+    font-weight: 600;
+    color: #6c757d;
+    padding: 12px 10px;
+    vertical-align: middle;
+  }
+
+  tbody td {
+    padding: 12px 10px;
+    vertical-align: middle;
+  }
+
+  th,
+  td {
+    &.col-name,
+    &.col-desc,
+    &.col-category {
+      text-align: left !important;
+      vertical-align: middle;
+    }
+
+    &.col-status {
+      text-align: center !important;
+      vertical-align: middle;
+    }
+
+    &.col-actions {
+      text-align: right !important;
+      vertical-align: middle;
+    }
+  }
+
+  .cell-truncate {
+    text-align: left !important;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .table-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    &.bg-success {
+      background-color: #28a745 !important;
+    }
+
+    &.bg-danger {
+      background-color: #dc3545 !important;
+    }
+  }
+}
+
+#categoryTable.admin-master-list-table {
+  th,
+  td {
+    &.col-name {
+      width: 25%;
+    }
+
+    &.col-desc {
+      width: 45%;
+    }
+
+    &.col-status {
+      width: 15%;
+    }
+
+    &.col-actions {
+      width: 15%;
+    }
+  }
+}
+
+#subCategoryTable.admin-master-list-table {
+  th,
+  td {
+    &.col-name {
+      width: 18%;
+    }
+
+    &.col-category {
+      width: 22%;
+    }
+
+    &.col-desc {
+      width: 30%;
+    }
+
+    &.col-status {
+      width: 15%;
+    }
+
+    &.col-actions {
+      width: 15%;
+    }
+  }
+}
+
+// Beat `.table-scroll-wrapper .table` rules from themes/pages/_product.scss (same specificity, later source)
+.table-scroll-wrapper .admin-master-list-table {
+  min-width: 0;
+
+  thead th {
+    font-weight: 600;
+    color: #6c757d;
+    padding: 12px 10px;
+    vertical-align: middle;
+    white-space: normal;
+    text-transform: none;
+    font-size: inherit;
+    letter-spacing: normal;
+  }
+
+  tbody td {
+    padding: 12px 10px;
+    vertical-align: middle;
+    white-space: normal;
+  }
+}

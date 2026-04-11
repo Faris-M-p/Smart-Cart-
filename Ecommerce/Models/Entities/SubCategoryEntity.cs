@@ -10,19 +10,21 @@ namespace Ecommerce.Models.Entities
     public class SubCategoryEntity
     {
         [Key]
-        [Column("ID_SubCategory")]
-        public int IdSubCategory { get; set; }
+       
+        public int ID_SubCategory { get; set; }
 
-        [MaxLength(255)]
-        public string SubCategoryName { get; set; } = string.Empty;
+        /// <summary>Maps to database column <c>Name</c> (not SubCategoryName).</summary>
+        
+        [MaxLength(100)]
+        public string Name { get; set; } = string.Empty;
 
-        [Column("FK_Category")]
-        public int FkCategory { get; set; }
+      
+        public int FK_Category { get; set; }
 
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        public DateTime? CreatedDate { get; set; }
+        public bool IsActive { get; set; } = true;
 
         public bool? Cancelled { get; set; }
 

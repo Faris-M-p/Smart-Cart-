@@ -267,16 +267,21 @@
     let suppliers = [];
     let products = [];
     let productVariants = {}; // Map productId to variants
+    let purchaseSearchTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadSuppliers();
         loadProducts();
         loadPurchases();
-        
-        document.getElementById('searchText')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadPurchases();
-            }
+
+        document.getElementById('searchText')?.addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(purchaseSearchTimeout);
+            purchaseSearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadPurchases(1);
+                }
+            }, 500);
         });
     });
 

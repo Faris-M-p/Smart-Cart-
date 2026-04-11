@@ -5,6 +5,7 @@ namespace Ecommerce.Interface.Admin
 {
     public interface ISubCategoryInterface
     {
+        Task<SubCategory?> GetSubCategoryByIdAsync(int id);
         Task<TableOutput<SubCategory>> GetSubCategoryListAsync(SubCategoryListInput input);
         Task<CommonResponse> CreateSubCategoryAsync(SubCategoryUpdateInput input);
         Task<CommonResponse> UpdateSubCategoryAsync(SubCategoryUpdateInput input);

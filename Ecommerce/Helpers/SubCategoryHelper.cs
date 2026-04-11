@@ -15,7 +15,7 @@ namespace Ecommerce.Helpers.SubCategories
         int SortColumn,
         string SortMode);
 
-    public sealed record NormalizedSubCategoryWriteInput(string Name, int FK_Category, string? Description);
+    public sealed record NormalizedSubCategoryWriteInput(string Name, int FK_Category, string? Description, bool IsActive);
 
     public static class SubCategoryHelper
     {
@@ -24,7 +24,7 @@ namespace Ecommerce.Helpers.SubCategories
             var pageIndex = Math.Max(1, input.PageIndex);
             var pageSize = Math.Max(1, input.PageSize);
             var raw = input.SearchText?.Trim() ?? string.Empty;
-            string? searchLower = raw.Length >= 2 ? raw.ToLowerInvariant() : null;
+            string? searchLower = raw.Length > 0 ? raw.ToLowerInvariant() : null;
             return new NormalizedSubCategoryListInput(
                 searchLower,
                 StringHelper.ParseFilterIds(input.FilterCategoryIDs),
@@ -40,7 +40,8 @@ namespace Ecommerce.Helpers.SubCategories
             return new NormalizedSubCategoryWriteInput(
                 (input.SubCategoryName ?? string.Empty).Trim(),
                 input.FK_Category,
-                StringHelper.NormalizeOptionalString(input.Description));
+                StringHelper.NormalizeOptionalString(input.Description),
+                input.IsActive);
         }
 
         public static IQueryable<SubCategoryEntity> ApplyFilters(
@@ -52,16 +53,16 @@ namespace Ecommerce.Helpers.SubCategories
             if (n.SearchLower != null)
             {
                 var s = n.SearchLower;
-                query = query.Where(x => x.SubCategoryName.ToLower().Contains(s));
+                query = query.Where(x => x.Name.ToLower().Contains(s));
             }
 
             if (n.FilterSubCategoryIds.Count > 0)
             {
-                query = query.Where(x => n.FilterSubCategoryIds.Contains(x.IdSubCategory));
+                query = query.Where(x => n.FilterSubCategoryIds.Contains(x.ID_SubCategory));
             }
             else if (n.FilterCategoryIds.Count > 0)
             {
-                query = query.Where(x => n.FilterCategoryIds.Contains(x.FkCategory));
+                query = query.Where(x => n.FilterCategoryIds.Contains(x.FK_Category));
             }
 
             return query;
@@ -76,7 +77,7 @@ namespace Ecommerce.Helpers.SubCategories
 
             if (!Enum.IsDefined(typeof(SubCategorySortColumn), sortColumn))
             {
-                return query.OrderByDescending(s => s.IdSubCategory);
+                return query.OrderByDescending(s => s.ID_SubCategory);
             }
 
             var column = (SubCategorySortColumn)sortColumn;
@@ -85,21 +86,21 @@ namespace Ecommerce.Helpers.SubCategories
             {
                 case SubCategorySortColumn.Name:
                     return desc
-                        ? query.OrderByDescending(s => s.SubCategoryName)
-                        : query.OrderBy(s => s.SubCategoryName);
+                        ? query.OrderByDescending(s => s.Name)
+                        : query.OrderBy(s => s.Name);
                 case SubCategorySortColumn.CategoryId:
                     return desc
-                        ? query.OrderByDescending(s => s.FkCategory)
-                        : query.OrderBy(s => s.FkCategory);
+                        ? query.OrderByDescending(s => s.FK_Category)
+                        : query.OrderBy(s => s.FK_Category);
                 case SubCategorySortColumn.CreatedDate:
                     return desc
-                        ? query.OrderByDescending(s => s.CreatedDate)
-                        : query.OrderBy(s => s.CreatedDate);
+                        ? query.OrderByDescending(s => s.ID_SubCategory)
+                        : query.OrderBy(s => s.ID_SubCategory);
                 case SubCategorySortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(s => s.IdSubCategory)
-                        : query.OrderBy(s => s.IdSubCategory);
+                        ? query.OrderByDescending(s => s.ID_SubCategory)
+                        : query.OrderBy(s => s.ID_SubCategory);
             }
         }
 

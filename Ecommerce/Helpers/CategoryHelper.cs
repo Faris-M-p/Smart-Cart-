@@ -15,7 +15,7 @@ namespace Ecommerce.Helpers.Categories
         int SortColumn,
         string SortMode);
 
-    public sealed record NormalizedCategoryWriteInput(string Name, string? Description);
+    public sealed record NormalizedCategoryWriteInput(string Name, string? Description, bool IsActive);
 
     /// <summary>
     /// Category list/query normalization, filtering, and sorting (no I/O).
@@ -29,7 +29,7 @@ namespace Ecommerce.Helpers.Categories
 
             var rawSearch = input.SearchText?.Trim() ?? string.Empty;
             string? searchLower = null;
-            if (rawSearch.Length >= 2)
+            if (rawSearch.Length >= 1)
             {
                 searchLower = rawSearch.ToLowerInvariant();
             }
@@ -45,13 +45,15 @@ namespace Ecommerce.Helpers.Categories
         {
             var name = (input.CategoryName ?? string.Empty).Trim();
             var description = StringHelper.NormalizeOptionalString(input.Description);
-            return new NormalizedCategoryWriteInput(name, description);
+            return new NormalizedCategoryWriteInput(name, description, input.IsActive);
         }
 
         public static IQueryable<CategoryEntity> ApplyFilters(
             IQueryable<CategoryEntity> query,
             NormalizedCategoryListInput normalized)
         {
+            query = query.Where(c => c.Cancelled != true);
+
             if (normalized.SearchLower != null)
             {
                 var s = normalized.SearchLower;

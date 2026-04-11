@@ -208,15 +208,20 @@
     let pageSize = 10;
     let variants = [];
     let variantMap = {};
+    let variantValueSearchTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadVariants();
         loadVariantValues();
-        
-        document.getElementById('searchText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadVariantValues();
-            }
+
+        document.getElementById('searchText').addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(variantValueSearchTimeout);
+            variantValueSearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadVariantValues(1);
+                }
+            }, 500);
         });
     });
 

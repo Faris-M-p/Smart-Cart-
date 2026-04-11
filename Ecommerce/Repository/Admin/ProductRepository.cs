@@ -328,8 +328,8 @@ namespace Ecommerce.Repository.Admin
         private Task<bool> ValidSubCategoryAsync(int subCategoryId, int categoryId)
         {
             return _dbContext.SubCategories.AnyAsync(s =>
-                s.IdSubCategory == subCategoryId &&
-                s.FkCategory == categoryId &&
+                s.ID_SubCategory == subCategoryId &&
+                s.FK_Category == categoryId &&
                 s.Cancelled != true);
         }
 

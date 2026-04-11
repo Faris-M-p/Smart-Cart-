@@ -22412,3 +22412,118 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
   }
 }
 
+/* Admin master list tables — keep in sync with wwwroot/Admin/assets/scss/_admin-table.scss */
+.admin-master-list-table {
+  table-layout: fixed;
+  width: 100%;
+}
+.admin-master-list-table th,
+.admin-master-list-table td {
+  text-align: inherit;
+}
+.admin-master-list-table thead th {
+  font-weight: 600;
+  color: #6c757d;
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+.admin-master-list-table tbody td {
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+.admin-master-list-table th.col-name,
+.admin-master-list-table td.col-name,
+.admin-master-list-table th.col-desc,
+.admin-master-list-table td.col-desc,
+.admin-master-list-table th.col-category,
+.admin-master-list-table td.col-category {
+  text-align: left !important;
+  vertical-align: middle;
+}
+.admin-master-list-table th.col-status,
+.admin-master-list-table td.col-status {
+  text-align: center !important;
+  vertical-align: middle;
+}
+.admin-master-list-table th.col-actions,
+.admin-master-list-table td.col-actions {
+  text-align: right !important;
+  vertical-align: middle;
+}
+.admin-master-list-table .cell-truncate {
+  text-align: left !important;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.admin-master-list-table .table-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.admin-master-list-table .badge.bg-success {
+  background-color: #28a745 !important;
+}
+.admin-master-list-table .badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+#categoryTable.admin-master-list-table th.col-name,
+#categoryTable.admin-master-list-table td.col-name {
+  width: 25%;
+}
+#categoryTable.admin-master-list-table th.col-desc,
+#categoryTable.admin-master-list-table td.col-desc {
+  width: 45%;
+}
+#categoryTable.admin-master-list-table th.col-status,
+#categoryTable.admin-master-list-table td.col-status {
+  width: 15%;
+}
+#categoryTable.admin-master-list-table th.col-actions,
+#categoryTable.admin-master-list-table td.col-actions {
+  width: 15%;
+}
+#subCategoryTable.admin-master-list-table th.col-name,
+#subCategoryTable.admin-master-list-table td.col-name {
+  width: 18%;
+}
+#subCategoryTable.admin-master-list-table th.col-category,
+#subCategoryTable.admin-master-list-table td.col-category {
+  width: 22%;
+}
+#subCategoryTable.admin-master-list-table th.col-desc,
+#subCategoryTable.admin-master-list-table td.col-desc {
+  width: 30%;
+}
+#subCategoryTable.admin-master-list-table th.col-status,
+#subCategoryTable.admin-master-list-table td.col-status {
+  width: 15%;
+}
+#subCategoryTable.admin-master-list-table th.col-actions,
+#subCategoryTable.admin-master-list-table td.col-actions {
+  width: 15%;
+}
+
+.table-scroll-wrapper .admin-master-list-table {
+  min-width: 0;
+}
+.table-scroll-wrapper .admin-master-list-table thead th {
+  font-weight: 600;
+  color: #6c757d;
+  padding: 12px 10px;
+  vertical-align: middle;
+  white-space: normal;
+  text-transform: none;
+  font-size: inherit;
+  letter-spacing: normal;
+}
+.table-scroll-wrapper .admin-master-list-table tbody td {
+  padding: 12px 10px;
+  vertical-align: middle;
+  white-space: normal;
+}
+

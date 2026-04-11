@@ -149,21 +149,6 @@
 <!-- [ Main Content ] end -->
 
 
-<script>
-    // Example function to toggle filter visibility
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto-collapse filter on page load
-        const filterCollapse = document.getElementById('filterCollapse');
-        
-        // Add event listener for search on Enter key
-        document.getElementById('searchText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadProducts();
-            }
-        });
-    });
-</script>
-
 <!-- Product Modal (Create/Edit) -->
 <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -286,6 +271,7 @@
     let subCategoryMap = {};
     let brandMap = {};
     let statusMap = {};
+    let productSearchTimeout;
 
     // Load data on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -294,12 +280,15 @@
         loadBrands();
         loadStatuses();
         loadProducts();
-        
-        // Enter key search
-        document.getElementById('searchText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadProducts();
-            }
+
+        document.getElementById('searchText').addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(productSearchTimeout);
+            productSearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadProducts(1);
+                }
+            }, 500);
         });
 
         // Category filter change

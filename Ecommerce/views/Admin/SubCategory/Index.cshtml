@@ -81,21 +81,19 @@
                         <!-- SubCategory Table -->
                         <div class="table-container">
                             <div class="table-scroll-wrapper">
-                                <table class="table table-hover align-middle mb-0" id="subCategoryTable">
+                                <table class="table table-hover align-middle mb-0 admin-master-list-table" id="subCategoryTable">
                                     <thead>
                                         <tr>
-                                            <th class="text-muted">ID</th>
-                                            <th class="text-muted">SubCategory Name</th>
-                                            <th class="text-muted">Category</th>
-                                            <th class="text-muted">Description</th>
-                                            <th class="text-muted">Created Date</th>
-                                            <th class="text-muted">Status</th>
-                                            <th class="text-muted text-end">Actions</th>
+                                            <th class="col-name">SubCategory Name</th>
+                                            <th class="col-category">Category</th>
+                                            <th class="col-desc">Description</th>
+                                            <th class="col-status">Status</th>
+                                            <th class="col-actions">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="subCategoryTableBody">
                                         <tr>
-                                            <td colspan="7" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
@@ -161,6 +159,10 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="subCategoryIsActive" checked>
+                        <label class="form-check-label" for="subCategoryIsActive">Status (active)</label>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -200,17 +202,63 @@
     let pageSize = 10;
     let categories = [];
     let categoryMap = {};
+    let subCategorySearchTimeout;
+
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
 
     // Load categories and subcategories on page load
     document.addEventListener('DOMContentLoaded', function() {
         loadCategories();
         loadSubCategories();
-        
-        // Enter key search
-        document.getElementById('searchText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadSubCategories();
-            }
+
+        document.getElementById('searchText').addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(subCategorySearchTimeout);
+            subCategorySearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadSubCategories(1);
+                }
+            }, 500);
+        });
+
+        document.getElementById('filterCategory').addEventListener('change', function() {
+            loadSubCategories(1);
+        });
+
+        document.getElementById('subCategoryModal').addEventListener('shown.bs.modal', function() {
+            loadCategories();
         });
     });
 
@@ -222,7 +270,9 @@
             categories = await response.json();
             categoryMap = {};
             categories.forEach(cat => {
-                categoryMap[cat.CategoryID] = cat.CategoryName;
+                const cid = cat.categoryID ?? cat.CategoryID;
+                const cname = cat.categoryName ?? cat.CategoryName ?? '';
+                categoryMap[cid] = cname;
             });
 
             // Populate category dropdowns
@@ -233,12 +283,13 @@
             formDropdown.innerHTML = '<option value="">Select Category</option>';
             
             categories.forEach(cat => {
-                if (!cat.Cancelled) {
-                    const option1 = new Option(cat.CategoryName, cat.CategoryID);
-                    const option2 = new Option(cat.CategoryName, cat.CategoryID);
-                    filterDropdown.add(option1);
-                    formDropdown.add(option2);
-                }
+                const cid = cat.categoryID ?? cat.CategoryID;
+                const cname = cat.categoryName ?? cat.CategoryName ?? '';
+                if (!cid) return;
+                const option1 = new Option(cname, String(cid));
+                const option2 = new Option(cname, String(cid));
+                filterDropdown.add(option1);
+                formDropdown.add(option2);
             });
         } catch (error) {
             console.error('Error loading categories:', error);
@@ -280,14 +331,16 @@
             }
 
             const data = await response.json();
-            displaySubCategories(data.TableData || []);
-            displayPagination(data.TableSettings);
+            const rows = data.tableData ?? data.TableData ?? [];
+            const settings = data.tableSettings ?? data.TableSettings;
+            displaySubCategories(rows);
+            displayPagination(settings);
         } catch (error) {
             console.error('Error loading subcategories:', error);
             const tbody = document.getElementById('subCategoryTableBody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         <i class="ti ti-alert-circle"></i>
                         <h5>Error loading subcategories</h5>
                         <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading subcategories. Please try again.')}</p>
@@ -303,7 +356,7 @@
         if (!subCategories || subCategories.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         <i class="ti ti-package-off"></i>
                         <h5>No subcategories found</h5>
                         <p class="text-muted">Try adjusting your filters or search term</p>
@@ -314,62 +367,71 @@
         }
 
         tbody.innerHTML = subCategories.map(subCat => {
-            const statusClass = subCat.Cancelled ? 'badge-inactive' : 'badge-active';
-            const statusText = subCat.Cancelled ? 'Deleted' : 'Active';
+            const cancelled = subCat.cancelled ?? subCat.Cancelled ?? false;
+            const isActive = subCat.isActive ?? subCat.IsActive ?? true;
+            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+            const statusText = isActive ? 'Active' : 'Inactive';
+            const id = subCat.id_SubCategory ?? subCat.iD_SubCategory ?? subCat.ID_SubCategory;
+            const nameRaw = subCat.subCategoryName || subCat.SubCategoryName || '';
+            const catRaw = subCat.categoryName || subCat.CategoryName || categoryMap[subCat.fkCategory ?? subCat.FK_Category] || 'N/A';
+            const descRaw = subCat.description || subCat.Description || '';
             
             return `
                 <tr>
-                    <td>${subCat.ID_SubCategory}</td>
-                    <td>${escapeHtml(subCat.SubCategoryName)}</td>
-                    <td>${escapeHtml(categoryMap[subCat.FK_Category] || 'N/A')}</td>
-                    <td>${escapeHtml(subCat.Description || '')}</td>
-                    <td>${subCat.CreatedDate ? new Date(subCat.CreatedDate).toLocaleDateString() : '-'}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${statusText}
-                        </span>
+                    <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                    <td class="col-category">${truncatedCellHtml(catRaw)}</td>
+                    <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
+                    <td class="col-status">
+                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
                     </td>
-                    <td class="text-end">
-                        ${subCat.Cancelled ? '' : `
-                            <button class="btn-action" onclick="openEditModal(${subCat.ID_SubCategory})" title="Edit">
+                    <td class="col-actions">
+                        ${cancelled ? '' : `
+                            <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-edit"></i>
                             </button>
-                            <button class="btn-action" onclick="openDeleteModal(${subCat.ID_SubCategory})" title="Delete">
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-trash"></i>
                             </button>
+                            </div>
                         `}
                     </td>
                 </tr>
             `;
         }).join('');
+        initTableTooltips(tbody);
     }
 
     function displayPagination(settings) {
         if (!settings) return;
 
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
+        const pageSize = settings.pageSize ?? settings.PageSize ?? 10;
+        const pageIndex = settings.pageIndex ?? settings.PageIndex ?? 1;
+        const totalCount = settings.totalCount ?? settings.TotalCount ?? 0;
+
+        const totalPages = Math.ceil(totalCount / pageSize);
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
 
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
+        const start = ((pageIndex - 1) * pageSize) + 1;
+        const end = Math.min(pageIndex * pageSize, totalCount);
+        paginationInfo.textContent = `${start} to ${end} of ${totalCount} entries`;
 
         let paginationHTML = '';
         
         // Previous button
-        if (settings.PageIndex <= 1) {
+        if (pageIndex <= 1) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
         } else {
             paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadSubCategories(${settings.PageIndex - 1}); return false;">Previous</a>
+                <a class="page-link" href="#!" onclick="loadSubCategories(${pageIndex - 1}); return false;">Previous</a>
             </li>`;
         }
 
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
+            if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
+                if (i === pageIndex) {
                     paginationHTML += `<li class="page-item active">
                         <span class="page-link">${i}<span class="sr-only">(current)</span></span>
                     </li>`;
@@ -378,17 +440,17 @@
                         <a class="page-link" href="#!" onclick="loadSubCategories(${i}); return false;">${i}</a>
                     </li>`;
                 }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
+            } else if (i === pageIndex - 2 || i === pageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
         // Next button
-        if (settings.PageIndex >= totalPages) {
+        if (pageIndex >= totalPages) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
         } else {
             paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadSubCategories(${settings.PageIndex + 1}); return false;">Next</a>
+                <a class="page-link" href="#!" onclick="loadSubCategories(${pageIndex + 1}); return false;">Next</a>
             </li>`;
         }
 
@@ -400,6 +462,7 @@
         document.getElementById('subCategoryForm').reset();
         document.getElementById('subCategoryID').value = '0';
         document.getElementById('fkCategory').value = '';
+        document.getElementById('subCategoryIsActive').checked = true;
     }
 
     async function openEditModal(subCategoryID) {
@@ -408,18 +471,22 @@
             if (!response.ok) throw new Error('Failed to fetch subcategory');
 
             const subCategory = await response.json();
+            const sid = subCategory.id_SubCategory ?? subCategory.iD_SubCategory ?? subCategory.ID_SubCategory;
             
             document.getElementById('subCategoryModalLabel').textContent = 'Edit SubCategory';
-            document.getElementById('subCategoryID').value = subCategory.ID_SubCategory;
-            document.getElementById('subCategoryName').value = subCategory.SubCategoryName || '';
-            document.getElementById('fkCategory').value = subCategory.FK_Category || '';
-            document.getElementById('description').value = subCategory.Description || '';
+            document.getElementById('subCategoryID').value = String(sid);
+            document.getElementById('subCategoryName').value = subCategory.subCategoryName || subCategory.SubCategoryName || '';
+            document.getElementById('fkCategory').value = String(
+                subCategory.FK_Category ?? subCategory.fkCategory ?? subCategory.fK_Category ?? '');
+            document.getElementById('description').value = subCategory.description || subCategory.Description || '';
+            document.getElementById('subCategoryIsActive').checked =
+                (subCategory.isActive ?? subCategory.IsActive ?? true) === true;
             
             const modal = new bootstrap.Modal(document.getElementById('subCategoryModal'));
             modal.show();
         } catch (error) {
             console.error('Error loading subcategory:', error);
-            alert('Error loading subcategory details.');
+            showError('Error', error.message || 'Could not load subcategory details.');
         }
     }
 
@@ -437,12 +504,12 @@
         const description = document.getElementById('description').value.trim();
 
         if (!subCategoryName) {
-            alert('Please enter subcategory name.');
+            showWarning('Validation', 'Please enter subcategory name.');
             return;
         }
 
         if (!fkCategory || fkCategory <= 0) {
-            alert('Please select a category.');
+            showWarning('Validation', 'Please select a category.');
             return;
         }
 
@@ -450,7 +517,8 @@
             SubCategoryID: subCategoryID,
             SubCategoryName: subCategoryName,
             FK_Category: fkCategory,
-            Description: description
+            Description: description,
+            IsActive: document.getElementById('subCategoryIsActive').checked
         };
 
         const url = subCategoryID === 0 ? '/Admin/SubCategory/Create' : '/Admin/SubCategory/Update';
@@ -464,19 +532,32 @@
                 body: JSON.stringify(input)
             });
 
-            const result = await response.json();
+            let result = {};
+            try {
+                result = await response.json();
+            } catch {
+                result = {};
+            }
 
-            if (result.StatusCode) {
+            if (!response.ok) {
+                const errMsg = result.responseMsg || result.ResponseMsg || result.message
+                    || (Array.isArray(result.errors) ? result.errors.join(' ') : '')
+                    || `Request failed (${response.status})`;
+                showError('Could not save', errMsg);
+                return;
+            }
+
+            if (result.statusCode ?? result.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('subCategoryModal'));
                 modal.hide();
                 loadSubCategories(currentPage);
-                alert(result.ResponseMsg || 'SubCategory saved successfully.');
+                showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'SubCategory saved successfully.');
             } else {
-                alert(result.ResponseMsg || 'Error saving subcategory.');
+                showError('Could not save', result.responseMsg || result.ResponseMsg || 'Error saving subcategory.');
             }
         } catch (error) {
             console.error('Error saving subcategory:', error);
-            alert('Error saving subcategory. Please try again.');
+            showError('Error', error.message || 'Error saving subcategory. Please try again.');
         }
     }
 
@@ -498,19 +579,32 @@
                 body: JSON.stringify(input)
             });
 
-            const result = await response.json();
+            let result = {};
+            try {
+                result = await response.json();
+            } catch {
+                result = {};
+            }
 
-            if (result.StatusCode) {
+            if (!response.ok) {
+                const errMsg = result.responseMsg || result.ResponseMsg || result.message
+                    || (Array.isArray(result.errors) ? result.errors.join(' ') : '')
+                    || `Request failed (${response.status})`;
+                showError('Could not delete', errMsg);
+                return;
+            }
+
+            if (result.statusCode ?? result.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
                 loadSubCategories(currentPage);
-                alert(result.ResponseMsg || 'SubCategory deleted successfully.');
+                showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'SubCategory deleted successfully.');
             } else {
-                alert(result.ResponseMsg || 'Error deleting subcategory.');
+                showError('Could not delete', result.responseMsg || result.ResponseMsg || 'Error deleting subcategory.');
             }
         } catch (error) {
             console.error('Error deleting subcategory:', error);
-            alert('Error deleting subcategory. Please try again.');
+            showError('Error', error.message || 'Error deleting subcategory. Please try again.');
         }
     }
 
@@ -522,6 +616,7 @@
     }
 
     function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;

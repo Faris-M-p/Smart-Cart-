@@ -84,6 +84,7 @@ namespace Ecommerce.Controllers.Admin
                     SubCategoryName = viewInput.SubCategoryName,
                     FK_Category = viewInput.FK_Category,
                     Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
                     EnterBy = 1 // TODO: Get from session/auth
                 };
 
@@ -124,6 +125,7 @@ namespace Ecommerce.Controllers.Admin
                     SubCategoryName = viewInput.SubCategoryName,
                     FK_Category = viewInput.FK_Category,
                     Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
                     EnterBy = 1 // TODO: Get from session/auth
                 };
 
@@ -184,21 +186,13 @@ namespace Ecommerce.Controllers.Admin
         {
             try
             {
-                var input = new SubCategoryListInput
+                var row = await _subCategoryInterface.GetSubCategoryByIdAsync(id);
+                if (row == null)
                 {
-                    FilterSubCategoryIDs = $"[{{\"ID_Value\":{id}}}]",
-                    PageIndex = 1,
-                    PageSize = 1
-                };
-
-                var result = await _subCategoryInterface.GetSubCategoryListAsync(input);
-                
-                if (result?.TableData != null && result.TableData.Any())
-                {
-                    return Ok(result.TableData.First());
+                    return NotFound(new { message = "SubCategory not found." });
                 }
 
-                return NotFound(new { message = "SubCategory not found." });
+                return Ok(row);
             }
             catch (Exception ex)
             {
@@ -212,18 +206,8 @@ namespace Ecommerce.Controllers.Admin
         {
             try
             {
-                var input = new CategoryListInput
-                {
-                    PageIndex = 1,
-                    PageSize = 1000, // Get all active categories
-                    SearchText = string.Empty,
-                    FilterCategoryIDs = string.Empty,
-                    SortColumn = 0,
-                    SortMode = "ASC"
-                };
-
-                var result = await _categoryInterface.GetCategoryListAsync(input);
-                return Ok(result?.TableData ?? new List<Category>());
+                var rows = await _categoryInterface.GetActiveCategoriesAsync();
+                return Ok(rows);
             }
             catch (Exception ex)
             {

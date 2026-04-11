@@ -18,6 +18,45 @@ namespace Ecommerce.Repository.Admin
             _dbContext = dbContext;
         }
 
+        public async Task<List<Category>> GetActiveCategoriesAsync()
+        {
+            return await _dbContext.Categories
+                .AsNoTracking()
+                .Where(c => c.Cancelled != true)
+                .OrderBy(c => c.Name)
+                .Select(c => new Category
+                {
+                    CategoryID = c.IdCategory,
+                    CategoryName = c.Name,
+                    IsActive = c.IsActive,
+                    Cancelled = c.Cancelled
+                })
+                .ToListAsync();
+        }
+
+        public async Task<Category?> GetCategoryByIdAsync(int id)
+        {
+            if (id <= 0)
+            {
+                return null;
+            }
+
+            return await _dbContext.Categories
+                .AsNoTracking()
+                .Where(c => c.IdCategory == id)
+                .Select(c => new Category
+                {
+                    CategoryID = c.IdCategory,
+                    CategoryName = c.Name,
+                    Description = c.Description,
+                    IsActive = c.IsActive,
+                    Cancelled = c.Cancelled,
+                    CancelledOn = c.CancelledOn,
+                    CancelledReason = c.CancelledReason
+                })
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<TableOutput<Category>> GetCategoryListAsync(CategoryListInput input)
         {
             if (input == null)
@@ -51,7 +90,7 @@ namespace Ecommerce.Repository.Admin
                         CategoryID = c.IdCategory,
                         CategoryName = c.Name,
                         Description = c.Description,
-                        CreatedDate = null,
+                        IsActive = c.IsActive,
                         Cancelled = c.Cancelled,
                         CancelledOn = c.CancelledOn,
                         CancelledReason = c.CancelledReason
@@ -99,7 +138,7 @@ namespace Ecommerce.Repository.Admin
                 {
                     Name = normalized.Name,
                     Description = normalized.Description,
-                    IsActive = true,
+                    IsActive = normalized.IsActive,
                     Cancelled = false
                 };
 
@@ -129,6 +168,11 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please enter category name.");
                 }
 
+                if (input.CategoryID <= 0)
+                {
+                    return Fail("Invalid Category ID.");
+                }
+
                 var entity = await _dbContext.Categories
                     .FirstOrDefaultAsync(c => c.IdCategory == input.CategoryID);
 
@@ -149,6 +193,7 @@ namespace Ecommerce.Repository.Admin
 
                 entity.Name = normalized.Name;
                 entity.Description = normalized.Description;
+                entity.IsActive = normalized.IsActive;
 
                 await _dbContext.SaveChangesAsync();
 
@@ -213,13 +258,13 @@ namespace Ecommerce.Repository.Admin
             return await _dbContext.Categories.AnyAsync(c =>
                 !c.Cancelled &&
                 c.IdCategory != excludeCategoryId &&
-                c.Name.ToLower() == key);
+                (c.Name ?? string.Empty).ToLower() == key);
         }
 
         private Task<bool> HasActiveSubCategoriesAsync(int categoryId)
         {
             return _dbContext.SubCategories.AnyAsync(s =>
-                s.FkCategory == categoryId &&
+                s.FK_Category == categoryId &&
                 s.Cancelled != true);
         }
 

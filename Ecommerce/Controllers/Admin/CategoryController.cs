@@ -9,7 +9,6 @@ namespace Ecommerce.Controllers.Admin
     public class CategoryController : Controller
     {
         private readonly ICategoryInterface _categoryInterface;
-        private object _logger;
 
         public CategoryController(ICategoryInterface categoryInterface)
         {
@@ -79,8 +78,6 @@ namespace Ecommerce.Controllers.Admin
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "Unhandled error");
-
                 //----------------------------------
                 // SERVER FAILURE
                 //----------------------------------
@@ -115,6 +112,7 @@ namespace Ecommerce.Controllers.Admin
                     CategoryID = viewInput.CategoryID,
                     CategoryName = viewInput.CategoryName,
                     Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
                     EnterBy = 1 // TODO: Get from session/auth
                 };
 
@@ -154,6 +152,7 @@ namespace Ecommerce.Controllers.Admin
                     CategoryID = viewInput.CategoryID,
                     CategoryName = viewInput.CategoryName,
                     Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
                     EnterBy = 1 // TODO: Get from session/auth
                 };
 
@@ -214,21 +213,13 @@ namespace Ecommerce.Controllers.Admin
         {
             try
             {
-                var input = new CategoryListInput
+                var row = await _categoryInterface.GetCategoryByIdAsync(id);
+                if (row == null)
                 {
-                    FilterCategoryIDs = $"[{{\"ID_Value\":{id}}}]",
-                    PageIndex = 1,
-                    PageSize = 1
-                };
-
-                var result = await _categoryInterface.GetCategoryListAsync(input);
-                
-                if (result?.TableData != null && result.TableData.Any())
-                {
-                    return Ok(result.TableData.First());
+                    return NotFound(new { message = "Category not found." });
                 }
 
-                return NotFound(new { message = "Category not found." });
+                return Ok(row);
             }
             catch (Exception ex)
             {

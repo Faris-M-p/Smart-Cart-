@@ -187,14 +187,19 @@
 <script>
     let currentPage = 1;
     let pageSize = 10;
+    let variantSearchTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadVariants();
-        
-        document.getElementById('searchText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadVariants();
-            }
+
+        document.getElementById('searchText').addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(variantSearchTimeout);
+            variantSearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadVariants(1);
+                }
+            }, 500);
         });
     });
 

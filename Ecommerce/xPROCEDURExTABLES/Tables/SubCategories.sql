@@ -1,31 +1,31 @@
 USE [SmartCart]
 GO
 
-/****** Object:  Table [dbo].[SubCategories]    Script Date: 18-01-2025 22:56:59 ******/
+/****** Object:  Table [dbo].[SubCategory]    Script Date: 18-01-2025 22:56:59 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[SubCategories](
-	[SubCategoryId] [int] IDENTITY(1,1) NOT NULL,
-	[SubCategoryName] [nvarchar](100) NOT NULL,
-	[CategoryId] [int] NOT NULL,
-	[Cancelled] [bit] NULL,
-	[CancelledOn] [datetime] NULL,
-	[CancelledReason] [nvarchar](255) NULL,
+CREATE TABLE [dbo].[SubCategory](
+	[ID_SubCategory] INT IDENTITY(1,1) NOT NULL,
+	[Name] NVARCHAR(100) NOT NULL,
+	[Description] NVARCHAR(1000) NULL,
+	[FK_Category] INT NOT NULL,
+
+	[IsActive] BIT NOT NULL DEFAULT 1,
+	[Cancelled] BIT NOT NULL DEFAULT 0,
+	[CancelledOn] DATETIME NULL,
+	[CancelledReason] NVARCHAR(255) NULL,
+
 PRIMARY KEY CLUSTERED 
 (
-	[SubCategoryId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
+	[ID_SubCategory] ASC
+),
 
-ALTER TABLE [dbo].[SubCategories] ADD  DEFAULT ((0)) FOR [Cancelled]
+CONSTRAINT [FK_SubCategory_Category] FOREIGN KEY ([FK_Category])
+REFERENCES [dbo].[Category] ([ID_Category])
+)
+ON [PRIMARY]
 GO
-
-ALTER TABLE [dbo].[SubCategories]  WITH CHECK ADD FOREIGN KEY([CategoryId])
-REFERENCES [dbo].[Categories] ([CategoryId])
-GO
-

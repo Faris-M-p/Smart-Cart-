@@ -28,7 +28,7 @@ namespace Ecommerce.Helpers.Variants
 
             var rawSearch = input.SearchText?.Trim() ?? string.Empty;
             string? searchLower = null;
-            if (rawSearch.Length >= 2)
+            if (rawSearch.Length >= 1)
             {
                 searchLower = rawSearch.ToLowerInvariant();
             }
@@ -52,6 +52,8 @@ namespace Ecommerce.Helpers.Variants
             IQueryable<VariantEntity> query,
             NormalizedVariantListInput normalized)
         {
+            query = query.Where(v => v.Cancelled != true);
+
             if (normalized.SearchLower != null)
             {
                 var s = normalized.SearchLower;

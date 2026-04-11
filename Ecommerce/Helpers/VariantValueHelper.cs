@@ -28,7 +28,7 @@ namespace Ecommerce.Helpers.VariantValues
             var pageIndex = Math.Max(1, input.PageIndex);
             var pageSize = Math.Max(1, input.PageSize);
             var raw = input.SearchText?.Trim() ?? string.Empty;
-            string? searchLower = raw.Length >= 2 ? raw.ToLowerInvariant() : null;
+            string? searchLower = raw.Length >= 1 ? raw.ToLowerInvariant() : null;
             return new NormalizedVariantValueListInput(
                 searchLower,
                 StringHelper.ParseFilterIds(input.FilterVariantIDs),
@@ -52,6 +52,8 @@ namespace Ecommerce.Helpers.VariantValues
             IQueryable<VariantValueEntity> query,
             NormalizedVariantValueListInput n)
         {
+            query = query.Where(vv => vv.Cancelled != true);
+
             if (n.SearchLower != null)
             {
                 var s = n.SearchLower;

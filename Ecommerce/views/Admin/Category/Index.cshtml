@@ -2,7 +2,6 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-
 <!-- [ breadcrumb ] start -->
 <div class="page-header">
     <div class="page-block">
@@ -51,19 +50,18 @@
                         <!-- Category Table -->
                         <div class="table-container">
                             <div class="table-scroll-wrapper">
-                                <table class="table align-middle mb-0" id="categoryTable">
+                                <table class="table align-middle mb-0 admin-master-list-table" id="categoryTable">
                                     <thead>
                                         <tr>
-                                            <th class="text-muted">Category Name</th>
-                                            <th class="text-muted">Description</th>
-                                            <th class="text-muted">Created Date</th>
-                                            <th class="text-muted">Status</th>
-                                            <th class="text-muted text-end">Actions</th>
+                                            <th class="col-name">Category Name</th>
+                                            <th class="col-desc">Description</th>
+                                            <th class="col-status">Status</th>
+                                            <th class="col-actions">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="categoryTableBody">
                                         <tr>
-                                            <td colspan="5" class="text-center py-5">
+                                            <td colspan="4" class="text-center py-5">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
@@ -122,6 +120,10 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="categoryIsActive" checked>
+                        <label class="form-check-label" for="categoryIsActive">Status (active)</label>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -160,6 +162,41 @@
     let currentPage = 1;
     let pageSize = 10;
     let paginationInstance;
+    let categorySearchTimeout;
+
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
     // Load categories on page load
     document.addEventListener('DOMContentLoaded', function () {
         paginationInstance = new Pagination({
@@ -169,11 +206,14 @@
         });
         loadCategories();
 
-        // Enter key search
-        document.getElementById('searchText').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                loadCategories();
-            }
+        document.getElementById('searchText').addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(categorySearchTimeout);
+            categorySearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadCategories(1);
+                }
+            }, 500);
         });
     });
 
@@ -214,7 +254,7 @@
                         onRetry: 'loadCategories()',
                         title: 'Error loading categories'
                     },
-                    6
+                    4
                 );
 
                 return;
@@ -231,7 +271,7 @@
                     title: 'No categories found',
                     message: 'Try adjusting your search.',
                     onClear: 'clearSearch()'
-                }, 6);
+                }, 4);
 
                 return;
             }
@@ -260,7 +300,7 @@
                     onRetry: 'loadCategories()',
                     title: 'Server Error'
                 },
-                6
+                4
             );
         }
     }
@@ -276,37 +316,40 @@
                 title: 'No categories found',
                 message: 'We can\'t find any categories matching your search.<br>Try adjusting your search term.',
                 onClear: 'clearSearch()'
-            }, 6);
+            }, 4);
             return;
         }
 
         tbody.innerHTML = categories.map(category => {
-            const statusClass = category.cancelled ? 'badge-inactive' : 'badge-active';
-            const statusText = category.cancelled ? 'Deleted' : 'Active';
+            const isActive = category.isActive ?? category.IsActive ?? true;
+            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+            const statusText = isActive ? 'Active' : 'Inactive';
+            const nameRaw = category.categoryName || category.CategoryName || '';
+            const descRaw = category.description || category.Description || '';
             
             return `
                 <tr>
-                    <td>${escapeHtml(category.categoryName)}</td>
-                    <td>${escapeHtml(category.description || '')}</td>
-                    <td>${category.createdDate ? new Date(category.createdDate).toLocaleDateString() : '-'}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${statusText}
-                        </span>
+                    <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                    <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
+                    <td class="col-status">
+                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
                     </td>
-                    <td class="text-end">
+                    <td class="col-actions">
                         ${category.cancelled ? '' : `
-                            <button class="btn-action" onclick="openEditModal(${category.categoryID})" title="Edit">
+                            <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${category.categoryID})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-edit"></i>
                             </button>
-                            <button class="btn-action" onclick="openDeleteModal(${category.categoryID})" title="Delete">
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${category.categoryID})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-trash"></i>
                             </button>
+                            </div>
                         `}
                     </td>
                 </tr>
             `;
         }).join('');
+        initTableTooltips(tbody);
     }
 
  
@@ -317,6 +360,7 @@
         document.getElementById('categoryModalLabel').textContent = 'Add Category';
         document.getElementById('categoryForm').reset();
         document.getElementById('categoryID').value = '0';
+        document.getElementById('categoryIsActive').checked = true;
     }
 
     async function openEditModal(categoryID) {
@@ -325,17 +369,18 @@
             if (!response.ok) throw new Error('Failed to fetch category');
 
             const data = await response.json();
-            // Get the first category from the tableData array
-            const category = data.tableData && data.tableData.length > 0 ? data.tableData[0] : null;
-            
-            if (!category) {
+            const category = data.tableData?.[0] ?? data.TableData?.[0] ?? data;
+            const cid = category.categoryID ?? category.CategoryID ?? 0;
+            if (!category || cid <= 0) {
                 throw new Error('Category not found');
             }
             
             document.getElementById('categoryModalLabel').textContent = 'Edit Category';
-            document.getElementById('categoryID').value = category.categoryID || category.categoryId || 0;
-            document.getElementById('categoryName').value = category.categoryName || '';
-            document.getElementById('description').value = category.description || '';
+            document.getElementById('categoryID').value = String(cid);
+            document.getElementById('categoryName').value = category.categoryName || category.CategoryName || '';
+            document.getElementById('description').value = category.description || category.Description || '';
+            document.getElementById('categoryIsActive').checked =
+                (category.isActive ?? category.IsActive ?? true) === true;
             
             const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
             modal.show();
@@ -365,7 +410,8 @@
         const input = {
             categoryID: categoryID,
             categoryName: categoryName,
-            description: description
+            description: description,
+            isActive: document.getElementById('categoryIsActive').checked
         };
 
         const url = categoryID === 0 ? '/Admin/Category/Create' : '/Admin/Category/Update';
@@ -449,6 +495,7 @@
     }
 
     function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;

@@ -28,7 +28,7 @@ namespace Ecommerce.Helpers.Shop
             var pageIndex = Math.Max(1, input.PageIndex);
             var pageSize = Math.Max(1, input.PageSize);
             var raw = input.SearchName?.Trim() ?? string.Empty;
-            string? searchLower = raw.Length >= 2 ? raw.ToLowerInvariant() : null;
+            string? searchLower = raw.Length >= 1 ? raw.ToLowerInvariant() : null;
             var gender = string.IsNullOrWhiteSpace(input.Gender)
                 ? null
                 : input.Gender.Trim().ToLowerInvariant();

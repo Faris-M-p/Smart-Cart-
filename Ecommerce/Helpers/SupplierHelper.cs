@@ -28,7 +28,7 @@ namespace Ecommerce.Helpers.Suppliers
             var pageIndex = Math.Max(1, input.PageIndex);
             var pageSize = Math.Max(1, input.PageSize);
             var raw = input.SearchText?.Trim() ?? string.Empty;
-            string? searchLower = raw.Length >= 2 ? raw.ToLowerInvariant() : null;
+            string? searchLower = raw.Length >= 1 ? raw.ToLowerInvariant() : null;
             return new NormalizedSupplierListInput(
                 searchLower,
                 StringHelper.ParseFilterIds(input.FilterSupplierIDs),
@@ -52,10 +52,7 @@ namespace Ecommerce.Helpers.Suppliers
             IQueryable<SupplierEntity> query,
             NormalizedSupplierListInput n)
         {
-            if (!n.ShowCancelled)
-            {
-                query = query.Where(s => s.Cancelled != true);
-            }
+            query = query.Where(s => s.Cancelled != true);
 
             if (n.SearchLower != null)
             {

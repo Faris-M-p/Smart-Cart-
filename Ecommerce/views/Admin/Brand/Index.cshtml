@@ -177,16 +177,20 @@
 <script>
     let currentPage = 1;
     let pageSize = 10;
+    let brandSearchTimeout;
 
     // Load brands on page load
     document.addEventListener('DOMContentLoaded', function() {
         loadBrands();
-        
-        // Enter key search
-        document.getElementById('searchText').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadBrands();
-            }
+
+        document.getElementById('searchText').addEventListener('input', function () {
+            const value = this.value.trim();
+            clearTimeout(brandSearchTimeout);
+            brandSearchTimeout = setTimeout(function () {
+                if (value.length === 0 || value.length >= 1) {
+                    loadBrands(1);
+                }
+            }, 500);
         });
     });
 

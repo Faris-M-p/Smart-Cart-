@@ -29,7 +29,7 @@ namespace Ecommerce.Helpers.Brands
 
             var rawSearch = input.SearchText?.Trim() ?? string.Empty;
             string? searchLower = null;
-            if (rawSearch.Length >= 2)
+            if (rawSearch.Length >= 1)
             {
                 searchLower = rawSearch.ToLowerInvariant();
             }
@@ -51,6 +51,8 @@ namespace Ecommerce.Helpers.Brands
             IQueryable<BrandEntity> query,
             NormalizedBrandListInput normalized)
         {
+            query = query.Where(b => b.Cancelled != true);
+
             if (normalized.SearchLower != null)
             {
                 var s = normalized.SearchLower;

@@ -42,7 +42,7 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "SubCategory Name")]
             [Required(ErrorMessage = "{0} is required.")]
             [RequiredNotEmpty]
-            [System.ComponentModel.DataAnnotations.MaxLength(255, ErrorMessage = "{0} cannot exceed 255 characters.")]
+            [System.ComponentModel.DataAnnotations.MaxLength(100, ErrorMessage = "{0} cannot exceed 100 characters.")]
             public string SubCategoryName { get; set; } = string.Empty;
 
             [Display(Name = "Category")]
@@ -53,6 +53,9 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Description")]
             [System.ComponentModel.DataAnnotations.MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
             public string Description { get; set; } = string.Empty;
+
+            [Display(Name = "Active")]
+            public bool? IsActive { get; set; }
         }
 
         public class SubCategoryDeleteInputVIEW
@@ -109,6 +112,9 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Description")]
             public string Description { get; set; } = string.Empty;
 
+            [Display(Name = "Is Active")]
+            public bool IsActive { get; set; } = true;
+
             [Display(Name = "Enter By")]
             public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
         }
@@ -137,11 +143,14 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Category ID")]
             public int FK_Category { get; set; }
 
+            [Display(Name = "Category Name")]
+            public string CategoryName { get; set; } = string.Empty;
+
             [Display(Name = "Description")]
             public string? Description { get; set; }
 
-            [Display(Name = "Created Date")]
-            public DateTime? CreatedDate { get; set; }
+            [Display(Name = "Is Active")]
+            public bool IsActive { get; set; }
 
             [Display(Name = "Cancelled")]
             public bool Cancelled { get; set; }

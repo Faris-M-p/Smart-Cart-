@@ -35,6 +35,7 @@
     <None Include="wwwroot\Admin\assets\scss\settings\_bootstrap-variables.scss" />
     <None Include="wwwroot\Admin\assets\scss\settings\_color-variables.scss" />
     <None Include="wwwroot\Admin\assets\scss\settings\_theme-variables.scss" />
+    <None Include="wwwroot\Admin\assets\scss\_admin-table.scss" />
     <!-- style.scss and style-preset.scss are automatically included as Content by the SDK -->
     <None Include="wwwroot\Admin\assets\scss\themes\components\_avtar.scss" />
     <None Include="wwwroot\Admin\assets\scss\themes\components\_badge.scss" />
