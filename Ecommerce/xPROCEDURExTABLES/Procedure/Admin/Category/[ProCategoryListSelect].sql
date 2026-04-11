@@ -35,13 +35,11 @@ BEGIN
     CREATE TABLE #tmpCategories
     (
         ID BIGINT IDENTITY(1,1) PRIMARY KEY,
-        CategoryID INT,
-        CategoryName NVARCHAR(255),
-        Description NVARCHAR(500),
-        CreatedDate DATETIME,
-        Cancelled BIT,
-        CancelledOn DATETIME,
-        CancelledReason NVARCHAR(500)
+        ID_Category INT,
+        [Name] NVARCHAR(255),
+        [Description] NVARCHAR(1000),
+        [IsActive] BIT, 
+        CreatedDate DATETIME,      
     );
 
     -------------------------------------------------------------------
@@ -50,8 +48,8 @@ BEGIN
     SET @SqlStr = N'
         INSERT INTO #tmpCategories
         (
-            CategoryID, CategoryName, Description, CreatedDate, 
-            Cancelled, CancelledOn, CancelledReason
+            ID_Category, Name, Description, CreatedDate
+            
         )
         SELECT 
             C.CategoryID,
