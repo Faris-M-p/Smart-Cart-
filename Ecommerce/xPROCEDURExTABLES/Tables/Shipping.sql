@@ -1,4 +1,4 @@
-USE [Ecommerse]
+USE [SmartCart]
 GO
 
 /****** Object:  Table [dbo].[Shipping]    Script Date: 18-01-2025 22:57:34 ******/

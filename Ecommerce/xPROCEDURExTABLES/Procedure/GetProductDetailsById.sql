@@ -10,7 +10,7 @@ GO
 
 
 -- Creating or altering the GetProductDetailsByStockId stored procedure
-Create PROCEDURE [dbo].[GetProductDetailsById]
+CREATE OR ALTER  PROCEDURE [dbo].[GetProductDetailsById]
     @StockId INT
 AS
 BEGIN

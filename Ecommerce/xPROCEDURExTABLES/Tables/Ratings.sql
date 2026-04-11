@@ -1,4 +1,4 @@
-USE [Ecommerse]
+USE [SmartCart]
 GO
 
 /****** Object:  Table [dbo].[Ratings]    Script Date: 18-01-2025 22:58:16 ******/
