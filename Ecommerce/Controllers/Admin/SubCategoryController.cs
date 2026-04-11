@@ -218,7 +218,7 @@ namespace Ecommerce.Controllers.Admin
                     PageSize = 1000, // Get all active categories
                     SearchText = string.Empty,
                     FilterCategoryIDs = string.Empty,
-                    SortColumn = "CategoryName",
+                    SortColumn = 0,
                     SortMode = "ASC"
                 };
 

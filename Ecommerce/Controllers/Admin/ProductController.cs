@@ -9,6 +9,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Ecommerce.DataAccess;
 using Ecommerce.Interface;
+using Ecommerce.Models.Enums;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -253,7 +254,7 @@ namespace Ecommerce.Controllers.Admin
                     PageSize = 1000,
                     SearchText = string.Empty,
                     FilterCategoryIDs = string.Empty,
-                    SortColumn = "CategoryName",
+                    SortColumn = 0,
                     SortMode = "ASC"
                 };
 
@@ -279,7 +280,7 @@ namespace Ecommerce.Controllers.Admin
                     SearchText = string.Empty,
                     FilterCategoryIDs = categoryId.HasValue ? $"[{{\"ID_Value\":{categoryId}}}]" : string.Empty,
                     FilterSubCategoryIDs = string.Empty,
-                    SortColumn = "SubCategoryName",
+                    SortColumn = (int)SubCategorySortColumn.Name,
                     SortMode = "ASC"
                 };
 

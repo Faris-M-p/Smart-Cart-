@@ -67,6 +67,24 @@ namespace Ecommerce.DataAccess
             }
         }
 
+        public async Task<TableOutput<U>> GetMultipleListByStoredProcedure<U>(string storedProcedureName, object parameter)
+        {
+            using (var connection = CreateConnection())
+            {
+                using (var multi = await connection.QueryMultipleAsync(storedProcedureName, parameter, commandType: CommandType.StoredProcedure))
+                {
+                    var result1 = (await multi.ReadAsync<U>()).ToList();
+                    var result2 = (await multi.ReadAsync<TableOutput_Settings>()).SingleOrDefault();
+
+                    return new TableOutput<U>
+                    {
+                        TableData = result1,
+                        TableSettings = result2
+                    };
+                }
+            }
+        }
+
         // Method to execute a stored procedure and return CommonResponse (for Insert/Update/Delete operations)
         public async Task<CommonResponse> ExecuteStoredProcedure<T>(string storedProcedureName, T parameter)
         {
@@ -82,6 +100,23 @@ namespace Ecommerce.DataAccess
                     ResponseCode = -1, 
                     StatusCode = false, 
                     ResponseMsg = "No response from stored procedure." 
+                };
+            }
+        }
+
+        public async Task<CommonResponse> ExecuteStoredProcedure(string storedProcedureName, object parameter)
+        {
+            using (var connection = CreateConnection())
+            {
+                var result = await connection.QueryFirstOrDefaultAsync<CommonResponse>(
+                    storedProcedureName,
+                    parameter,
+                    commandType: CommandType.StoredProcedure);
+                return result ?? new CommonResponse
+                {
+                    ResponseCode = -1,
+                    StatusCode = false,
+                    ResponseMsg = "No response from stored procedure."
                 };
             }
         }

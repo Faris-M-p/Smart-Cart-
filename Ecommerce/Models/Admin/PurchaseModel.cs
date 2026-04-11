@@ -30,7 +30,8 @@ namespace Ecommerce.Models.Admin
             public int PageSize { get; set; } = 20;
 
             [Display(Name = "Sort Column")]
-            public string SortColumn { get; set; } = string.Empty;
+            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
             public string SortMode { get; set; } = "DESC"; // ASC / DESC
@@ -112,7 +113,7 @@ namespace Ecommerce.Models.Admin
             public DateTime? ToDate { get; set; }
             public int PageIndex { get; set; } = 1;
             public int PageSize { get; set; } = 20;
-            public string SortColumn { get; set; } = string.Empty;
+            public int SortColumn { get; set; }
             public string SortMode { get; set; } = "DESC";
         }
 

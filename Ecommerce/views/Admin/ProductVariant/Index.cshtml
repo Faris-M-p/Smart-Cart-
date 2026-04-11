@@ -260,7 +260,7 @@
             const response = await fetch('/Admin/Product/GetProductList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PageIndex: 1, PageSize: 1000, SearchText: '', FilterCategoryIDs: '', FilterSubCategoryIDs: '', FilterBrandIDs: '', FilterStatusIDs: '', SortColumn: '', SortMode: '' })
+                body: JSON.stringify({ PageIndex: 1, PageSize: 1000, SearchText: '', FilterCategoryIDs: '', FilterSubCategoryIDs: '', FilterBrandIDs: '', FilterStatusIDs: '', SortColumn: 0, SortMode: 'ASC' })
             });
             if (!response.ok) throw new Error('Failed to fetch products');
 
@@ -291,7 +291,7 @@
             const response = await fetch('/Admin/Variant/GetVariantList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PageIndex: 1, PageSize: 1000, SearchText: '', FilterVariantIDs: '', SortColumn: '', SortMode: '' })
+                body: JSON.stringify({ PageIndex: 1, PageSize: 1000, SearchText: '', FilterVariantIDs: '', SortColumn: 0, SortMode: 'ASC' })
             });
             if (!response.ok) throw new Error('Failed to fetch variants');
 
@@ -302,7 +302,7 @@
             const variantValueResponse = await fetch('/Admin/VariantValue/GetVariantValueList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PageIndex: 1, PageSize: 10000, SearchText: '', FilterVariantIDs: '', SortColumn: '', SortMode: '' })
+                body: JSON.stringify({ PageIndex: 1, PageSize: 10000, SearchText: '', FilterVariantIDs: '', SortColumn: 0, SortMode: 'ASC' })
             });
             if (!variantValueResponse.ok) throw new Error('Failed to fetch variant values');
 
@@ -362,7 +362,7 @@
             FilterVariantValueIDs: '',
             PageIndex: page,
             PageSize: pageSize,
-            SortColumn: '',
+            SortColumn: 0,
             SortMode: 'ASC'
         };
 

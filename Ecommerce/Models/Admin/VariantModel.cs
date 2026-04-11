@@ -24,7 +24,8 @@ namespace Ecommerce.Models.Admin
             public int PageSize { get; set; } = 10;
 
             [Display(Name = "Sort Column")]
-            public string SortColumn { get; set; } = string.Empty;
+            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
             public string SortMode { get; set; } = string.Empty; // ASC / DESC
@@ -70,19 +71,26 @@ namespace Ecommerce.Models.Admin
             public string FilterVariantIDs { get; set; } = string.Empty;
             public int PageIndex { get; set; } = 1;
             public int PageSize { get; set; } = 10;
-            public string SortColumn { get; set; } = string.Empty;
+            public int SortColumn { get; set; }
             public string SortMode { get; set; } = string.Empty;
         }
 
         public class VariantUpdateInput
         {
-            public int UserAction { get; set; } // 1=Insert, 2=Update, 3=Delete
             public int ID_Variant { get; set; } = 0;
             public string VariantName { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
             public int DisplayOrder { get; set; } = 1;
             public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
+        }
+
+        public class VariantDeleteInput
+        {
+            public int ID_Variant { get; set; }
+
             public string CancelledReason { get; set; } = string.Empty;
+
+            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
         }
 
         // Output Models

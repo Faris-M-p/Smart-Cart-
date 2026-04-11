@@ -76,7 +76,6 @@ namespace Ecommerce.Controllers.Admin
                 // Map VIEW model to Procedure Input model
                 var input = new VariantUpdateInput
                 {
-                    UserAction = 1, // 1 = Insert
                     ID_Variant = viewInput.ID_Variant,
                     VariantName = viewInput.VariantName,
                     Description = viewInput.Description,
@@ -84,7 +83,7 @@ namespace Ecommerce.Controllers.Admin
                     EnterBy = 1 // TODO: Get from session/auth
                 };
 
-                var result = await _variantInterface.UpdateVariantAsync(input);
+                var result = await _variantInterface.CreateVariantAsync(input);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -116,7 +115,6 @@ namespace Ecommerce.Controllers.Admin
                 // Map VIEW model to Procedure Input model
                 var input = new VariantUpdateInput
                 {
-                    UserAction = 2, // 2 = Update
                     ID_Variant = viewInput.ID_Variant,
                     VariantName = viewInput.VariantName,
                     Description = viewInput.Description,
@@ -154,15 +152,14 @@ namespace Ecommerce.Controllers.Admin
                 }
 
                 // Map VIEW model to Procedure Input model
-                var input = new VariantUpdateInput
+                var input = new VariantDeleteInput
                 {
-                    UserAction = 3, // 3 = Delete
                     ID_Variant = viewInput.ID_Variant,
                     CancelledReason = viewInput.CancelledReason,
                     EnterBy = 1 // TODO: Get from session/auth
                 };
 
-                var result = await _variantInterface.UpdateVariantAsync(input);
+                var result = await _variantInterface.DeleteVariantAsync(input);
                 return Ok(result);
             }
             catch (Exception ex)

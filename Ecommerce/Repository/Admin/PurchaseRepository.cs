@@ -1,10 +1,10 @@
-using Ecommerce.DataAccess;
+using Ecommerce.Helpers.Purchases;
+using Ecommerce.Interface;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.Admin.PurchaseModel;
 using Dapper;
 using System.Data;
-using Ecommerce.Interface;
 
 namespace Ecommerce.Repository.Admin
 {
@@ -19,17 +19,21 @@ namespace Ecommerce.Repository.Admin
 
         public async Task<TableOutput<Purchase>> GetPurchaseListAsync(PurchaseListInput input)
         {
+            if (input == null)
+            {
+                return PurchaseHelper.EmptyTableOutput(null);
+            }
+
             try
             {
-                var output = await _dataAccessDapper.GetMultipleListByStoredProcedure<Purchase, PurchaseListInput>(
+                var spParams = PurchaseHelper.BuildPurchaseListSpParameters(input);
+                return await _dataAccessDapper.GetMultipleListByStoredProcedure<Purchase>(
                     storedProcedureName: "ProPurchaseListSelect",
-                    parameter: input
-                );
-                return output;
+                    parameter: spParams);
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception("An error occurred while fetching purchase list.", ex);
+                return PurchaseHelper.EmptyTableOutput(input);
             }
         }
 
@@ -58,9 +62,14 @@ namespace Ecommerce.Repository.Admin
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception("An error occurred while fetching purchase by ID.", ex);
+                return new PurchaseDetailFull
+                {
+                    PurchaseHeader = new Purchase(),
+                    PurchaseDetails = new List<PurchaseDetail>(),
+                    StockBatches = new List<Stock>()
+                };
             }
         }
 

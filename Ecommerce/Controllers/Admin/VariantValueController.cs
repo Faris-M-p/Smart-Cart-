@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
+using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.VariantValueModel;
 using static Ecommerce.Models.CommonModel;
 using System.Linq;
@@ -216,7 +217,7 @@ namespace Ecommerce.Controllers.Admin
                     PageSize = 1000, // Get all variants
                     SearchText = string.Empty,
                     FilterVariantIDs = string.Empty,
-                    SortColumn = "VariantName",
+                    SortColumn = (int)VariantSortColumn.Name,
                     SortMode = "ASC"
                 };
 

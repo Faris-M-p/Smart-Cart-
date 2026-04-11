@@ -1,77 +1,88 @@
 using Ecommerce.DataAccess;
+using Ecommerce.Helpers.ProductVariants;
+using Ecommerce.Interface;
 using Ecommerce.Interface.Admin;
+using Ecommerce.Models.Entities;
+using Microsoft.EntityFrameworkCore;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.Admin.ProductVariantModel;
-using Dapper;
-using System.Data;
-using Ecommerce.Interface;
 
 namespace Ecommerce.Repository.Admin
 {
     public class ProductVariantRepository : IProductVariantInterface
     {
         private readonly IDataAccessDapper _dataAccessDapper;
+        private readonly EcommerceDbContext _dbContext;
 
-        public ProductVariantRepository(IDataAccessDapper dataAccessDapper)
+        public ProductVariantRepository(IDataAccessDapper dataAccessDapper, EcommerceDbContext dbContext)
         {
             _dataAccessDapper = dataAccessDapper;
+            _dbContext = dbContext;
         }
 
         public async Task<TableOutput<ProductVariant>> GetProductVariantListAsync(ProductVariantListInput input)
         {
+            if (input == null)
+            {
+                return ProductVariantHelper.EmptyTableOutput(null);
+            }
+
             try
             {
-                var output = await _dataAccessDapper.GetMultipleListByStoredProcedure<ProductVariant, ProductVariantListInput>(
+                var spParams = ProductVariantHelper.BuildProductVariantListSpParameters(input);
+                return await _dataAccessDapper.GetMultipleListByStoredProcedure<ProductVariant>(
                     storedProcedureName: "ProProductVariantSelect",
-                    parameter: input
-                );
-                return output;
+                    parameter: spParams);
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception("An error occurred while fetching product variant list.", ex);
+                return ProductVariantHelper.EmptyTableOutput(input);
             }
         }
 
-        public async Task<ProductVariantDetail> GetProductVariantByIdAsync(int id)
+        public async Task<ProductVariantDetail?> GetProductVariantByIdAsync(int id)
         {
+            if (id <= 0)
+            {
+                return null;
+            }
+
             try
             {
-                using (var connection = _dataAccessDapper.CreateConnection())
+                var row = await _dbContext.ProductVariants.AsNoTracking()
+                    .FirstOrDefaultAsync(pv => pv.IdProductVariant == id && pv.Cancelled != true);
+
+                if (row == null)
                 {
-                    // First get the base ProductVariant info
-                    var variant = await connection.QueryFirstOrDefaultAsync<ProductVariant>(
-                        "SELECT ID_ProductVariant, FK_Product, PriceAdjustment, IsDefault, CreatedOn FROM ProductVariant WHERE ID_ProductVariant = @ID_ProductVariant AND Cancelled = 0",
-                        new { ID_ProductVariant = id }
-                    );
-
-                    if (variant == null)
-                        return null;
-
-                    // Get the attributes
-                    var attributes = await connection.QueryAsync<VariantAttributeDetail>(
-                        @"SELECT pva.FK_Variant, v.VariantName, pva.FK_VariantValue, vv.ValueName
-                          FROM ProductVariantAttribute pva
-                          INNER JOIN Variant v ON pva.FK_Variant = v.ID_Variant
-                          INNER JOIN VariantValue vv ON pva.FK_VariantValue = vv.ID_VariantValue
-                          WHERE pva.FK_ProductVariant = @ID_ProductVariant",
-                        new { ID_ProductVariant = id }
-                    );
-
-                    return new ProductVariantDetail
-                    {
-                        ID_ProductVariant = variant.ID_ProductVariant,
-                        FK_Product = variant.FK_Product,
-                        PriceAdjustment = variant.PriceAdjustment,
-                        IsDefault = variant.IsDefault,
-                        CreatedOn = variant.CreatedOn,
-                        Attributes = attributes.ToList()
-                    };
+                    return null;
                 }
+
+                var attributes = await (
+                    from pva in _dbContext.ProductVariantAttributes.AsNoTracking()
+                    join v in _dbContext.Variants.AsNoTracking() on pva.FkVariant equals v.IdVariant
+                    join vv in _dbContext.VariantValues.AsNoTracking() on pva.FkVariantValue equals vv.IdVariantValue
+                    where pva.FkProductVariant == id
+                    select new VariantAttributeDetail
+                    {
+                        FK_Variant = pva.FkVariant,
+                        VariantName = v.VariantName,
+                        FK_VariantValue = pva.FkVariantValue,
+                        ValueName = vv.ValueName
+                    }).ToListAsync();
+
+                return new ProductVariantDetail
+                {
+                    ID_ProductVariant = row.IdProductVariant,
+                    FK_Product = row.FkProduct,
+                    PriceAdjustment = row.PriceAdjustment,
+                    IsDefault = row.IsDefault,
+                    CreatedOn = row.CreatedOn,
+                    Attributes = attributes
+                };
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception("An error occurred while fetching product variant by ID.", ex);
+                return null;
             }
         }
 
@@ -82,8 +93,7 @@ namespace Ecommerce.Repository.Admin
                 input.UserAction = 1; // 1 = Add
                 var response = await _dataAccessDapper.ExecuteStoredProcedure<ProductVariantUpdateInput>(
                     storedProcedureName: "ProProductVariantUpsert",
-                    parameter: input
-                );
+                    parameter: input);
                 return response;
             }
             catch (Exception ex)
@@ -104,8 +114,7 @@ namespace Ecommerce.Repository.Admin
                 input.UserAction = 2; // 2 = Edit
                 var response = await _dataAccessDapper.ExecuteStoredProcedure<ProductVariantUpdateInput>(
                     storedProcedureName: "ProProductVariantUpsert",
-                    parameter: input
-                );
+                    parameter: input);
                 return response;
             }
             catch (Exception ex)
@@ -124,22 +133,20 @@ namespace Ecommerce.Repository.Admin
             try
             {
                 input.UserAction = 3; // 3 = Delete
-                // For delete, we need to use ProProductVariantUpsert with UserAction = 3
                 var updateInput = new ProductVariantUpdateInput
                 {
                     UserAction = 3,
                     ID_ProductVariant = input.ID_ProductVariant,
-                    FK_Product = 0, // Will be fetched in procedure
+                    FK_Product = 0,
                     PriceAdjustment = 0,
                     IsDefault = false,
-                    VariantAttributes = null, // Not needed for delete
+                    VariantAttributes = string.Empty,
                     EnterBy = input.EnterBy,
                     CancelledReason = input.CancelledReason
                 };
                 var response = await _dataAccessDapper.ExecuteStoredProcedure<ProductVariantUpdateInput>(
                     storedProcedureName: "ProProductVariantUpsert",
-                    parameter: updateInput
-                );
+                    parameter: updateInput);
                 return response;
             }
             catch (Exception ex)
@@ -152,5 +159,6 @@ namespace Ecommerce.Repository.Admin
                 };
             }
         }
+
     }
 }

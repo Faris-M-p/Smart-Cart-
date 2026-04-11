@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Ecommerce.Helpers.Common;
 using Ecommerce.Models;
 using Ecommerce.Models.Entities;
@@ -35,7 +34,7 @@ namespace Ecommerce.Helpers.Category
                 searchLower = rawSearch.ToLowerInvariant();
             }
 
-            var filterIds = ParseFilterIds(input.FilterCategoryIDs);
+            var filterIds = StringHelper.ParseFilterIds(input.FilterCategoryIDs);
             var sortColumn = input.SortColumn;
             var sortMode = input.SortMode?.Trim() ?? string.Empty;
 
@@ -100,34 +99,6 @@ namespace Ecommerce.Helpers.Category
                     return desc
                         ? query.OrderByDescending(c => c.IdCategory)
                         : query.OrderBy(c => c.IdCategory);
-            }
-        }
-
-        public static List<int> ParseFilterIds(string? filterCategoryIds)
-        {
-            if (string.IsNullOrWhiteSpace(filterCategoryIds) ||
-                string.Equals(filterCategoryIds.Trim(), "[]", StringComparison.Ordinal))
-            {
-                return new List<int>();
-            }
-
-            try
-            {
-                var parsed = JsonSerializer.Deserialize<List<CommonInputArray>>(filterCategoryIds);
-                if (parsed == null)
-                {
-                    return new List<int>();
-                }
-
-                return parsed
-                    .Select(x => x.ID)
-                    .Where(id => id > 0)
-                    .Distinct()
-                    .ToList();
-            }
-            catch (JsonException)
-            {
-                return new List<int>();
             }
         }
 

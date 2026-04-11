@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
+using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.PurchaseModel;
 using static Ecommerce.Models.Admin.SupplierModel;
 using static Ecommerce.Models.Admin.ProductVariantModel;
@@ -108,7 +109,7 @@ namespace Ecommerce.Controllers.Admin
                     ShowCancelled = false,
                     PageIndex = 1,
                     PageSize = 1000,
-                    SortColumn = "SupplierName",
+                    SortColumn = (int)SupplierSortColumn.Name,
                     SortMode = "ASC"
                 };
                 var result = await _supplierInterface.GetSupplierListAsync(input);
@@ -136,7 +137,7 @@ namespace Ecommerce.Controllers.Admin
                     FilterStatusIDs = string.Empty,
                     PageIndex = 1,
                     PageSize = 1000,
-                    SortColumn = "Name",
+                    SortColumn = (int)ProductSortColumn.Name,
                     SortMode = "ASC"
                 };
                 var result = await _productInterface.GetProductListAsync(input);
@@ -163,7 +164,7 @@ namespace Ecommerce.Controllers.Admin
                     FilterVariantValueIDs = string.Empty,
                     PageIndex = 1,
                     PageSize = 1000,
-                    SortColumn = string.Empty,
+                    SortColumn = (int)ProductVariantSortColumn.Id,
                     SortMode = "ASC"
                 };
                 var result = await _productVariantInterface.GetProductVariantListAsync(input);

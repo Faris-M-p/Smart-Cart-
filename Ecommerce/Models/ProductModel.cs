@@ -1,4 +1,6 @@
-﻿namespace Ecommerce.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Ecommerce.Models
 {
     public class ProductModel
     {
@@ -7,7 +9,10 @@
             public int PageIndex { get; set; }
             public int PageSize { get; set; }
             public string SearchName { get; set; } = "";
-            public string SortColumn { get; set; } = "ProductId";
+
+            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            public int SortColumn { get; set; }
+
             public string SortMode { get; set; } = "ASC";
             public string CategoryIds { get; set; } = "";
             public string SubCategoryIds { get; set; } = "";

@@ -1,5 +1,5 @@
 ﻿using Ecommerce.DataAccess;
-using Ecommerce.Helpers.Category;
+using Ecommerce.Helpers.Categories;
 using Ecommerce.Helpers.Common;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Entities;
@@ -238,23 +238,5 @@ namespace Ecommerce.Repository.Admin
                 StatusCode = false,
                 ResponseMsg = message
             };
-
-        #region Mapping
-
-        private static IQueryable<Category> SelectCategoryDtos(IQueryable<CategoryEntity> query)
-        {
-            return query.Select(c => new Category
-            {
-                CategoryID = c.IdCategory,
-                CategoryName = c.Name,
-                Description = c.Description,
-                CreatedDate = null,
-                Cancelled = c.Cancelled,
-                CancelledOn = c.CancelledOn,
-                CancelledReason = c.CancelledReason
-            });
-        }
-
-        #endregion
     }
 }
