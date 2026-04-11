@@ -5,7 +5,7 @@ using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.CategoryModel;
 using static Ecommerce.Models.CommonModel;
 
-namespace Ecommerce.Helpers.Category
+namespace Ecommerce.Helpers.Categories
 {
     public sealed record NormalizedCategoryListInput(
         string? SearchLower,
