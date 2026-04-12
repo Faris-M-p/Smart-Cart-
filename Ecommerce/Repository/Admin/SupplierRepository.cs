@@ -28,6 +28,7 @@ namespace Ecommerce.Repository.Admin
             try
             {
                 var normalized = SupplierHelper.NormalizeInput(input);
+
                 var filteredQuery = SupplierHelper.ApplyFilters(
                     _dbContext.Suppliers.AsNoTracking(),
                     normalized);
@@ -44,19 +45,21 @@ namespace Ecommerce.Repository.Admin
                     .Take(normalized.PageSize);
 
                 var rows = await pagedEntityQuery
-                    .Select(s => new Supplier
+                    .Select(x => new Supplier
                     {
-                        ID_Supplier = s.SupplierId,
-                        SupplierName = s.SupplierName,
-                        ContactPerson = null,
-                        Phone = s.ContactPhone,
-                        Email = s.ContactEmail,
-                        GSTNumber = null,
-                        Address = s.Address,
-                        CreatedOn = s.CreatedAt,
-                        Cancelled = s.Cancelled ?? false,
-                        CancelledOn = s.CancelledOn,
-                        CancelledReason = s.CancelledReason
+                        SupplierID = x.SupplierId,
+                        Name = x.Name,
+                        CompanyName = x.CompanyName,
+                        Email = x.Email,
+                        Phone = x.Phone,
+                        State = x.State,
+                        District = x.District,
+                        City = x.City,
+                        Address = x.Address,
+                        Pincode = x.Pincode,
+                        Description = x.Description,
+                        IsActive = x.IsActive,
+                        Cancelled = x.Cancelled
                     })
                     .ToListAsync();
 
@@ -77,37 +80,33 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        public async Task<Supplier?> GetSupplierByIdAsync(long id)
+        public async Task<Supplier?> GetSupplierByIdAsync(int id)
         {
             if (id <= 0)
             {
                 return null;
             }
 
-            try
-            {
-                return await _dbContext.Suppliers.AsNoTracking()
-                    .Where(s => s.SupplierId == id)
-                    .Select(s => new Supplier
-                    {
-                        ID_Supplier = s.SupplierId,
-                        SupplierName = s.SupplierName,
-                        ContactPerson = null,
-                        Phone = s.ContactPhone,
-                        Email = s.ContactEmail,
-                        GSTNumber = null,
-                        Address = s.Address,
-                        CreatedOn = s.CreatedAt,
-                        Cancelled = s.Cancelled ?? false,
-                        CancelledOn = s.CancelledOn,
-                        CancelledReason = s.CancelledReason
-                    })
-                    .FirstOrDefaultAsync();
-            }
-            catch
-            {
-                return null;
-            }
+            return await _dbContext.Suppliers
+                .AsNoTracking()
+                .Where(s => s.SupplierId == id)
+                .Select(s => new Supplier
+                {
+                    SupplierID = s.SupplierId,
+                    Name = s.Name,
+                    CompanyName = s.CompanyName,
+                    Email = s.Email,
+                    Phone = s.Phone,
+                    State = s.State,
+                    District = s.District,
+                    City = s.City,
+                    Address = s.Address,
+                    Pincode = s.Pincode,
+                    Description = s.Description,
+                    IsActive = s.IsActive,
+                    Cancelled = s.Cancelled
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<CommonResponse> CreateSupplierAsync(SupplierUpdateInput input)
@@ -125,17 +124,29 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please enter supplier name.");
                 }
 
-                if (await SupplierNameExistsAsync(normalized.Name, excludeId: 0))
+                if (normalized.State.Length == 0 || normalized.District.Length == 0 || normalized.City.Length == 0)
                 {
-                    return Fail($"Supplier \"{normalized.Name}\" already exists.");
+                    return Fail("Please select state, district, and city.");
+                }
+
+                if (await SupplierEmailExistsAsync(normalized.Email, excludeSupplierId: 0))
+                {
+                    return Fail("A supplier with this email already exists.");
                 }
 
                 var entity = new SupplierEntity
                 {
-                    SupplierName = normalized.Name,
-                    ContactEmail = normalized.Email,
-                    ContactPhone = normalized.Phone,
+                    Name = normalized.Name,
+                    CompanyName = normalized.CompanyName,
+                    Email = normalized.Email,
+                    Phone = normalized.Phone,
+                    State = normalized.State,
+                    District = normalized.District,
+                    City = normalized.City,
                     Address = normalized.Address,
+                    Pincode = normalized.Pincode,
+                    Description = normalized.Description,
+                    IsActive = normalized.IsActive,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = null,
                     Cancelled = false,
@@ -163,7 +174,7 @@ namespace Ecommerce.Repository.Admin
 
             try
             {
-                var id = (int)input.ID_Supplier;
+                var id = input.SupplierId;
                 if (id <= 0)
                 {
                     return Fail("Invalid supplier ID.");
@@ -175,26 +186,38 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please enter supplier name.");
                 }
 
+                if (normalized.State.Length == 0 || normalized.District.Length == 0 || normalized.City.Length == 0)
+                {
+                    return Fail("Please select state, district, and city.");
+                }
+
                 var entity = await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.SupplierId == id);
                 if (entity == null)
                 {
                     return Fail("Invalid supplier ID.");
                 }
 
-                if (entity.Cancelled == true)
+                if (entity.Cancelled)
                 {
                     return Fail("This supplier is deleted and cannot be edited.");
                 }
 
-                if (await SupplierNameExistsAsync(normalized.Name, excludeId: id))
+                if (await SupplierEmailExistsAsync(normalized.Email, excludeSupplierId: id))
                 {
-                    return Fail($"Supplier \"{normalized.Name}\" already exists.");
+                    return Fail("A supplier with this email already exists.");
                 }
 
-                entity.SupplierName = normalized.Name;
-                entity.ContactEmail = normalized.Email;
-                entity.ContactPhone = normalized.Phone;
+                entity.Name = normalized.Name;
+                entity.CompanyName = normalized.CompanyName;
+                entity.Email = normalized.Email;
+                entity.Phone = normalized.Phone;
+                entity.State = normalized.State;
+                entity.District = normalized.District;
+                entity.City = normalized.City;
                 entity.Address = normalized.Address;
+                entity.Pincode = normalized.Pincode;
+                entity.Description = normalized.Description;
+                entity.IsActive = normalized.IsActive;
                 entity.UpdatedAt = DateTime.Now;
 
                 await _dbContext.SaveChangesAsync();
@@ -207,7 +230,7 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        public async Task<CommonResponse> DeleteSupplierAsync(SupplierUpdateInput input)
+        public async Task<CommonResponse> DeleteSupplierAsync(SupplierDeleteInput input)
         {
             if (input == null)
             {
@@ -216,7 +239,7 @@ namespace Ecommerce.Repository.Admin
 
             try
             {
-                var id = (int)input.ID_Supplier;
+                var id = input.SupplierId;
                 if (id <= 0)
                 {
                     return Fail("Invalid supplier ID.");
@@ -228,7 +251,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid supplier ID.");
                 }
 
-                if (entity.Cancelled == true)
+                if (entity.Cancelled)
                 {
                     return Fail("This supplier is already deleted.");
                 }
@@ -236,7 +259,6 @@ namespace Ecommerce.Repository.Admin
                 entity.Cancelled = true;
                 entity.CancelledOn = DateTime.Now;
                 entity.CancelledReason = StringHelper.NormalizeOptionalString(input.CancelledReason);
-                entity.UpdatedAt = DateTime.Now;
 
                 await _dbContext.SaveChangesAsync();
 
@@ -248,13 +270,19 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        private async Task<bool> SupplierNameExistsAsync(string trimmedName, int excludeId)
+        private async Task<bool> SupplierEmailExistsAsync(string? email, int excludeSupplierId)
         {
-            var key = trimmedName.ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return false;
+            }
+
+            var key = email.Trim().ToLowerInvariant();
             return await _dbContext.Suppliers.AnyAsync(s =>
-                s.Cancelled != true &&
-                s.SupplierId != excludeId &&
-                s.SupplierName.ToLower() == key);
+                !s.Cancelled &&
+                s.SupplierId != excludeSupplierId &&
+                s.Email != null &&
+                s.Email.ToLower() == key);
         }
 
         private static CommonResponse Ok(long code, string msg) =>

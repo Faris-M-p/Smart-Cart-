@@ -298,8 +298,10 @@
             filterDropdown.innerHTML = '<option value="">All Suppliers</option>';
             
             suppliers.forEach(s => {
-                dropdown.add(new Option(s.SupplierName, s.ID_Supplier));
-                filterDropdown.add(new Option(s.SupplierName, s.ID_Supplier));
+                const sid = s.supplierID ?? s.SupplierID ?? s.id_Supplier ?? s.iD_Supplier ?? s.ID_Supplier;
+                const sname = s.name ?? s.Name ?? s.supplierName ?? s.SupplierName ?? '';
+                dropdown.add(new Option(sname, sid));
+                filterDropdown.add(new Option(sname, sid));
             });
         } catch (error) {
             console.error('Error loading suppliers:', error);

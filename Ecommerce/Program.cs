@@ -12,6 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to container
 // =========================
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient("CountryStateCity", client =>
+{
+    client.BaseAddress = new Uri("https://api.countrystatecity.in/v1/");
+});
 
 // Register DataAccess
 builder.Services.AddScoped<IDataAccessDapper, DataAccessDapper>();

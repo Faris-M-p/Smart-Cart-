@@ -3,30 +3,54 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ecommerce.Models.Entities
 {
-    [Table("Suppliers")]
+    /// <summary>
+    /// Maps to [dbo].[Supplier] (see xPROCEDURExTABLES/Tables/Suppliers.sql).
+    /// </summary>
+    [Table("Supplier")]
     public class SupplierEntity
     {
         [Key]
-        [Column("SupplierId")]
+        [Column("ID_Supplier")]
         public int SupplierId { get; set; }
 
-        [MaxLength(100)]
-        public string SupplierName { get; set; } = string.Empty;
+        [Column("Name")]
+        [MaxLength(250)]
+        public string Name { get; set; } = string.Empty;
 
-        [MaxLength(100)]
-        public string? ContactEmail { get; set; }
+        [MaxLength(250)]
+        public string? CompanyName { get; set; }
 
-        [MaxLength(15)]
-        public string? ContactPhone { get; set; }
+        [MaxLength(250)]
+        public string? Email { get; set; }
 
-        [MaxLength(255)]
+        [MaxLength(20)]
+        public string? Phone { get; set; }
+
+        [MaxLength(150)]
+        public string State { get; set; } = string.Empty;
+
+        [MaxLength(150)]
+        public string District { get; set; } = string.Empty;
+
+        [MaxLength(150)]
+        public string City { get; set; } = string.Empty;
+
+        [MaxLength(500)]
         public string? Address { get; set; }
 
-        public DateTime? CreatedAt { get; set; }
+        [MaxLength(10)]
+        public string? Pincode { get; set; }
+
+        [MaxLength(1000)]
+        public string? Description { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public DateTime CreatedAt { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
 
-        public bool? Cancelled { get; set; }
+        public bool Cancelled { get; set; }
 
         public DateTime? CancelledOn { get; set; }
 

@@ -34,14 +34,7 @@
                         </div>
                     </div>
                     <div class="card-body pt-3">
-                        <!-- Filter and Search Bar -->
                         <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-                            <!-- Filter Button -->
-                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                                <i class="ti ti-filter"></i> Filter
-                            </button>
-                            
-                            <!-- Search Box -->
                             <div class="flex-grow-1 mx-3 search-input">
                                 <div class="input-group">
                                     <span class="input-group-text">
@@ -52,53 +45,22 @@
                             </div>
                         </div>
 
-                        <!-- Collapsible Filter Section -->
-                        <div class="collapse mb-3" id="filterCollapse">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">Status</label>
-                                        <select id="showCancelled" class="form-select">
-                                            <option value="false">Active Only</option>
-                                            <option value="true">Show All</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadSuppliers()">
-                                                <i class="ti ti-check"></i> Apply
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                                                <i class="ti ti-refresh"></i> Reset
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Supplier Table -->
                         <div class="table-container">
                             <div class="table-scroll-wrapper">
-                                <table class="table table-hover align-middle mb-0" id="supplierTable">
+                                <table class="table align-middle mb-0 admin-master-list-table" id="supplierTable">
                                     <thead>
                                         <tr>
-                                            <th class="text-muted">ID</th>
-                                            <th class="text-muted">Supplier Name</th>
-                                            <th class="text-muted">Contact Person</th>
-                                            <th class="text-muted">Phone</th>
-                                            <th class="text-muted">Email</th>
-                                            <th class="text-muted">GST Number</th>
-                                            <th class="text-muted">Created Date</th>
-                                            <th class="text-muted">Status</th>
-                                            <th class="text-muted text-end">Actions</th>
+                                            <th class="col-name text-start">Name</th>
+                                            <th class="col-company text-start">Company</th>
+                                            <th class="col-location text-start">Location</th>
+                                            <th class="col-phone text-start">Phone</th>
+                                            <th class="col-status text-start">Status</th>
+                                            <th class="col-actions text-start">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="supplierTableBody">
                                         <tr>
-                                            <td colspan="9" class="text-center py-5">
+                                            <td colspan="6" class="text-center py-5">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
@@ -109,25 +71,22 @@
                             </div>
                         </div>
 
-                        <!-- Pagination Section -->
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
                                 <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadSuppliers()">
                                     <option value="10">10</option>
-                                    <option value="20" selected>20</option>
                                     <option value="25">25</option>
                                     <option value="50">50</option>
                                     <option value="100">100</option>
                                 </select>
                                 <span class="text-muted small">per page</span>
                             </div>
-                            
+
                             <div class="d-flex align-items-center gap-3">
                                 <span id="paginationInfo" class="text-muted small"></span>
                                 <nav aria-label="Page navigation">
                                     <ul class="pagination pagination-sm mb-0" id="pagination">
-                                        <!-- Pagination will be generated here -->
                                     </ul>
                                 </nav>
                             </div>
@@ -140,7 +99,7 @@
 
 <!-- Supplier Modal (Create/Edit) -->
 <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="supplierModalLabel">Add Supplier</h5>
@@ -148,37 +107,66 @@
             </div>
             <div class="modal-body">
                 <form id="supplierForm">
-                    <input type="hidden" id="supplierID" name="ID_Supplier" value="0">
+                    <input type="hidden" id="supplierID" value="0">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="supplierName" class="form-label">Supplier Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="supplierName" name="SupplierName" required>
-                            <div class="invalid-feedback"></div>
+                            <label for="supplierName" class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="supplierName" maxlength="250" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="contactPerson" class="form-label">Contact Person</label>
-                            <input type="text" class="form-control" id="contactPerson" name="ContactPerson">
+                            <label for="companyName" class="form-label">Company name</label>
+                            <input type="text" class="form-control" id="companyName" maxlength="250">
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="phone" class="form-label">Phone</label>
-                            <input type="text" class="form-control" id="phone" name="Phone">
-                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="Email">
+                            <input type="email" class="form-control" id="email" maxlength="250">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="phone" maxlength="20">
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="gstNumber" class="form-label">GST Number</label>
-                            <input type="text" class="form-control" id="gstNumber" name="GSTNumber">
+                        <div class="col-md-4 mb-3">
+                            <label for="stateSelect" class="form-label">State <span class="text-danger">*</span></label>
+                            <select class="form-select" id="stateSelect" onchange="onSupplierStateChange()">
+                                <option value="">Select state</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="districtSelect" class="form-label">District <span class="text-danger">*</span></label>
+                            <select class="form-select" id="districtSelect" onchange="onSupplierDistrictChange()">
+                                <option value="">Select district</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="citySelect" class="form-label">City <span class="text-danger">*</span></label>
+                            <select class="form-select" id="citySelect">
+                                <option value="">Select city</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="address" class="form-label">Address</label>
-                        <textarea class="form-control" id="address" name="Address" rows="3"></textarea>
+                        <textarea class="form-control" id="address" rows="2" maxlength="500"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="pincode" class="form-label">Pincode</label>
+                            <input type="text" class="form-control" id="pincode" maxlength="10">
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch w-100">
+                                <input class="form-check-input" type="checkbox" id="supplierIsActive" checked>
+                                <label class="form-check-label" for="supplierIsActive">Status (active)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="3" maxlength="1000"></textarea>
                     </div>
                 </form>
             </div>
@@ -216,12 +204,139 @@
 
 <script>
     let currentPage = 1;
-    let pageSize = 20;
+    let pageSize = 10;
+    let paginationInstance;
     let supplierSearchTimeout;
+    let indiaStatesLoaded = false;
+    let citiesCache = [];
 
-    // Load suppliers on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate text-start" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    function getSelectedText(selectId) {
+        const el = document.getElementById(selectId);
+        if (!el || el.selectedIndex < 0) return '';
+        const opt = el.options[el.selectedIndex];
+        return (opt && opt.textContent) ? opt.textContent.trim() : '';
+    }
+
+    function setSelectByText(selectId, text) {
+        const el = document.getElementById(selectId);
+        if (!el || !text) return false;
+        const t = String(text).trim();
+        for (let i = 0; i < el.options.length; i++) {
+            if ((el.options[i].textContent || '').trim() === t) {
+                el.selectedIndex = i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    async function loadIndiaStatesForSupplier() {
+        const sel = document.getElementById('stateSelect');
+        if (!sel || indiaStatesLoaded) return;
+        try {
+            const response = await fetch('/Admin/Supplier/Location/IndiaStates');
+            const data = await response.json();
+            if (!Array.isArray(data)) return;
+            const opts = data.map(function (st) {
+                const iso = st.iso2 || st.iso_2 || '';
+                const name = st.name || iso;
+                return '<option value="' + escapeAttr(iso) + '">' + escapeHtml(name) + '</option>';
+            }).join('');
+            sel.innerHTML = '<option value="">Select state</option>' + opts;
+            indiaStatesLoaded = true;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadCitiesForStateIso(iso) {
+        const districtSel = document.getElementById('districtSelect');
+        const citySel = document.getElementById('citySelect');
+        districtSel.innerHTML = '<option value="">Select district</option>';
+        citySel.innerHTML = '<option value="">Select city</option>';
+        citiesCache = [];
+        if (!iso) return;
+        try {
+            const response = await fetch('/Admin/Supplier/Location/IndiaCities/' + encodeURIComponent(iso));
+            const data = await response.json();
+            if (!Array.isArray(data)) return;
+            citiesCache = data;
+            const names = Array.from(new Set(data.map(function (c) { return c.name; }).filter(Boolean))).sort(function (a, b) {
+                return a.localeCompare(b);
+            });
+            districtSel.innerHTML = '<option value="">Select district</option>' + names.map(function (n) {
+                return '<option value="' + escapeAttr(n) + '">' + escapeHtml(n) + '</option>';
+            }).join('');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function onSupplierStateChange() {
+        const iso = document.getElementById('stateSelect').value;
+        await loadCitiesForStateIso(iso);
+    }
+
+    function onSupplierDistrictChange() {
+        const districtVal = document.getElementById('districtSelect').value;
+        const citySel = document.getElementById('citySelect');
+        citySel.innerHTML = '<option value="">Select city</option>';
+        if (!districtVal) return;
+        const exact = citiesCache.filter(function (c) { return c.name === districtVal; });
+        const pool = exact.length ? exact : citiesCache.filter(function (c) {
+            return (c.name || '').indexOf(districtVal) === 0;
+        });
+        const usePool = pool.length ? pool : citiesCache;
+        const names = Array.from(new Set(usePool.map(function (c) { return c.name; }).filter(Boolean))).sort(function (a, b) {
+            return a.localeCompare(b);
+        });
+        citySel.innerHTML = '<option value="">Select city</option>' + names.map(function (n) {
+            return '<option value="' + escapeAttr(n) + '">' + escapeHtml(n) + '</option>';
+        }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: "pagination",
+            infoId: "paginationInfo",
+            onPageChange: loadSuppliers
+        });
         loadSuppliers();
+        loadIndiaStatesForSupplier();
 
         document.getElementById('searchText').addEventListener('input', function () {
             const value = this.value.trim();
@@ -236,178 +351,184 @@
 
     async function loadSuppliers(page = 1) {
         currentPage = page;
-        pageSize = parseInt(document.getElementById('pageSize').value) || 20;
-        const searchText = document.getElementById('searchText').value || '';
-        const showCancelled = document.getElementById('showCancelled').value === 'true';
 
         const input = {
-            SearchText: searchText,
-            FilterSupplierIDs: '',
-            ShowCancelled: showCancelled,
-            PageIndex: page,
-            PageSize: pageSize,
-            SortColumn: 0,
-            SortMode: ''
+            searchText: document.getElementById('searchText').value || '',
+            filterSupplierIDs: '',
+            pageIndex: page,
+            pageSize: parseInt(document.getElementById('pageSize').value) || 10,
+            sortColumn: 0,
+            sortMode: ''
         };
 
         try {
             const response = await fetch('/Admin/Supplier/GetSupplierList', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            const result = await response.json();
+
+            if (!result.success) {
+                emptyState.showError(
+                    'supplierTableBody',
+                    result.errors?.length
+                        ? result.errors.join("<br>")
+                        : result.message,
+                    {
+                        onRetry: 'loadSuppliers()',
+                        title: 'Error loading suppliers'
+                    },
+                    6
+                );
+                return;
             }
 
-            const data = await response.json();
-            displaySuppliers(data.TableData || []);
-            displayPagination(data.TableSettings);
+            const data = result.data;
+
+            if (!data?.tableData?.length) {
+                emptyState.showNoData('supplierTableBody', {
+                    title: 'No suppliers found',
+                    message: 'Try adjusting your search.',
+                    onClear: 'clearSearch()'
+                }, 6);
+                return;
+            }
+
+            displaySuppliers(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
         } catch (error) {
-            console.error('Error loading suppliers:', error);
-            const tbody = document.getElementById('supplierTableBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="empty-state">
-                        <i class="ti ti-alert-circle"></i>
-                        <h5>Error loading suppliers</h5>
-                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading suppliers. Please try again.')}</p>
-                    </td>
-                </tr>
-            `;
+            console.error(error);
+            emptyState.showError(
+                'supplierTableBody',
+                "Unable to connect to server.",
+                {
+                    onRetry: 'loadSuppliers()',
+                    title: 'Server Error'
+                },
+                6
+            );
         }
     }
 
     function displaySuppliers(suppliers) {
         const tbody = document.getElementById('supplierTableBody');
-        
+
         if (!suppliers || suppliers.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="empty-state">
-                        <i class="ti ti-package-off"></i>
-                        <h5>No suppliers found</h5>
-                        <p class="text-muted">Try adjusting your filters or search term</p>
-                    </td>
-                </tr>
-            `;
+            emptyState.showNoData('supplierTableBody', {
+                title: 'No suppliers found',
+                message: 'We can\'t find any suppliers matching your search.<br>Try adjusting your search term.',
+                onClear: 'clearSearch()'
+            }, 6);
             return;
         }
 
-        tbody.innerHTML = suppliers.map(supplier => {
-            const statusClass = supplier.Cancelled ? 'badge-inactive' : 'badge-active';
-            const statusText = supplier.Cancelled ? 'Deleted' : 'Active';
-            
+        tbody.innerHTML = suppliers.map(function (supplier) {
+            const sid = supplier.supplierID ?? supplier.SupplierID ?? 0;
+            const cancelled = supplier.cancelled ?? supplier.Cancelled ?? false;
+            const isActive = supplier.isActive ?? supplier.IsActive ?? true;
+            const nameRaw = supplier.name ?? supplier.Name ?? '';
+            const companyRaw = supplier.companyName ?? supplier.CompanyName ?? '';
+            const city = supplier.city ?? supplier.City ?? '';
+            const district = supplier.district ?? supplier.District ?? '';
+            const state = supplier.state ?? supplier.State ?? '';
+            const locationRaw = [city, district, state].filter(function (x) { return x && String(x).trim(); }).join(', ');
+            const phoneRaw = supplier.phone ?? supplier.Phone ?? '';
+
+            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+            const statusText = isActive ? 'Active' : 'Inactive';
+
             return `
                 <tr>
-                    <td>${supplier.ID_Supplier}</td>
-                    <td>${escapeHtml(supplier.SupplierName)}</td>
-                    <td>${escapeHtml(supplier.ContactPerson || '-')}</td>
-                    <td>${escapeHtml(supplier.Phone || '-')}</td>
-                    <td>${escapeHtml(supplier.Email || '-')}</td>
-                    <td>${escapeHtml(supplier.GSTNumber || '-')}</td>
-                    <td>${supplier.CreatedOn ? new Date(supplier.CreatedOn).toLocaleDateString() : '-'}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${statusText}
-                        </span>
+                    <td class="col-name text-start">${truncatedCellHtml(nameRaw)}</td>
+                    <td class="col-company text-start">${truncatedCellHtml(companyRaw)}</td>
+                    <td class="col-location text-start">${truncatedCellHtml(locationRaw)}</td>
+                    <td class="col-phone text-start">${truncatedCellHtml(phoneRaw)}</td>
+                    <td class="col-status text-start">
+                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
                     </td>
-                    <td class="text-end">
-                        ${supplier.Cancelled ? '' : `
-                            <button class="btn-action" onclick="openEditModal(${supplier.ID_Supplier})" title="Edit">
+                    <td class="col-actions text-start">
+                        ${cancelled ? '' : `
+                            <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${sid})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-edit"></i>
                             </button>
-                            <button class="btn-action" onclick="openDeleteModal(${supplier.ID_Supplier})" title="Delete">
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${sid})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-trash"></i>
                             </button>
+                            </div>
                         `}
                     </td>
                 </tr>
             `;
         }).join('');
-    }
-
-    function displayPagination(settings) {
-        if (!settings) return;
-
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
-        const pagination = document.getElementById('pagination');
-        const paginationInfo = document.getElementById('paginationInfo');
-
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
-
-        let paginationHTML = '';
-        
-        // Previous button
-        if (settings.PageIndex <= 1) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadSuppliers(${settings.PageIndex - 1}); return false;">Previous</a>
-            </li>`;
-        }
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
-                    paginationHTML += `<li class="page-item active">
-                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
-                    </li>`;
-                } else {
-                    paginationHTML += `<li class="page-item">
-                        <a class="page-link" href="#!" onclick="loadSuppliers(${i}); return false;">${i}</a>
-                    </li>`;
-                }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-        }
-
-        // Next button
-        if (settings.PageIndex >= totalPages) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadSuppliers(${settings.PageIndex + 1}); return false;">Next</a>
-            </li>`;
-        }
-
-        pagination.innerHTML = paginationHTML;
+        initTableTooltips(tbody);
     }
 
     function openCreateModal() {
         document.getElementById('supplierModalLabel').textContent = 'Add Supplier';
         document.getElementById('supplierForm').reset();
         document.getElementById('supplierID').value = '0';
+        document.getElementById('supplierIsActive').checked = true;
+        document.getElementById('districtSelect').innerHTML = '<option value="">Select district</option>';
+        document.getElementById('citySelect').innerHTML = '<option value="">Select city</option>';
+        citiesCache = [];
+        loadIndiaStatesForSupplier();
     }
 
     async function openEditModal(supplierID) {
         try {
-            const response = await fetch(`/Admin/Supplier/GetById/${supplierID}`);
+            const response = await fetch('/Admin/Supplier/GetById/' + supplierID);
             if (!response.ok) throw new Error('Failed to fetch supplier');
 
             const supplier = await response.json();
-            
+            const sid = supplier.supplierID ?? supplier.SupplierID ?? 0;
+            if (!supplier || sid <= 0) {
+                throw new Error('Supplier not found');
+            }
+
+            await loadIndiaStatesForSupplier();
+
             document.getElementById('supplierModalLabel').textContent = 'Edit Supplier';
-            document.getElementById('supplierID').value = supplier.ID_Supplier;
-            document.getElementById('supplierName').value = supplier.SupplierName || '';
-            document.getElementById('contactPerson').value = supplier.ContactPerson || '';
-            document.getElementById('phone').value = supplier.Phone || '';
-            document.getElementById('email').value = supplier.Email || '';
-            document.getElementById('gstNumber').value = supplier.GSTNumber || '';
-            document.getElementById('address').value = supplier.Address || '';
-            
+            document.getElementById('supplierID').value = String(sid);
+            document.getElementById('supplierName').value = supplier.name ?? supplier.Name ?? '';
+            document.getElementById('companyName').value = supplier.companyName ?? supplier.CompanyName ?? '';
+            document.getElementById('phone').value = supplier.phone ?? supplier.Phone ?? '';
+            document.getElementById('email').value = supplier.email ?? supplier.Email ?? '';
+            document.getElementById('address').value = supplier.address ?? supplier.Address ?? '';
+            document.getElementById('pincode').value = supplier.pincode ?? supplier.Pincode ?? '';
+            document.getElementById('description').value = supplier.description ?? supplier.Description ?? '';
+            document.getElementById('supplierIsActive').checked =
+                (supplier.isActive ?? supplier.IsActive ?? true) === true;
+
+            const savedState = supplier.state ?? supplier.State ?? '';
+            const stateSel = document.getElementById('stateSelect');
+            let matchedState = false;
+            for (let i = 0; i < stateSel.options.length; i++) {
+                if ((stateSel.options[i].textContent || '').trim() === savedState.trim()) {
+                    stateSel.selectedIndex = i;
+                    matchedState = true;
+                    break;
+                }
+            }
+            if (matchedState && stateSel.value) {
+                await loadCitiesForStateIso(stateSel.value);
+                const d = supplier.district ?? supplier.District ?? '';
+                const c = supplier.city ?? supplier.City ?? '';
+                setSelectByText('districtSelect', d);
+                onSupplierDistrictChange();
+                setSelectByText('citySelect', c);
+            }
+
             const modal = new bootstrap.Modal(document.getElementById('supplierModal'));
             modal.show();
         } catch (error) {
             console.error('Error loading supplier:', error);
-            alert('Error loading supplier details.');
+            showError('Error', 'Error loading supplier details.');
         }
     }
 
@@ -419,106 +540,130 @@
     }
 
     async function saveSupplier() {
-        const supplierID = parseInt(document.getElementById('supplierID').value);
+        const supplierId = parseInt(document.getElementById('supplierID').value, 10);
         const supplierName = document.getElementById('supplierName').value.trim();
-        const contactPerson = document.getElementById('contactPerson').value.trim();
+        const companyName = document.getElementById('companyName').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const email = document.getElementById('email').value.trim();
-        const gstNumber = document.getElementById('gstNumber').value.trim();
         const address = document.getElementById('address').value.trim();
+        const pincode = document.getElementById('pincode').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const state = getSelectedText('stateSelect');
+        const district = getSelectedText('districtSelect');
+        const city = getSelectedText('citySelect');
 
         if (!supplierName) {
-            alert('Please enter supplier name.');
+            showWarning('Validation Error', 'Please enter supplier name.');
+            return;
+        }
+        if (!state || state === 'Select state') {
+            showWarning('Validation Error', 'Please select state.');
+            return;
+        }
+        if (!district || district === 'Select district') {
+            showWarning('Validation Error', 'Please select district.');
+            return;
+        }
+        if (!city || city === 'Select city') {
+            showWarning('Validation Error', 'Please select city.');
             return;
         }
 
         const input = {
-            ID_Supplier: supplierID,
-            SupplierName: supplierName,
-            ContactPerson: contactPerson || null,
-            Phone: phone || null,
-            Email: email || null,
-            GSTNumber: gstNumber || null,
-            Address: address || null
+            supplierId: supplierId,
+            supplierName: supplierName,
+            companyName: companyName,
+            phone: phone,
+            email: email,
+            state: state,
+            district: district,
+            city: city,
+            address: address,
+            pincode: pincode,
+            description: description,
+            isActive: document.getElementById('supplierIsActive').checked
         };
 
-        const url = supplierID === 0 ? '/Admin/Supplier/Create' : '/Admin/Supplier/Update';
+        const url = supplierId === 0 ? '/Admin/Supplier/Create' : '/Admin/Supplier/Update';
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+            }
+
             const result = await response.json();
 
-            if (result.StatusCode) {
+            if (result.statusCode || result.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('supplierModal'));
                 modal.hide();
                 loadSuppliers(currentPage);
-                alert(result.ResponseMsg || 'Supplier saved successfully.');
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Supplier saved successfully.');
             } else {
-                if (result.errors && result.errors.length > 0) {
-                    alert('Validation errors:\n' + result.errors.join('\n'));
-                } else {
-                    alert(result.ResponseMsg || 'Error saving supplier.');
-                }
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving supplier.');
             }
         } catch (error) {
             console.error('Error saving supplier:', error);
-            alert('Error saving supplier. Please try again.');
+            showError('Error', 'Error saving supplier. Please try again.');
         }
     }
 
     async function confirmDelete() {
-        const supplierID = parseInt(document.getElementById('deleteSupplierID').value);
+        const supplierId = parseInt(document.getElementById('deleteSupplierID').value, 10);
         const reason = document.getElementById('deleteReason').value.trim();
 
         const input = {
-            ID_Supplier: supplierID,
-            CancelledReason: reason
+            supplierId: supplierId,
+            cancelledReason: reason
         };
 
         try {
             const response = await fetch('/Admin/Supplier/Delete', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+            }
+
             const result = await response.json();
 
-            if (result.StatusCode) {
+            if (result.statusCode || result.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
                 loadSuppliers(currentPage);
-                alert(result.ResponseMsg || 'Supplier deleted successfully.');
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Supplier deleted successfully.');
             } else {
-                alert(result.ResponseMsg || 'Error deleting supplier.');
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting supplier.');
             }
         } catch (error) {
             console.error('Error deleting supplier:', error);
-            alert('Error deleting supplier. Please try again.');
+            showError('Error', 'Error deleting supplier. Please try again.');
         }
     }
 
     function resetFilters() {
         document.getElementById('searchText').value = '';
-        document.getElementById('showCancelled').value = 'false';
-        document.getElementById('pageSize').value = '20';
+        document.getElementById('pageSize').value = '10';
+        loadSuppliers(1);
+    }
+
+    function clearSearch() {
+        document.getElementById('searchText').value = '';
         loadSuppliers(1);
     }
 
     function escapeHtml(text) {
-        if (!text) return '';
+        if (text == null || text === undefined) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 </script>
-<!-- [ Main Content ] end -->

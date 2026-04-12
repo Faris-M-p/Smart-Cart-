@@ -1,4 +1,5 @@
 using Ecommerce.Helpers.Common;
+using Ecommerce.Models;
 using Ecommerce.Models.Entities;
 using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.SupplierModel;
@@ -8,8 +9,7 @@ namespace Ecommerce.Helpers.Suppliers
 {
     public sealed record NormalizedSupplierListInput(
         string? SearchLower,
-        IReadOnlyList<int> FilterSupplierIds,
-        bool ShowCancelled,
+        IReadOnlyList<int> FilterIds,
         int PageIndex,
         int PageSize,
         int SortColumn,
@@ -17,9 +17,16 @@ namespace Ecommerce.Helpers.Suppliers
 
     public sealed record NormalizedSupplierWriteInput(
         string Name,
+        string? CompanyName,
         string? Email,
         string? Phone,
-        string? Address);
+        string State,
+        string District,
+        string City,
+        string? Address,
+        string? Pincode,
+        string? Description,
+        bool IsActive);
 
     public static class SupplierHelper
     {
@@ -27,46 +34,65 @@ namespace Ecommerce.Helpers.Suppliers
         {
             var pageIndex = Math.Max(1, input.PageIndex);
             var pageSize = Math.Max(1, input.PageSize);
-            var raw = input.SearchText?.Trim() ?? string.Empty;
-            string? searchLower = raw.Length >= 1 ? raw.ToLowerInvariant() : null;
-            return new NormalizedSupplierListInput(
-                searchLower,
-                StringHelper.ParseFilterIds(input.FilterSupplierIDs),
-                input.ShowCancelled,
-                pageIndex,
-                pageSize,
-                input.SortColumn,
-                input.SortMode?.Trim() ?? string.Empty);
+
+            var rawSearch = input.SearchText?.Trim() ?? string.Empty;
+            string? searchLower = null;
+            if (rawSearch.Length >= 1)
+            {
+                searchLower = rawSearch.ToLowerInvariant();
+            }
+
+            var filterIds = StringHelper.ParseFilterIds(input.FilterSupplierIDs);
+            var sortColumn = input.SortColumn;
+            var sortMode = input.SortMode?.Trim() ?? string.Empty;
+
+            return new NormalizedSupplierListInput(searchLower, filterIds, pageIndex, pageSize, sortColumn, sortMode);
         }
 
         public static NormalizedSupplierWriteInput NormalizeInput(SupplierUpdateInput input)
         {
+            var name = (input.SupplierName ?? string.Empty).Trim();
+            var companyName = StringHelper.NormalizeOptionalString(input.CompanyName);
+            var email = StringHelper.NormalizeOptionalString(input.Email);
+            var phone = StringHelper.TruncateOptional(input.Phone, 20);
+            var state = (input.State ?? string.Empty).Trim();
+            var district = (input.District ?? string.Empty).Trim();
+            var city = (input.City ?? string.Empty).Trim();
+            var address = StringHelper.NormalizeOptionalString(input.Address);
+            var pincode = StringHelper.TruncateOptional(input.Pincode, 10);
+            var description = StringHelper.NormalizeOptionalString(input.Description);
+
             return new NormalizedSupplierWriteInput(
-                (input.SupplierName ?? string.Empty).Trim(),
-                StringHelper.NormalizeOptionalString(input.Email),
-                StringHelper.TruncateOptional(input.Phone, 15),
-                StringHelper.NormalizeOptionalString(input.Address));
+                name,
+                companyName,
+                email,
+                phone,
+                state,
+                district,
+                city,
+                address,
+                pincode,
+                description,
+                input.IsActive);
         }
 
         public static IQueryable<SupplierEntity> ApplyFilters(
             IQueryable<SupplierEntity> query,
-            NormalizedSupplierListInput n)
+            NormalizedSupplierListInput normalized)
         {
-            query = query.Where(s => s.Cancelled != true);
+            query = query.Where(x => x.Cancelled != true);
 
-            if (n.SearchLower != null)
+            if (normalized.SearchLower != null)
             {
-                var s = n.SearchLower;
+                var s = normalized.SearchLower;
                 query = query.Where(x =>
-                    x.SupplierName.ToLower().Contains(s) ||
-                    (x.ContactEmail != null && x.ContactEmail.ToLower().Contains(s)) ||
-                    (x.ContactPhone != null && x.ContactPhone.ToLower().Contains(s)) ||
-                    (x.Address != null && x.Address.ToLower().Contains(s)));
+                    x.Name.ToLower().Contains(s) ||
+                    (x.CompanyName != null && x.CompanyName.ToLower().Contains(s)));
             }
 
-            if (n.FilterSupplierIds.Count > 0)
+            if (normalized.FilterIds.Count > 0)
             {
-                query = query.Where(x => n.FilterSupplierIds.Contains(x.SupplierId));
+                query = query.Where(x => normalized.FilterIds.Contains(x.SupplierId));
             }
 
             return query;
@@ -81,9 +107,7 @@ namespace Ecommerce.Helpers.Suppliers
 
             if (!Enum.IsDefined(typeof(SupplierSortColumn), sortColumn))
             {
-                return desc
-                    ? query.OrderByDescending(s => s.SupplierId)
-                    : query.OrderBy(s => s.SupplierId);
+                return query.OrderByDescending(s => s.SupplierId);
             }
 
             var column = (SupplierSortColumn)sortColumn;
@@ -92,16 +116,20 @@ namespace Ecommerce.Helpers.Suppliers
             {
                 case SupplierSortColumn.Name:
                     return desc
-                        ? query.OrderByDescending(s => s.SupplierName)
-                        : query.OrderBy(s => s.SupplierName);
-                case SupplierSortColumn.CreatedAt:
+                        ? query.OrderByDescending(s => s.Name)
+                        : query.OrderBy(s => s.Name);
+                case SupplierSortColumn.CompanyName:
                     return desc
-                        ? query.OrderByDescending(s => s.CreatedAt)
-                        : query.OrderBy(s => s.CreatedAt);
-                case SupplierSortColumn.Email:
+                        ? query.OrderByDescending(s => s.CompanyName ?? string.Empty)
+                        : query.OrderBy(s => s.CompanyName ?? string.Empty);
+                case SupplierSortColumn.City:
                     return desc
-                        ? query.OrderByDescending(s => s.ContactEmail)
-                        : query.OrderBy(s => s.ContactEmail);
+                        ? query.OrderByDescending(s => s.City)
+                        : query.OrderBy(s => s.City);
+                case SupplierSortColumn.State:
+                    return desc
+                        ? query.OrderByDescending(s => s.State)
+                        : query.OrderBy(s => s.State);
                 case SupplierSortColumn.Id:
                 default:
                     return desc
@@ -112,12 +140,18 @@ namespace Ecommerce.Helpers.Suppliers
 
         public static TableOutput<Supplier> EmptyTableOutput(SupplierListInput? input)
         {
-            var pi = Math.Max(1, input?.PageIndex ?? 1);
-            var ps = Math.Max(1, input?.PageSize ?? 20);
+            var pageIndex = Math.Max(1, input?.PageIndex ?? 1);
+            var pageSize = Math.Max(1, input?.PageSize ?? 10);
+
             return new TableOutput<Supplier>
             {
                 TableData = new List<Supplier>(),
-                TableSettings = new TableOutput_Settings { PageIndex = pi, PageSize = ps, TotalCount = 0 }
+                TableSettings = new TableOutput_Settings
+                {
+                    PageIndex = pageIndex,
+                    PageSize = pageSize,
+                    TotalCount = 0
+                }
             };
         }
     }

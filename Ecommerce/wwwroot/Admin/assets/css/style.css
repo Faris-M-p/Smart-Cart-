@@ -22474,25 +22474,33 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
 #categoryTable.admin-master-list-table th.col-name,
 #categoryTable.admin-master-list-table td.col-name,
 #brandTable.admin-master-list-table th.col-name,
-#brandTable.admin-master-list-table td.col-name {
+#brandTable.admin-master-list-table td.col-name,
+#supplierTable.admin-master-list-table th.col-name,
+#supplierTable.admin-master-list-table td.col-name {
   width: 25%;
 }
 #categoryTable.admin-master-list-table th.col-desc,
 #categoryTable.admin-master-list-table td.col-desc,
 #brandTable.admin-master-list-table th.col-desc,
-#brandTable.admin-master-list-table td.col-desc {
+#brandTable.admin-master-list-table td.col-desc,
+#supplierTable.admin-master-list-table th.col-desc,
+#supplierTable.admin-master-list-table td.col-desc {
   width: 45%;
 }
 #categoryTable.admin-master-list-table th.col-status,
 #categoryTable.admin-master-list-table td.col-status,
 #brandTable.admin-master-list-table th.col-status,
-#brandTable.admin-master-list-table td.col-status {
+#brandTable.admin-master-list-table td.col-status,
+#supplierTable.admin-master-list-table th.col-status,
+#supplierTable.admin-master-list-table td.col-status {
   width: 15%;
 }
 #categoryTable.admin-master-list-table th.col-actions,
 #categoryTable.admin-master-list-table td.col-actions,
 #brandTable.admin-master-list-table th.col-actions,
-#brandTable.admin-master-list-table td.col-actions {
+#brandTable.admin-master-list-table td.col-actions,
+#supplierTable.admin-master-list-table th.col-actions,
+#supplierTable.admin-master-list-table td.col-actions {
   width: 15%;
 }
 #subCategoryTable.admin-master-list-table th.col-name,

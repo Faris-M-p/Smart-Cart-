@@ -35,8 +35,9 @@ namespace Ecommerce.Models.Enums
     {
         Id = 0,
         Name = 1,
-        CreatedAt = 2,
-        Email = 3
+        CompanyName = 2,
+        City = 3,
+        State = 4
     }
 
     public enum VariantSortColumn

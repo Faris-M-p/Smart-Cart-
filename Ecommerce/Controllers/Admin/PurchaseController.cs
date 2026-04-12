@@ -106,14 +106,15 @@ namespace Ecommerce.Controllers.Admin
                 {
                     SearchText = string.Empty,
                     FilterSupplierIDs = string.Empty,
-                    ShowCancelled = false,
                     PageIndex = 1,
                     PageSize = 1000,
                     SortColumn = (int)SupplierSortColumn.Name,
                     SortMode = "ASC"
                 };
                 var result = await _supplierInterface.GetSupplierListAsync(input);
-                var suppliers = result.TableData?.Where(s => !s.Cancelled).ToList() ?? new List<Supplier>();
+                var suppliers = result.TableData?
+                    .Where(s => !s.Cancelled && s.IsActive)
+                    .ToList() ?? new List<Supplier>();
                 return Ok(suppliers);
             }
             catch (Exception ex)

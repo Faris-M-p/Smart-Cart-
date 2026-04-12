@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.SupplierModel;
 using static Ecommerce.Models.CommonModel;
-using System.Linq;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -10,10 +9,17 @@ namespace Ecommerce.Controllers.Admin
     public class SupplierController : Controller
     {
         private readonly ISupplierInterface _supplierInterface;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public SupplierController(ISupplierInterface supplierInterface)
+        public SupplierController(
+            ISupplierInterface supplierInterface,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration)
         {
             _supplierInterface = supplierInterface;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         [Route("")]
@@ -35,15 +41,19 @@ namespace Ecommerce.Controllers.Admin
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return BadRequest(new { message = "Validation failed.", errors });
+
+                    return BadRequest(new ApiResponse<TableOutput<Supplier>>
+                    {
+                        Success = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new SupplierListInput
                 {
                     SearchText = viewInput.SearchText,
                     FilterSupplierIDs = viewInput.FilterSupplierIDs,
-                    ShowCancelled = viewInput.ShowCancelled,
                     PageIndex = viewInput.PageIndex,
                     PageSize = viewInput.PageSize,
                     SortColumn = viewInput.SortColumn,
@@ -51,11 +61,21 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _supplierInterface.GetSupplierListAsync(input);
-                return Ok(result);
+
+                return Ok(new ApiResponse<TableOutput<Supplier>>
+                {
+                    Success = true,
+                    Message = "Suppliers loaded successfully",
+                    Data = result
+                });
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                return StatusCode(500, new ApiResponse<TableOutput<Supplier>>
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
             }
         }
 
@@ -74,18 +94,22 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new SupplierUpdateInput
                 {
-                    UserAction = 1, // 1 = Add
-                    ID_Supplier = viewInput.ID_Supplier,
+                    UserAction = 1,
+                    SupplierId = viewInput.SupplierId,
                     SupplierName = viewInput.SupplierName,
-                    ContactPerson = viewInput.ContactPerson,
+                    CompanyName = viewInput.CompanyName,
                     Phone = viewInput.Phone,
                     Email = viewInput.Email,
-                    GSTNumber = viewInput.GSTNumber,
+                    State = viewInput.State,
+                    District = viewInput.District,
+                    City = viewInput.City,
                     Address = viewInput.Address,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    Pincode = viewInput.Pincode,
+                    Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
+                    EnterBy = 1
                 };
 
                 var result = await _supplierInterface.CreateSupplierAsync(input);
@@ -117,18 +141,22 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new SupplierUpdateInput
                 {
-                    UserAction = 2, // 2 = Edit
-                    ID_Supplier = viewInput.ID_Supplier,
+                    UserAction = 2,
+                    SupplierId = viewInput.SupplierId,
                     SupplierName = viewInput.SupplierName,
-                    ContactPerson = viewInput.ContactPerson,
+                    CompanyName = viewInput.CompanyName,
                     Phone = viewInput.Phone,
                     Email = viewInput.Email,
-                    GSTNumber = viewInput.GSTNumber,
+                    State = viewInput.State,
+                    District = viewInput.District,
+                    City = viewInput.City,
                     Address = viewInput.Address,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    Pincode = viewInput.Pincode,
+                    Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
+                    EnterBy = 1
                 };
 
                 var result = await _supplierInterface.UpdateSupplierAsync(input);
@@ -160,15 +188,11 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
-                // Note: ProSupplierUpdate uses UserAction = 3 for Delete
-                var input = new SupplierUpdateInput
+                var input = new SupplierDeleteInput
                 {
-                    UserAction = 3, // 3 = Delete (soft delete)
-                    ID_Supplier = viewInput.ID_Supplier,
-                    SupplierName = string.Empty, // Not needed for delete
+                    SupplierId = viewInput.SupplierId,
                     CancelledReason = viewInput.CancelledReason,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _supplierInterface.DeleteSupplierAsync(input);
@@ -187,23 +211,81 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
-        public async Task<IActionResult> GetById(long id)
+        public async Task<IActionResult> GetById(int id)
         {
             try
             {
-                var supplier = await _supplierInterface.GetSupplierByIdAsync(id);
-                
-                if (supplier != null)
+                var row = await _supplierInterface.GetSupplierByIdAsync(id);
+                if (row == null)
                 {
-                    return Ok(supplier);
+                    return NotFound(new { message = "Supplier not found." });
                 }
 
-                return NotFound(new { message = "Supplier not found." });
+                return Ok(row);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
             }
+        }
+
+        /// <summary>Proxy to CountryStateCity API (India states). Requires <c>CountryStateCity:ApiKey</c>.</summary>
+        [HttpGet]
+        [Route("Location/IndiaStates")]
+        public async Task<IActionResult> GetIndiaStates(CancellationToken cancellationToken)
+        {
+            var apiKey = _configuration["CountryStateCity:ApiKey"] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return Content("[]", "application/json");
+            }
+
+            var client = _httpClientFactory.CreateClient("CountryStateCity");
+            using var request = new HttpRequestMessage(HttpMethod.Get, "countries/IN/states");
+            request.Headers.TryAddWithoutValidation("X-CSCAPI-KEY", apiKey.Trim());
+
+            using var response = await client.SendAsync(request, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new ContentResult
+            {
+                Content = body,
+                ContentType = "application/json",
+                StatusCode = (int)response.StatusCode
+            };
+        }
+
+        /// <summary>Proxy to CountryStateCity API (cities in an Indian state). District dropdown uses this list; city narrows to the selected district name.</summary>
+        [HttpGet]
+        [Route("Location/IndiaCities/{stateIso}")]
+        public async Task<IActionResult> GetIndiaCitiesForState(string stateIso, CancellationToken cancellationToken)
+        {
+            var apiKey = _configuration["CountryStateCity:ApiKey"] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return Content("[]", "application/json");
+            }
+
+            var code = (stateIso ?? string.Empty).Trim().ToUpperInvariant();
+            if (code.Length == 0 || code.Length > 10)
+            {
+                return Content("[]", "application/json");
+            }
+
+            var client = _httpClientFactory.CreateClient("CountryStateCity");
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"countries/IN/states/{Uri.EscapeDataString(code)}/cities");
+            request.Headers.TryAddWithoutValidation("X-CSCAPI-KEY", apiKey.Trim());
+
+            using var response = await client.SendAsync(request, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+           
+            return new ContentResult
+            {
+                Content = body,
+                ContentType = "application/json",
+                StatusCode = (int)response.StatusCode
+            };
         }
     }
 }
