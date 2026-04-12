@@ -1,65 +1,31 @@
-USE [SmartCart]
-GO
-
-/****** Object:  Table [dbo].[Products]    Script Date: 18-01-2025 22:59:04 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
+-- Target schema for admin Product module (EF: ProductEntity).
+-- Apply to your database when migrating from legacy Products.
 
 CREATE TABLE [dbo].[Products](
-	[ProductId] [int] IDENTITY(1,1) NOT NULL,
-	[Name] [nvarchar](100) NOT NULL,
-	[Description] [nvarchar](max) NULL,
-	[Price] [decimal](10, 2) NOT NULL,
-	[MRP] [decimal](10, 2) NULL,
-	[CategoryId] [int] NULL,
-	[SubCategoryId] [int] NULL,
-	[BrandId] [int] NULL,
-	[Rating] [decimal](2, 1) NULL,
-	[Gender] [nvarchar](10) NULL,
-	[StatusId] [int] NULL,
-	[CreatedAt] [datetime] NULL,
-	[UpdatedAt] [datetime] NULL,
-	[Cancelled] [bit] NULL,
-	[CancelledOn] [datetime] NULL,
-	[CancelledReason] [nvarchar](255) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ProductId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+    [ID_Product] INT IDENTITY(1,1) NOT NULL,
+    [FK_SubCategory] INT NOT NULL,
+    [FK_Brand] INT NULL,
+    [Name] NVARCHAR(255) NOT NULL,
+    [Slug] NVARCHAR(255) NOT NULL,
+    [Description] NVARCHAR(MAX) NULL,
+    [IsActive] BIT NOT NULL CONSTRAINT [DF_Products_IsActive] DEFAULT ((1)),
+    [CreatedAt] DATETIME NULL CONSTRAINT [DF_Products_CreatedAt] DEFAULT (GETDATE()),
+    [ModifiedAt] DATETIME NULL,
+    [Cancelled] BIT NOT NULL CONSTRAINT [DF_Products_Cancelled] DEFAULT ((0)),
+    [CancelledOn] DATETIME NULL,
+    CONSTRAINT [PK_Products] PRIMARY KEY CLUSTERED ([ID_Product] ASC),
+    CONSTRAINT [UQ_Products_Slug] UNIQUE ([Slug])
+);
 GO
 
-ALTER TABLE [dbo].[Products] ADD  DEFAULT (getdate()) FOR [CreatedAt]
+ALTER TABLE [dbo].[Products] WITH CHECK ADD CONSTRAINT [FK_Products_SubCategory]
+    FOREIGN KEY ([FK_SubCategory]) REFERENCES [dbo].[SubCategory]([ID_SubCategory]);
 GO
 
-ALTER TABLE [dbo].[Products] ADD  DEFAULT ((0)) FOR [Cancelled]
+ALTER TABLE [dbo].[Products] WITH CHECK ADD CONSTRAINT [FK_Products_Brand]
+    FOREIGN KEY ([FK_Brand]) REFERENCES [dbo].[Brand]([ID_Brand]);
 GO
 
-ALTER TABLE [dbo].[Products]  WITH CHECK ADD FOREIGN KEY([StatusId])
-REFERENCES [dbo].[ProductStatus] ([StatusId])
-GO
-
-ALTER TABLE [dbo].[Products]  WITH CHECK ADD  CONSTRAINT [FK_Products_Brands] FOREIGN KEY([BrandId])
-REFERENCES [dbo].[Brands] ([BrandId])
-GO
-
-ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_Brands]
-GO
-
-ALTER TABLE [dbo].[Products]  WITH CHECK ADD  CONSTRAINT [FK_Products_Categories] FOREIGN KEY([CategoryId])
-REFERENCES [dbo].[Categories] ([CategoryId])
-GO
-
-ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_Categories]
-GO
-
-ALTER TABLE [dbo].[Products]  WITH CHECK ADD  CONSTRAINT [FK_Products_SubCategories] FOREIGN KEY([SubCategoryId])
-REFERENCES [dbo].[SubCategories] ([SubCategoryId])
-GO
-
-ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_SubCategories]
-GO
-
+-- ProductImages FK (column name may remain ProductId) references ID_Product
+-- ALTER TABLE [dbo].[ProductImages] ADD CONSTRAINT [FK_ProductImages_Products]
+--     FOREIGN KEY ([ProductId]) REFERENCES [dbo].[Products]([ID_Product]);

@@ -261,7 +261,7 @@ namespace Ecommerce.Repository.Admin
 
         private Task<bool> HasActiveProductsForSubCategoryAsync(int subCategoryId) =>
             _dbContext.Products.AnyAsync(p =>
-                p.SubCategoryId == subCategoryId && p.Cancelled != true);
+                p.FkSubCategory == subCategoryId && p.Cancelled != true);
 
         private async Task<bool> SubCategoryNameExistsAsync(string trimmedName, int categoryId, int excludeId)
         {

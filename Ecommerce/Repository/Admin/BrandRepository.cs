@@ -247,7 +247,7 @@ namespace Ecommerce.Repository.Admin
         private Task<bool> HasActiveProductsForBrandAsync(int brandId)
         {
             return _dbContext.Products.AnyAsync(p =>
-                p.BrandId == brandId &&
+                p.FkBrand == brandId &&
                 p.Cancelled != true);
         }
 

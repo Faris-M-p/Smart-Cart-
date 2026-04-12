@@ -19,7 +19,7 @@ namespace Ecommerce.Models.Enums
     {
         Id = 0,
         Name = 1,
-        Price = 2,
+        Slug = 2,
         CreatedOn = 3
     }
 
@@ -60,7 +60,7 @@ namespace Ecommerce.Models.Enums
         ProductId = 0,
         Name = 1,
         Price = 2,
-        CategoryId = 3
+        SubCategoryId = 3
     }
 
     /// <summary>Maps to dynamic sort column names expected by purchase list procedures.</summary>

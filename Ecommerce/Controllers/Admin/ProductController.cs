@@ -1,15 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
+using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.ProductModel;
 using static Ecommerce.Models.Admin.CategoryModel;
 using static Ecommerce.Models.Admin.SubCategoryModel;
+using static Ecommerce.Models.Admin.BrandModel;
 using static Ecommerce.Models.CommonModel;
-using System.Data;
-using Dapper;
-using Microsoft.Data.SqlClient;
-using Ecommerce.DataAccess;
-using Ecommerce.Interface;
-using Ecommerce.Models.Enums;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -19,18 +15,18 @@ namespace Ecommerce.Controllers.Admin
         private readonly IProductInterface _productInterface;
         private readonly ICategoryInterface _categoryInterface;
         private readonly ISubCategoryInterface _subCategoryInterface;
-        private readonly IDataAccessDapper _dataAccessDapper;
+        private readonly IBrandInterface _brandInterface;
 
         public ProductController(
             IProductInterface productInterface,
             ICategoryInterface categoryInterface,
             ISubCategoryInterface subCategoryInterface,
-            IDataAccessDapper dataAccessDapper)
+            IBrandInterface brandInterface)
         {
             _productInterface = productInterface;
             _categoryInterface = categoryInterface;
             _subCategoryInterface = subCategoryInterface;
-            _dataAccessDapper = dataAccessDapper;
+            _brandInterface = brandInterface;
         }
 
         [Route("")]
@@ -52,17 +48,21 @@ namespace Ecommerce.Controllers.Admin
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return BadRequest(new { message = "Validation failed.", errors });
+
+                    return BadRequest(new ApiResponse<TableOutput<Product>>
+                    {
+                        Success = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new ProductListInput
                 {
                     SearchText = viewInput.SearchText,
                     FilterCategoryIDs = viewInput.FilterCategoryIDs,
                     FilterSubCategoryIDs = viewInput.FilterSubCategoryIDs,
                     FilterBrandIDs = viewInput.FilterBrandIDs,
-                    FilterStatusIDs = viewInput.FilterStatusIDs,
                     PageIndex = viewInput.PageIndex,
                     PageSize = viewInput.PageSize,
                     SortColumn = viewInput.SortColumn,
@@ -70,11 +70,21 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _productInterface.GetProductListAsync(input);
-                return Ok(result);
+
+                return Ok(new ApiResponse<TableOutput<Product>>
+                {
+                    Success = true,
+                    Message = "Products loaded successfully",
+                    Data = result
+                });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                return StatusCode(500, new ApiResponse<TableOutput<Product>>
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
             }
         }
 
@@ -93,28 +103,27 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Validate MRP >= Price
-                if (viewInput.MRP.HasValue && viewInput.MRP < viewInput.Price)
+                var sub = await _subCategoryInterface.GetSubCategoryByIdAsync(viewInput.FK_SubCategory);
+                if (sub == null || sub.Cancelled)
                 {
-                    return BadRequest(new { message = "Validation failed.", errors = new[] { "MRP must be greater than or equal to Price." } });
+                    return BadRequest(new { message = "Validation failed.", errors = new[] { "Invalid subcategory." } });
                 }
 
-                // Map VIEW model to Procedure Input model
+                if (sub.FK_Category != viewInput.FK_Category)
+                {
+                    return BadRequest(new { message = "Validation failed.", errors = new[] { "Subcategory does not belong to the selected category." } });
+                }
+
                 var input = new ProductUpdateInput
                 {
-                    UserAction = 1, // 1 = Add
-                    ID_Product = viewInput.ID_Product,
+                    ID_Product = 0,
                     Name = viewInput.Name,
+                    Slug = viewInput.Slug,
                     Description = viewInput.Description,
-                    Price = viewInput.Price,
-                    MRP = viewInput.MRP,
-                    FK_Category = viewInput.FK_Category,
                     FK_SubCategory = viewInput.FK_SubCategory,
                     FK_Brand = viewInput.FK_Brand,
-                    Rating = viewInput.Rating,
-                    Gender = viewInput.Gender,
-                    FK_Status = viewInput.FK_Status,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    IsActive = viewInput.IsActive,
+                    EnterBy = 1
                 };
 
                 var result = await _productInterface.CreateProductAsync(input);
@@ -146,28 +155,27 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Validate MRP >= Price
-                if (viewInput.MRP.HasValue && viewInput.MRP < viewInput.Price)
+                var sub = await _subCategoryInterface.GetSubCategoryByIdAsync(viewInput.FK_SubCategory);
+                if (sub == null || sub.Cancelled)
                 {
-                    return BadRequest(new { message = "Validation failed.", errors = new[] { "MRP must be greater than or equal to Price." } });
+                    return BadRequest(new { message = "Validation failed.", errors = new[] { "Invalid subcategory." } });
                 }
 
-                // Map VIEW model to Procedure Input model
+                if (sub.FK_Category != viewInput.FK_Category)
+                {
+                    return BadRequest(new { message = "Validation failed.", errors = new[] { "Subcategory does not belong to the selected category." } });
+                }
+
                 var input = new ProductUpdateInput
                 {
-                    UserAction = 2, // 2 = Edit
                     ID_Product = viewInput.ID_Product,
                     Name = viewInput.Name,
+                    Slug = viewInput.Slug,
                     Description = viewInput.Description,
-                    Price = viewInput.Price,
-                    MRP = viewInput.MRP,
-                    FK_Category = viewInput.FK_Category,
                     FK_SubCategory = viewInput.FK_SubCategory,
                     FK_Brand = viewInput.FK_Brand,
-                    Rating = viewInput.Rating,
-                    Gender = viewInput.Gender,
-                    FK_Status = viewInput.FK_Status,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    IsActive = viewInput.IsActive,
+                    EnterBy = 1
                 };
 
                 var result = await _productInterface.UpdateProductAsync(input);
@@ -199,12 +207,10 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new ProductDeleteInput
                 {
                     ID_Product = viewInput.ID_Product,
-                    CancelledReason = viewInput.CancelledReason,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _productInterface.DeleteProductAsync(input);
@@ -228,7 +234,7 @@ namespace Ecommerce.Controllers.Admin
             try
             {
                 var product = await _productInterface.GetProductByIdAsync(id);
-                
+
                 if (product != null)
                 {
                     return Ok(product);
@@ -299,57 +305,33 @@ namespace Ecommerce.Controllers.Admin
         {
             try
             {
-                using var connection = _dataAccessDapper.CreateConnection();
-                
-                var brands = await connection.QueryAsync<Brand>(@"
-                    SELECT BrandId AS ID_Brand, BrandName AS Name
-                    FROM Brands
-                    WHERE Cancelled = 0
-                    ORDER BY BrandName ASC
-                ");
-                
-                return Ok(brands);
+                var input = new BrandListInput
+                {
+                    PageIndex = 1,
+                    PageSize = 2000,
+                    SearchText = string.Empty,
+                    FilterBrandIDs = string.Empty,
+                    SortColumn = 0,
+                    SortMode = "ASC"
+                };
+
+                var result = await _brandInterface.GetBrandListAsync(input);
+                var data = result?.TableData;
+                if (data == null)
+                {
+                    return Ok(Array.Empty<object>());
+                }
+
+                var rows = data
+                    .Where(b => !b.Cancelled && b.IsActive)
+                    .Select(b => new { ID_Brand = b.BrandID, Name = b.BrandName })
+                    .ToList();
+                return Ok(rows);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
             }
-        }
-
-        [HttpGet]
-        [Route("GetProductStatuses")]
-        public async Task<IActionResult> GetProductStatuses()
-        {
-            try
-            {
-                using var connection = _dataAccessDapper.CreateConnection();
-                
-                var statuses = await connection.QueryAsync<ProductStatus>(@"
-                    SELECT StatusId AS ID_Status, StatusName AS Name
-                    FROM ProductStatus
-                    WHERE Cancelled = 0
-                    ORDER BY StatusName ASC
-                ");
-                
-                return Ok(statuses);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
-            }
-        }
-
-        // Helper classes for dropdowns
-        private class Brand
-        {
-            public int ID_Brand { get; set; }
-            public string Name { get; set; } = string.Empty;
-        }
-
-        private class ProductStatus
-        {
-            public int ID_Status { get; set; }
-            public string Name { get; set; } = string.Empty;
         }
     }
 }

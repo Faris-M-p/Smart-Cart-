@@ -8,14 +8,8 @@ namespace Ecommerce.Helpers.Shop
 {
     public sealed record NormalizedShopListInput(
         string? SearchLower,
-        IReadOnlyList<int> CategoryIds,
         IReadOnlyList<int> SubCategoryIds,
         IReadOnlyList<int> BrandIds,
-        IReadOnlyList<int> RatingFilters,
-        string? GenderNormalized,
-        decimal? PriceFrom,
-        decimal? PriceTo,
-        int? StatusId,
         int PageIndex,
         int PageSize,
         int SortColumn,
@@ -29,26 +23,11 @@ namespace Ecommerce.Helpers.Shop
             var pageSize = Math.Max(1, input.PageSize);
             var raw = input.SearchName?.Trim() ?? string.Empty;
             string? searchLower = raw.Length >= 1 ? raw.ToLowerInvariant() : null;
-            var gender = string.IsNullOrWhiteSpace(input.Gender)
-                ? null
-                : input.Gender.Trim().ToLowerInvariant();
-
-            int? statusId = null;
-            if (!string.IsNullOrWhiteSpace(input.Status) && int.TryParse(input.Status.Trim(), out var sid))
-            {
-                statusId = sid;
-            }
 
             return new NormalizedShopListInput(
                 searchLower,
-                StringHelper.ParseFilterIds(input.CategoryIds),
                 StringHelper.ParseFilterIds(input.SubCategoryIds),
                 StringHelper.ParseFilterIds(input.BrandIds),
-                ParseRatingFilters(input.Ratings),
-                gender,
-                input.PriceFrom,
-                input.PriceTo,
-                statusId,
                 pageIndex,
                 pageSize,
                 input.SortColumn,
@@ -59,7 +38,7 @@ namespace Ecommerce.Helpers.Shop
             IQueryable<ProductEntity> query,
             NormalizedShopListInput n)
         {
-            query = query.Where(p => p.Cancelled != true);
+            query = query.Where(p => p.Cancelled != true && p.IsActive);
 
             if (n.SearchLower != null)
             {
@@ -67,48 +46,14 @@ namespace Ecommerce.Helpers.Shop
                 query = query.Where(p => p.Name.ToLower().Contains(s));
             }
 
-            if (n.CategoryIds.Count > 0)
-            {
-                query = query.Where(p => p.CategoryId != null && n.CategoryIds.Contains(p.CategoryId.Value));
-            }
-
             if (n.SubCategoryIds.Count > 0)
             {
-                query = query.Where(p => p.SubCategoryId != null && n.SubCategoryIds.Contains(p.SubCategoryId.Value));
+                query = query.Where(p => n.SubCategoryIds.Contains(p.FkSubCategory));
             }
 
             if (n.BrandIds.Count > 0)
             {
-                query = query.Where(p => p.BrandId != null && n.BrandIds.Contains(p.BrandId.Value));
-            }
-
-            if (n.RatingFilters.Count > 0)
-            {
-                query = query.Where(p =>
-                    p.Rating != null &&
-                    n.RatingFilters.Contains((int)Math.Round((double)p.Rating.Value)));
-            }
-
-            if (n.GenderNormalized != null)
-            {
-                query = query.Where(p =>
-                    p.Gender != null &&
-                    p.Gender.ToLower() == n.GenderNormalized);
-            }
-
-            if (n.PriceFrom.HasValue)
-            {
-                query = query.Where(p => p.Price >= n.PriceFrom.Value);
-            }
-
-            if (n.PriceTo.HasValue)
-            {
-                query = query.Where(p => p.Price <= n.PriceTo.Value);
-            }
-
-            if (n.StatusId.HasValue)
-            {
-                query = query.Where(p => p.StatusId == n.StatusId.Value);
+                query = query.Where(p => p.FkBrand != null && n.BrandIds.Contains(p.FkBrand.Value));
             }
 
             return query;
@@ -124,8 +69,8 @@ namespace Ecommerce.Helpers.Shop
             if (!Enum.IsDefined(typeof(ShopProductSortColumn), sortColumn))
             {
                 return desc
-                    ? query.OrderByDescending(p => p.ProductId)
-                    : query.OrderBy(p => p.ProductId);
+                    ? query.OrderByDescending(p => p.IdProduct)
+                    : query.OrderBy(p => p.IdProduct);
             }
 
             var column = (ShopProductSortColumn)sortColumn;
@@ -138,17 +83,17 @@ namespace Ecommerce.Helpers.Shop
                         : query.OrderBy(p => p.Name);
                 case ShopProductSortColumn.Price:
                     return desc
-                        ? query.OrderByDescending(p => p.Price)
-                        : query.OrderBy(p => p.Price);
-                case ShopProductSortColumn.CategoryId:
+                        ? query.OrderByDescending(p => p.Name)
+                        : query.OrderBy(p => p.Name);
+                case ShopProductSortColumn.SubCategoryId:
                     return desc
-                        ? query.OrderByDescending(p => p.CategoryId)
-                        : query.OrderBy(p => p.CategoryId);
+                        ? query.OrderByDescending(p => p.FkSubCategory)
+                        : query.OrderBy(p => p.FkSubCategory);
                 case ShopProductSortColumn.ProductId:
                 default:
                     return desc
-                        ? query.OrderByDescending(p => p.ProductId)
-                        : query.OrderBy(p => p.ProductId);
+                        ? query.OrderByDescending(p => p.IdProduct)
+                        : query.OrderBy(p => p.IdProduct);
             }
         }
 

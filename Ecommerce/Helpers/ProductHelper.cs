@@ -1,3 +1,4 @@
+using System.Text;
 using Ecommerce.Helpers.Common;
 using Ecommerce.Models.Entities;
 using Ecommerce.Models.Enums;
@@ -8,10 +9,8 @@ namespace Ecommerce.Helpers.Products
 {
     public sealed record NormalizedProductListInput(
         string? SearchLower,
-        IReadOnlyList<int> FilterCategoryIds,
         IReadOnlyList<int> FilterSubCategoryIds,
         IReadOnlyList<int> FilterBrandIds,
-        IReadOnlyList<int> FilterStatusIds,
         int PageIndex,
         int PageSize,
         int SortColumn,
@@ -19,57 +18,68 @@ namespace Ecommerce.Helpers.Products
 
     public sealed record NormalizedProductWriteInput(
         string Name,
+        string? SlugOverride,
         string? Description,
-        decimal Price,
-        decimal? MRP,
-        int FK_Category,
         int FK_SubCategory,
         int? FK_Brand,
-        decimal? Rating,
-        string? Gender,
-        int FK_Status);
+        bool IsActive);
 
     public static class ProductHelper
     {
+        /// <summary>Lowercase slug: letters/digits kept, spaces to hyphen, collapse hyphens.</summary>
+        public static string GenerateSlug(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return "product";
+            }
+
+            var sb = new StringBuilder();
+            var lastHyphen = false;
+            foreach (var ch in name.Trim().ToLowerInvariant())
+            {
+                if (char.IsLetterOrDigit(ch))
+                {
+                    sb.Append(ch);
+                    lastHyphen = false;
+                }
+                else if (char.IsWhiteSpace(ch) || ch == '-' || ch == '_')
+                {
+                    if (sb.Length > 0 && !lastHyphen)
+                    {
+                        sb.Append('-');
+                        lastHyphen = true;
+                    }
+                }
+            }
+
+            var s = sb.ToString().Trim('-');
+            return string.IsNullOrEmpty(s) ? "product" : s;
+        }
+
         public static NormalizedProductListInput NormalizeInput(ProductListInput input)
         {
             var pageIndex = Math.Max(1, input.PageIndex);
             var pageSize = Math.Max(1, input.PageSize);
-
             var rawSearch = input.SearchText?.Trim() ?? string.Empty;
-            string? searchLower = null;
-            if (rawSearch.Length >= 1)
-            {
-                searchLower = rawSearch.ToLowerInvariant();
-            }
-
-            var sortMode = input.SortMode?.Trim() ?? string.Empty;
-
+            string? searchLower = rawSearch.Length >= 1 ? rawSearch.ToLowerInvariant() : null;
             return new NormalizedProductListInput(
                 searchLower,
-                StringHelper.ParseFilterIds(input.FilterCategoryIDs),
                 StringHelper.ParseFilterIds(input.FilterSubCategoryIDs),
                 StringHelper.ParseFilterIds(input.FilterBrandIDs),
-                StringHelper.ParseFilterIds(input.FilterStatusIDs),
                 pageIndex,
                 pageSize,
                 input.SortColumn,
-                sortMode);
+                input.SortMode?.Trim() ?? string.Empty);
         }
 
-        public static NormalizedProductWriteInput NormalizeInput(ProductUpdateInput input)
+        public static NormalizedProductWriteInput NormalizeWriteInput(ProductUpdateInput input)
         {
-            return new NormalizedProductWriteInput(
-                Name: (input.Name ?? string.Empty).Trim(),
-                Description: StringHelper.NormalizeOptionalString(input.Description),
-                Price: input.Price,
-                MRP: input.MRP,
-                FK_Category: input.FK_Category,
-                FK_SubCategory: input.FK_SubCategory,
-                FK_Brand: input.FK_Brand,
-                Rating: input.Rating,
-                Gender: StringHelper.NormalizeOptionalString(input.Gender),
-                FK_Status: input.FK_Status <= 0 ? 1 : input.FK_Status);
+            var name = (input.Name ?? string.Empty).Trim();
+            var slugRaw = (input.Slug ?? string.Empty).Trim();
+            string? slugOverride = slugRaw.Length > 0 ? slugRaw : null;
+            var description = StringHelper.NormalizeOptionalString(input.Description);
+            return new NormalizedProductWriteInput(name, slugOverride, description, input.FK_SubCategory, input.FK_Brand, input.IsActive);
         }
 
         public static IQueryable<ProductEntity> ApplyFilters(
@@ -86,29 +96,12 @@ namespace Ecommerce.Helpers.Products
 
             if (n.FilterSubCategoryIds.Count > 0)
             {
-                query = query.Where(p =>
-                    p.SubCategoryId != null &&
-                    n.FilterSubCategoryIds.Contains(p.SubCategoryId.Value));
-            }
-            else if (n.FilterCategoryIds.Count > 0)
-            {
-                query = query.Where(p =>
-                    p.CategoryId != null &&
-                    n.FilterCategoryIds.Contains(p.CategoryId.Value));
+                query = query.Where(p => n.FilterSubCategoryIds.Contains(p.FkSubCategory));
             }
 
             if (n.FilterBrandIds.Count > 0)
             {
-                query = query.Where(p =>
-                    p.BrandId != null &&
-                    n.FilterBrandIds.Contains(p.BrandId.Value));
-            }
-
-            if (n.FilterStatusIds.Count > 0)
-            {
-                query = query.Where(p =>
-                    p.StatusId != null &&
-                    n.FilterStatusIds.Contains(p.StatusId.Value));
+                query = query.Where(p => p.FkBrand != null && n.FilterBrandIds.Contains(p.FkBrand.Value));
             }
 
             return query;
@@ -123,7 +116,9 @@ namespace Ecommerce.Helpers.Products
 
             if (!Enum.IsDefined(typeof(ProductSortColumn), sortColumn))
             {
-                return query.OrderByDescending(p => p.ProductId);
+                return desc
+                    ? query.OrderByDescending(p => p.IdProduct)
+                    : query.OrderBy(p => p.IdProduct);
             }
 
             var column = (ProductSortColumn)sortColumn;
@@ -134,10 +129,10 @@ namespace Ecommerce.Helpers.Products
                     return desc
                         ? query.OrderByDescending(p => p.Name)
                         : query.OrderBy(p => p.Name);
-                case ProductSortColumn.Price:
+                case ProductSortColumn.Slug:
                     return desc
-                        ? query.OrderByDescending(p => p.Price)
-                        : query.OrderBy(p => p.Price);
+                        ? query.OrderByDescending(p => p.Slug)
+                        : query.OrderBy(p => p.Slug);
                 case ProductSortColumn.CreatedOn:
                     return desc
                         ? query.OrderByDescending(p => p.CreatedAt)
@@ -145,8 +140,8 @@ namespace Ecommerce.Helpers.Products
                 case ProductSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(p => p.ProductId)
-                        : query.OrderBy(p => p.ProductId);
+                        ? query.OrderByDescending(p => p.IdProduct)
+                        : query.OrderBy(p => p.IdProduct);
             }
         }
 
@@ -154,7 +149,6 @@ namespace Ecommerce.Helpers.Products
         {
             var pageIndex = Math.Max(1, input?.PageIndex ?? 1);
             var pageSize = Math.Max(1, input?.PageSize ?? 10);
-
             return new TableOutput<Product>
             {
                 TableData = new List<Product>(),

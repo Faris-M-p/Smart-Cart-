@@ -135,7 +135,6 @@ namespace Ecommerce.Controllers.Admin
                     FilterCategoryIDs = string.Empty,
                     FilterSubCategoryIDs = string.Empty,
                     FilterBrandIDs = string.Empty,
-                    FilterStatusIDs = string.Empty,
                     PageIndex = 1,
                     PageSize = 1000,
                     SortColumn = (int)ProductSortColumn.Name,

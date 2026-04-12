@@ -2,13 +2,12 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<!-- [ breadcrumb ] start -->
 <div class="page-header">
     <div class="page-block">
         <div class="row align-items-center">
             <div class="col-md-12">
                 <div class="page-header-title">
-                    <h5 class="m-b-10">Product Management</h5>
+                    <h5 class="m-b-10">Product management</h5>
                 </div>
                 <ul class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
@@ -19,99 +18,66 @@
         </div>
     </div>
 </div>
-<!-- [ breadcrumb ] end -->
 
-<!-- [ Main Content ] start -->
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-white border-0 pb-0">
+            <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Products</h5>
+                    <h5>Product list</h5>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" onclick="openCreateModal()">
-                        <i class="ti ti-plus"></i> Add Product
+                        <i class="ti ti-plus"></i> Add product
                     </button>
                 </div>
             </div>
-            
             <div class="card-body pt-3">
-                <!-- Filter and Search Bar -->
                 <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-                    <!-- Filter Button -->
-                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                        <i class="ti ti-filter"></i> Filter
-                    </button>
-                    
-                    <!-- Search Box -->
-                    <div class="flex-grow-1 mx-3 search-input">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="ti ti-search"></i>
-                            </span>
-                            <input type="text" id="searchText" class="form-control" placeholder="Search products...">
+                    <div class="row g-2 flex-grow-1 align-items-end">
+                        <div class="col-md-3">
+                            <label for="filterCategory" class="form-label small text-muted mb-0">Category</label>
+                            <select id="filterCategory" class="form-select form-select-sm" onchange="onFilterCategoryChange()">
+                                <option value="">All</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Collapsible Filter Section -->
-                <div class="collapse mb-3" id="filterCollapse">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label small text-muted mb-1">Category</label>
-                                <select id="filterCategory" class="form-select">
-                                    <option value="">All Categories</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-3">
-                                <label class="form-label small text-muted mb-1">SubCategory</label>
-                                <select id="filterSubCategory" class="form-select">
-                                    <option value="">All SubCategories</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-3">
-                                <label class="form-label small text-muted mb-1">Brand</label>
-                                <select id="filterBrand" class="form-select">
-                                    <option value="">All Brands</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-3">
-                                <label class="form-label small text-muted mb-1">&nbsp;</label>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="loadProducts()">
-                                        <i class="ti ti-check"></i> Apply
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                                        <i class="ti ti-refresh"></i> Reset
-                                    </button>
-                                </div>
+                        <div class="col-md-3">
+                            <label for="filterSubCategory" class="form-label small text-muted mb-0">Subcategory</label>
+                            <select id="filterSubCategory" class="form-select form-select-sm">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterBrand" class="form-label small text-muted mb-0">Brand</label>
+                            <select id="filterBrand" class="form-select form-select-sm">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="searchText" class="form-label small text-muted mb-0">Search</label>
+                            <div class="input-group search-input">
+                                <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                <input type="text" id="searchText" class="form-control" placeholder="Search by name…">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Product Table -->
                 <div class="table-container">
                     <div class="table-scroll-wrapper">
-                        <table class="table table-hover align-middle mb-0" id="productTable">
+                        <table class="table align-middle mb-0 admin-master-list-table" id="productTable">
                             <thead>
                                 <tr>
-                                    <th class="text-muted">Product</th>
-                                    <th class="text-muted">Category</th>
-                                    <th class="text-muted">Stock</th>
-                                    <th class="text-muted">Price</th>
-                                    <th class="text-muted">Status</th>
-                                    <th class="text-muted text-end">Actions</th>
+                                    <th class="col-name text-start">Name</th>
+                                    <th class="text-start">Category</th>
+                                    <th class="text-start">Brand</th>
+                                    <th class="col-status text-start">Status</th>
+                                    <th class="col-actions text-start">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="productTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-5">
+                                    <td colspan="5" class="text-center py-5">
                                         <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Loading...</span>
+                                            <span class="visually-hidden">Loading…</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -120,7 +86,6 @@
                     </div>
                 </div>
 
-                <!-- Pagination Section -->
                 <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted small">Show</span>
@@ -132,13 +97,10 @@
                         </select>
                         <span class="text-muted small">per page</span>
                     </div>
-                    
                     <div class="d-flex align-items-center gap-3">
                         <span id="paginationInfo" class="text-muted small"></span>
                         <nav aria-label="Page navigation">
-                            <ul class="pagination pagination-sm mb-0" id="pagination">
-                                <!-- Pagination will be generated here -->
-                            </ul>
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
                         </nav>
                     </div>
                 </div>
@@ -146,110 +108,74 @@
         </div>
     </div>
 </div>
-<!-- [ Main Content ] end -->
 
-
-<!-- Product Modal (Create/Edit) -->
 <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="productModalLabel">Add Product</h5>
+                <h5 class="modal-title" id="productModalLabel">Add product</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="productForm">
-                    <input type="hidden" id="productID" name="ID_Product" value="0">
+                    <input type="hidden" id="productID" value="0">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="productName" class="form-label">Product Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="productName" name="Name" required>
-                            <div class="invalid-feedback"></div>
+                            <label for="productName" class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="productName" maxlength="255" required>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="productSlug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="productSlug" maxlength="255" placeholder="Leave blank to generate from name">
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="fkCategory" class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="fkCategory" name="FK_Category" required onchange="loadSubCategoriesForProduct()">
-                                <option value="">Select Category</option>
-                            </select>
-                            <div class="invalid-feedback"></div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fkSubCategory" class="form-label">SubCategory <span class="text-danger">*</span></label>
-                            <select class="form-select" id="fkSubCategory" name="FK_SubCategory" required>
-                                <option value="">Select SubCategory</option>
-                            </select>
-                            <div class="invalid-feedback"></div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="fkBrand" class="form-label">Brand</label>
-                            <select class="form-select" id="fkBrand" name="FK_Brand">
-                                <option value="">Select Brand</option>
+                            <select class="form-select" id="fkCategory" required onchange="loadSubCategoriesForProduct()">
+                                <option value="">Select category</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="price" class="form-label">Price <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="0.01" class="form-control" id="price" name="Price" required>
-                            <div class="invalid-feedback"></div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="mrp" class="form-label">MRP</label>
-                            <input type="number" step="0.01" min="0.01" class="form-control" id="mrp" name="MRP">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="fkStatus" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select" id="fkStatus" name="FK_Status" required>
-                                <option value="">Select Status</option>
-                            </select>
-                            <div class="invalid-feedback"></div>
-                        </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="rating" class="form-label">Rating (0-5)</label>
-                            <input type="number" step="0.1" min="0" max="5" class="form-control" id="rating" name="Rating">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="gender" class="form-label">Gender</label>
-                            <select class="form-select" id="gender" name="Gender">
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Unisex">Unisex</option>
+                            <label for="fkSubCategory" class="form-label">Subcategory <span class="text-danger">*</span></label>
+                            <select class="form-select" id="fkSubCategory" required>
+                                <option value="">Select subcategory</option>
                             </select>
                         </div>
                     </div>
                     <div class="mb-3">
+                        <label for="fkBrand" class="form-label">Brand</label>
+                        <select class="form-select" id="fkBrand">
+                            <option value="">Optional</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="productIsActive" checked>
+                        <label class="form-check-label" for="productIsActive">Active</label>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+                <button type="button" class="btn btn-primary" onclick="saveProduct()">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Product</h5>
+                <h5 class="modal-title" id="deleteModalLabel">Delete product</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to delete this product?</p>
-                <div class="mb-3">
-                    <label for="deleteReason" class="form-label">Reason for deletion</label>
-                    <textarea class="form-control" id="deleteReason" rows="3" placeholder="Optional"></textarea>
-                </div>
                 <input type="hidden" id="deleteProductID" value="0">
             </div>
             <div class="modal-footer">
@@ -262,455 +188,341 @@
 
 <script>
     let currentPage = 1;
-    let pageSize = 10;
-    let categories = [];
-    let subCategories = [];
-    let brands = [];
-    let statuses = [];
-    let categoryMap = {};
-    let subCategoryMap = {};
-    let brandMap = {};
-    let statusMap = {};
+    let paginationInstance;
     let productSearchTimeout;
 
-    // Load data on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '…' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    function normalizeTableSettings(s) {
+        if (!s) return { pageIndex: 1, pageSize: 10, totalCount: 0 };
+        return {
+            pageIndex: s.pageIndex ?? s.PageIndex ?? 1,
+            pageSize: s.pageSize ?? s.PageSize ?? 10,
+            totalCount: s.totalCount ?? s.TotalCount ?? 0
+        };
+    }
+
+    function filterJsonFromSelect(selectId) {
+        const v = document.getElementById(selectId).value;
+        if (!v) return '';
+        const n = parseInt(v, 10);
+        if (isNaN(n) || n <= 0) return '';
+        return `[{"ID_Value":${n}}]`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadProducts
+        });
         loadCategories();
-        loadSubCategories();
+        loadSubCategoriesForFilter();
         loadBrands();
-        loadStatuses();
         loadProducts();
 
         document.getElementById('searchText').addEventListener('input', function () {
-            const value = this.value.trim();
             clearTimeout(productSearchTimeout);
             productSearchTimeout = setTimeout(function () {
-                if (value.length === 0 || value.length >= 1) {
-                    loadProducts(1);
-                }
+                loadProducts(1);
             }, 500);
         });
 
-        // Category filter change
-        document.getElementById('filterCategory').addEventListener('change', function() {
-            loadSubCategoriesForFilter();
-            loadProducts();
-        });
+        document.getElementById('filterSubCategory').addEventListener('change', function () { loadProducts(1); });
+        document.getElementById('filterBrand').addEventListener('change', function () { loadProducts(1); });
     });
 
     async function loadCategories() {
         try {
             const response = await fetch('/Admin/Product/GetCategories');
-            if (!response.ok) throw new Error('Failed to fetch categories');
+            if (!response.ok) throw new Error('Failed to load categories');
+            const categories = await response.json();
 
-            categories = await response.json();
-            categoryMap = {};
-            categories.forEach(cat => {
-                categoryMap[cat.CategoryID] = cat.CategoryName;
-            });
+            const filterSel = document.getElementById('filterCategory');
+            const formSel = document.getElementById('fkCategory');
+            filterSel.innerHTML = '<option value="">All</option>';
+            formSel.innerHTML = '<option value="">Select category</option>';
 
-            // Populate category dropdowns
-            const filterDropdown = document.getElementById('filterCategory');
-            const formDropdown = document.getElementById('fkCategory');
-            
-            filterDropdown.innerHTML = '<option value="">All Categories</option>';
-            formDropdown.innerHTML = '<option value="">Select Category</option>';
-            
-            categories.forEach(cat => {
-                if (!cat.Cancelled) {
-                    const option1 = new Option(cat.CategoryName, cat.CategoryID);
-                    const option2 = new Option(cat.CategoryName, cat.CategoryID);
-                    filterDropdown.add(option1);
-                    formDropdown.add(option2);
-                }
+            categories.forEach(function (cat) {
+                if (cat.cancelled || cat.Cancelled) return;
+                const id = cat.categoryID ?? cat.CategoryID;
+                const name = cat.categoryName ?? cat.CategoryName ?? '';
+                filterSel.add(new Option(name, String(id)));
+                formSel.add(new Option(name, String(id)));
             });
-        } catch (error) {
-            console.error('Error loading categories:', error);
+        } catch (e) {
+            console.error(e);
         }
     }
 
-    async function loadSubCategories(categoryId = null) {
+    async function onFilterCategoryChange() {
+        await loadSubCategoriesForFilter();
+        loadProducts(1);
+    }
+
+    async function loadSubCategoriesForFilter() {
+        const categoryId = document.getElementById('filterCategory').value;
+        const url = categoryId ? `/Admin/Product/GetSubCategories?categoryId=${categoryId}` : '/Admin/Product/GetSubCategories';
         try {
-            const url = categoryId ? `/Admin/Product/GetSubCategories?categoryId=${categoryId}` : '/Admin/Product/GetSubCategories';
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch subcategories');
-
-            subCategories = await response.json();
-            subCategoryMap = {};
-            subCategories.forEach(subCat => {
-                subCategoryMap[subCat.ID_SubCategory] = subCat.SubCategoryName;
+            if (!response.ok) throw new Error('Failed to load subcategories');
+            const list = await response.json();
+            const sel = document.getElementById('filterSubCategory');
+            sel.innerHTML = '<option value="">All</option>';
+            list.forEach(function (sc) {
+                if (sc.cancelled || sc.Cancelled) return;
+                const id = sc.id_SubCategory ?? sc.ID_SubCategory;
+                const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
+                sel.add(new Option(name, String(id)));
             });
-
-            // Populate subcategory dropdowns
-            const filterDropdown = document.getElementById('filterSubCategory');
-            const formDropdown = document.getElementById('fkSubCategory');
-            
-            filterDropdown.innerHTML = '<option value="">All SubCategories</option>';
-            formDropdown.innerHTML = '<option value="">Select SubCategory</option>';
-            
-            subCategories.forEach(subCat => {
-                if (!subCat.Cancelled) {
-                    const option1 = new Option(subCat.SubCategoryName, subCat.ID_SubCategory);
-                    const option2 = new Option(subCat.SubCategoryName, subCat.ID_SubCategory);
-                    filterDropdown.add(option1);
-                    formDropdown.add(option2);
-                }
-            });
-        } catch (error) {
-            console.error('Error loading subcategories:', error);
+        } catch (e) {
+            console.error(e);
         }
     }
 
     async function loadSubCategoriesForProduct() {
         const categoryId = document.getElementById('fkCategory').value;
-        if (categoryId) {
-            await loadSubCategories(parseInt(categoryId));
-        } else {
-            document.getElementById('fkSubCategory').innerHTML = '<option value="">Select SubCategory</option>';
-        }
-    }
-
-    async function loadSubCategoriesForFilter() {
-        const categoryId = document.getElementById('filterCategory').value;
-        if (categoryId) {
-            await loadSubCategories(parseInt(categoryId));
-        } else {
-            document.getElementById('filterSubCategory').innerHTML = '<option value="">All SubCategories</option>';
+        const sel = document.getElementById('fkSubCategory');
+        sel.innerHTML = '<option value="">Select subcategory</option>';
+        if (!categoryId) return;
+        try {
+            const response = await fetch(`/Admin/Product/GetSubCategories?categoryId=${categoryId}`);
+            if (!response.ok) throw new Error('Failed to load subcategories');
+            const list = await response.json();
+            list.forEach(function (sc) {
+                if (sc.cancelled || sc.Cancelled) return;
+                const id = sc.id_SubCategory ?? sc.ID_SubCategory;
+                const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
+                sel.add(new Option(name, String(id)));
+            });
+        } catch (e) {
+            console.error(e);
         }
     }
 
     async function loadBrands() {
         try {
             const response = await fetch('/Admin/Product/GetBrands');
-            if (!response.ok) throw new Error('Failed to fetch brands');
-
-            brands = await response.json();
-            brandMap = {};
-            brands.forEach(brand => {
-                brandMap[brand.ID_Brand] = brand.Name;
+            if (!response.ok) throw new Error('Failed to load brands');
+            const brands = await response.json();
+            const filterSel = document.getElementById('filterBrand');
+            const formSel = document.getElementById('fkBrand');
+            filterSel.innerHTML = '<option value="">All</option>';
+            formSel.innerHTML = '<option value="">Optional</option>';
+            brands.forEach(function (b) {
+                const id = b.id_Brand ?? b.ID_Brand;
+                const name = b.name ?? b.Name ?? '';
+                filterSel.add(new Option(name, String(id)));
+                formSel.add(new Option(name, String(id)));
             });
-
-            // Populate brand dropdowns
-            const filterDropdown = document.getElementById('filterBrand');
-            const formDropdown = document.getElementById('fkBrand');
-            
-            filterDropdown.innerHTML = '<option value="">All Brands</option>';
-            formDropdown.innerHTML = '<option value="">Select Brand</option>';
-            
-            brands.forEach(brand => {
-                const option1 = new Option(brand.Name, brand.ID_Brand);
-                const option2 = new Option(brand.Name, brand.ID_Brand);
-                filterDropdown.add(option1);
-                formDropdown.add(option2);
-            });
-        } catch (error) {
-            console.error('Error loading brands:', error);
-        }
-    }
-
-    async function loadStatuses() {
-        try {
-            const response = await fetch('/Admin/Product/GetProductStatuses');
-            if (!response.ok) throw new Error('Failed to fetch statuses');
-
-            statuses = await response.json();
-            statusMap = {};
-            statuses.forEach(status => {
-                statusMap[status.ID_Status] = status.Name;
-            });
-
-            // Populate status dropdown
-            const formDropdown = document.getElementById('fkStatus');
-            formDropdown.innerHTML = '<option value="">Select Status</option>';
-            
-            statuses.forEach(status => {
-                const option = new Option(status.Name, status.ID_Status);
-                formDropdown.add(option);
-            });
-        } catch (error) {
-            console.error('Error loading statuses:', error);
+        } catch (e) {
+            console.error(e);
         }
     }
 
     async function loadProducts(page = 1) {
         currentPage = page;
-        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
-        const searchText = document.getElementById('searchText').value || '';
-        const filterCategoryID = document.getElementById('filterCategory').value || '';
-        const filterSubCategoryID = document.getElementById('filterSubCategory').value || '';
-        const filterBrandID = document.getElementById('filterBrand').value || '';
-
-        let filterCategoryIDs = '';
-        if (filterCategoryID) {
-            filterCategoryIDs = `[{"ID_Value":${filterCategoryID}}]`;
-        }
-
-        let filterSubCategoryIDs = '';
-        if (filterSubCategoryID) {
-            filterSubCategoryIDs = `[{"ID_Value":${filterSubCategoryID}}]`;
-        }
-
-        let filterBrandIDs = '';
-        if (filterBrandID) {
-            filterBrandIDs = `[{"ID_Value":${filterBrandID}}]`;
-        }
-
         const input = {
-            SearchText: searchText,
-            FilterCategoryIDs: filterCategoryIDs,
-            FilterSubCategoryIDs: filterSubCategoryIDs,
-            FilterBrandIDs: filterBrandIDs,
-            FilterStatusIDs: '',
-            PageIndex: page,
-            PageSize: pageSize,
-            SortColumn: 0,
-            SortMode: ''
+            searchText: document.getElementById('searchText').value || '',
+            filterCategoryIDs: filterJsonFromSelect('filterCategory'),
+            filterSubCategoryIDs: filterJsonFromSelect('filterSubCategory'),
+            filterBrandIDs: filterJsonFromSelect('filterBrand'),
+            pageIndex: page,
+            pageSize: parseInt(document.getElementById('pageSize').value, 10) || 10,
+            sortColumn: 0,
+            sortMode: ''
         };
 
         try {
             const response = await fetch('/Admin/Product/GetProductList', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            const result = await response.json();
+
+            if (!result.success) {
+                emptyState.showError(
+                    'productTableBody',
+                    result.errors?.length ? result.errors.join('<br>') : result.message,
+                    { onRetry: 'loadProducts()', title: 'Error loading products' },
+                    5
+                );
+                return;
             }
 
-            const data = await response.json();
-            displayProducts(data.TableData || []);
-            displayPagination(data.TableSettings);
-        } catch (error) {
-            console.error('Error loading products:', error);
-            emptyState.showError('productTableBody', error, {}, 6);
+            const data = result.data;
+            if (!data?.tableData?.length) {
+                emptyState.showNoData('productTableBody', {
+                    title: 'No products found',
+                    message: 'Try adjusting search or filters.',
+                    onClear: 'clearProductSearch()'
+                }, 5);
+                if (paginationInstance && data?.tableSettings) {
+                    paginationInstance.render(normalizeTableSettings(data.tableSettings));
+                }
+                return;
+            }
+
+            displayProducts(data.tableData);
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(normalizeTableSettings(data.tableSettings));
+            }
+        } catch (e) {
+            console.error(e);
+            emptyState.showError(
+                'productTableBody',
+                'Unable to connect to server.',
+                { onRetry: 'loadProducts()', title: 'Server error' },
+                5
+            );
         }
     }
 
     function displayProducts(products) {
         const tbody = document.getElementById('productTableBody');
-        
-        if (!products || products.length === 0) {
-            emptyState.showNoData('productTableBody', {
-                title: 'No products found',
-                message: 'We can\'t find any products matching your search.<br>Try adjusting your filters or search terms.',
-                onReset: 'resetFilters()',
-                onClear: 'clearSearch()'
-            }, 6);
-            return;
-        }
-
-        tbody.innerHTML = products.map(product => {
-            const imageHtml = product.ImageData 
-                ? `<img src="${product.IsBase64 ? 'data:image/jpeg;base64,' + product.ImageData : product.ImageData}" 
-                       alt="${escapeHtml(product.Name)}" 
-                       class="product-img">`
-                : '<div class="product-img bg-light d-flex align-items-center justify-content-center"><i class="ti ti-photo text-muted"></i></div>';
-            
-            const categoryName = escapeHtml(categoryMap[product.FK_Category] || 'N/A');
-            const statusName = statusMap[product.FK_Status] || 'N/A';
-            const statusLower = statusName.toLowerCase();
-            const isActive = statusLower === 'active';
-            const statusClass = isActive ? 'badge-active' : 'badge-inactive';
-            
-            // Stock - using a placeholder if not available in the API response
-            const stock = product.Stock !== undefined ? product.Stock : (product.Quantity || 0);
-            
+        tbody.innerHTML = products.map(function (p) {
+            const id = p.id_Product ?? p.ID_Product ?? 0;
+            const name = p.name ?? p.Name ?? '';
+            const cat = p.categoryName ?? p.CategoryName ?? '';
+            const brand = p.brandName ?? p.BrandName ?? '';
+            const active = p.isActive ?? p.IsActive ?? false;
+            const cancelled = p.cancelled ?? p.Cancelled ?? false;
+            const badgeClass = active ? 'bg-success' : 'bg-secondary';
+            const statusText = cancelled ? 'Deleted' : (active ? 'Active' : 'Inactive');
             return `
                 <tr>
-                    <td>
-                        <div class="product-info">
-                            ${imageHtml}
-                            <div>
-                                <div class="product-name">${escapeHtml(product.Name)}</div>
-                                <div class="product-category">${categoryName}</div>
-                            </div>
-                        </div>
+                    <td class="col-name text-start">${truncatedCellHtml(name)}</td>
+                    <td class="text-start">${truncatedCellHtml(cat, 30)}</td>
+                    <td class="text-start">${truncatedCellHtml(brand || '—', 25)}</td>
+                    <td class="col-status text-start">
+                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip">${escapeHtml(statusText)}</span>
                     </td>
-                    <td>${categoryName}</td>
-                    <td>${stock}</td>
-                    <td>$${product.Price.toFixed(2)}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${escapeHtml(statusName)}
-                        </span>
+                    <td class="col-actions text-start">
+                        ${cancelled ? '' : `
+                        <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
+                        </div>`}
                     </td>
-                    <td class="text-end">
-                        <button class="btn-action" onclick="openEditModal(${product.ID_Product})" title="Edit">
-                            <i class="ti ti-edit"></i>
-                        </button>
-                        <button class="btn-action" onclick="openDeleteModal(${product.ID_Product})" title="Delete">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
+                </tr>`;
         }).join('');
-    }
-
-    function displayPagination(settings) {
-        if (!settings) return;
-
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
-        const pagination = document.getElementById('pagination');
-        const paginationInfo = document.getElementById('paginationInfo');
-
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
-
-        let paginationHTML = '';
-        
-        // Previous button
-        if (settings.PageIndex <= 1) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadProducts(${settings.PageIndex - 1}); return false;">Previous</a>
-            </li>`;
-        }
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
-                    paginationHTML += `<li class="page-item active">
-                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
-                    </li>`;
-                } else {
-                    paginationHTML += `<li class="page-item">
-                        <a class="page-link" href="#!" onclick="loadProducts(${i}); return false;">${i}</a>
-                    </li>`;
-                }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-        }
-
-        // Next button
-        if (settings.PageIndex >= totalPages) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadProducts(${settings.PageIndex + 1}); return false;">Next</a>
-            </li>`;
-        }
-
-        pagination.innerHTML = paginationHTML;
+        initTableTooltips(tbody);
     }
 
     function openCreateModal() {
-        document.getElementById('productModalLabel').textContent = 'Add Product';
+        document.getElementById('productModalLabel').textContent = 'Add product';
         document.getElementById('productForm').reset();
         document.getElementById('productID').value = '0';
-        document.getElementById('fkCategory').value = '';
-        document.getElementById('fkSubCategory').innerHTML = '<option value="">Select SubCategory</option>';
-        document.getElementById('fkBrand').value = '';
-        document.getElementById('fkStatus').value = '1';
+        document.getElementById('fkSubCategory').innerHTML = '<option value="">Select subcategory</option>';
+        document.getElementById('productIsActive').checked = true;
     }
 
     async function openEditModal(productID) {
         try {
-            const response = await fetch(`/Admin/Product/GetById/${productID}`);
-            if (!response.ok) throw new Error('Failed to fetch product');
-
-            const product = await response.json();
-            
-            document.getElementById('productModalLabel').textContent = 'Edit Product';
-            document.getElementById('productID').value = product.ID_Product;
-            document.getElementById('productName').value = product.Name || '';
-            document.getElementById('description').value = product.Description || '';
-            document.getElementById('price').value = product.Price || '';
-            document.getElementById('mrp').value = product.MRP || '';
-            document.getElementById('fkCategory').value = product.FK_Category || '';
-            
-            // Load subcategories for selected category
-            if (product.FK_Category) {
-                await loadSubCategories(parseInt(product.FK_Category));
-            }
-            
-            document.getElementById('fkSubCategory').value = product.FK_SubCategory || '';
-            document.getElementById('fkBrand').value = product.FK_Brand || '';
-            document.getElementById('rating').value = product.Rating || '';
-            document.getElementById('gender').value = product.Gender || '';
-            document.getElementById('fkStatus').value = product.FK_Status || '1';
-            
-            const modal = new bootstrap.Modal(document.getElementById('productModal'));
-            modal.show();
-        } catch (error) {
-            console.error('Error loading product:', error);
-            showError('Error', 'Error loading product details. Please try again.');
+            const response = await fetch('/Admin/Product/GetById/' + productID);
+            if (!response.ok) throw new Error('Not found');
+            const p = await response.json();
+            document.getElementById('productModalLabel').textContent = 'Edit product';
+            document.getElementById('productID').value = String(p.id_Product ?? p.ID_Product ?? 0);
+            document.getElementById('productName').value = p.name ?? p.Name ?? '';
+            document.getElementById('productSlug').value = p.slug ?? p.Slug ?? '';
+            document.getElementById('description').value = p.description ?? p.Description ?? '';
+            document.getElementById('productIsActive').checked = (p.isActive ?? p.IsActive ?? true) === true;
+            const fkCat = p.fk_Category ?? p.FK_Category ?? '';
+            document.getElementById('fkCategory').value = String(fkCat);
+            await loadSubCategoriesForProduct();
+            document.getElementById('fkSubCategory').value = String(p.fk_SubCategory ?? p.FK_SubCategory ?? '');
+            const fb = p.fk_Brand ?? p.FK_Brand;
+            document.getElementById('fkBrand').value = fb != null && fb !== '' ? String(fb) : '';
+            new bootstrap.Modal(document.getElementById('productModal')).show();
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Could not load product.');
+            else alert('Could not load product.');
         }
     }
 
     function openDeleteModal(productID) {
-        document.getElementById('deleteProductID').value = productID;
-        document.getElementById('deleteReason').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
+        document.getElementById('deleteProductID').value = String(productID);
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 
     async function saveProduct() {
-        debugger;
-        const productID = parseInt(document.getElementById('productID').value);
-        const productName = document.getElementById('productName').value.trim();
+        const productID = parseInt(document.getElementById('productID').value, 10);
+        const name = document.getElementById('productName').value.trim();
+        const slug = document.getElementById('productSlug').value.trim();
         const description = document.getElementById('description').value.trim();
-        const price = parseFloat(document.getElementById('price').value);
-        const mrp = document.getElementById('mrp').value ? parseFloat(document.getElementById('mrp').value) : null;
-        const fkCategory = parseInt(document.getElementById('fkCategory').value);
-        const fkSubCategory = parseInt(document.getElementById('fkSubCategory').value);
-        const fkBrand = document.getElementById('fkBrand').value ? parseInt(document.getElementById('fkBrand').value) : null;
-        const rating = document.getElementById('rating').value ? parseFloat(document.getElementById('rating').value) : null;
-        const gender = document.getElementById('gender').value || null;
-        const fkStatus = parseInt(document.getElementById('fkStatus').value);
-        console.log('[Product] Validating product name:', productName);
-        if (!productName) {
-            console.log('[Product] Product name is empty, showing warning toast...');
-            console.log('[Product] showWarning function exists:', typeof showWarning !== 'undefined');
-            const result = showWarning('Validation Error', 'Please enter product name.');
-            console.log('[Product] showWarning returned:', result);
+        const fkCategory = parseInt(document.getElementById('fkCategory').value, 10);
+        const fkSubCategory = parseInt(document.getElementById('fkSubCategory').value, 10);
+        const fkBrandVal = document.getElementById('fkBrand').value;
+        const fkBrand = fkBrandVal ? parseInt(fkBrandVal, 10) : null;
+
+        if (!name) {
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please enter a name.');
+            else alert('Please enter a name.');
             return;
         }
-
-        if (!price || price <= 0) {
-            showWarning('Validation Error', 'Please enter a valid price.');
-            return;
-        }
-
-        if (mrp && mrp < price) {
-            showWarning('Validation Error', 'MRP must be greater than or equal to Price.');
-            return;
-        }
-
         if (!fkCategory || fkCategory <= 0) {
-            showWarning('Validation Error', 'Please select a category.');
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a category.');
+            else alert('Please select a category.');
             return;
         }
-
         if (!fkSubCategory || fkSubCategory <= 0) {
-            showWarning('Validation Error', 'Please select a subcategory.');
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a subcategory.');
+            else alert('Please select a subcategory.');
             return;
         }
 
-        if (!fkStatus || fkStatus <= 0) {
-            showWarning('Validation Error', 'Please select a status.');
-            return;
-        }
-
-        const input = {
-            ID_Product: productID,
-            Name: productName,
-            Description: description,
-            Price: price,
-            MRP: mrp,
-            FK_Category: fkCategory,
-            FK_SubCategory: fkSubCategory,
-            FK_Brand: fkBrand,
-            Rating: rating,
-            Gender: gender,
-            FK_Status: fkStatus
+        const body = {
+            id_Product: productID,
+            fk_Category: fkCategory,
+            fk_SubCategory: fkSubCategory,
+            fk_Brand: fkBrand,
+            name: name,
+            slug: slug,
+            description: description,
+            isActive: document.getElementById('productIsActive').checked
         };
 
         const url = productID === 0 ? '/Admin/Product/Create' : '/Admin/Product/Update';
@@ -718,84 +530,61 @@
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(input)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
-
             const result = await response.json();
-
-            if (result.StatusCode) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
-                modal.hide();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
                 loadProducts(currentPage);
-                showSuccess('Success', result.ResponseMsg || 'Product saved successfully.');
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'Product saved.');
+                }
             } else {
-                if (result.errors && result.errors.length > 0) {
-                    showError('Validation Error', result.errors.join('\n'));
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
                 } else {
-                    showError('Error', result.ResponseMsg || 'Error saving product.');
+                    alert(result.responseMsg || result.ResponseMsg || 'Save failed.');
                 }
             }
-        } catch (error) {
-            console.error('Error saving product:', error);
-            showError('Error', 'Error saving product. Please try again.');
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Save failed.');
+            else alert('Save failed.');
         }
     }
 
     async function confirmDelete() {
-        const productID = parseInt(document.getElementById('deleteProductID').value);
-        const reason = document.getElementById('deleteReason').value.trim();
-
-        const input = {
-            ID_Product: productID,
-            CancelledReason: reason
-        };
-
+        const productID = parseInt(document.getElementById('deleteProductID').value, 10);
         try {
             const response = await fetch('/Admin/Product/Delete', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(input)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_Product: productID })
             });
-
             const result = await response.json();
-
-            if (result.StatusCode) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                modal.hide();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
                 loadProducts(currentPage);
-                showSuccess('Success', result.ResponseMsg || 'Product deleted successfully.');
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'Deleted.');
+                }
             } else {
-                showError('Error', result.ResponseMsg || 'Error deleting product.');
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                } else {
+                    alert(result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                }
             }
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            showError('Error', 'Error deleting product. Please try again.');
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Delete failed.');
+            else alert('Delete failed.');
         }
     }
 
-    function resetFilters() {
+    function clearProductSearch() {
         document.getElementById('searchText').value = '';
-        document.getElementById('filterCategory').value = '';
-        document.getElementById('filterSubCategory').value = '';
-        document.getElementById('filterBrand').value = '';
-        const pageSizeEl = document.getElementById('pageSize');
-        if (pageSizeEl) {
-            pageSizeEl.value = '10';
-        }
-        loadSubCategories();
         loadProducts(1);
     }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 </script>
-<!-- [ Main Content ] end -->

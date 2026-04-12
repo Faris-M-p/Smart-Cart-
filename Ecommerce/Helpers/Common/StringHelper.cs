@@ -47,6 +47,19 @@ namespace Ecommerce.Helpers.Common
             }
         }
 
+        /// <summary>Builds admin filter JSON for <see cref="ParseFilterIds"/>.</summary>
+        public static string FormatFilterIds(IEnumerable<int> ids)
+        {
+            var list = ids.Where(id => id > 0).Distinct().ToList();
+            if (list.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var payload = list.Select(id => new CommonModel.CommonInputArray { ID = id }).ToList();
+            return JsonSerializer.Serialize(payload);
+        }
+
         public static string? TruncateOptional(string? value, int maxLength)
         {
             var n = (value ?? string.Empty).Trim();

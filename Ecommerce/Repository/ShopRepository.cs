@@ -1,4 +1,5 @@
 ﻿using Ecommerce.DataAccess;
+using Ecommerce.Helpers.Common;
 using Ecommerce.Helpers.Shop;
 using Ecommerce.Interface;
 using Ecommerce.Models.Entities;
@@ -26,7 +27,36 @@ namespace Ecommerce.Repository
 
             try
             {
-                var normalized = ShopHelper.NormalizeInput(input);
+                var categoryIds = StringHelper.ParseFilterIds(input.CategoryIds);
+                var mergedInput = new InputProduct
+                {
+                    PageIndex = input.PageIndex,
+                    PageSize = input.PageSize,
+                    SearchName = input.SearchName,
+                    SortColumn = input.SortColumn,
+                    SortMode = input.SortMode,
+                    CategoryIds = string.Empty,
+                    SubCategoryIds = input.SubCategoryIds,
+                    BrandIds = input.BrandIds,
+                    Ratings = string.Empty,
+                    Gender = string.Empty,
+                    PriceFrom = null,
+                    PriceTo = null,
+                    Status = string.Empty
+                };
+
+                if (categoryIds.Count > 0)
+                {
+                    var fromCats = await _dbContext.SubCategories.AsNoTracking()
+                        .Where(sc => categoryIds.Contains(sc.FK_Category) && sc.Cancelled != true)
+                        .Select(sc => sc.ID_SubCategory)
+                        .ToListAsync();
+                    var existing = StringHelper.ParseFilterIds(input.SubCategoryIds);
+                    var merged = existing.Concat(fromCats).Distinct().ToList();
+                    mergedInput.SubCategoryIds = StringHelper.FormatFilterIds(merged);
+                }
+
+                var normalized = ShopHelper.NormalizeInput(mergedInput);
                 var filteredQuery = ShopHelper.ApplyFilters(_dbContext.Products.AsNoTracking(), normalized);
                 var totalCount = await filteredQuery.LongCountAsync();
                 var sortedQuery = ShopHelper.ApplySorting(filteredQuery, normalized.SortColumn, normalized.SortMode);
@@ -35,15 +65,15 @@ namespace Ecommerce.Repository
                     .Take(normalized.PageSize)
                     .Select(p => new Product
                     {
-                        ProductId = p.ProductId,
+                        ProductId = p.IdProduct,
                         Name = p.Name,
-                        CategoryId = p.CategoryId ?? 0,
-                        SubCategoryId = p.SubCategoryId ?? 0,
-                        BrandId = p.BrandId ?? 0,
-                        Rating = (int)Math.Round((double)(p.Rating ?? 0m)),
-                        Gender = p.Gender ?? string.Empty,
-                        Price = p.Price,
-                        MRP = p.MRP ?? 0m
+                        CategoryId = 0,
+                        SubCategoryId = p.FkSubCategory,
+                        BrandId = p.FkBrand ?? 0,
+                        Rating = 0,
+                        Gender = string.Empty,
+                        Price = 0,
+                        MRP = 0
                     })
                     .ToListAsync();
 

@@ -4,8 +4,8 @@ using Ecommerce.Helpers.Products;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using static Ecommerce.Models.Admin.ProductModel;
 using static Ecommerce.Models.CommonModel;
+using static Ecommerce.Models.Admin.ProductModel;
 
 namespace Ecommerce.Repository.Admin
 {
@@ -27,40 +27,69 @@ namespace Ecommerce.Repository.Admin
 
             try
             {
+                var categoryIds = StringHelper.ParseFilterIds(input.FilterCategoryIDs);
                 var normalized = ProductHelper.NormalizeInput(input);
-                var filtered = ProductHelper.ApplyFilters(_dbContext.Products.AsNoTracking(), normalized);
-                var totalCount = await filtered.LongCountAsync();
-                var sorted = ProductHelper.ApplySorting(filtered, normalized.SortColumn, normalized.SortMode);
-                var paged = sorted
-                    .Skip((normalized.PageIndex - 1) * normalized.PageSize)
-                    .Take(normalized.PageSize);
 
-                var db = _dbContext;
-                var rows = await paged
-                    .Select(p => new Product
-                    {
-                        ID_Product = p.ProductId,
-                        Name = p.Name,
-                        Description = p.Description,
-                        Price = p.Price,
-                        MRP = p.MRP,
-                        FK_Category = p.CategoryId ?? 0,
-                        FK_SubCategory = p.SubCategoryId ?? 0,
-                        FK_Brand = p.BrandId,
-                        Rating = p.Rating,
-                        Gender = p.Gender,
-                        FK_Status = p.StatusId ?? 0,
-                        CreatedOn = p.CreatedAt,
-                        UpdatedOn = p.UpdatedAt,
-                        ImageData = db.ProductImages
-                            .Where(pi => pi.ProductId == p.ProductId && pi.Cancelled != true)
-                            .OrderBy(pi => pi.ProductImageId)
-                            .Select(pi => pi.ImageUrl)
-                            .FirstOrDefault(),
-                        IsBase64 = null,
-                        Cancelled = p.Cancelled ?? false
-                    })
+                var query = _dbContext.Products.AsNoTracking().Where(p => p.Cancelled != true);
+
+                if (categoryIds.Count > 0)
+                {
+                    var allowedSubIds = _dbContext.SubCategories.AsNoTracking()
+                        .Where(sc => categoryIds.Contains(sc.FK_Category) && sc.Cancelled != true)
+                        .Select(sc => sc.ID_SubCategory);
+                    query = query.Where(p => allowedSubIds.Contains(p.FkSubCategory));
+                }
+
+                query = ProductHelper.ApplyFilters(query, normalized);
+
+                var totalCount = await query.LongCountAsync();
+                var sortedQuery = ProductHelper.ApplySorting(query, normalized.SortColumn, normalized.SortMode);
+
+                var pageIds = await sortedQuery
+                    .Skip((normalized.PageIndex - 1) * normalized.PageSize)
+                    .Take(normalized.PageSize)
+                    .Select(p => p.IdProduct)
                     .ToListAsync();
+
+                if (pageIds.Count == 0)
+                {
+                    return new TableOutput<Product>
+                    {
+                        TableData = new List<Product>(),
+                        TableSettings = new TableOutput_Settings
+                        {
+                            PageIndex = normalized.PageIndex,
+                            PageSize = normalized.PageSize,
+                            TotalCount = totalCount
+                        }
+                    };
+                }
+
+                var rowsUnordered = await (
+                    from p in _dbContext.Products.AsNoTracking()
+                    join sc in _dbContext.SubCategories.AsNoTracking() on p.FkSubCategory equals sc.ID_SubCategory
+                    join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.IdCategory
+                    join b in _dbContext.Brands.AsNoTracking() on p.FkBrand equals b.BrandId into bg
+                    from b in bg.DefaultIfEmpty()
+                    where pageIds.Contains(p.IdProduct)
+                    select new Product
+                    {
+                        ID_Product = p.IdProduct,
+                        Name = p.Name,
+                        Slug = p.Slug,
+                        FK_SubCategory = p.FkSubCategory,
+                        FK_Brand = p.FkBrand,
+                        FK_Category = sc.FK_Category,
+                        CategoryName = c.Name,
+                        SubCategoryName = sc.Name,
+                        BrandName = b != null ? b.BrandName : null,
+                        Description = p.Description,
+                        IsActive = p.IsActive,
+                        Cancelled = p.Cancelled
+                    }).ToListAsync();
+
+                var index = pageIds.Select((id, i) => (id, i)).ToDictionary(x => x.id, x => x.i);
+                var rows = rowsUnordered.OrderBy(r => index[r.ID_Product]).ToList();
 
                 return new TableOutput<Product>
                 {
@@ -79,117 +108,85 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        public async Task<Product> GetProductByIdAsync(int id)
+        public async Task<Product?> GetProductByIdAsync(int id)
         {
             if (id <= 0)
             {
-                return null!;
+                return null;
             }
 
-            try
-            {
-                var db = _dbContext;
-                return await _dbContext.Products
-                    .AsNoTracking()
-                    .Where(p => p.ProductId == id)
-                    .Select(p => new Product
-                    {
-                        ID_Product = p.ProductId,
-                        Name = p.Name,
-                        Description = p.Description,
-                        Price = p.Price,
-                        MRP = p.MRP,
-                        FK_Category = p.CategoryId ?? 0,
-                        FK_SubCategory = p.SubCategoryId ?? 0,
-                        FK_Brand = p.BrandId,
-                        Rating = p.Rating,
-                        Gender = p.Gender,
-                        FK_Status = p.StatusId ?? 0,
-                        CreatedOn = p.CreatedAt,
-                        UpdatedOn = p.UpdatedAt,
-                        ImageData = db.ProductImages
-                            .Where(pi => pi.ProductId == p.ProductId && pi.Cancelled != true)
-                            .OrderBy(pi => pi.ProductImageId)
-                            .Select(pi => pi.ImageUrl)
-                            .FirstOrDefault(),
-                        IsBase64 = null,
-                        Cancelled = p.Cancelled ?? false
-                    })
-                    .FirstOrDefaultAsync()!;
-            }
-            catch
-            {
-                return null!;
-            }
+            return await (
+                from p in _dbContext.Products.AsNoTracking()
+                join sc in _dbContext.SubCategories.AsNoTracking() on p.FkSubCategory equals sc.ID_SubCategory
+                join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.IdCategory
+                join b in _dbContext.Brands.AsNoTracking() on p.FkBrand equals b.BrandId into bg
+                from b in bg.DefaultIfEmpty()
+                where p.IdProduct == id && !p.Cancelled
+                select new Product
+                {
+                    ID_Product = p.IdProduct,
+                    Name = p.Name,
+                    Slug = p.Slug,
+                    FK_SubCategory = p.FkSubCategory,
+                    FK_Brand = p.FkBrand,
+                    FK_Category = sc.FK_Category,
+                    CategoryName = c.Name,
+                    SubCategoryName = sc.Name,
+                    BrandName = b != null ? b.BrandName : null,
+                    Description = p.Description,
+                    IsActive = p.IsActive,
+                    Cancelled = p.Cancelled
+                }).FirstOrDefaultAsync();
         }
 
         public async Task<CommonResponse> CreateProductAsync(ProductUpdateInput input)
         {
             if (input == null)
             {
-                return Fail("Product name is required.");
+                return Fail("Invalid request.");
             }
 
             try
             {
-                var normalized = ProductHelper.NormalizeInput(input);
-                if (normalized.Name.Length == 0)
+                var n = ProductHelper.NormalizeWriteInput(input);
+                if (n.Name.Length == 0)
                 {
-                    return Fail("Product name is required.");
+                    return Fail("Please enter product name.");
                 }
 
-                if (normalized.Price <= 0)
+                if (!await SubCategoryExistsAsync(n.FK_SubCategory))
                 {
-                    return Fail("Price must be greater than zero.");
+                    return Fail("Invalid subcategory.");
                 }
 
-                if (normalized.MRP.HasValue && normalized.MRP < normalized.Price)
+                if (n.FK_Brand.HasValue && !await BrandExistsAsync(n.FK_Brand.Value))
                 {
-                    return Fail("MRP must be >= Price.");
+                    return Fail("Invalid brand.");
                 }
 
-                if (!await ValidCategoryAsync(normalized.FK_Category))
-                {
-                    return Fail("Invalid Category.");
-                }
-
-                if (!await ValidSubCategoryAsync(normalized.FK_SubCategory, normalized.FK_Category))
-                {
-                    return Fail("Invalid SubCategory.");
-                }
-
-                if (await DuplicateProductNameAsync(
-                        normalized.Name,
-                        normalized.FK_Category,
-                        normalized.FK_SubCategory,
-                        excludeProductId: 0))
-                {
-                    return Fail("Duplicate product exists.");
-                }
+                var baseSlug = n.SlugOverride != null
+                    ? ProductHelper.GenerateSlug(n.SlugOverride)
+                    : ProductHelper.GenerateSlug(n.Name);
+                var slug = await EnsureUniqueSlugAsync(baseSlug, excludeProductId: 0);
 
                 var entity = new ProductEntity
                 {
-                    Name = normalized.Name,
-                    Description = normalized.Description,
-                    Price = normalized.Price,
-                    MRP = normalized.MRP,
-                    CategoryId = normalized.FK_Category,
-                    SubCategoryId = normalized.FK_SubCategory,
-                    BrandId = normalized.FK_Brand,
-                    Rating = normalized.Rating,
-                    Gender = normalized.Gender,
-                    StatusId = normalized.FK_Status,
+                    FkSubCategory = n.FK_SubCategory,
+                    FkBrand = n.FK_Brand,
+                    Name = n.Name,
+                    Slug = slug,
+                    Description = n.Description,
+                    IsActive = n.IsActive,
                     CreatedAt = DateTime.Now,
-                    UpdatedAt = null,
+                    ModifiedAt = null,
                     Cancelled = false,
-                    CancelledOn = null,
-                    CancelledReason = null
+                    CancelledOn = null
                 };
 
                 _dbContext.Products.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.ProductId, "Product created successfully.");
+                return Ok(entity.IdProduct, "Product created successfully.");
             }
             catch (Exception ex)
             {
@@ -206,65 +203,50 @@ namespace Ecommerce.Repository.Admin
 
             try
             {
-                var normalized = ProductHelper.NormalizeInput(input);
-                if (normalized.Name.Length == 0)
+                if (input.ID_Product <= 0)
                 {
-                    return Fail("Product name is required.");
+                    return Fail("Invalid product ID.");
                 }
 
-                if (normalized.Price <= 0)
+                var n = ProductHelper.NormalizeWriteInput(input);
+                if (n.Name.Length == 0)
                 {
-                    return Fail("Price must be greater than zero.");
+                    return Fail("Please enter product name.");
                 }
 
-                if (normalized.MRP.HasValue && normalized.MRP < normalized.Price)
+                if (!await SubCategoryExistsAsync(n.FK_SubCategory))
                 {
-                    return Fail("MRP must be >= Price.");
+                    return Fail("Invalid subcategory.");
                 }
 
-                if (!await ValidCategoryAsync(normalized.FK_Category))
+                if (n.FK_Brand.HasValue && !await BrandExistsAsync(n.FK_Brand.Value))
                 {
-                    return Fail("Invalid Category.");
+                    return Fail("Invalid brand.");
                 }
 
-                if (!await ValidSubCategoryAsync(normalized.FK_SubCategory, normalized.FK_Category))
-                {
-                    return Fail("Invalid SubCategory.");
-                }
-
-                var entity = await _dbContext.Products
-                    .FirstOrDefaultAsync(p => p.ProductId == input.ID_Product);
-
+                var entity = await _dbContext.Products.FirstOrDefaultAsync(p => p.IdProduct == input.ID_Product);
                 if (entity == null)
                 {
-                    return Fail("Invalid Product ID.");
+                    return Fail("Invalid product ID.");
                 }
 
-                if (entity.Cancelled == true)
+                if (entity.Cancelled)
                 {
-                    return Fail("Product is deleted.");
+                    return Fail("This product is deleted and cannot be edited.");
                 }
 
-                if (await DuplicateProductNameAsync(
-                        normalized.Name,
-                        normalized.FK_Category,
-                        normalized.FK_SubCategory,
-                        excludeProductId: input.ID_Product))
-                {
-                    return Fail("Duplicate product exists.");
-                }
+                var baseSlug = n.SlugOverride != null
+                    ? ProductHelper.GenerateSlug(n.SlugOverride)
+                    : ProductHelper.GenerateSlug(n.Name);
+                var slug = await EnsureUniqueSlugAsync(baseSlug, excludeProductId: input.ID_Product);
 
-                entity.Name = normalized.Name;
-                entity.Description = normalized.Description;
-                entity.Price = normalized.Price;
-                entity.MRP = normalized.MRP;
-                entity.CategoryId = normalized.FK_Category;
-                entity.SubCategoryId = normalized.FK_SubCategory;
-                entity.BrandId = normalized.FK_Brand;
-                entity.Rating = normalized.Rating;
-                entity.Gender = normalized.Gender;
-                entity.StatusId = normalized.FK_Status;
-                entity.UpdatedAt = DateTime.Now;
+                entity.Name = n.Name;
+                entity.Slug = slug;
+                entity.Description = n.Description;
+                entity.FkSubCategory = n.FK_SubCategory;
+                entity.FkBrand = n.FK_Brand;
+                entity.IsActive = n.IsActive;
+                entity.ModifiedAt = DateTime.Now;
 
                 await _dbContext.SaveChangesAsync();
 
@@ -280,37 +262,33 @@ namespace Ecommerce.Repository.Admin
         {
             if (input == null)
             {
-                return Fail("Invalid Product ID.");
+                return Fail("Invalid product ID.");
             }
 
             try
             {
-                var productId = input.ID_Product;
-                if (productId <= 0)
+                if (input.ID_Product <= 0)
                 {
-                    return Fail("Invalid Product ID.");
+                    return Fail("Invalid product ID.");
                 }
 
-                var entity = await _dbContext.Products
-                    .FirstOrDefaultAsync(p => p.ProductId == productId);
-
+                var entity = await _dbContext.Products.FirstOrDefaultAsync(p => p.IdProduct == input.ID_Product);
                 if (entity == null)
                 {
-                    return Fail("Invalid Product ID.");
+                    return Fail("Invalid product ID.");
                 }
 
-                if (entity.Cancelled == true)
+                if (entity.Cancelled)
                 {
-                    return Fail("Product already deleted.");
+                    return Fail("This product is already deleted.");
                 }
 
                 entity.Cancelled = true;
                 entity.CancelledOn = DateTime.Now;
-                entity.CancelledReason = StringHelper.NormalizeOptionalString(input.CancelledReason);
 
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(productId, "Product deleted successfully.");
+                return Ok(input.ID_Product, "Product deleted successfully.");
             }
             catch (Exception ex)
             {
@@ -318,34 +296,35 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        private Task<bool> ValidCategoryAsync(int categoryId)
+        private async Task<string> EnsureUniqueSlugAsync(string baseSlug, int excludeProductId)
         {
-            return _dbContext.Categories.AnyAsync(c =>
-                c.IdCategory == categoryId &&
-                !c.Cancelled);
+            var slug = baseSlug;
+            var n = 0;
+            while (await SlugInUseAsync(slug, excludeProductId))
+            {
+                n++;
+                slug = $"{baseSlug}-{n}";
+            }
+
+            return slug;
         }
 
-        private Task<bool> ValidSubCategoryAsync(int subCategoryId, int categoryId)
+        private Task<bool> SlugInUseAsync(string slug, int excludeProductId)
         {
-            return _dbContext.SubCategories.AnyAsync(s =>
-                s.ID_SubCategory == subCategoryId &&
-                s.FK_Category == categoryId &&
-                s.Cancelled != true);
-        }
-
-        private Task<bool> DuplicateProductNameAsync(
-            string name,
-            int categoryId,
-            int subCategoryId,
-            int excludeProductId)
-        {
+            var key = slug.ToLowerInvariant();
             return _dbContext.Products.AnyAsync(p =>
-                p.Cancelled != true &&
-                p.ProductId != excludeProductId &&
-                p.Name == name &&
-                p.CategoryId == categoryId &&
-                p.SubCategoryId == subCategoryId);
+                !p.Cancelled &&
+                p.IdProduct != excludeProductId &&
+                p.Slug.ToLower() == key);
         }
+
+        private Task<bool> SubCategoryExistsAsync(int subCategoryId) =>
+            _dbContext.SubCategories.AnyAsync(sc =>
+                sc.ID_SubCategory == subCategoryId &&
+                sc.Cancelled != true);
+
+        private Task<bool> BrandExistsAsync(int brandId) =>
+            _dbContext.Brands.AnyAsync(b => b.BrandId == brandId && !b.Cancelled);
 
         private static CommonResponse Ok(long responseCode, string message) =>
             new()
