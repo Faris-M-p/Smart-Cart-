@@ -24,7 +24,7 @@ namespace Ecommerce.Models.Admin
             public int PageSize { get; set; } = 10;
 
             [Display(Name = "Sort Column")]
-            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            [Range(0, 2, ErrorMessage = "{0} must be between {1} and {2}.")]
             public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
@@ -41,6 +41,13 @@ namespace Ecommerce.Models.Admin
             [RequiredNotEmpty]
             [System.ComponentModel.DataAnnotations.MaxLength(100, ErrorMessage = "{0} cannot exceed 100 characters.")]
             public string BrandName { get; set; } = string.Empty;
+
+            [Display(Name = "Description")]
+            [System.ComponentModel.DataAnnotations.MaxLength(1000, ErrorMessage = "{0} cannot exceed 1000 characters.")]
+            public string Description { get; set; } = string.Empty;
+
+            [Display(Name = "Active")]
+            public bool? IsActive { get; set; }
         }
 
         public class BrandDeleteInputVIEW
@@ -55,7 +62,6 @@ namespace Ecommerce.Models.Admin
             public string CancelledReason { get; set; } = string.Empty;
         }
 
-        // Procedure Input Models - For Stored Procedures
         public class BrandListInput
         {
             [Display(Name = "Search Text")]
@@ -74,13 +80,13 @@ namespace Ecommerce.Models.Admin
             public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
-            public string SortMode { get; set; } = string.Empty; // ASC / DESC
+            public string SortMode { get; set; } = string.Empty;
         }
 
         public class BrandUpdateInput
         {
             [Display(Name = "User Action")]
-            public int UserAction { get; set; } // 1 = Add, 2 = Edit
+            public int UserAction { get; set; }
 
             [Display(Name = "Brand ID")]
             public int BrandID { get; set; } = 0;
@@ -88,8 +94,14 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Brand Name")]
             public string BrandName { get; set; } = string.Empty;
 
+            [Display(Name = "Description")]
+            public string Description { get; set; } = string.Empty;
+
+            [Display(Name = "Is Active")]
+            public bool IsActive { get; set; } = true;
+
             [Display(Name = "Enter By")]
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
+            public int EnterBy { get; set; } = 1;
         }
 
         public class BrandDeleteInput
@@ -101,25 +113,23 @@ namespace Ecommerce.Models.Admin
             public string CancelledReason { get; set; } = string.Empty;
 
             [Display(Name = "Enter By")]
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
+            public int EnterBy { get; set; } = 1;
         }
 
-        // Output Models from Stored Procedures
         public class Brand
         {
-            [Display(Name = "Brand ID")]
             public int BrandID { get; set; }
 
-            [Display(Name = "Brand Name")]
             public string BrandName { get; set; } = string.Empty;
 
-            [Display(Name = "Cancelled")]
+            public string? Description { get; set; }
+
+            public bool IsActive { get; set; }
+
             public bool Cancelled { get; set; }
 
-            [Display(Name = "Cancelled On")]
             public DateTime? CancelledOn { get; set; }
 
-            [Display(Name = "Cancelled Reason")]
             public string? CancelledReason { get; set; }
         }
     }

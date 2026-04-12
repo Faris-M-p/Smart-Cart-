@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.BrandModel;
 using static Ecommerce.Models.CommonModel;
-using System.Linq;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -35,10 +34,15 @@ namespace Ecommerce.Controllers.Admin
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return BadRequest(new { message = "Validation failed.", errors });
+
+                    return BadRequest(new ApiResponse<TableOutput<Brand>>
+                    {
+                        Success = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new BrandListInput
                 {
                     SearchText = viewInput.SearchText,
@@ -50,11 +54,21 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _brandInterface.GetBrandListAsync(input);
-                return Ok(result);
+
+                return Ok(new ApiResponse<TableOutput<Brand>>
+                {
+                    Success = true,
+                    Message = "Brands loaded successfully",
+                    Data = result
+                });
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                return StatusCode(500, new ApiResponse<TableOutput<Brand>>
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
             }
         }
 
@@ -73,13 +87,14 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new BrandUpdateInput
                 {
-                    UserAction = 1, // 1 = Add
+                    UserAction = 1,
                     BrandID = viewInput.BrandID,
                     BrandName = viewInput.BrandName,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
+                    EnterBy = 1
                 };
 
                 var result = await _brandInterface.CreateBrandAsync(input);
@@ -111,13 +126,14 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new BrandUpdateInput
                 {
-                    UserAction = 2, // 2 = Edit
+                    UserAction = 2,
                     BrandID = viewInput.BrandID,
                     BrandName = viewInput.BrandName,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    Description = viewInput.Description,
+                    IsActive = viewInput.IsActive ?? true,
+                    EnterBy = 1
                 };
 
                 var result = await _brandInterface.UpdateBrandAsync(input);
@@ -149,12 +165,11 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new BrandDeleteInput
                 {
                     BrandID = viewInput.BrandID,
                     CancelledReason = viewInput.CancelledReason,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _brandInterface.DeleteBrandAsync(input);
@@ -177,14 +192,13 @@ namespace Ecommerce.Controllers.Admin
         {
             try
             {
-                var brand = await _brandInterface.GetBrandByIdAsync(id);
-                
-                if (brand != null)
+                var row = await _brandInterface.GetBrandByIdAsync(id);
+                if (row == null)
                 {
-                    return Ok(brand);
+                    return NotFound(new { message = "Brand not found." });
                 }
 
-                return NotFound(new { message = "Brand not found." });
+                return Ok(row);
             }
             catch (Exception ex)
             {

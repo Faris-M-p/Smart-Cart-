@@ -22472,19 +22472,27 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
   background-color: #dc3545 !important;
 }
 #categoryTable.admin-master-list-table th.col-name,
-#categoryTable.admin-master-list-table td.col-name {
+#categoryTable.admin-master-list-table td.col-name,
+#brandTable.admin-master-list-table th.col-name,
+#brandTable.admin-master-list-table td.col-name {
   width: 25%;
 }
 #categoryTable.admin-master-list-table th.col-desc,
-#categoryTable.admin-master-list-table td.col-desc {
+#categoryTable.admin-master-list-table td.col-desc,
+#brandTable.admin-master-list-table th.col-desc,
+#brandTable.admin-master-list-table td.col-desc {
   width: 45%;
 }
 #categoryTable.admin-master-list-table th.col-status,
-#categoryTable.admin-master-list-table td.col-status {
+#categoryTable.admin-master-list-table td.col-status,
+#brandTable.admin-master-list-table th.col-status,
+#brandTable.admin-master-list-table td.col-status {
   width: 15%;
 }
 #categoryTable.admin-master-list-table th.col-actions,
-#categoryTable.admin-master-list-table td.col-actions {
+#categoryTable.admin-master-list-table td.col-actions,
+#brandTable.admin-master-list-table th.col-actions,
+#brandTable.admin-master-list-table td.col-actions {
   width: 15%;
 }
 #subCategoryTable.admin-master-list-table th.col-name,

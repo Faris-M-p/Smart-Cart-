@@ -1,26 +1,28 @@
 USE [SmartCart]
 GO
 
-/****** Object:  Table [dbo].[Brands]    Script Date: 18-01-2025 23:01:27 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[Brands](
-	[BrandId] [int] IDENTITY(1,1) NOT NULL,
-	[BrandName] [nvarchar](100) NOT NULL,
-	[Cancelled] [bit] NULL,
-	[CancelledOn] [datetime] NULL,
-	[CancelledReason] [nvarchar](255) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[BrandId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+CREATE TABLE [dbo].[Brand](
+    [ID_Brand] INT IDENTITY(1,1) NOT NULL,
+
+    [BrandName] NVARCHAR(100) NOT NULL,
+    [Description] NVARCHAR(1000) NULL,
+
+    [IsActive] BIT NOT NULL DEFAULT 1,
+
+    -- Soft delete
+    [Cancelled] BIT NOT NULL DEFAULT 0,
+    [CancelledOn] DATETIME NULL,
+    [CancelledReason] NVARCHAR(255) NULL,
+
+    PRIMARY KEY CLUSTERED 
+    (
+        [ID_Brand] ASC
+    )
 ) ON [PRIMARY]
 GO
-
-ALTER TABLE [dbo].[Brands] ADD  DEFAULT ((0)) FOR [Cancelled]
-GO
-

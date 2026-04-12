@@ -15,7 +15,7 @@ namespace Ecommerce.Helpers.Brands
         int SortColumn,
         string SortMode);
 
-    public sealed record NormalizedBrandWriteInput(string Name);
+    public sealed record NormalizedBrandWriteInput(string Name, string? Description, bool IsActive);
 
     /// <summary>
     /// Brand list/query normalization, filtering, and sorting (no I/O).
@@ -44,7 +44,8 @@ namespace Ecommerce.Helpers.Brands
         public static NormalizedBrandWriteInput NormalizeInput(BrandUpdateInput input)
         {
             var name = (input.BrandName ?? string.Empty).Trim();
-            return new NormalizedBrandWriteInput(name);
+            var description = StringHelper.NormalizeOptionalString(input.Description);
+            return new NormalizedBrandWriteInput(name, description, input.IsActive);
         }
 
         public static IQueryable<BrandEntity> ApplyFilters(
@@ -87,14 +88,10 @@ namespace Ecommerce.Helpers.Brands
                     return desc
                         ? query.OrderByDescending(b => b.BrandName)
                         : query.OrderBy(b => b.BrandName);
-                case BrandSortColumn.CancelledOn:
+                case BrandSortColumn.Description:
                     return desc
-                        ? query.OrderByDescending(b => b.CancelledOn)
-                        : query.OrderBy(b => b.CancelledOn);
-                case BrandSortColumn.CancelledReason:
-                    return desc
-                        ? query.OrderByDescending(b => b.CancelledReason)
-                        : query.OrderBy(b => b.CancelledReason);
+                        ? query.OrderByDescending(b => b.Description)
+                        : query.OrderBy(b => b.Description);
                 case BrandSortColumn.Id:
                 default:
                     return desc

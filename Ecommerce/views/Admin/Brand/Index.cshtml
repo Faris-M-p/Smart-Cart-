@@ -34,14 +34,7 @@
                         </div>
                     </div>
                     <div class="card-body pt-3">
-                        <!-- Filter and Search Bar -->
                         <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-                            <!-- Filter Button -->
-                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                                <i class="ti ti-filter"></i> Filter
-                            </button>
-                            
-                            <!-- Search Box -->
                             <div class="flex-grow-1 mx-3 search-input">
                                 <div class="input-group">
                                     <span class="input-group-text">
@@ -52,35 +45,15 @@
                             </div>
                         </div>
 
-                        <!-- Collapsible Filter Section -->
-                        <div class="collapse mb-3" id="filterCollapse">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadBrands()">
-                                                <i class="ti ti-check"></i> Apply
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                                                <i class="ti ti-refresh"></i> Reset
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Brand Table -->
                         <div class="table-container">
                             <div class="table-scroll-wrapper">
-                                <table class="table table-hover align-middle mb-0" id="brandTable">
+                                <table class="table align-middle mb-0 admin-master-list-table" id="brandTable">
                                     <thead>
                                         <tr>
-                                            <th class="text-muted">ID</th>
-                                            <th class="text-muted">Brand Name</th>
-                                            <th class="text-muted">Status</th>
-                                            <th class="text-muted text-end">Actions</th>
+                                            <th class="col-name">Brand Name</th>
+                                            <th class="col-desc">Description</th>
+                                            <th class="col-status">Status</th>
+                                            <th class="col-actions">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="brandTableBody">
@@ -96,7 +69,6 @@
                             </div>
                         </div>
 
-                        <!-- Pagination Section -->
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
@@ -108,12 +80,11 @@
                                 </select>
                                 <span class="text-muted small">per page</span>
                             </div>
-                            
+
                             <div class="d-flex align-items-center gap-3">
                                 <span id="paginationInfo" class="text-muted small"></span>
                                 <nav aria-label="Page navigation">
                                     <ul class="pagination pagination-sm mb-0" id="pagination">
-                                        <!-- Pagination will be generated here -->
                                     </ul>
                                 </nav>
                             </div>
@@ -139,6 +110,14 @@
                         <label for="brandName" class="form-label">Brand Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="brandName" name="BrandName" required>
                         <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="brandIsActive" checked>
+                        <label class="form-check-label" for="brandIsActive">Status (active)</label>
                     </div>
                 </form>
             </div>
@@ -177,10 +156,49 @@
 <script>
     let currentPage = 1;
     let pageSize = 10;
+    let paginationInstance;
     let brandSearchTimeout;
 
-    // Load brands on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: "pagination",
+            infoId: "paginationInfo",
+            onPageChange: loadBrands
+        });
         loadBrands();
 
         document.getElementById('searchText').addEventListener('input', function () {
@@ -196,148 +214,119 @@
 
     async function loadBrands(page = 1) {
         currentPage = page;
-        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
-        const searchText = document.getElementById('searchText').value || '';
 
         const input = {
-            SearchText: searchText,
-            FilterBrandIDs: '',
-            PageIndex: page,
-            PageSize: pageSize,
-            SortColumn: 0,
-            SortMode: ''
+            searchText: document.getElementById('searchText').value || '',
+            filterBrandIDs: '',
+            pageIndex: page,
+            pageSize: parseInt(document.getElementById('pageSize').value) || 10,
+            sortColumn: 0,
+            sortMode: ''
         };
 
         try {
             const response = await fetch('/Admin/Brand/GetBrandList', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            const result = await response.json();
+
+            if (!result.success) {
+                emptyState.showError(
+                    'brandTableBody',
+                    result.errors?.length
+                        ? result.errors.join("<br>")
+                        : result.message,
+                    {
+                        onRetry: 'loadBrands()',
+                        title: 'Error loading brands'
+                    },
+                    4
+                );
+                return;
             }
 
-            const data = await response.json();
-            displayBrands(data.TableData || []);
-            displayPagination(data.TableSettings);
+            const data = result.data;
+
+            if (!data?.tableData?.length) {
+                emptyState.showNoData('brandTableBody', {
+                    title: 'No brands found',
+                    message: 'Try adjusting your search.',
+                    onClear: 'clearSearch()'
+                }, 4);
+                return;
+            }
+
+            displayBrands(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
         } catch (error) {
-            console.error('Error loading brands:', error);
-            const tbody = document.getElementById('brandTableBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="empty-state">
-                        <i class="ti ti-alert-circle"></i>
-                        <h5>Error loading brands</h5>
-                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading brands. Please try again.')}</p>
-                    </td>
-                </tr>
-            `;
+            console.error(error);
+            emptyState.showError(
+                'brandTableBody',
+                "Unable to connect to server.",
+                {
+                    onRetry: 'loadBrands()',
+                    title: 'Server Error'
+                },
+                4
+            );
         }
     }
 
     function displayBrands(brands) {
         const tbody = document.getElementById('brandTableBody');
-        
+
         if (!brands || brands.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="empty-state">
-                        <i class="ti ti-package-off"></i>
-                        <h5>No brands found</h5>
-                        <p class="text-muted">Try adjusting your filters or search term</p>
-                    </td>
-                </tr>
-            `;
+            emptyState.showNoData('brandTableBody', {
+                title: 'No brands found',
+                message: 'We can\'t find any brands matching your search.<br>Try adjusting your search term.',
+                onClear: 'clearSearch()'
+            }, 4);
             return;
         }
 
         tbody.innerHTML = brands.map(brand => {
-            const statusClass = brand.Cancelled ? 'badge-inactive' : 'badge-active';
-            const statusText = brand.Cancelled ? 'Deleted' : 'Active';
-            
+            const isActive = brand.isActive ?? brand.IsActive ?? true;
+            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+            const statusText = isActive ? 'Active' : 'Inactive';
+            const nameRaw = brand.brandName || brand.BrandName || '';
+            const descRaw = brand.description || brand.Description || '';
+
             return `
                 <tr>
-                    <td>${brand.BrandID}</td>
-                    <td>${escapeHtml(brand.BrandName)}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${statusText}
-                        </span>
+                    <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                    <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
+                    <td class="col-status">
+                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
                     </td>
-                    <td class="text-end">
-                        ${brand.Cancelled ? '' : `
-                            <button class="btn-action" onclick="openEditModal(${brand.BrandID})" title="Edit">
+                    <td class="col-actions">
+                        ${brand.cancelled || brand.Cancelled ? '' : `
+                            <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${brand.brandID ?? brand.BrandID})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-edit"></i>
                             </button>
-                            <button class="btn-action" onclick="openDeleteModal(${brand.BrandID})" title="Delete">
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${brand.brandID ?? brand.BrandID})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                                 <i class="ti ti-trash"></i>
                             </button>
+                            </div>
                         `}
                     </td>
                 </tr>
             `;
         }).join('');
-    }
-
-    function displayPagination(settings) {
-        if (!settings) return;
-
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
-        const pagination = document.getElementById('pagination');
-        const paginationInfo = document.getElementById('paginationInfo');
-
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
-
-        let paginationHTML = '';
-        
-        // Previous button
-        if (settings.PageIndex <= 1) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadBrands(${settings.PageIndex - 1}); return false;">Previous</a>
-            </li>`;
-        }
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
-                    paginationHTML += `<li class="page-item active">
-                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
-                    </li>`;
-                } else {
-                    paginationHTML += `<li class="page-item">
-                        <a class="page-link" href="#!" onclick="loadBrands(${i}); return false;">${i}</a>
-                    </li>`;
-                }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-        }
-
-        // Next button
-        if (settings.PageIndex >= totalPages) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadBrands(${settings.PageIndex + 1}); return false;">Next</a>
-            </li>`;
-        }
-
-        pagination.innerHTML = paginationHTML;
+        initTableTooltips(tbody);
     }
 
     function openCreateModal() {
         document.getElementById('brandModalLabel').textContent = 'Add Brand';
         document.getElementById('brandForm').reset();
         document.getElementById('brandID').value = '0';
+        document.getElementById('brandIsActive').checked = true;
     }
 
     async function openEditModal(brandID) {
@@ -345,17 +334,25 @@
             const response = await fetch(`/Admin/Brand/GetById/${brandID}`);
             if (!response.ok) throw new Error('Failed to fetch brand');
 
-            const brand = await response.json();
-            
+            const data = await response.json();
+            const brand = data.tableData?.[0] ?? data.TableData?.[0] ?? data;
+            const bid = brand.brandID ?? brand.BrandID ?? 0;
+            if (!brand || bid <= 0) {
+                throw new Error('Brand not found');
+            }
+
             document.getElementById('brandModalLabel').textContent = 'Edit Brand';
-            document.getElementById('brandID').value = brand.BrandID;
-            document.getElementById('brandName').value = brand.BrandName || '';
-            
+            document.getElementById('brandID').value = String(bid);
+            document.getElementById('brandName').value = brand.brandName || brand.BrandName || '';
+            document.getElementById('description').value = brand.description || brand.Description || '';
+            document.getElementById('brandIsActive').checked =
+                (brand.isActive ?? brand.IsActive ?? true) === true;
+
             const modal = new bootstrap.Modal(document.getElementById('brandModal'));
             modal.show();
         } catch (error) {
             console.error('Error loading brand:', error);
-            alert('Error loading brand details.');
+            showError('Error', 'Error loading brand details.');
         }
     }
 
@@ -369,15 +366,18 @@
     async function saveBrand() {
         const brandID = parseInt(document.getElementById('brandID').value);
         const brandName = document.getElementById('brandName').value.trim();
+        const description = document.getElementById('description').value.trim();
 
         if (!brandName) {
-            alert('Please enter brand name.');
+            showWarning('Validation Error', 'Please enter brand name.');
             return;
         }
 
         const input = {
-            BrandID: brandID,
-            BrandName: brandName
+            brandID: brandID,
+            brandName: brandName,
+            description: description,
+            isActive: document.getElementById('brandIsActive').checked
         };
 
         const url = brandID === 0 ? '/Admin/Brand/Create' : '/Admin/Brand/Update';
@@ -385,29 +385,27 @@
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
 
-            if (result.StatusCode) {
+            if (result.statusCode || result.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('brandModal'));
                 modal.hide();
                 loadBrands(currentPage);
-                alert(result.ResponseMsg || 'Brand saved successfully.');
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand saved successfully.');
             } else {
-                if (result.errors && result.errors.length > 0) {
-                    alert('Validation errors:\n' + result.errors.join('\n'));
-                } else {
-                    alert(result.ResponseMsg || 'Error saving brand.');
-                }
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving brand.');
             }
         } catch (error) {
             console.error('Error saving brand:', error);
-            alert('Error saving brand. Please try again.');
+            showError('Error', 'Error saving brand. Please try again.');
         }
     }
 
@@ -416,32 +414,34 @@
         const reason = document.getElementById('deleteReason').value.trim();
 
         const input = {
-            BrandID: brandID,
-            CancelledReason: reason
+            brandID: brandID,
+            cancelledReason: reason
         };
 
         try {
             const response = await fetch('/Admin/Brand/Delete', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
 
-            if (result.StatusCode) {
+            if (result.statusCode || result.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
                 loadBrands(currentPage);
-                alert(result.ResponseMsg || 'Brand deleted successfully.');
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand deleted successfully.');
             } else {
-                alert(result.ResponseMsg || 'Error deleting brand.');
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting brand.');
             }
         } catch (error) {
             console.error('Error deleting brand:', error);
-            alert('Error deleting brand. Please try again.');
+            showError('Error', 'Error deleting brand. Please try again.');
         }
     }
 
@@ -451,11 +451,15 @@
         loadBrands(1);
     }
 
+    function clearSearch() {
+        document.getElementById('searchText').value = '';
+        loadBrands(1);
+    }
+
     function escapeHtml(text) {
-        if (!text) return '';
+        if (text == null || text === undefined) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 </script>
-<!-- [ Main Content ] end -->

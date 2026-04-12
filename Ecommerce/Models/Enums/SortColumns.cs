@@ -12,8 +12,7 @@ namespace Ecommerce.Models.Enums
     {
         Id = 0,
         Name = 1,
-        CancelledOn = 2,
-        CancelledReason = 3
+        Description = 2
     }
 
     public enum ProductSortColumn

@@ -49,7 +49,9 @@ namespace Ecommerce.Repository.Admin
                     {
                         BrandID = b.BrandId,
                         BrandName = b.BrandName,
-                        Cancelled = b.Cancelled ?? false,
+                        Description = b.Description,
+                        IsActive = b.IsActive,
+                        Cancelled = b.Cancelled,
                         CancelledOn = b.CancelledOn,
                         CancelledReason = b.CancelledReason
                     })
@@ -72,32 +74,27 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        public async Task<Brand> GetBrandByIdAsync(int id)
+        public async Task<Brand?> GetBrandByIdAsync(int id)
         {
             if (id <= 0)
             {
-                return null!;
+                return null;
             }
 
-            try
-            {
-                return await _dbContext.Brands
-                    .AsNoTracking()
-                    .Where(b => b.BrandId == id)
-                    .Select(b => new Brand
-                    {
-                        BrandID = b.BrandId,
-                        BrandName = b.BrandName,
-                        Cancelled = b.Cancelled ?? false,
-                        CancelledOn = b.CancelledOn,
-                        CancelledReason = b.CancelledReason
-                    })
-                    .FirstOrDefaultAsync()!;
-            }
-            catch
-            {
-                return null!;
-            }
+            return await _dbContext.Brands
+                .AsNoTracking()
+                .Where(b => b.BrandId == id)
+                .Select(b => new Brand
+                {
+                    BrandID = b.BrandId,
+                    BrandName = b.BrandName,
+                    Description = b.Description,
+                    IsActive = b.IsActive,
+                    Cancelled = b.Cancelled,
+                    CancelledOn = b.CancelledOn,
+                    CancelledReason = b.CancelledReason
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<CommonResponse> CreateBrandAsync(BrandUpdateInput input)
@@ -123,9 +120,9 @@ namespace Ecommerce.Repository.Admin
                 var entity = new BrandEntity
                 {
                     BrandName = normalized.Name,
-                    Cancelled = false,
-                    CancelledOn = null,
-                    CancelledReason = null
+                    Description = normalized.Description,
+                    IsActive = normalized.IsActive,
+                    Cancelled = false
                 };
 
                 _dbContext.Brands.Add(entity);
@@ -154,6 +151,11 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please enter brand name.");
                 }
 
+                if (input.BrandID <= 0)
+                {
+                    return Fail("Invalid Brand ID.");
+                }
+
                 var entity = await _dbContext.Brands
                     .FirstOrDefaultAsync(b => b.BrandId == input.BrandID);
 
@@ -162,7 +164,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid Brand ID.");
                 }
 
-                if (entity.Cancelled == true)
+                if (entity.Cancelled)
                 {
                     return Fail("This brand is deleted and cannot be edited.");
                 }
@@ -173,6 +175,9 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 entity.BrandName = normalized.Name;
+                entity.Description = normalized.Description;
+                entity.IsActive = normalized.IsActive;
+
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(input.BrandID, "Brand updated successfully.");
@@ -206,7 +211,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid Brand ID.");
                 }
 
-                if (entity.Cancelled == true)
+                if (entity.Cancelled)
                 {
                     return Fail("This brand is already deleted.");
                 }
@@ -234,9 +239,9 @@ namespace Ecommerce.Repository.Admin
         {
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.Brands.AnyAsync(b =>
-                b.Cancelled != true &&
+                !b.Cancelled &&
                 b.BrandId != excludeBrandId &&
-                b.BrandName.ToLower() == key);
+                (b.BrandName ?? string.Empty).ToLower() == key);
         }
 
         private Task<bool> HasActiveProductsForBrandAsync(int brandId)
