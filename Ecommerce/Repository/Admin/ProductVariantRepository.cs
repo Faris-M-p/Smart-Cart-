@@ -65,9 +65,9 @@ namespace Ecommerce.Repository.Admin
                     select new VariantAttributeDetail
                     {
                         FK_Variant = pva.FkVariant,
-                        VariantName = v.VariantName,
+                        VariantName = v.Name,
                         FK_VariantValue = pva.FkVariantValue,
-                        ValueName = vv.ValueName
+                        ValueName = vv.Name
                     }).ToListAsync();
 
                 return new ProductVariantDetail

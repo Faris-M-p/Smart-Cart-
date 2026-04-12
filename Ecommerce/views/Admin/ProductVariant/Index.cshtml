@@ -298,32 +298,45 @@
             const response = await fetch('/Admin/Variant/GetVariantList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PageIndex: 1, PageSize: 1000, SearchText: '', FilterVariantIDs: '', SortColumn: 0, SortMode: 'ASC' })
+                body: JSON.stringify({ pageIndex: 1, pageSize: 1000, searchText: '', filterVariantIDs: '', sortColumn: 0, sortMode: 'ASC' })
             });
             if (!response.ok) throw new Error('Failed to fetch variants');
 
-            const data = await response.json();
-            variants = data.TableData || [];
+            const payload = await response.json();
+            variants = (payload.data?.tableData ?? payload.Data?.TableData ?? payload.tableData ?? payload.TableData) ?? [];
 
             // Load variant values
-            const variantValueResponse = await fetch('/Admin/VariantValue/GetVariantValueList', {
+            const variantValueResponse = await fetch('/Admin/VariantValue/GetList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PageIndex: 1, PageSize: 10000, SearchText: '', FilterVariantIDs: '', SortColumn: 0, SortMode: 'ASC' })
+                body: JSON.stringify({
+                    fk_Variant: 0,
+                    pageIndex: 1,
+                    pageSize: 10000,
+                    searchText: '',
+                    filterVariantIDs: '',
+                    sortColumn: 0,
+                    sortMode: 'ASC'
+                })
             });
             if (!variantValueResponse.ok) throw new Error('Failed to fetch variant values');
 
-            const variantValueData = await variantValueResponse.json();
-            variantValues = variantValueData.TableData || [];
+            const variantValuePayload = await variantValueResponse.json();
+            variantValues = variantValuePayload.data?.tableData
+                ?? variantValuePayload.Data?.TableData
+                ?? variantValuePayload.tableData
+                ?? variantValuePayload.TableData
+                ?? [];
 
             // Build variant value map
             variantValueMap = {};
             variantValues.forEach(vv => {
                 if (!vv.Cancelled) {
-                    if (!variantValueMap[vv.FK_Variant]) {
-                        variantValueMap[vv.FK_Variant] = [];
+                    const fk = vv.fk_Variant ?? vv.FK_Variant;
+                    if (!variantValueMap[fk]) {
+                        variantValueMap[fk] = [];
                     }
-                    variantValueMap[vv.FK_Variant].push(vv);
+                    variantValueMap[fk].push(vv);
                 }
             });
 
@@ -332,8 +345,10 @@
             variantSelects.forEach(select => {
                 select.innerHTML = '<option value="">Select Variant</option>';
                 variants.forEach(v => {
-                    if (!v.Cancelled) {
-                        select.add(new Option(v.VariantName, v.ID_Variant));
+                    const vid = v.variantID ?? v.VariantID ?? v.ID_Variant;
+                    const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+                    if (!v.Cancelled && (v.isActive ?? v.IsActive ?? true)) {
+                        select.add(new Option(vname, vid));
                     }
                 });
             });
@@ -600,9 +615,11 @@
         
         // Populate variants
         variants.forEach(v => {
-            if (!v.Cancelled) {
-                const option = new Option(v.VariantName, v.ID_Variant);
-                if (selectedVariantId && v.ID_Variant === selectedVariantId) {
+            const vid = v.variantID ?? v.VariantID ?? v.ID_Variant;
+            const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+            if (!v.Cancelled && (v.isActive ?? v.IsActive ?? true)) {
+                const option = new Option(vname, vid);
+                if (selectedVariantId && vid === selectedVariantId) {
                     option.selected = true;
                 }
                 variantSelect.add(option);
@@ -620,8 +637,10 @@
         variantSelects.forEach(select => {
             select.innerHTML = '<option value="">Select Variant</option>';
             variants.forEach(v => {
-                if (!v.Cancelled) {
-                    select.add(new Option(v.VariantName, v.ID_Variant));
+                const vid = v.variantID ?? v.VariantID ?? v.ID_Variant;
+                const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+                if (!v.Cancelled && (v.isActive ?? v.IsActive ?? true)) {
+                    select.add(new Option(vname, vid));
                 }
             });
         });
@@ -638,8 +657,10 @@
         valueSelect.innerHTML = '<option value="">Select Value</option>';
         if (variantId && variantValueMap[variantId]) {
             variantValueMap[variantId].forEach(vv => {
-                const option = new Option(vv.ValueName, vv.ID_VariantValue);
-                if (selectedValueId && vv.ID_VariantValue === selectedValueId) {
+                const vvid = vv.id_VariantValue ?? vv.ID_VariantValue ?? vv.iD_VariantValue;
+                const vvn = vv.name ?? vv.Name ?? vv.valueName ?? vv.ValueName ?? '';
+                const option = new Option(vvn, vvid);
+                if (selectedValueId && vvid === selectedValueId) {
                     option.selected = true;
                 }
                 valueSelect.add(option);

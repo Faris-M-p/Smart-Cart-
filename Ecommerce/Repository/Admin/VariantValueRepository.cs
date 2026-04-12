@@ -18,7 +18,7 @@ namespace Ecommerce.Repository.Admin
             _dbContext = dbContext;
         }
 
-        public async Task<TableOutput<VariantValueListOutput>> GetVariantValueListAsync(VariantValueListInput input)
+        public async Task<TableOutput<VariantValue>> GetVariantValueListAsync(VariantValueListInput input)
         {
             if (input == null)
             {
@@ -44,22 +44,17 @@ namespace Ecommerce.Repository.Admin
                     .Take(normalized.PageSize);
 
                 var rows = await pagedEntityQuery
-                    .Select(vv => new VariantValueListOutput
+                    .Select(vv => new VariantValue
                     {
-                        ID_VariantValue = vv.IdVariantValue,
+                        VariantValueID = vv.IdVariantValue,
                         FK_Variant = vv.FkVariant,
-                        ValueName = vv.ValueName,
-                        Description = vv.Description ?? string.Empty,
-                        ValueIcon = vv.ValueIcon ?? string.Empty,
-                        DisplayOrder = vv.DisplayOrder,
-                        CreatedOn = vv.CreatedOn,
-                        Cancelled = vv.Cancelled,
-                        CancelledOn = vv.CancelledOn,
-                        CancelledReason = vv.CancelledReason ?? string.Empty
+                        Name = vv.Name,
+                        Description = vv.Description,
+                        DisplayOrder = vv.DisplayOrder
                     })
                     .ToListAsync();
 
-                return new TableOutput<VariantValueListOutput>
+                return new TableOutput<VariantValue>
                 {
                     TableData = rows,
                     TableSettings = new TableOutput_Settings
@@ -76,6 +71,102 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
+        public async Task<List<VariantValue>> GetByVariantIdAsync(int variantId)
+        {
+            if (variantId <= 0)
+            {
+                return new List<VariantValue>();
+            }
+
+            return await _dbContext.VariantValues
+                .AsNoTracking()
+                .Where(vv => vv.FkVariant == variantId && vv.Cancelled != true)
+                .OrderBy(vv => vv.DisplayOrder)
+                .ThenBy(vv => vv.Name)
+                .Select(vv => new VariantValue
+                {
+                    VariantValueID = vv.IdVariantValue,
+                    FK_Variant = vv.FkVariant,
+                    Name = vv.Name,
+                    Description = vv.Description,
+                    DisplayOrder = vv.DisplayOrder
+                })
+                .ToListAsync();
+        }
+
+        public async Task<VariantValue?> GetVariantValueByIdAsync(int id)
+        {
+            if (id <= 0)
+            {
+                return null;
+            }
+
+            return await (
+                from vv in _dbContext.VariantValues.AsNoTracking()
+                join v in _dbContext.Variants.AsNoTracking() on vv.FkVariant equals v.IdVariant
+                where vv.IdVariantValue == id
+                select new VariantValue
+                {
+                    VariantValueID = vv.IdVariantValue,
+                    FK_Variant = vv.FkVariant,
+                    Name = vv.Name,
+                    Description = vv.Description,
+                    DisplayOrder = vv.DisplayOrder,
+                    VariantName = v.Name
+                }).FirstOrDefaultAsync();
+        }
+
+        public async Task<CommonResponse> CreateVariantValueAsync(VariantValueCreateInput input)
+        {
+            if (input == null)
+            {
+                return Fail("Invalid request.");
+            }
+
+            try
+            {
+                var n = VariantValueHelper.NormalizeCreateInput(input);
+                if (n.Name.Length == 0)
+                {
+                    return Fail("Please enter name.");
+                }
+
+                if (n.FkVariant <= 0)
+                {
+                    return Fail("Invalid variant.");
+                }
+
+                if (!await VariantExistsActiveAsync(n.FkVariant))
+                {
+                    return Fail("Invalid or deleted variant.");
+                }
+
+                if (await NameExistsInVariantAsync(n.FkVariant, n.Name, excludeId: 0))
+                {
+                    return Fail($"Value \"{n.Name}\" already exists for this variant.");
+                }
+
+                var entity = new VariantValueEntity
+                {
+                    FkVariant = n.FkVariant,
+                    Name = n.Name,
+                    Description = n.Description,
+                    DisplayOrder = n.DisplayOrder,
+                    Cancelled = false,
+                    CancelledOn = null
+                };
+
+                _dbContext.VariantValues.Add(entity);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(entity.IdVariantValue, "Variant value created successfully.");
+            }
+            catch (Exception ex)
+            {
+                return Fail($"An error occurred while creating variant value: {ex.Message}");
+            }
+        }
+
         public async Task<CommonResponse> UpdateVariantValueAsync(VariantValueUpdateInput input)
         {
             if (input == null)
@@ -85,182 +176,104 @@ namespace Ecommerce.Repository.Admin
 
             try
             {
-                return input.UserAction switch
+                if (input.VariantValueID <= 0)
                 {
-                    1 => await InsertVariantValueAsync(input),
-                    2 => await SaveVariantValueAsync(input),
-                    3 => await SoftDeleteVariantValueAsync(input),
-                    _ => Fail("Invalid user action.")
-                };
+                    return Fail("Invalid variant value ID.");
+                }
+
+                var n = VariantValueHelper.NormalizeUpdateInput(input);
+                if (n.Name.Length == 0)
+                {
+                    return Fail("Please enter name.");
+                }
+
+                var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.IdVariantValue == n.Id);
+                if (entity == null)
+                {
+                    return Fail("Invalid variant value ID.");
+                }
+
+                if (entity.Cancelled)
+                {
+                    return Fail("This variant value is deleted and cannot be edited.");
+                }
+
+                if (await NameExistsInVariantAsync(entity.FkVariant, n.Name, excludeId: n.Id))
+                {
+                    return Fail($"Value \"{n.Name}\" already exists for this variant.");
+                }
+
+                entity.Name = n.Name;
+                entity.Description = n.Description;
+                entity.DisplayOrder = n.DisplayOrder;
+
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(n.Id, "Variant value updated successfully.");
             }
             catch (Exception ex)
             {
-                return Fail($"An error occurred while saving variant value: {ex.Message}");
+                return Fail($"An error occurred while updating variant value: {ex.Message}");
             }
         }
 
-        public async Task<VariantValueSelectByIdOutput?> GetVariantValueByIdAsync(int id)
+        public async Task<CommonResponse> DeleteVariantValueAsync(VariantValueDeleteInput input)
         {
-            if (id <= 0)
+            if (input == null)
             {
-                return null;
+                return Fail("Invalid variant value ID.");
             }
 
             try
             {
-                return await (
-                    from vv in _dbContext.VariantValues.AsNoTracking()
-                    join v in _dbContext.Variants.AsNoTracking() on vv.FkVariant equals v.IdVariant
-                    where vv.IdVariantValue == id
-                    select new VariantValueSelectByIdOutput
-                    {
-                        ID_VariantValue = vv.IdVariantValue,
-                        FK_Variant = vv.FkVariant,
-                        ValueName = vv.ValueName,
-                        Description = vv.Description ?? string.Empty,
-                        ValueIcon = vv.ValueIcon ?? string.Empty,
-                        DisplayOrder = vv.DisplayOrder,
-                        CreatedOn = vv.CreatedOn,
-                        Cancelled = vv.Cancelled,
-                        CancelledOn = vv.CancelledOn,
-                        CancelledReason = vv.CancelledReason ?? string.Empty,
-                        VariantName = v.VariantName
-                    }).FirstOrDefaultAsync();
+                if (input.VariantValueID <= 0)
+                {
+                    return Fail("Invalid variant value ID.");
+                }
+
+                var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.IdVariantValue == input.VariantValueID);
+                if (entity == null)
+                {
+                    return Fail("Invalid variant value ID.");
+                }
+
+                if (entity.Cancelled)
+                {
+                    return Fail("This variant value is already deleted.");
+                }
+
+                var inUse = await _dbContext.ProductVariantAttributes.AsNoTracking()
+                    .AnyAsync(pva => pva.FkVariantValue == input.VariantValueID);
+
+                if (inUse)
+                {
+                    return Fail("Cannot delete variant value while it is used by a product variant.");
+                }
+
+                entity.Cancelled = true;
+                entity.CancelledOn = DateTime.Now;
+
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(input.VariantValueID, "Variant value deleted successfully.");
             }
-            catch
+            catch (Exception ex)
             {
-                return null;
+                return Fail($"An error occurred while deleting variant value: {ex.Message}");
             }
-        }
-
-        private async Task<CommonResponse> InsertVariantValueAsync(VariantValueUpdateInput input)
-        {
-            var n = VariantValueHelper.NormalizeInput(input);
-            if (n.Name.Length == 0)
-            {
-                return Fail("Please enter value name.");
-            }
-
-            if (!await VariantExistsActiveAsync(n.FkVariant))
-            {
-                return Fail("Invalid or deleted variant.");
-            }
-
-            if (await ValueNameExistsInVariantAsync(n.FkVariant, n.Name, excludeId: 0))
-            {
-                return Fail($"Value \"{n.Name}\" already exists for this variant.");
-            }
-
-            var entity = new VariantValueEntity
-            {
-                FkVariant = n.FkVariant,
-                ValueName = n.Name,
-                Description = n.Description,
-                ValueIcon = n.ValueIcon,
-                DisplayOrder = n.DisplayOrder,
-                CreatedOn = DateTime.Now,
-                Cancelled = false,
-                CancelledOn = null,
-                CancelledReason = null
-            };
-
-            _dbContext.VariantValues.Add(entity);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(entity.IdVariantValue, "Variant value created successfully.");
-        }
-
-        private async Task<CommonResponse> SaveVariantValueAsync(VariantValueUpdateInput input)
-        {
-            if (input.ID_VariantValue <= 0)
-            {
-                return Fail("Invalid variant value ID.");
-            }
-
-            var n = VariantValueHelper.NormalizeInput(input);
-            if (n.Name.Length == 0)
-            {
-                return Fail("Please enter value name.");
-            }
-
-            if (!await VariantExistsActiveAsync(n.FkVariant))
-            {
-                return Fail("Invalid or deleted variant.");
-            }
-
-            var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.IdVariantValue == input.ID_VariantValue);
-            if (entity == null)
-            {
-                return Fail("Invalid variant value ID.");
-            }
-
-            if (entity.Cancelled)
-            {
-                return Fail("This variant value is deleted and cannot be edited.");
-            }
-
-            if (await ValueNameExistsInVariantAsync(n.FkVariant, n.Name, excludeId: input.ID_VariantValue))
-            {
-                return Fail($"Value \"{n.Name}\" already exists for this variant.");
-            }
-
-            entity.FkVariant = n.FkVariant;
-            entity.ValueName = n.Name;
-            entity.Description = n.Description;
-            entity.ValueIcon = n.ValueIcon;
-            entity.DisplayOrder = n.DisplayOrder;
-
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(input.ID_VariantValue, "Variant value updated successfully.");
-        }
-
-        private async Task<CommonResponse> SoftDeleteVariantValueAsync(VariantValueUpdateInput input)
-        {
-            if (input.ID_VariantValue <= 0)
-            {
-                return Fail("Invalid variant value ID.");
-            }
-
-            var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.IdVariantValue == input.ID_VariantValue);
-            if (entity == null)
-            {
-                return Fail("Invalid variant value ID.");
-            }
-
-            if (entity.Cancelled)
-            {
-                return Fail("This variant value is already deleted.");
-            }
-
-            var inUse = await _dbContext.ProductVariantAttributes.AsNoTracking()
-                .AnyAsync(pva => pva.FkVariantValue == input.ID_VariantValue);
-
-            if (inUse)
-            {
-                return Fail("Cannot delete variant value while it is used by a product variant.");
-            }
-
-            entity.Cancelled = true;
-            entity.CancelledOn = DateTime.Now;
-            entity.CancelledReason = StringHelper.NormalizeOptionalString(input.CancelledReason);
-
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(input.ID_VariantValue, "Variant value deleted successfully.");
         }
 
         private Task<bool> VariantExistsActiveAsync(int variantId) =>
-            _dbContext.Variants.AnyAsync(v => v.IdVariant == variantId && !v.Cancelled);
+            _dbContext.Variants.AnyAsync(v => v.IdVariant == variantId && v.Cancelled != true);
 
-        private async Task<bool> ValueNameExistsInVariantAsync(int fkVariant, string trimmedName, int excludeId)
+        private async Task<bool> NameExistsInVariantAsync(int fkVariant, string trimmedName, int excludeId)
         {
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.VariantValues.AnyAsync(vv =>
                 vv.FkVariant == fkVariant &&
-                !vv.Cancelled &&
+                vv.Cancelled != true &&
                 vv.IdVariantValue != excludeId &&
-                vv.ValueName.ToLower() == key);
+                vv.Name.ToLower() == key);
         }
 
         private static CommonResponse Ok(long code, string msg) =>

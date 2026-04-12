@@ -28,8 +28,9 @@ namespace Ecommerce.Controllers.Admin
         }
 
         [HttpPost]
+        [Route("GetList")]
         [Route("GetVariantValueList")]
-        public async Task<IActionResult> GetVariantValueList([FromBody] VariantValueListInputVIEW viewInput)
+        public async Task<IActionResult> GetList([FromBody] VariantValueListInputVIEW viewInput)
         {
             try
             {
@@ -39,12 +40,18 @@ namespace Ecommerce.Controllers.Admin
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return BadRequest(new { message = "Validation failed.", errors });
+
+                    return BadRequest(new ApiResponse<TableOutput<VariantValue>>
+                    {
+                        Success = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new VariantValueListInput
                 {
+                    FK_Variant = viewInput.FK_Variant,
                     SearchText = viewInput.SearchText,
                     FilterVariantIDs = viewInput.FilterVariantIDs,
                     PageIndex = viewInput.PageIndex,
@@ -54,7 +61,32 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _variantValueInterface.GetVariantValueListAsync(input);
-                return Ok(result);
+
+                return Ok(new ApiResponse<TableOutput<VariantValue>>
+                {
+                    Success = true,
+                    Message = "Variant values loaded successfully",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<TableOutput<VariantValue>>
+                {
+                    Success = false,
+                    Message = $"An error occurred: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpGet]
+        [Route("GetByVariant/{variantId}")]
+        public async Task<IActionResult> GetByVariant(int variantId)
+        {
+            try
+            {
+                var rows = await _variantValueInterface.GetByVariantIdAsync(variantId);
+                return Ok(rows);
             }
             catch (Exception ex)
             {
@@ -77,20 +109,16 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
-                var input = new VariantValueUpdateInput
+                var input = new VariantValueCreateInput
                 {
-                    UserAction = 1, // 1 = Insert
-                    ID_VariantValue = viewInput.ID_VariantValue,
                     FK_Variant = viewInput.FK_Variant,
-                    ValueName = viewInput.ValueName,
+                    Name = viewInput.Name,
                     Description = viewInput.Description,
-                    ValueIcon = viewInput.ValueIcon,
                     DisplayOrder = viewInput.DisplayOrder,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
-                var result = await _variantValueInterface.UpdateVariantValueAsync(input);
+                var result = await _variantValueInterface.CreateVariantValueAsync(input);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -119,17 +147,13 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new VariantValueUpdateInput
                 {
-                    UserAction = 2, // 2 = Update
-                    ID_VariantValue = viewInput.ID_VariantValue,
-                    FK_Variant = viewInput.FK_Variant,
-                    ValueName = viewInput.ValueName,
+                    VariantValueID = viewInput.VariantValueID,
+                    Name = viewInput.Name,
                     Description = viewInput.Description,
-                    ValueIcon = viewInput.ValueIcon,
                     DisplayOrder = viewInput.DisplayOrder,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _variantValueInterface.UpdateVariantValueAsync(input);
@@ -161,16 +185,13 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
-                var input = new VariantValueUpdateInput
+                var input = new VariantValueDeleteInput
                 {
-                    UserAction = 3, // 3 = Delete
-                    ID_VariantValue = viewInput.ID_VariantValue,
-                    CancelledReason = viewInput.CancelledReason,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    VariantValueID = viewInput.VariantValueID,
+                    EnterBy = 1
                 };
 
-                var result = await _variantValueInterface.UpdateVariantValueAsync(input);
+                var result = await _variantValueInterface.DeleteVariantValueAsync(input);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -214,7 +235,7 @@ namespace Ecommerce.Controllers.Admin
                 var input = new VariantListInput
                 {
                     PageIndex = 1,
-                    PageSize = 1000, // Get all variants
+                    PageSize = 1000,
                     SearchText = string.Empty,
                     FilterVariantIDs = string.Empty,
                     SortColumn = (int)VariantSortColumn.Name,
@@ -222,12 +243,12 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _variantInterface.GetVariantListAsync(input);
-                
-                if (result != null && result.TableData != null)
+
+                if (result?.TableData != null)
                 {
                     var variants = result.TableData
-                        .Where(v => !v.Cancelled)
-                        .Select(v => new { v.ID_Variant, v.VariantName })
+                        .Where(v => !v.Cancelled && v.IsActive)
+                        .Select(v => new { ID_Variant = v.VariantID, VariantName = v.Name })
                         .ToList();
                     return Ok(variants);
                 }

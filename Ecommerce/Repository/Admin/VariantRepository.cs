@@ -18,7 +18,7 @@ namespace Ecommerce.Repository.Admin
             _dbContext = dbContext;
         }
 
-        public async Task<TableOutput<VariantListOutput>> GetVariantListAsync(VariantListInput input)
+        public async Task<TableOutput<Variant>> GetVariantListAsync(VariantListInput input)
         {
             if (input == null)
             {
@@ -45,20 +45,18 @@ namespace Ecommerce.Repository.Admin
                     .Take(normalized.PageSize);
 
                 var rows = await pagedEntityQuery
-                    .Select(v => new VariantListOutput
+                    .Select(x => new Variant
                     {
-                        ID_Variant = v.IdVariant,
-                        VariantName = v.VariantName,
-                        Description = v.Description ?? string.Empty,
-                        DisplayOrder = v.DisplayOrder,
-                        CreatedOn = v.CreatedOn,
-                        Cancelled = v.Cancelled,
-                        CancelledOn = v.CancelledOn,
-                        CancelledReason = v.CancelledReason ?? string.Empty
+                        VariantID = x.IdVariant,
+                        Name = x.Name,
+                        Description = x.Description,
+                        DisplayOrder = x.DisplayOrder,
+                        IsActive = x.IsActive,
+                        Cancelled = x.Cancelled
                     })
                     .ToListAsync();
 
-                return new TableOutput<VariantListOutput>
+                return new TableOutput<Variant>
                 {
                     TableData = rows,
                     TableSettings = new TableOutput_Settings
@@ -73,6 +71,28 @@ namespace Ecommerce.Repository.Admin
             {
                 return VariantHelper.EmptyTableOutput(input);
             }
+        }
+
+        public async Task<Variant?> GetVariantByIdAsync(int id)
+        {
+            if (id <= 0)
+            {
+                return null;
+            }
+
+            return await _dbContext.Variants
+                .AsNoTracking()
+                .Where(v => v.IdVariant == id)
+                .Select(v => new Variant
+                {
+                    VariantID = v.IdVariant,
+                    Name = v.Name,
+                    Description = v.Description,
+                    DisplayOrder = v.DisplayOrder,
+                    IsActive = v.IsActive,
+                    Cancelled = v.Cancelled
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<CommonResponse> CreateVariantAsync(VariantUpdateInput input)
@@ -97,13 +117,12 @@ namespace Ecommerce.Repository.Admin
 
                 var entity = new VariantEntity
                 {
-                    VariantName = normalized.Name,
+                    Name = normalized.Name,
                     Description = normalized.Description,
                     DisplayOrder = normalized.DisplayOrder,
-                    CreatedOn = DateTime.Now,
+                    IsActive = normalized.IsActive,
                     Cancelled = false,
-                    CancelledOn = null,
-                    CancelledReason = null
+                    CancelledOn = null
                 };
 
                 _dbContext.Variants.Add(entity);
@@ -132,13 +151,13 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please enter variant name.");
                 }
 
-                if (input.ID_Variant <= 0)
+                if (input.VariantID <= 0)
                 {
                     return Fail("Invalid variant ID.");
                 }
 
                 var entity = await _dbContext.Variants
-                    .FirstOrDefaultAsync(v => v.IdVariant == input.ID_Variant);
+                    .FirstOrDefaultAsync(v => v.IdVariant == input.VariantID);
 
                 if (entity == null)
                 {
@@ -150,18 +169,19 @@ namespace Ecommerce.Repository.Admin
                     return Fail("This variant is deleted and cannot be edited.");
                 }
 
-                if (await VariantNameExistsForActiveAsync(normalized.Name, excludeVariantId: input.ID_Variant))
+                if (await VariantNameExistsForActiveAsync(normalized.Name, excludeVariantId: input.VariantID))
                 {
                     return Fail($"Variant \"{normalized.Name}\" already exists.");
                 }
 
-                entity.VariantName = normalized.Name;
+                entity.Name = normalized.Name;
                 entity.Description = normalized.Description;
                 entity.DisplayOrder = normalized.DisplayOrder;
+                entity.IsActive = normalized.IsActive;
 
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(input.ID_Variant, "Variant updated successfully.");
+                return Ok(input.VariantID, "Variant updated successfully.");
             }
             catch (Exception ex)
             {
@@ -178,7 +198,7 @@ namespace Ecommerce.Repository.Admin
 
             try
             {
-                var variantId = input.ID_Variant;
+                var variantId = input.VariantID;
                 if (variantId <= 0)
                 {
                     return Fail("Invalid variant ID.");
@@ -204,7 +224,6 @@ namespace Ecommerce.Repository.Admin
 
                 entity.Cancelled = true;
                 entity.CancelledOn = DateTime.Now;
-                entity.CancelledReason = StringHelper.NormalizeOptionalString(input.CancelledReason);
 
                 await _dbContext.SaveChangesAsync();
 
@@ -216,49 +235,20 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        public async Task<VariantSelectByIdOutput?> GetVariantByIdAsync(int id)
-        {
-            if (id <= 0)
-            {
-                return null;
-            }
-
-            try
-            {
-                return await _dbContext.Variants.AsNoTracking()
-                    .Where(v => v.IdVariant == id)
-                    .Select(v => new VariantSelectByIdOutput
-                    {
-                        ID_Variant = v.IdVariant,
-                        VariantName = v.VariantName,
-                        Description = v.Description ?? string.Empty,
-                        DisplayOrder = v.DisplayOrder,
-                        CreatedOn = v.CreatedOn,
-                        Cancelled = v.Cancelled,
-                        CancelledOn = v.CancelledOn,
-                        CancelledReason = v.CancelledReason ?? string.Empty
-                    })
-                    .FirstOrDefaultAsync();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         private async Task<bool> VariantNameExistsForActiveAsync(string trimmedName, int excludeVariantId)
         {
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.Variants.AnyAsync(v =>
                 !v.Cancelled &&
                 v.IdVariant != excludeVariantId &&
-                v.VariantName.ToLower() == key);
+                v.Name.ToLower() == key);
         }
 
         private Task<bool> HasActiveVariantValuesAsync(int variantId)
         {
             return _dbContext.VariantValues.AnyAsync(vv =>
-                vv.FkVariant == variantId && !vv.Cancelled);
+                vv.FkVariant == variantId &&
+                vv.Cancelled != true);
         }
 
         private static CommonResponse Ok(long responseCode, string message) =>

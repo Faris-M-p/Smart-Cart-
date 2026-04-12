@@ -5,7 +5,6 @@ namespace Ecommerce.Models.Admin
 {
     public class VariantModel
     {
-        // VIEW Models - For JavaScript/Frontend Input
         public class VariantListInputVIEW
         {
             [Display(Name = "Search Text")]
@@ -24,47 +23,48 @@ namespace Ecommerce.Models.Admin
             public int PageSize { get; set; } = 10;
 
             [Display(Name = "Sort Column")]
-            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            [Range(0, 2, ErrorMessage = "{0} must be between {1} and {2}.")]
             public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
-            public string SortMode { get; set; } = string.Empty; // ASC / DESC
+            public string SortMode { get; set; } = string.Empty;
         }
 
         public class VariantUpdateInputVIEW
         {
             [Display(Name = "Variant ID")]
-            public int ID_Variant { get; set; } = 0;
+            public int VariantID { get; set; }
 
-            [Display(Name = "Variant Name")]
+            [Display(Name = "Name")]
             [Required(ErrorMessage = "{0} is required.")]
             [RequiredNotEmpty]
-            [System.ComponentModel.DataAnnotations.MaxLength(100, ErrorMessage = "{0} cannot exceed 100 characters.")]
-            public string VariantName { get; set; } = string.Empty;
+            [MaxLength(255, ErrorMessage = "{0} cannot exceed 255 characters.")]
+            public string Name { get; set; } = string.Empty;
 
             [Display(Name = "Description")]
-            [System.ComponentModel.DataAnnotations.MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
+            [MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
             public string Description { get; set; } = string.Empty;
 
             [Display(Name = "Display Order")]
-            [GreaterThanZero]
-            public int DisplayOrder { get; set; } = 1;
+            [Range(0, 999999, ErrorMessage = "{0} must be between {1} and {2}.")]
+            public int DisplayOrder { get; set; }
+
+            [Display(Name = "Active")]
+            public bool? IsActive { get; set; }
         }
 
         public class VariantDeleteInputVIEW
         {
             [Display(Name = "Variant ID")]
+            [Required(ErrorMessage = "{0} is required.")]
             [GreaterThanZero]
-            public int ID_Variant { get; set; }
+            public int VariantID { get; set; }
 
             [Display(Name = "Cancelled Reason")]
-            [Required(ErrorMessage = "{0} is required.")]
-            [RequiredNotEmpty]
-            [System.ComponentModel.DataAnnotations.MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
+            [MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
             public string CancelledReason { get; set; } = string.Empty;
         }
 
-        // Procedure Input Models - For Database Interaction
         public class VariantListInput
         {
             public string SearchText { get; set; } = string.Empty;
@@ -77,45 +77,29 @@ namespace Ecommerce.Models.Admin
 
         public class VariantUpdateInput
         {
-            public int ID_Variant { get; set; } = 0;
-            public string VariantName { get; set; } = string.Empty;
+            public int VariantID { get; set; }
+            public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
-            public int DisplayOrder { get; set; } = 1;
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
+            public int DisplayOrder { get; set; }
+            public bool IsActive { get; set; } = true;
+            public int EnterBy { get; set; } = 1;
         }
 
         public class VariantDeleteInput
         {
-            public int ID_Variant { get; set; }
-
+            public int VariantID { get; set; }
             public string CancelledReason { get; set; } = string.Empty;
-
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
+            public int EnterBy { get; set; } = 1;
         }
 
-        // Output Models
-        public class VariantListOutput
+        public class Variant
         {
-            public int ID_Variant { get; set; }
-            public string VariantName { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
+            public int VariantID { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string? Description { get; set; }
             public int DisplayOrder { get; set; }
-            public DateTime CreatedOn { get; set; }
+            public bool IsActive { get; set; }
             public bool Cancelled { get; set; }
-            public DateTime? CancelledOn { get; set; }
-            public string CancelledReason { get; set; } = string.Empty;
-        }
-
-        public class VariantSelectByIdOutput
-        {
-            public int ID_Variant { get; set; }
-            public string VariantName { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
-            public int DisplayOrder { get; set; }
-            public DateTime CreatedOn { get; set; }
-            public bool Cancelled { get; set; }
-            public DateTime? CancelledOn { get; set; }
-            public string CancelledReason { get; set; } = string.Empty;
         }
     }
 }

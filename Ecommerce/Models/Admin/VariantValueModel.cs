@@ -5,9 +5,12 @@ namespace Ecommerce.Models.Admin
 {
     public class VariantValueModel
     {
-        // VIEW Models - For JavaScript/Frontend Input
         public class VariantValueListInputVIEW
         {
+            [Display(Name = "Variant")]
+            [Range(0, int.MaxValue, ErrorMessage = "{0} must be zero or greater.")]
+            public int FK_Variant { get; set; }
+
             [Display(Name = "Search Text")]
             public string SearchText { get; set; } = string.Empty;
 
@@ -20,60 +23,54 @@ namespace Ecommerce.Models.Admin
 
             [Display(Name = "Page Size")]
             [GreaterThanZero]
-            [Range(1, 100, ErrorMessage = "{0} must be between 1 and 100.")]
+            [Range(1, 50000, ErrorMessage = "{0} must be between 1 and 50000.")]
             public int PageSize { get; set; } = 10;
 
             [Display(Name = "Sort Column")]
-            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            [Range(0, 2, ErrorMessage = "{0} must be between {1} and {2}.")]
             public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
-            public string SortMode { get; set; } = string.Empty; // ASC / DESC
+            public string SortMode { get; set; } = string.Empty;
         }
 
         public class VariantValueUpdateInputVIEW
         {
             [Display(Name = "Variant Value ID")]
-            public int ID_VariantValue { get; set; } = 0;
+            public int VariantValueID { get; set; }
 
             [Display(Name = "Variant")]
             [GreaterThanZero(ErrorMessage = "{0} is required.")]
-            public int FK_Variant { get; set; } = 0;
+            public int FK_Variant { get; set; }
 
-            [Display(Name = "Value Name")]
+            [Display(Name = "Name")]
             [Required(ErrorMessage = "{0} is required.")]
             [RequiredNotEmpty]
-            [System.ComponentModel.DataAnnotations.MaxLength(100, ErrorMessage = "{0} cannot exceed 100 characters.")]
-            public string ValueName { get; set; } = string.Empty;
+            [MaxLength(255, ErrorMessage = "{0} cannot exceed 255 characters.")]
+            public string Name { get; set; } = string.Empty;
 
             [Display(Name = "Description")]
-            [System.ComponentModel.DataAnnotations.MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
+            [MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
             public string Description { get; set; } = string.Empty;
 
-            [Display(Name = "Value Icon")]
-            public string ValueIcon { get; set; } = string.Empty;
-
             [Display(Name = "Display Order")]
-            [GreaterThanZero]
-            public int DisplayOrder { get; set; } = 1;
+            [Range(0, 999999, ErrorMessage = "{0} must be between {1} and {2}.")]
+            public int DisplayOrder { get; set; }
         }
 
         public class VariantValueDeleteInputVIEW
         {
             [Display(Name = "Variant Value ID")]
-            [GreaterThanZero]
-            public int ID_VariantValue { get; set; }
-
-            [Display(Name = "Cancelled Reason")]
             [Required(ErrorMessage = "{0} is required.")]
-            [RequiredNotEmpty]
-            [System.ComponentModel.DataAnnotations.MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
-            public string CancelledReason { get; set; } = string.Empty;
+            [GreaterThanZero]
+            public int VariantValueID { get; set; }
         }
 
-        // Procedure Input Models - For Database Interaction
         public class VariantValueListInput
         {
+            /// <summary>When &gt; 0, list is restricted to this variant.</summary>
+            public int FK_Variant { get; set; }
+
             public string SearchText { get; set; } = string.Empty;
             public string FilterVariantIDs { get; set; } = string.Empty;
             public int PageIndex { get; set; } = 1;
@@ -82,47 +79,38 @@ namespace Ecommerce.Models.Admin
             public string SortMode { get; set; } = string.Empty;
         }
 
+        public class VariantValueCreateInput
+        {
+            public int FK_Variant { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public int DisplayOrder { get; set; }
+            public int EnterBy { get; set; } = 1;
+        }
+
         public class VariantValueUpdateInput
         {
-            public int UserAction { get; set; } // 1=Insert, 2=Update, 3=Delete
-            public int ID_VariantValue { get; set; } = 0;
-            public int FK_Variant { get; set; } = 0;
-            public string ValueName { get; set; } = string.Empty;
+            public int VariantValueID { get; set; }
+            public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
-            public string ValueIcon { get; set; } = string.Empty;
-            public int DisplayOrder { get; set; } = 1;
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
-            public string CancelledReason { get; set; } = string.Empty;
+            public int DisplayOrder { get; set; }
+            public int EnterBy { get; set; } = 1;
         }
 
-        // Output Models
-        public class VariantValueListOutput
+        public class VariantValueDeleteInput
         {
-            public int ID_VariantValue { get; set; }
-            public int FK_Variant { get; set; }
-            public string ValueName { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
-            public string ValueIcon { get; set; } = string.Empty;
-            public int DisplayOrder { get; set; }
-            public DateTime CreatedOn { get; set; }
-            public bool Cancelled { get; set; }
-            public DateTime? CancelledOn { get; set; }
-            public string CancelledReason { get; set; } = string.Empty;
+            public int VariantValueID { get; set; }
+            public int EnterBy { get; set; } = 1;
         }
 
-        public class VariantValueSelectByIdOutput
+        public class VariantValue
         {
-            public int ID_VariantValue { get; set; }
+            public int VariantValueID { get; set; }
             public int FK_Variant { get; set; }
-            public string ValueName { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
-            public string ValueIcon { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string? Description { get; set; }
             public int DisplayOrder { get; set; }
-            public DateTime CreatedOn { get; set; }
-            public bool Cancelled { get; set; }
-            public DateTime? CancelledOn { get; set; }
-            public string CancelledReason { get; set; } = string.Empty;
-            public string VariantName { get; set; } = string.Empty;
+            public string? VariantName { get; set; }
         }
     }
 }

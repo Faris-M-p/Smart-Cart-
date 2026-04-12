@@ -3,7 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ecommerce.Models.Entities
 {
-    [Table("VariantValue")]
+    /// <summary>Maps to <c>VariantValues</c> (ID_VariantValue, FK_Variant, Name, Description, DisplayOrder, Cancelled, CancelledOn).</summary>
+    [Table("VariantValues")]
     public class VariantValueEntity
     {
         [Key]
@@ -13,24 +14,17 @@ namespace Ecommerce.Models.Entities
         [Column("FK_Variant")]
         public int FkVariant { get; set; }
 
+        [Required]
         [MaxLength(255)]
-        public string ValueName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        [MaxLength(500)]
-        public string? ValueIcon { get; set; }
-
         public int DisplayOrder { get; set; }
-
-        public DateTime CreatedOn { get; set; }
 
         public bool Cancelled { get; set; }
 
         public DateTime? CancelledOn { get; set; }
-
-        [MaxLength(500)]
-        public string? CancelledReason { get; set; }
     }
 }

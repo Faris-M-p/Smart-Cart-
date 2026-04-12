@@ -2,197 +2,143 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<!-- [ breadcrumb ] start -->
 <div class="page-header">
     <div class="page-block">
         <div class="row align-items-center">
             <div class="col-md-12">
                 <div class="page-header-title">
-                    <h5 class="m-b-10">Variant Value Management</h5>
+                    <h5 class="m-b-10">Variant value management</h5>
                 </div>
                 <ul class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
-                    <li class="breadcrumb-item"><a href="javascript: void(0)">Variant Value</a></li>
+                    <li class="breadcrumb-item"><a href="javascript: void(0)">Variant value</a></li>
                     <li class="breadcrumb-item" aria-current="page">List</li>
                 </ul>
             </div>
         </div>
     </div>
 </div>
-<!-- [ breadcrumb ] end -->
 
-<!-- [ Main Content ] start -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5>Variant Value List</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#variantValueModal" onclick="openCreateModal()">
-                                <i class="ti ti-plus"></i> Add New Variant Value
-                            </button>
-                        </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Variant values</h5>
+                    <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+                        <i class="ti ti-plus"></i> Add value
+                    </button>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="row g-3 align-items-end mb-3">
+                    <div class="col-md-4">
+                        <label for="variantSelect" class="form-label">Variant <span class="text-danger">*</span></label>
+                        <select id="variantSelect" class="form-select" onchange="onVariantSelectChange()">
+                            <option value="">— Select variant —</option>
+                        </select>
                     </div>
-                    <div class="card-body pt-3">
-                        <!-- Filter and Search Bar -->
-                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-                            <!-- Filter Button -->
-                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                                <i class="ti ti-filter"></i> Filter
-                            </button>
-                            
-                            <!-- Search Box -->
-                            <div class="flex-grow-1 mx-3 search-input">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="ti ti-search"></i>
-                                    </span>
-                                    <input type="text" id="searchText" class="form-control" placeholder="Search variant values...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Collapsible Filter Section -->
-                        <div class="collapse mb-3" id="filterCollapse">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">Variant</label>
-                                        <select id="filterVariant" class="form-select">
-                                            <option value="">All Variants</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadVariantValues()">
-                                                <i class="ti ti-check"></i> Apply
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                                                <i class="ti ti-refresh"></i> Reset
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Variant Value Table -->
-                        <div class="table-container">
-                            <div class="table-scroll-wrapper">
-                                <table class="table table-hover align-middle mb-0" id="variantValueTable">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-muted">ID</th>
-                                            <th class="text-muted">Value Name</th>
-                                            <th class="text-muted">Variant</th>
-                                            <th class="text-muted">Description</th>
-                                            <th class="text-muted">Display Order</th>
-                                            <th class="text-muted">Status</th>
-                                            <th class="text-muted text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="variantValueTableBody">
-                                        <tr>
-                                            <td colspan="7" class="text-center py-5">
-                                                <div class="spinner-border text-primary" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Pagination Section -->
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="text-muted small">Show</span>
-                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadVariantValues()">
-                                    <option value="10">10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                                <span class="text-muted small">per page</span>
-                            </div>
-                            
-                            <div class="d-flex align-items-center gap-3">
-                                <span id="paginationInfo" class="text-muted small"></span>
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination pagination-sm mb-0" id="pagination">
-                                        <!-- Pagination will be generated here -->
-                                    </ul>
-                                </nav>
-                            </div>
+                    <div class="col-md-8">
+                        <label for="searchText" class="form-label visually-hidden">Search</label>
+                        <div class="input-group search-input">
+                            <span class="input-group-text"><i class="ti ti-search"></i></span>
+                            <input type="text" id="searchText" class="form-control" placeholder="Search by name…">
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-<!-- [ Main Content ] end -->
 
-<!-- Variant Value Modal (Create/Edit) -->
-<div class="modal fade" id="variantValueModal" tabindex="-1" aria-labelledby="variantValueModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="variantValueModalLabel">Add Variant Value</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="variantValueForm">
-                    <input type="hidden" id="variantValueID" name="ID_VariantValue" value="0">
-                    <div class="mb-3">
-                        <label for="fkVariant" class="form-label">Variant <span class="text-danger">*</span></label>
-                        <select class="form-select" id="fkVariant" name="FK_Variant" required>
-                            <option value="">Select Variant</option>
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="table align-middle mb-0 admin-master-list-table" id="variantValueTable">
+                            <thead>
+                                <tr>
+                                    <th class="col-name text-start">Name</th>
+                                    <th class="col-desc text-start">Description</th>
+                                    <th class="text-start" style="width:8rem;">Display order</th>
+                                    <th class="col-actions text-start">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="variantValueTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading…</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Show</span>
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadVariantValues()">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
                         </select>
-                        <div class="invalid-feedback"></div>
+                        <span class="text-muted small">per page</span>
                     </div>
-                    <div class="mb-3">
-                        <label for="valueName" class="form-label">Value Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="valueName" name="ValueName" required>
-                        <div class="invalid-feedback"></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="paginationInfo" class="text-muted small"></span>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                        </nav>
                     </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="valueIcon" class="form-label">Value Icon</label>
-                        <input type="text" class="form-control" id="valueIcon" name="ValueIcon" placeholder="e.g., color code, icon URL">
-                    </div>
-                    <div class="mb-3">
-                        <label for="displayOrder" class="form-label">Display Order <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="displayOrder" name="DisplayOrder" value="1" min="1" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveVariantValue()">Save Variant Value</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="variantValueModal" tabindex="-1" aria-labelledby="variantValueModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="variantValueModalLabel">Add variant value</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="variantValueForm">
+                    <input type="hidden" id="variantValueID" value="0">
+                    <div class="mb-3">
+                        <label for="fkVariantModal" class="form-label">Variant <span class="text-danger">*</span></label>
+                        <select class="form-select" id="fkVariantModal" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" maxlength="255" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="3" maxlength="500"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="displayOrder" class="form-label">Display order</label>
+                        <input type="number" class="form-control" id="displayOrder" value="0" min="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveVariantValue()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Variant Value</h5>
+                <h5 class="modal-title" id="deleteModalLabel">Delete variant value</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to delete this variant value?</p>
-                <div class="mb-3">
-                    <label for="deleteReason" class="form-label">Reason for deletion <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="deleteReason" rows="3" required></textarea>
-                </div>
                 <input type="hidden" id="deleteVariantValueID" value="0">
             </div>
             <div class="modal-footer">
@@ -205,343 +151,340 @@
 
 <script>
     let currentPage = 1;
-    let pageSize = 10;
-    let variants = [];
-    let variantMap = {};
+    let paginationInstance;
     let variantValueSearchTimeout;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        loadVariants();
-        loadVariantValues();
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '…' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    function normalizeTableSettings(s) {
+        if (!s) return { pageIndex: 1, pageSize: 10, totalCount: 0 };
+        return {
+            pageIndex: s.pageIndex ?? s.PageIndex ?? 1,
+            pageSize: s.pageSize ?? s.PageSize ?? 10,
+            totalCount: s.totalCount ?? s.TotalCount ?? 0
+        };
+    }
+
+    function getSelectedVariantId() {
+        const v = document.getElementById('variantSelect').value;
+        const n = parseInt(v, 10);
+        return isNaN(n) || n <= 0 ? 0 : n;
+    }
+
+    function onVariantSelectChange() {
+        loadVariantValues(1);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadVariantValues
+        });
+        loadVariantsForDropdowns();
 
         document.getElementById('searchText').addEventListener('input', function () {
             const value = this.value.trim();
             clearTimeout(variantValueSearchTimeout);
             variantValueSearchTimeout = setTimeout(function () {
-                if (value.length === 0 || value.length >= 1) {
+                if (getSelectedVariantId() > 0) {
                     loadVariantValues(1);
                 }
             }, 500);
         });
     });
 
-    async function loadVariants() {
+    async function loadVariantsForDropdowns() {
         try {
             const response = await fetch('/Admin/VariantValue/GetVariants');
-            if (!response.ok) throw new Error('Failed to fetch variants');
+            if (!response.ok) throw new Error('Failed to load variants');
+            const variants = await response.json();
 
-            variants = await response.json();
-            variantMap = {};
-            variants.forEach(v => {
-                variantMap[v.ID_Variant] = v.VariantName;
+            const pageSel = document.getElementById('variantSelect');
+            const modalSel = document.getElementById('fkVariantModal');
+            pageSel.innerHTML = '<option value="">— Select variant —</option>';
+            modalSel.innerHTML = '<option value="">Select variant</option>';
+
+            variants.forEach(function (v) {
+                const vid = v.iD_Variant ?? v.ID_Variant ?? v.variantID ?? v.VariantID;
+                const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+                pageSel.add(new Option(vname, String(vid)));
+                modalSel.add(new Option(vname, String(vid)));
             });
 
-            // Populate variant dropdowns
-            const filterDropdown = document.getElementById('filterVariant');
-            const formDropdown = document.getElementById('fkVariant');
-            
-            filterDropdown.innerHTML = '<option value="">All Variants</option>';
-            formDropdown.innerHTML = '<option value="">Select Variant</option>';
-            
-            variants.forEach(v => {
-                const option1 = new Option(v.VariantName, v.ID_Variant);
-                const option2 = new Option(v.VariantName, v.ID_Variant);
-                filterDropdown.add(option1);
-                formDropdown.add(option2);
-            });
-        } catch (error) {
-            console.error('Error loading variants:', error);
+            emptyState.showNoData('variantValueTableBody', {
+                title: 'Select a variant',
+                message: 'Choose a variant to load and manage its values.',
+                onClear: ''
+            }, 4);
+        } catch (e) {
+            console.error(e);
+            emptyState.showError('variantValueTableBody', 'Could not load variants.', { onRetry: 'loadVariantsForDropdowns()', title: 'Error' }, 4);
         }
     }
 
     async function loadVariantValues(page = 1) {
         currentPage = page;
-        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
-        const searchText = document.getElementById('searchText').value || '';
-        const filterVariantID = document.getElementById('filterVariant').value || '';
-
-        let filterVariantIDs = '';
-        if (filterVariantID) {
-            filterVariantIDs = `[{"ID_Value":${filterVariantID}}]`;
+        const fk = getSelectedVariantId();
+        if (fk <= 0) {
+            emptyState.showNoData('variantValueTableBody', {
+                title: 'Select a variant',
+                message: 'Choose a variant to load its values.',
+                onClear: ''
+            }, 4);
+            if (paginationInstance) {
+                paginationInstance.render({ pageIndex: 1, pageSize: parseInt(document.getElementById('pageSize').value, 10) || 10, totalCount: 0 });
+            }
+            return;
         }
 
         const input = {
-            SearchText: searchText,
-            FilterVariantIDs: filterVariantIDs,
-            PageIndex: page,
-            PageSize: pageSize,
-            SortColumn: 0,
-            SortMode: ''
+            fk_Variant: fk,
+            searchText: document.getElementById('searchText').value || '',
+            filterVariantIDs: '',
+            pageIndex: page,
+            pageSize: parseInt(document.getElementById('pageSize').value, 10) || 10,
+            sortColumn: 1,
+            sortMode: 'ASC'
         };
 
         try {
-            const response = await fetch('/Admin/VariantValue/GetVariantValueList', {
+            const response = await fetch('/Admin/VariantValue/GetList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await response.json();
 
-            const data = await response.json();
-            displayVariantValues(data.TableData || []);
-            displayPagination(data.TableSettings);
-        } catch (error) {
-            console.error('Error loading variant values:', error);
-            const tbody = document.getElementById('variantValueTableBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="empty-state">
-                        <i class="ti ti-alert-circle"></i>
-                        <h5>Error loading variant values</h5>
-                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading variant values. Please try again.')}</p>
-                    </td>
-                </tr>
-            `;
+            if (!result.success) {
+                emptyState.showError(
+                    'variantValueTableBody',
+                    result.errors?.length ? result.errors.join('<br>') : result.message,
+                    { onRetry: 'loadVariantValues()', title: 'Error loading values' },
+                    4
+                );
+                return;
+            }
+
+            const data = result.data;
+            if (!data?.tableData?.length) {
+                emptyState.showNoData('variantValueTableBody', {
+                    title: 'No values found',
+                    message: 'Try another search or add a new value.',
+                    onClear: 'clearVariantValueSearch()'
+                }, 4);
+                if (paginationInstance && data?.tableSettings) {
+                    paginationInstance.render(normalizeTableSettings(data.tableSettings));
+                }
+                return;
+            }
+
+            displayVariantValues(data.tableData);
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(normalizeTableSettings(data.tableSettings));
+            }
+        } catch (e) {
+            console.error(e);
+            emptyState.showError(
+                'variantValueTableBody',
+                'Unable to connect to server.',
+                { onRetry: 'loadVariantValues()', title: 'Server error' },
+                4
+            );
         }
     }
 
-    function displayVariantValues(variantValues) {
+    function displayVariantValues(rows) {
         const tbody = document.getElementById('variantValueTableBody');
-        
-        if (!variantValues || variantValues.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="empty-state">
-                        <i class="ti ti-package-off"></i>
-                        <h5>No variant values found</h5>
-                        <p class="text-muted">Try adjusting your filters or search term</p>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tbody.innerHTML = variantValues.map(vv => {
-            const statusClass = vv.Cancelled ? 'badge-inactive' : 'badge-active';
-            const statusText = vv.Cancelled ? 'Deleted' : 'Active';
-            
+        tbody.innerHTML = rows.map(function (vv) {
+            const id = vv.variantValueID ?? vv.VariantValueID ?? 0;
+            const nm = vv.name ?? vv.Name ?? '';
+            const desc = vv.description ?? vv.Description ?? '';
+            const ord = vv.displayOrder ?? vv.DisplayOrder ?? 0;
             return `
                 <tr>
-                    <td>${vv.ID_VariantValue}</td>
-                    <td>${escapeHtml(vv.ValueName)}</td>
-                    <td>${escapeHtml(variantMap[vv.FK_Variant] || 'N/A')}</td>
-                    <td>${escapeHtml(vv.Description || '')}</td>
-                    <td>${vv.DisplayOrder}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${statusText}
-                        </span>
+                    <td class="col-name text-start">${truncatedCellHtml(nm)}</td>
+                    <td class="col-desc text-start">${truncatedCellHtml(desc, 40)}</td>
+                    <td class="text-start">${escapeHtml(String(ord))}</td>
+                    <td class="col-actions text-start">
+                        <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
+                        </div>
                     </td>
-                    <td class="text-end">
-                        ${vv.Cancelled ? '' : `
-                            <button class="btn-action" onclick="openEditModal(${vv.ID_VariantValue})" title="Edit">
-                                <i class="ti ti-edit"></i>
-                            </button>
-                            <button class="btn-action" onclick="openDeleteModal(${vv.ID_VariantValue})" title="Delete">
-                                <i class="ti ti-trash"></i>
-                            </button>
-                        `}
-                    </td>
-                </tr>
-            `;
+                </tr>`;
         }).join('');
-    }
-
-    function displayPagination(settings) {
-        if (!settings) return;
-
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
-        const pagination = document.getElementById('pagination');
-        const paginationInfo = document.getElementById('paginationInfo');
-
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
-
-        let paginationHTML = '';
-        
-        // Previous button
-        if (settings.PageIndex <= 1) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadVariantValues(${settings.PageIndex - 1}); return false;">Previous</a>
-            </li>`;
-        }
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
-                    paginationHTML += `<li class="page-item active">
-                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
-                    </li>`;
-                } else {
-                    paginationHTML += `<li class="page-item">
-                        <a class="page-link" href="#!" onclick="loadVariantValues(${i}); return false;">${i}</a>
-                    </li>`;
-                }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-        }
-
-        // Next button
-        if (settings.PageIndex >= totalPages) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadVariantValues(${settings.PageIndex + 1}); return false;">Next</a>
-            </li>`;
-        }
-
-        pagination.innerHTML = paginationHTML;
+        initTableTooltips(tbody);
     }
 
     function openCreateModal() {
-        document.getElementById('variantValueModalLabel').textContent = 'Add Variant Value';
-        document.getElementById('variantValueForm').reset();
+        const fk = getSelectedVariantId();
+        if (fk <= 0) {
+            if (typeof showWarning === 'function') {
+                showWarning('Variant required', 'Select a variant in the list header before adding a value.');
+            } else {
+                alert('Select a variant first.');
+            }
+            return;
+        }
+        document.getElementById('variantValueModalLabel').textContent = 'Add variant value';
         document.getElementById('variantValueID').value = '0';
-        document.getElementById('fkVariant').value = '';
-        document.getElementById('displayOrder').value = '1';
+        document.getElementById('name').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('displayOrder').value = '0';
+        document.getElementById('fkVariantModal').value = String(fk);
+        new bootstrap.Modal(document.getElementById('variantValueModal')).show();
     }
 
     async function openEditModal(variantValueID) {
         try {
-            const response = await fetch(`/Admin/VariantValue/GetById/${variantValueID}`);
-            if (!response.ok) throw new Error('Failed to fetch variant value');
-
-            const variantValue = await response.json();
-            
-            document.getElementById('variantValueModalLabel').textContent = 'Edit Variant Value';
-            document.getElementById('variantValueID').value = variantValue.ID_VariantValue;
-            document.getElementById('fkVariant').value = variantValue.FK_Variant || '';
-            document.getElementById('valueName').value = variantValue.ValueName || '';
-            document.getElementById('description').value = variantValue.Description || '';
-            document.getElementById('valueIcon').value = variantValue.ValueIcon || '';
-            document.getElementById('displayOrder').value = variantValue.DisplayOrder || 1;
-            
-            const modal = new bootstrap.Modal(document.getElementById('variantValueModal'));
-            modal.show();
-        } catch (error) {
-            console.error('Error loading variant value:', error);
-            alert('Error loading variant value details.');
+            const response = await fetch('/Admin/VariantValue/GetById/' + variantValueID);
+            if (!response.ok) throw new Error('Not found');
+            const x = await response.json();
+            document.getElementById('variantValueModalLabel').textContent = 'Edit variant value';
+            document.getElementById('variantValueID').value = String(x.variantValueID ?? x.VariantValueID ?? 0);
+            document.getElementById('fkVariantModal').value = String(x.fk_Variant ?? x.FK_Variant ?? '');
+            document.getElementById('name').value = x.name ?? x.Name ?? '';
+            document.getElementById('description').value = x.description ?? x.Description ?? '';
+            document.getElementById('displayOrder').value = String(x.displayOrder ?? x.DisplayOrder ?? 0);
+            new bootstrap.Modal(document.getElementById('variantValueModal')).show();
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Could not load variant value.');
+            else alert('Could not load variant value.');
         }
     }
 
-    function openDeleteModal(variantValueID) {
-        document.getElementById('deleteVariantValueID').value = variantValueID;
-        document.getElementById('deleteReason').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
+    function openDeleteModal(id) {
+        document.getElementById('deleteVariantValueID').value = String(id);
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 
     async function saveVariantValue() {
-        const variantValueID = parseInt(document.getElementById('variantValueID').value);
-        const fkVariant = parseInt(document.getElementById('fkVariant').value);
-        const valueName = document.getElementById('valueName').value.trim();
+        const variantValueID = parseInt(document.getElementById('variantValueID').value, 10);
+        const fkVariant = parseInt(document.getElementById('fkVariantModal').value, 10);
+        const name = document.getElementById('name').value.trim();
         const description = document.getElementById('description').value.trim();
-        const valueIcon = document.getElementById('valueIcon').value.trim();
-        const displayOrder = parseInt(document.getElementById('displayOrder').value) || 1;
+        const displayOrder = parseInt(document.getElementById('displayOrder').value, 10) || 0;
 
-        if (!valueName) {
-            alert('Please enter value name.');
+        if (!name) {
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please enter a name.');
+            else alert('Please enter a name.');
             return;
         }
-
         if (!fkVariant || fkVariant <= 0) {
-            alert('Please select a variant.');
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a variant.');
+            else alert('Please select a variant.');
             return;
         }
 
-        const input = {
-            ID_VariantValue: variantValueID,
-            FK_Variant: fkVariant,
-            ValueName: valueName,
-            Description: description,
-            ValueIcon: valueIcon,
-            DisplayOrder: displayOrder
+        const body = {
+            variantValueID: variantValueID,
+            fk_Variant: fkVariant,
+            name: name,
+            description: description,
+            displayOrder: displayOrder
         };
-
         const url = variantValueID === 0 ? '/Admin/VariantValue/Create' : '/Admin/VariantValue/Update';
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
+                body: JSON.stringify(body)
             });
-
             const result = await response.json();
-
-            if (result.StatusCode) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('variantValueModal'));
-                modal.hide();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('variantValueModal')).hide();
                 loadVariantValues(currentPage);
-                alert(result.ResponseMsg || 'Variant Value saved successfully.');
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'Variant value saved.');
+                }
             } else {
-                if (result.errors && result.errors.length > 0) {
-                    alert('Validation errors:\n' + result.errors.join('\n'));
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
                 } else {
-                    alert(result.ResponseMsg || 'Error saving variant value.');
+                    alert(result.responseMsg || result.ResponseMsg || 'Save failed.');
                 }
             }
-        } catch (error) {
-            console.error('Error saving variant value:', error);
-            alert('Error saving variant value. Please try again.');
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Save failed.');
+            else alert('Save failed.');
         }
     }
 
     async function confirmDelete() {
-        const variantValueID = parseInt(document.getElementById('deleteVariantValueID').value);
-        const reason = document.getElementById('deleteReason').value.trim();
-
-        if (!reason) {
-            alert('Please enter reason for deletion.');
-            return;
-        }
-
-        const input = {
-            ID_VariantValue: variantValueID,
-            CancelledReason: reason
-        };
-
+        const variantValueID = parseInt(document.getElementById('deleteVariantValueID').value, 10);
         try {
             const response = await fetch('/Admin/VariantValue/Delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
+                body: JSON.stringify({ variantValueID: variantValueID })
             });
-
             const result = await response.json();
-
-            if (result.StatusCode) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                modal.hide();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
                 loadVariantValues(currentPage);
-                alert(result.ResponseMsg || 'Variant Value deleted successfully.');
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'Deleted.');
+                }
             } else {
-                alert(result.ResponseMsg || 'Error deleting variant value.');
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                } else {
+                    alert(result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                }
             }
-        } catch (error) {
-            console.error('Error deleting variant value:', error);
-            alert('Error deleting variant value. Please try again.');
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Delete failed.');
+            else alert('Delete failed.');
         }
     }
 
-    function resetFilters() {
+    function clearVariantValueSearch() {
         document.getElementById('searchText').value = '';
-        document.getElementById('filterVariant').value = '';
-        document.getElementById('pageSize').value = '10';
         loadVariantValues(1);
     }
 
     function escapeHtml(text) {
-        if (!text) return '';
+        if (text == null || text === undefined) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 </script>
-<!-- [ Main Content ] end -->

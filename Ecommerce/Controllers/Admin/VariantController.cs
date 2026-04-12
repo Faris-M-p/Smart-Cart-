@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.VariantModel;
 using static Ecommerce.Models.CommonModel;
-using System.Linq;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -35,10 +34,15 @@ namespace Ecommerce.Controllers.Admin
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return BadRequest(new { message = "Validation failed.", errors });
+
+                    return BadRequest(new ApiResponse<TableOutput<Variant>>
+                    {
+                        Success = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new VariantListInput
                 {
                     SearchText = viewInput.SearchText,
@@ -50,11 +54,21 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _variantInterface.GetVariantListAsync(input);
-                return Ok(result);
+
+                return Ok(new ApiResponse<TableOutput<Variant>>
+                {
+                    Success = true,
+                    Message = "Variants loaded successfully",
+                    Data = result
+                });
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                return StatusCode(500, new ApiResponse<TableOutput<Variant>>
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
             }
         }
 
@@ -73,14 +87,14 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new VariantUpdateInput
                 {
-                    ID_Variant = viewInput.ID_Variant,
-                    VariantName = viewInput.VariantName,
+                    VariantID = viewInput.VariantID,
+                    Name = viewInput.Name,
                     Description = viewInput.Description,
                     DisplayOrder = viewInput.DisplayOrder,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    IsActive = viewInput.IsActive ?? true,
+                    EnterBy = 1
                 };
 
                 var result = await _variantInterface.CreateVariantAsync(input);
@@ -112,14 +126,14 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new VariantUpdateInput
                 {
-                    ID_Variant = viewInput.ID_Variant,
-                    VariantName = viewInput.VariantName,
+                    VariantID = viewInput.VariantID,
+                    Name = viewInput.Name,
                     Description = viewInput.Description,
                     DisplayOrder = viewInput.DisplayOrder,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    IsActive = viewInput.IsActive ?? true,
+                    EnterBy = 1
                 };
 
                 var result = await _variantInterface.UpdateVariantAsync(input);
@@ -151,12 +165,11 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
                 var input = new VariantDeleteInput
                 {
-                    ID_Variant = viewInput.ID_Variant,
+                    VariantID = viewInput.VariantID,
                     CancelledReason = viewInput.CancelledReason,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _variantInterface.DeleteVariantAsync(input);
@@ -179,14 +192,13 @@ namespace Ecommerce.Controllers.Admin
         {
             try
             {
-                var result = await _variantInterface.GetVariantByIdAsync(id);
-
-                if (result != null)
+                var row = await _variantInterface.GetVariantByIdAsync(id);
+                if (row == null)
                 {
-                    return Ok(result);
+                    return NotFound(new { message = "Variant not found." });
                 }
 
-                return NotFound(new { message = "Variant not found." });
+                return Ok(row);
             }
             catch (Exception ex)
             {

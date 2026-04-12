@@ -14,11 +14,8 @@ namespace Ecommerce.Helpers.Variants
         int SortColumn,
         string SortMode);
 
-    public sealed record NormalizedVariantWriteInput(string Name, string? Description, int DisplayOrder);
+    public sealed record NormalizedVariantWriteInput(string Name, string? Description, int DisplayOrder, bool IsActive);
 
-    /// <summary>
-    /// Variant list/query normalization, filtering, and sorting (no I/O).
-    /// </summary>
     public static class VariantHelper
     {
         public static NormalizedVariantListInput NormalizeInput(VariantListInput input)
@@ -42,10 +39,10 @@ namespace Ecommerce.Helpers.Variants
 
         public static NormalizedVariantWriteInput NormalizeInput(VariantUpdateInput input)
         {
-            var name = (input.VariantName ?? string.Empty).Trim();
+            var name = (input.Name ?? string.Empty).Trim();
             var description = StringHelper.NormalizeOptionalString(input.Description);
-            var displayOrder = input.DisplayOrder <= 0 ? 1 : input.DisplayOrder;
-            return new NormalizedVariantWriteInput(name, description, displayOrder);
+            var displayOrder = Math.Max(0, input.DisplayOrder);
+            return new NormalizedVariantWriteInput(name, description, displayOrder, input.IsActive);
         }
 
         public static IQueryable<VariantEntity> ApplyFilters(
@@ -57,7 +54,7 @@ namespace Ecommerce.Helpers.Variants
             if (normalized.SearchLower != null)
             {
                 var s = normalized.SearchLower;
-                query = query.Where(v => v.VariantName.ToLower().Contains(s));
+                query = query.Where(v => v.Name.ToLower().Contains(s));
             }
 
             if (normalized.FilterIds.Count > 0)
@@ -86,16 +83,12 @@ namespace Ecommerce.Helpers.Variants
             {
                 case VariantSortColumn.Name:
                     return desc
-                        ? query.OrderByDescending(v => v.VariantName)
-                        : query.OrderBy(v => v.VariantName);
+                        ? query.OrderByDescending(v => v.Name)
+                        : query.OrderBy(v => v.Name);
                 case VariantSortColumn.DisplayOrder:
                     return desc
                         ? query.OrderByDescending(v => v.DisplayOrder)
                         : query.OrderBy(v => v.DisplayOrder);
-                case VariantSortColumn.CreatedOn:
-                    return desc
-                        ? query.OrderByDescending(v => v.CreatedOn)
-                        : query.OrderBy(v => v.CreatedOn);
                 case VariantSortColumn.Id:
                 default:
                     return desc
@@ -104,14 +97,14 @@ namespace Ecommerce.Helpers.Variants
             }
         }
 
-        public static TableOutput<VariantListOutput> EmptyTableOutput(VariantListInput? input)
+        public static TableOutput<Variant> EmptyTableOutput(VariantListInput? input)
         {
             var pageIndex = Math.Max(1, input?.PageIndex ?? 1);
             var pageSize = Math.Max(1, input?.PageSize ?? 10);
 
-            return new TableOutput<VariantListOutput>
+            return new TableOutput<Variant>
             {
-                TableData = new List<VariantListOutput>(),
+                TableData = new List<Variant>(),
                 TableSettings = new TableOutput_Settings
                 {
                     PageIndex = pageIndex,

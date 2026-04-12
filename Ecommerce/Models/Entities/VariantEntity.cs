@@ -3,28 +3,27 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ecommerce.Models.Entities
 {
-    [Table("Variant")]
+    /// <summary>Maps to <c>Variants</c> (see user schema: ID_Variant, Name, Description, DisplayOrder, IsActive, Cancelled, CancelledOn).</summary>
+    [Table("Variants")]
     public class VariantEntity
     {
         [Key]
         [Column("ID_Variant")]
         public int IdVariant { get; set; }
 
+        [Required]
         [MaxLength(255)]
-        public string VariantName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         [MaxLength(500)]
         public string? Description { get; set; }
 
         public int DisplayOrder { get; set; }
 
-        public DateTime CreatedOn { get; set; }
+        public bool IsActive { get; set; } = true;
 
         public bool Cancelled { get; set; }
 
         public DateTime? CancelledOn { get; set; }
-
-        [MaxLength(500)]
-        public string? CancelledReason { get; set; }
     }
 }

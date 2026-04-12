@@ -44,16 +44,14 @@ namespace Ecommerce.Models.Enums
     {
         Id = 0,
         Name = 1,
-        DisplayOrder = 2,
-        CreatedOn = 3
+        DisplayOrder = 2
     }
 
     public enum VariantValueSortColumn
     {
         Id = 0,
-        ValueName = 1,
-        DisplayOrder = 2,
-        CreatedOn = 3
+        Name = 1,
+        DisplayOrder = 2
     }
 
     /// <summary>Sort keys for shop catalog product list (maps from <see cref="Ecommerce.Models.ProductModel.InputProduct.SortColumn"/>).</summary>
