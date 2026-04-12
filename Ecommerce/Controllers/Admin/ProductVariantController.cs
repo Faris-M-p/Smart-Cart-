@@ -1,9 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Interface.Admin;
+using Microsoft.AspNetCore.Mvc;
 using static Ecommerce.Models.Admin.ProductVariantModel;
 using static Ecommerce.Models.CommonModel;
-using System.Linq;
-using System.Text.Json;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -26,6 +24,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetProductVariantList")]
+        [Route("GetList")]
         public async Task<IActionResult> GetProductVariantList([FromBody] ProductVariantListInputVIEW viewInput)
         {
             try
@@ -96,28 +95,30 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Validate VariantAttributes
-                if (viewInput.VariantAttributes == null || viewInput.VariantAttributes.Count == 0)
+                if (viewInput.VariantValues == null || viewInput.VariantValues.Count == 0)
                 {
-                    return BadRequest(new { message = "At least one Variant Attribute is required." });
+                    return BadRequest(new { message = "At least one variant value row is required." });
                 }
-
-                // Convert VariantAttributes to JSON
-                var variantAttributesJson = JsonSerializer.Serialize(viewInput.VariantAttributes.Select(va => new
-                {
-                    FK_Variant = va.FK_Variant,
-                    FK_VariantValue = va.FK_VariantValue
-                }));
 
                 var input = new ProductVariantUpdateInput
                 {
-                    UserAction = 1, // 1 = Add
-                    ID_ProductVariant = viewInput.ID_ProductVariant,
+                    ID_ProductVariant = 0,
                     FK_Product = viewInput.FK_Product,
-                    PriceAdjustment = viewInput.PriceAdjustment,
+                    SKU = viewInput.SKU,
+                    VariantLabel = viewInput.VariantLabel,
+                    MRP = viewInput.MRP,
+                    SellingPrice = viewInput.SellingPrice,
+                    IsActive = viewInput.IsActive,
                     IsDefault = viewInput.IsDefault,
-                    VariantAttributes = variantAttributesJson,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    VariantValues = viewInput.VariantValues
+                        .Where(v => v.VariantId > 0 && v.VariantValueId > 0)
+                        .Select(v => new ProductVariantValueRowInput
+                        {
+                            VariantId = v.VariantId,
+                            VariantValueId = v.VariantValueId
+                        })
+                        .ToList(),
+                    EnterBy = 1
                 };
 
                 var result = await _productVariantInterface.CreateProductVariantAsync(input);
@@ -149,26 +150,30 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Validate VariantAttributes (optional for update, but if provided, must be valid)
-                string variantAttributesJson = null;
-                if (viewInput.VariantAttributes != null && viewInput.VariantAttributes.Count > 0)
+                if (viewInput.VariantValues == null || viewInput.VariantValues.Count == 0)
                 {
-                    variantAttributesJson = JsonSerializer.Serialize(viewInput.VariantAttributes.Select(va => new
-                    {
-                        FK_Variant = va.FK_Variant,
-                        FK_VariantValue = va.FK_VariantValue
-                    }));
+                    return BadRequest(new { message = "At least one variant value row is required." });
                 }
 
                 var input = new ProductVariantUpdateInput
                 {
-                    UserAction = 2, // 2 = Edit
                     ID_ProductVariant = viewInput.ID_ProductVariant,
                     FK_Product = viewInput.FK_Product,
-                    PriceAdjustment = viewInput.PriceAdjustment,
+                    SKU = viewInput.SKU,
+                    VariantLabel = viewInput.VariantLabel,
+                    MRP = viewInput.MRP,
+                    SellingPrice = viewInput.SellingPrice,
+                    IsActive = viewInput.IsActive,
                     IsDefault = viewInput.IsDefault,
-                    VariantAttributes = variantAttributesJson ?? string.Empty,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    VariantValues = viewInput.VariantValues
+                        .Where(v => v.VariantId > 0 && v.VariantValueId > 0)
+                        .Select(v => new ProductVariantValueRowInput
+                        {
+                            VariantId = v.VariantId,
+                            VariantValueId = v.VariantValueId
+                        })
+                        .ToList(),
+                    EnterBy = 1
                 };
 
                 var result = await _productVariantInterface.UpdateProductVariantAsync(input);
@@ -202,10 +207,8 @@ namespace Ecommerce.Controllers.Admin
 
                 var input = new ProductVariantDeleteInput
                 {
-                    UserAction = 3, // 3 = Delete
                     ID_ProductVariant = viewInput.ID_ProductVariant,
-                    CancelledReason = viewInput.CancelledReason,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _productVariantInterface.DeleteProductVariantAsync(input);

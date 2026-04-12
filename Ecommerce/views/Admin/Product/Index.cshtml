@@ -249,6 +249,58 @@
         return `[{"ID_Value":${n}}]`;
     }
 
+    /** Resolves IDs from API JSON (System.Text.Json camelCase can emit iD_SubCategory, etc.). */
+    function pickCategoryId(cat) {
+        if (!cat) return 0;
+        const raw = cat.categoryID ?? cat.CategoryID ?? cat.iD_Category ?? cat.ID_Category;
+        const n = parseInt(String(raw ?? ''), 10);
+        return !isNaN(n) && n > 0 ? n : 0;
+    }
+
+    function pickSubCategoryId(sc) {
+        if (!sc) return 0;
+        const direct = sc.id_SubCategory ?? sc.ID_SubCategory ?? sc.iD_SubCategory ?? sc.subCategoryId ?? sc.SubCategoryId;
+        let n = parseInt(String(direct ?? ''), 10);
+        if (!isNaN(n) && n > 0) return n;
+        for (const k of Object.keys(sc)) {
+            const kl = k.toLowerCase();
+            if (kl.includes('subcategory') && kl.includes('id')) {
+                n = parseInt(String(sc[k]), 10);
+                if (!isNaN(n) && n > 0) return n;
+            }
+        }
+        return 0;
+    }
+
+    function pickBrandId(b) {
+        if (!b) return 0;
+        const raw = b.id_Brand ?? b.ID_Brand ?? b.iD_Brand ?? b.brandID ?? b.BrandID;
+        const n = parseInt(String(raw ?? ''), 10);
+        return !isNaN(n) && n > 0 ? n : 0;
+    }
+
+    function addSubCategoryOption(selectEl, sc) {
+        const id = pickSubCategoryId(sc);
+        const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
+        if (!name) return;
+        if (id <= 0) return;
+        selectEl.add(new Option(name, String(id)));
+    }
+
+    function addCategoryOption(selectEl, cat) {
+        const id = pickCategoryId(cat);
+        const name = cat.categoryName ?? cat.CategoryName ?? cat.name ?? cat.Name ?? '';
+        if (!name || id <= 0) return;
+        selectEl.add(new Option(name, String(id)));
+    }
+
+    function addBrandOption(selectEl, b) {
+        const id = pickBrandId(b);
+        const name = b.name ?? b.Name ?? b.brandName ?? b.BrandName ?? '';
+        if (!name || id <= 0) return;
+        selectEl.add(new Option(name, String(id)));
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         paginationInstance = new Pagination({
             containerId: 'pagination',
@@ -284,10 +336,8 @@
 
             categories.forEach(function (cat) {
                 if (cat.cancelled || cat.Cancelled) return;
-                const id = cat.categoryID ?? cat.CategoryID;
-                const name = cat.categoryName ?? cat.CategoryName ?? '';
-                filterSel.add(new Option(name, String(id)));
-                formSel.add(new Option(name, String(id)));
+                addCategoryOption(filterSel, cat);
+                addCategoryOption(formSel, cat);
             });
         } catch (e) {
             console.error(e);
@@ -310,9 +360,7 @@
             sel.innerHTML = '<option value="">All</option>';
             list.forEach(function (sc) {
                 if (sc.cancelled || sc.Cancelled) return;
-                const id = sc.id_SubCategory ?? sc.ID_SubCategory;
-                const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
-                sel.add(new Option(name, String(id)));
+                addSubCategoryOption(sel, sc);
             });
         } catch (e) {
             console.error(e);
@@ -330,9 +378,7 @@
             const list = await response.json();
             list.forEach(function (sc) {
                 if (sc.cancelled || sc.Cancelled) return;
-                const id = sc.id_SubCategory ?? sc.ID_SubCategory;
-                const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
-                sel.add(new Option(name, String(id)));
+                addSubCategoryOption(sel, sc);
             });
         } catch (e) {
             console.error(e);
@@ -349,10 +395,8 @@
             filterSel.innerHTML = '<option value="">All</option>';
             formSel.innerHTML = '<option value="">Optional</option>';
             brands.forEach(function (b) {
-                const id = b.id_Brand ?? b.ID_Brand;
-                const name = b.name ?? b.Name ?? '';
-                filterSel.add(new Option(name, String(id)));
-                formSel.add(new Option(name, String(id)));
+                addBrandOption(filterSel, b);
+                addBrandOption(formSel, b);
             });
         } catch (e) {
             console.error(e);
@@ -422,7 +466,7 @@
     function displayProducts(products) {
         const tbody = document.getElementById('productTableBody');
         tbody.innerHTML = products.map(function (p) {
-            const id = p.id_Product ?? p.ID_Product ?? 0;
+            const id = p.productId ?? p.id_Product ?? p.ID_Product ?? 0;
             const name = p.name ?? p.Name ?? '';
             const cat = p.categoryName ?? p.CategoryName ?? '';
             const brand = p.brandName ?? p.BrandName ?? '';
@@ -464,16 +508,16 @@
             if (!response.ok) throw new Error('Not found');
             const p = await response.json();
             document.getElementById('productModalLabel').textContent = 'Edit product';
-            document.getElementById('productID').value = String(p.id_Product ?? p.ID_Product ?? 0);
+            document.getElementById('productID').value = String(p.productId ?? p.id_Product ?? p.ID_Product ?? 0);
             document.getElementById('productName').value = p.name ?? p.Name ?? '';
             document.getElementById('productSlug').value = p.slug ?? p.Slug ?? '';
             document.getElementById('description').value = p.description ?? p.Description ?? '';
             document.getElementById('productIsActive').checked = (p.isActive ?? p.IsActive ?? true) === true;
-            const fkCat = p.fk_Category ?? p.FK_Category ?? '';
+            const fkCat = p.fkCategory ?? p.fk_Category ?? p.FK_Category ?? '';
             document.getElementById('fkCategory').value = String(fkCat);
             await loadSubCategoriesForProduct();
-            document.getElementById('fkSubCategory').value = String(p.fk_SubCategory ?? p.FK_SubCategory ?? '');
-            const fb = p.fk_Brand ?? p.FK_Brand;
+            document.getElementById('fkSubCategory').value = String(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
+            const fb = p.fkBrand ?? p.fk_Brand ?? p.FK_Brand;
             document.getElementById('fkBrand').value = fb != null && fb !== '' ? String(fb) : '';
             new bootstrap.Modal(document.getElementById('productModal')).show();
         } catch (e) {
@@ -493,8 +537,10 @@
         const name = document.getElementById('productName').value.trim();
         const slug = document.getElementById('productSlug').value.trim();
         const description = document.getElementById('description').value.trim();
-        const fkCategory = parseInt(document.getElementById('fkCategory').value, 10);
-        const fkSubCategory = parseInt(document.getElementById('fkSubCategory').value, 10);
+        const fkCategoryRaw = document.getElementById('fkCategory').value;
+        const fkSubRaw = document.getElementById('fkSubCategory').value;
+        const fkCategory = parseInt(fkCategoryRaw, 10);
+        const fkSubCategory = parseInt(fkSubRaw, 10);
         const fkBrandVal = document.getElementById('fkBrand').value;
         const fkBrand = fkBrandVal ? parseInt(fkBrandVal, 10) : null;
 
@@ -503,14 +549,17 @@
             else alert('Please enter a name.');
             return;
         }
-        if (!fkCategory || fkCategory <= 0) {
+        if (!fkCategoryRaw || isNaN(fkCategory) || fkCategory <= 0) {
             if (typeof showWarning === 'function') showWarning('Validation', 'Please select a category.');
             else alert('Please select a category.');
             return;
         }
-        if (!fkSubCategory || fkSubCategory <= 0) {
-            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a subcategory.');
-            else alert('Please select a subcategory.');
+        if (!fkSubRaw || isNaN(fkSubCategory) || fkSubCategory <= 0 || fkSubRaw === 'undefined') {
+            if (typeof showWarning === 'function') {
+                showWarning('Validation', 'Please select a subcategory again (wait for the list to load after choosing a category).');
+            } else {
+                alert('Please select a subcategory.');
+            }
             return;
         }
 

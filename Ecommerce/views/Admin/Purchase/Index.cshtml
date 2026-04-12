@@ -335,7 +335,9 @@
             const variants = productVariants[productId];
             selectElement.innerHTML = '<option value="">Select SKU</option>';
             variants.forEach(v => {
-                const option = new Option(v.AttributeSignature || `SKU #${v.ID_ProductVariant}`, v.ID_ProductVariant);
+                const vid = v.idProductVariant ?? v.ID_ProductVariant;
+                const label = v.attributeSignature ?? v.AttributeSignature ?? v.sku ?? v.SKU ?? `SKU #${vid}`;
+                const option = new Option(label, vid);
                 selectElement.add(option);
             });
         } catch (error) {

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Ecommerce.CustomModelValidation;
 
 namespace Ecommerce.Models.Admin
@@ -110,12 +111,21 @@ namespace Ecommerce.Models.Admin
         /// <summary>List/detail row for admin product screens.</summary>
         public class Product
         {
+            [JsonPropertyName("productId")]
             public int ID_Product { get; set; }
+
             public string Name { get; set; } = string.Empty;
             public string Slug { get; set; } = string.Empty;
+
+            [JsonPropertyName("fkSubCategory")]
             public int FK_SubCategory { get; set; }
+
+            [JsonPropertyName("fkBrand")]
             public int? FK_Brand { get; set; }
+
+            [JsonPropertyName("fkCategory")]
             public int FK_Category { get; set; }
+
             public string? CategoryName { get; set; }
             public string? SubCategoryName { get; set; }
             public string? BrandName { get; set; }

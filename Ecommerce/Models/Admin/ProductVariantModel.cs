@@ -1,15 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Ecommerce.CustomModelValidation;
 
 namespace Ecommerce.Models.Admin
 {
     public class ProductVariantModel
     {
-        // VIEW Models - For JavaScript/Frontend Input
         public class ProductVariantListInputVIEW
         {
             [Display(Name = "Product ID")]
-            [Required(ErrorMessage = "{0} is required.")]
             [GreaterThanZero]
             public int FK_Product { get; set; }
 
@@ -17,10 +16,10 @@ namespace Ecommerce.Models.Admin
             public string SearchText { get; set; } = string.Empty;
 
             [Display(Name = "Filter Variant IDs")]
-            public string FilterVariantIDs { get; set; } = string.Empty; // JSON array
+            public string FilterVariantIDs { get; set; } = string.Empty;
 
             [Display(Name = "Filter Variant Value IDs")]
-            public string FilterVariantValueIDs { get; set; } = string.Empty; // JSON array
+            public string FilterVariantValueIDs { get; set; } = string.Empty;
 
             [Display(Name = "Page Index")]
             [GreaterThanZero]
@@ -28,64 +27,67 @@ namespace Ecommerce.Models.Admin
 
             [Display(Name = "Page Size")]
             [GreaterThanZero]
-            [Range(1, 100, ErrorMessage = "{0} must be between 1 and 100.")]
+            [Range(1, 5000, ErrorMessage = "{0} must be between 1 and 5000.")]
             public int PageSize { get; set; } = 20;
 
             [Display(Name = "Sort Column")]
-            [Range(0, 3, ErrorMessage = "{0} must be between {1} and {2}.")]
+            [Range(0, 4, ErrorMessage = "{0} must be between {1} and {2}.")]
             public int SortColumn { get; set; }
 
             [Display(Name = "Sort Mode")]
-            public string SortMode { get; set; } = "ASC"; // ASC / DESC
+            public string SortMode { get; set; } = "ASC";
+        }
+
+        /// <summary>UI row: one variant type + chosen value (JSON: variantId, variantValueId).</summary>
+        public class VariantValueRowVIEW
+        {
+            [GreaterThanZero]
+            [JsonPropertyName("variantId")]
+            public int VariantId { get; set; }
+
+            [GreaterThanZero]
+            [JsonPropertyName("variantValueId")]
+            public int VariantValueId { get; set; }
         }
 
         public class ProductVariantUpdateInputVIEW
         {
-            [Display(Name = "Product Variant ID")]
-            public int ID_ProductVariant { get; set; } = 0;
+            public int ID_ProductVariant { get; set; }
 
-            [Display(Name = "Product")]
-            [Required(ErrorMessage = "{0} is required.")]
             [GreaterThanZero]
             public int FK_Product { get; set; }
 
-            [Display(Name = "Price Adjustment")]
-            public decimal PriceAdjustment { get; set; } = 0;
+            [Required(ErrorMessage = "SKU is required.")]
+            [RequiredNotEmpty]
+            [MaxLength(100)]
+            public string SKU { get; set; } = string.Empty;
 
-            [Display(Name = "Is Default")]
-            public bool IsDefault { get; set; } = false;
+            [MaxLength(255)]
+            public string VariantLabel { get; set; } = string.Empty;
 
-            [Display(Name = "Variant Attributes")]
-            [Required(ErrorMessage = "{0} is required.")]
-            public List<VariantAttributeVIEW> VariantAttributes { get; set; } = new List<VariantAttributeVIEW>();
-        }
+            [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+            public decimal MRP { get; set; }
 
-        public class VariantAttributeVIEW
-        {
-            [Display(Name = "Variant")]
-            [Required(ErrorMessage = "{0} is required.")]
-            [GreaterThanZero]
-            public int FK_Variant { get; set; }
+            [Range(typeof(decimal), "0.01", "79228162514264337593543950335", ErrorMessage = "Selling price must be greater than zero.")]
+            public decimal SellingPrice { get; set; }
 
-            [Display(Name = "Variant Value")]
-            [Required(ErrorMessage = "{0} is required.")]
-            [GreaterThanZero]
-            public int FK_VariantValue { get; set; }
+            public bool IsActive { get; set; } = true;
+
+            public bool IsDefault { get; set; }
+
+            [MinLength(1, ErrorMessage = "At least one variant value is required.")]
+            public List<VariantValueRowVIEW> VariantValues { get; set; } = new();
         }
 
         public class ProductVariantDeleteInputVIEW
         {
-            [Display(Name = "Product Variant ID")]
-            [Required(ErrorMessage = "{0} is required.")]
             [GreaterThanZero]
             public int ID_ProductVariant { get; set; }
 
-            [Display(Name = "Cancelled Reason")]
-            [MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
-            public string CancelledReason { get; set; } = string.Empty;
+            [MaxLength(500)]
+            public string? CancelledReason { get; set; }
         }
 
-        // Procedure Input Models - For Stored Procedures
         public class ProductVariantListInput
         {
             public int FK_Product { get; set; }
@@ -98,54 +100,134 @@ namespace Ecommerce.Models.Admin
             public string SortMode { get; set; } = "ASC";
         }
 
+        public class ProductVariantValueRowInput
+        {
+            public int VariantId { get; set; }
+            public int VariantValueId { get; set; }
+        }
+
         public class ProductVariantUpdateInput
         {
-            public int UserAction { get; set; } // 1=Insert, 2=Update, 3=Delete
-            public int ID_ProductVariant { get; set; } = 0;
-            public int FK_Product { get; set; } = 0;
-            public decimal PriceAdjustment { get; set; } = 0;
-            public bool IsDefault { get; set; } = false;
-            public string VariantAttributes { get; set; } = string.Empty; // JSON string
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
-            public string? CancelledReason { get; set; }
+            public int ID_ProductVariant { get; set; }
+            public int FK_Product { get; set; }
+            public string SKU { get; set; } = string.Empty;
+            public string VariantLabel { get; set; } = string.Empty;
+            public decimal MRP { get; set; }
+            public decimal SellingPrice { get; set; }
+            public bool IsActive { get; set; } = true;
+            public bool IsDefault { get; set; }
+            public List<ProductVariantValueRowInput> VariantValues { get; set; } = new();
+            public int EnterBy { get; set; } = 1;
         }
 
         public class ProductVariantDeleteInput
         {
-            public int UserAction { get; set; } = 3; // Always 3 for delete
             public int ID_ProductVariant { get; set; }
-            public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
-            public string? CancelledReason { get; set; }
+            public int EnterBy { get; set; } = 1;
         }
 
-        // Output Models from Stored Procedures
         public class ProductVariant
         {
+            [JsonPropertyName("idProductVariant")]
             public int ID_ProductVariant { get; set; }
+
+            [JsonPropertyName("fkProduct")]
             public int FK_Product { get; set; }
-            public decimal PriceAdjustment { get; set; }
+
+            [JsonPropertyName("sku")]
+            public string SKU { get; set; } = string.Empty;
+
+            [JsonPropertyName("variantLabel")]
+            public string VariantLabel { get; set; } = string.Empty;
+
+            [JsonPropertyName("combination")]
+            public string Combination { get; set; } = string.Empty;
+
+            [JsonPropertyName("attributeSignature")]
+            public string AttributeSignature { get; set; } = string.Empty;
+
+            [JsonPropertyName("mrp")]
+            public decimal MRP { get; set; }
+
+            [JsonPropertyName("sellingPrice")]
+            public decimal SellingPrice { get; set; }
+
+            [JsonPropertyName("price")]
+            public decimal Price { get; set; }
+
+            [JsonPropertyName("productName")]
+            public string ProductName { get; set; } = string.Empty;
+
+            [JsonPropertyName("isActive")]
+            public bool IsActive { get; set; }
+
+            [JsonPropertyName("isDefault")]
             public bool IsDefault { get; set; }
-            public DateTime CreatedOn { get; set; }
-            public string AttributeSignature { get; set; } = string.Empty; // e.g., "Color:Black | Print:Spiderman"
-            public int StockAvailable { get; set; }
-            public string? ImageURL { get; set; }
+
+            [JsonPropertyName("cancelled")]
+            public bool Cancelled { get; set; }
+
+            [JsonPropertyName("createdAt")]
+            public DateTime? CreatedAt { get; set; }
         }
 
         public class ProductVariantDetail
         {
+            [JsonPropertyName("idProductVariant")]
             public int ID_ProductVariant { get; set; }
+
+            [JsonPropertyName("fkProduct")]
             public int FK_Product { get; set; }
-            public decimal PriceAdjustment { get; set; }
+
+            [JsonPropertyName("sku")]
+            public string SKU { get; set; } = string.Empty;
+
+            [JsonPropertyName("variantLabel")]
+            public string VariantLabel { get; set; } = string.Empty;
+
+            [JsonPropertyName("mrp")]
+            public decimal MRP { get; set; }
+
+            [JsonPropertyName("sellingPrice")]
+            public decimal SellingPrice { get; set; }
+
+            [JsonPropertyName("isActive")]
+            public bool IsActive { get; set; }
+
+            [JsonPropertyName("isDefault")]
             public bool IsDefault { get; set; }
-            public DateTime CreatedOn { get; set; }
-            public List<VariantAttributeDetail> Attributes { get; set; } = new List<VariantAttributeDetail>();
+
+            [JsonPropertyName("createdAt")]
+            public DateTime? CreatedAt { get; set; }
+
+            [JsonPropertyName("attributes")]
+            public List<VariantAttributeDetail> Attributes { get; set; } = new();
+
+            [JsonPropertyName("variantValues")]
+            public List<VariantValueRowDetail> VariantValues { get; set; } = new();
+        }
+
+        public class VariantValueRowDetail
+        {
+            [JsonPropertyName("variantId")]
+            public int VariantId { get; set; }
+
+            [JsonPropertyName("variantValueId")]
+            public int VariantValueId { get; set; }
         }
 
         public class VariantAttributeDetail
         {
+            [JsonPropertyName("fkVariant")]
             public int FK_Variant { get; set; }
+
+            [JsonPropertyName("variantName")]
             public string VariantName { get; set; } = string.Empty;
+
+            [JsonPropertyName("fkVariantValue")]
             public int FK_VariantValue { get; set; }
+
+            [JsonPropertyName("valueName")]
             public string ValueName { get; set; } = string.Empty;
         }
     }

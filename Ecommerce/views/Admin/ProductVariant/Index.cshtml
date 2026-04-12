@@ -94,18 +94,21 @@
                                     <thead>
                                         <tr>
                                             <th class="text-muted">ID</th>
-                                            <th class="text-muted">Attributes</th>
-                                            <th class="text-muted">Price Adjustment</th>
-                                            <th class="text-muted">Is Default</th>
-                                            <th class="text-muted">Stock</th>
-                                            <th class="text-muted">Image</th>
-                                            <th class="text-muted">Created Date</th>
+                                            <th class="text-muted">SKU</th>
+                                            <th class="text-muted">Product</th>
+                                            <th class="text-muted">Combination</th>
+                                            <th class="text-muted">Label</th>
+                                            <th class="text-muted">MRP</th>
+                                            <th class="text-muted">Price</th>
+                                            <th class="text-muted">Active</th>
+                                            <th class="text-muted">Default</th>
+                                            <th class="text-muted">Created</th>
                                             <th class="text-muted text-end">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="productVariantTableBody">
                                         <tr>
-                                            <td colspan="8" class="text-center py-5">
+                                            <td colspan="11" class="text-center py-5">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
@@ -163,17 +166,36 @@
                         <div class="invalid-feedback"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Variant Attributes <span class="text-danger">*</span></label>
+                        <label for="sku" class="form-label">SKU <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="sku" name="SKU" maxlength="100" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="mrp" class="form-label">MRP</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="mrp" name="MRP" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sellingPrice" class="form-label">Selling price <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="sellingPrice" name="SellingPrice" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="variantLabel" class="form-label">Variant label</label>
+                        <input type="text" class="form-control" id="variantLabel" name="VariantLabel" maxlength="255" placeholder="Leave blank to auto-generate from values">
+                        <div class="form-text" id="variantLabelPreview"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Variant values <span class="text-danger">*</span></label>
                         <div id="variantAttributesContainer">
                             <div class="variant-attribute-row mb-2">
                                 <div class="row">
                                     <div class="col-md-5">
-                                        <select class="form-select variant-select" required>
+                                        <select class="form-select variant-select" required onchange="onVariantChange(this)">
                                             <option value="">Select Variant</option>
                                         </select>
                                     </div>
                                     <div class="col-md-5">
-                                        <select class="form-select variant-value-select" required>
+                                        <select class="form-select variant-value-select" required onchange="updateVariantLabelPreview()">
                                             <option value="">Select Value</option>
                                         </select>
                                     </div>
@@ -186,12 +208,14 @@
                             </div>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="addVariantAttribute()">
-                            <i class="ti ti-plus"></i> Add Attribute
+                            <i class="ti ti-plus"></i> Add value
                         </button>
                     </div>
                     <div class="mb-3">
-                        <label for="priceAdjustment" class="form-label">Price Adjustment</label>
-                        <input type="number" step="0.01" class="form-control" id="priceAdjustment" name="PriceAdjustment" value="0">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="IsActive" checked>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -271,8 +295,10 @@
             });
             if (!response.ok) throw new Error('Failed to fetch products');
 
-            const data = await response.json();
-            products = data.TableData || [];
+            const payload = await response.json();
+            const api = payload.data ?? payload.Data ?? payload;
+            const wrapped = api ?? {};
+            products = wrapped.tableData ?? wrapped.TableData ?? payload.TableData ?? [];
 
             const selectProduct = document.getElementById('selectProduct');
             const modalProduct = document.getElementById('modalProduct');
@@ -281,11 +307,12 @@
             modalProduct.innerHTML = '<option value="">Select Product</option>';
             
             products.forEach(p => {
-                if (!p.Cancelled) {
-                    const option1 = new Option(p.Name, p.ID_Product);
-                    const option2 = new Option(p.Name, p.ID_Product);
-                    selectProduct.add(option1);
-                    modalProduct.add(option2);
+                const cancelled = p.cancelled ?? p.Cancelled;
+                const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
+                const pname = p.name ?? p.Name ?? '';
+                if (!cancelled && pid > 0) {
+                    selectProduct.add(new Option(pname, String(pid)));
+                    modalProduct.add(new Option(pname, String(pid)));
                 }
             });
         } catch (error) {
@@ -398,8 +425,10 @@
             if (!response.ok) throw new Error('Network response was not ok');
 
             const data = await response.json();
-            displayProductVariants(data.TableData || []);
-            displayPagination(data.TableSettings);
+            const rows = data.tableData ?? data.TableData ?? [];
+            const settings = data.tableSettings ?? data.TableSettings;
+            displayProductVariants(rows);
+            displayPagination(settings);
             
             document.getElementById('filterSection').style.display = 'block';
             document.getElementById('tableSection').style.display = 'block';
@@ -409,7 +438,7 @@
             const tbody = document.getElementById('productVariantTableBody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="empty-state">
+                    <td colspan="11" class="empty-state">
                         <i class="ti ti-alert-circle"></i>
                         <h5>Error loading SKUs</h5>
                         <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading SKUs. Please try again.')}</p>
@@ -425,7 +454,7 @@
         if (!variants || variants.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="empty-state">
+                    <td colspan="11" class="empty-state">
                         <i class="ti ti-package-off"></i>
                         <h5>No SKUs found</h5>
                         <p class="text-muted">No SKUs found for this product. Try selecting a different product.</p>
@@ -436,27 +465,39 @@
         }
 
         tbody.innerHTML = variants.map(pv => {
-            const defaultClass = pv.IsDefault ? 'badge-active' : 'bg-secondary';
-            const defaultText = pv.IsDefault ? 'Yes' : 'No';
-            
+            const id = pv.idProductVariant ?? pv.ID_ProductVariant;
+            const sku = pv.sku ?? pv.SKU ?? '';
+            const longCombo = pv.combination ?? pv.Combination ?? '';
+            const shortSig = pv.attributeSignature ?? pv.AttributeSignature ?? '';
+            const combo = longCombo || shortSig;
+            const label = pv.variantLabel ?? pv.VariantLabel ?? '';
+            const pname = pv.productName ?? pv.ProductName ?? '';
+            const mrp = Number(pv.mrp ?? pv.MRP ?? 0);
+            const sp = Number(pv.price ?? pv.Price ?? pv.sellingPrice ?? pv.SellingPrice ?? 0);
+            const isDef = pv.isDefault ?? pv.IsDefault;
+            const isAct = pv.isActive ?? pv.IsActive;
+            const created = pv.createdAt ?? pv.CreatedAt;
+            const defaultClass = isDef ? 'badge-active' : 'bg-secondary';
+            const defaultText = isDef ? 'Yes' : 'No';
+            const activeClass = isAct ? 'badge-active' : 'bg-secondary';
+            const activeText = isAct ? 'Yes' : 'No';
             return `
                 <tr>
-                    <td>${pv.ID_ProductVariant}</td>
-                    <td>${escapeHtml(pv.AttributeSignature || 'N/A')}</td>
-                    <td>${pv.PriceAdjustment >= 0 ? '+' : ''}${pv.PriceAdjustment.toFixed(2)}</td>
-                    <td>
-                        <span class="badge ${defaultClass}">
-                            ${defaultText}
-                        </span>
-                    </td>
-                    <td>${pv.StockAvailable || 0}</td>
-                    <td>${pv.ImageURL ? `<img src="${escapeHtml(pv.ImageURL)}" style="max-width: 50px; max-height: 50px;" class="product-img" />` : '-'}</td>
-                    <td>${pv.CreatedOn ? new Date(pv.CreatedOn).toLocaleDateString() : '-'}</td>
+                    <td>${id}</td>
+                    <td>${escapeHtml(sku)}</td>
+                    <td>${escapeHtml(pname || '—')}</td>
+                    <td>${escapeHtml(combo || '—')}</td>
+                    <td>${escapeHtml(label || '—')}</td>
+                    <td>${mrp.toFixed(2)}</td>
+                    <td>${sp.toFixed(2)}</td>
+                    <td><span class="badge ${activeClass}">${activeText}</span></td>
+                    <td><span class="badge ${defaultClass}">${defaultText}</span></td>
+                    <td>${created ? new Date(created).toLocaleDateString() : '—'}</td>
                     <td class="text-end">
-                        <button class="btn-action" onclick="openEditModal(${pv.ID_ProductVariant})" title="Edit">
+                        <button class="btn-action" onclick="openEditModal(${id})" title="Edit">
                             <i class="ti ti-edit"></i>
                         </button>
-                        <button class="btn-action" onclick="openDeleteModal(${pv.ID_ProductVariant})" title="Delete">
+                        <button class="btn-action" onclick="openDeleteModal(${id})" title="Delete">
                             <i class="ti ti-trash"></i>
                         </button>
                     </td>
@@ -468,29 +509,33 @@
     function displayPagination(settings) {
         if (!settings) return;
 
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
+        const pageIndex = Number(settings.pageIndex ?? settings.PageIndex ?? 1);
+        const pageSize = Number(settings.pageSize ?? settings.PageSize ?? 20);
+        const totalCount = Number(settings.totalCount ?? settings.TotalCount ?? 0);
+
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
 
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
+        const start = totalCount === 0 ? 0 : ((pageIndex - 1) * pageSize) + 1;
+        const end = Math.min(pageIndex * pageSize, totalCount);
+        paginationInfo.textContent = `${start} to ${end} of ${totalCount} entries`;
 
         let paginationHTML = '';
         
         // Previous button
-        if (settings.PageIndex <= 1) {
+        if (pageIndex <= 1) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
         } else {
             paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadProductVariants(${settings.PageIndex - 1}); return false;">Previous</a>
+                <a class="page-link" href="#!" onclick="loadProductVariants(${pageIndex - 1}); return false;">Previous</a>
             </li>`;
         }
 
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
+            if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
+                if (i === pageIndex) {
                     paginationHTML += `<li class="page-item active">
                         <span class="page-link">${i}<span class="sr-only">(current)</span></span>
                     </li>`;
@@ -499,17 +544,17 @@
                         <a class="page-link" href="#!" onclick="loadProductVariants(${i}); return false;">${i}</a>
                     </li>`;
                 }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
+            } else if (i === pageIndex - 2 || i === pageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
         // Next button
-        if (settings.PageIndex >= totalPages) {
+        if (pageIndex >= totalPages) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
         } else {
             paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadProductVariants(${settings.PageIndex + 1}); return false;">Next</a>
+                <a class="page-link" href="#!" onclick="loadProductVariants(${pageIndex + 1}); return false;">Next</a>
             </li>`;
         }
 
@@ -521,7 +566,12 @@
         document.getElementById('productVariantForm').reset();
         document.getElementById('productVariantID').value = '0';
         document.getElementById('modalProduct').value = selectedProductId || '';
-        document.getElementById('priceAdjustment').value = '0';
+        document.getElementById('sku').value = '';
+        document.getElementById('mrp').value = '0';
+        document.getElementById('sellingPrice').value = '';
+        document.getElementById('variantLabel').value = '';
+        document.getElementById('variantLabelPreview').textContent = '';
+        document.getElementById('isActive').checked = true;
         document.getElementById('isDefault').checked = false;
         
         // Reset variant attributes to one row
@@ -530,12 +580,12 @@
             <div class="variant-attribute-row mb-2">
                 <div class="row">
                     <div class="col-md-5">
-                        <select class="form-select variant-select" required>
+                        <select class="form-select variant-select" required onchange="onVariantChange(this)">
                             <option value="">Select Variant</option>
                         </select>
                     </div>
                     <div class="col-md-5">
-                        <select class="form-select variant-value-select" required>
+                        <select class="form-select variant-value-select" required onchange="updateVariantLabelPreview()">
                             <option value="">Select Value</option>
                         </select>
                     </div>
@@ -548,6 +598,7 @@
             </div>
         `;
         populateVariantDropdowns();
+        updateVariantLabelPreview();
     }
 
     async function openEditModal(productVariantID) {
@@ -558,21 +609,36 @@
             const pv = await response.json();
             
             document.getElementById('productVariantModalLabel').textContent = 'Edit Product Variant (SKU)';
-            document.getElementById('productVariantID').value = pv.ID_ProductVariant;
-            document.getElementById('modalProduct').value = pv.FK_Product;
-            document.getElementById('priceAdjustment').value = pv.PriceAdjustment;
-            document.getElementById('isDefault').checked = pv.IsDefault;
+            document.getElementById('productVariantID').value = pv.idProductVariant ?? pv.ID_ProductVariant;
+            document.getElementById('modalProduct').value = pv.fkProduct ?? pv.FK_Product;
+            document.getElementById('sku').value = pv.sku ?? pv.SKU ?? '';
+            document.getElementById('mrp').value = String(pv.mrp ?? pv.MRP ?? 0);
+            document.getElementById('sellingPrice').value = String(pv.sellingPrice ?? pv.SellingPrice ?? '');
+            document.getElementById('variantLabel').value = pv.variantLabel ?? pv.VariantLabel ?? '';
+            document.getElementById('isActive').checked = pv.isActive ?? pv.IsActive ?? true;
+            document.getElementById('isDefault').checked = pv.isDefault ?? pv.IsDefault ?? false;
             
-            // Populate variant attributes
             const container = document.getElementById('variantAttributesContainer');
             container.innerHTML = '';
-            pv.Attributes.forEach(attr => {
-                addVariantAttributeRow(attr.FK_Variant, attr.FK_VariantValue);
-            });
-            if (pv.Attributes.length === 0) {
+            const vvList = pv.variantValues ?? pv.VariantValues;
+            const attrList = pv.attributes ?? pv.Attributes ?? [];
+            if (vvList && vvList.length > 0) {
+                vvList.forEach(rv => {
+                    const vid = rv.variantId ?? rv.VariantId ?? rv.fkVariant ?? rv.FK_Variant;
+                    const vvid = rv.variantValueId ?? rv.VariantValueId ?? rv.fkVariantValue ?? rv.FK_VariantValue;
+                    addVariantAttributeRow(vid, vvid);
+                });
+            } else if (attrList.length > 0) {
+                attrList.forEach(attr => {
+                    const vid = attr.fkVariant ?? attr.FK_Variant;
+                    const vvid = attr.fkVariantValue ?? attr.FK_VariantValue;
+                    addVariantAttributeRow(vid, vvid);
+                });
+            } else {
                 addVariantAttributeRow();
             }
             
+            updateVariantLabelPreview();
             const modal = new bootstrap.Modal(document.getElementById('productVariantModal'));
             modal.show();
         } catch (error) {
@@ -597,7 +663,7 @@
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <select class="form-select variant-value-select" required>
+                    <select class="form-select variant-value-select" required onchange="updateVariantLabelPreview()">
                         <option value="">Select Value</option>
                     </select>
                 </div>
@@ -619,7 +685,7 @@
             const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
             if (!v.Cancelled && (v.isActive ?? v.IsActive ?? true)) {
                 const option = new Option(vname, vid);
-                if (selectedVariantId && vid === selectedVariantId) {
+                if (selectedVariantId != null && selectedVariantId !== '' && Number(vid) === Number(selectedVariantId)) {
                     option.selected = true;
                 }
                 variantSelect.add(option);
@@ -630,6 +696,7 @@
         if (selectedVariantId) {
             populateVariantValues(valueSelect, selectedVariantId, selectedValueId);
         }
+        updateVariantLabelPreview();
     }
 
     function populateVariantDropdowns() {
@@ -644,13 +711,15 @@
                 }
             });
         });
+        updateVariantLabelPreview();
     }
 
     function onVariantChange(select) {
         const row = select.closest('.variant-attribute-row');
         const valueSelect = row.querySelector('.variant-value-select');
-        const variantId = parseInt(select.value);
+        const variantId = parseInt(select.value, 10);
         populateVariantValues(valueSelect, variantId);
+        updateVariantLabelPreview();
     }
 
     function populateVariantValues(valueSelect, variantId, selectedValueId = null) {
@@ -660,12 +729,31 @@
                 const vvid = vv.id_VariantValue ?? vv.ID_VariantValue ?? vv.iD_VariantValue;
                 const vvn = vv.name ?? vv.Name ?? vv.valueName ?? vv.ValueName ?? '';
                 const option = new Option(vvn, vvid);
-                if (selectedValueId && vvid === selectedValueId) {
+                if (selectedValueId != null && selectedValueId !== '' && Number(vvid) === Number(selectedValueId)) {
                     option.selected = true;
                 }
                 valueSelect.add(option);
             });
         }
+        updateVariantLabelPreview();
+    }
+
+    function updateVariantLabelPreview() {
+        const el = document.getElementById('variantLabelPreview');
+        if (!el) return;
+        const rows = [];
+        document.querySelectorAll('.variant-attribute-row').forEach(row => {
+            const vs = row.querySelector('.variant-select');
+            const vsel = row.querySelector('.variant-value-select');
+            const vvid = parseInt(vsel.value, 10) || 0;
+            if (!vvid) return;
+            const vname = vs.options[vs.selectedIndex]?.text?.trim() || '';
+            const valName = vsel.options[vsel.selectedIndex]?.text?.trim() || '';
+            if (valName) rows.push({ vname, valName });
+        });
+        rows.sort((a, b) => a.vname.localeCompare(b.vname, undefined, { sensitivity: 'base' }));
+        const auto = rows.map(r => r.valName).filter(Boolean).join(' - ');
+        el.textContent = auto ? `Auto label: ${auto}` : '';
     }
 
     function removeVariantAttribute(button) {
@@ -684,45 +772,78 @@
         modal.show();
     }
 
+    /** Returns { variantId, variantValueId }[]; throws Error on duplicate variant or value in form. */
+    function collectVariantValuesFromForm() {
+        const out = [];
+        const seenVariant = new Set();
+        const seenValue = new Set();
+        document.querySelectorAll('.variant-attribute-row').forEach(row => {
+            const variantSelect = row.querySelector('.variant-select');
+            const valueSelect = row.querySelector('.variant-value-select');
+            const variantId = parseInt(variantSelect.value, 10);
+            const variantValueId = parseInt(valueSelect.value, 10);
+            if (!variantId || !variantValueId) {
+                return;
+            }
+            if (seenVariant.has(variantId)) {
+                throw new Error('Each variant type may only appear once in the form.');
+            }
+            if (seenValue.has(variantValueId)) {
+                throw new Error('Duplicate variant value selected.');
+            }
+            seenVariant.add(variantId);
+            seenValue.add(variantValueId);
+            out.push({ variantId, variantValueId });
+        });
+        return out;
+    }
+
     async function saveProductVariant() {
-        const productVariantID = parseInt(document.getElementById('productVariantID').value);
-        const fkProduct = parseInt(document.getElementById('modalProduct').value);
-        const priceAdjustment = parseFloat(document.getElementById('priceAdjustment').value) || 0;
+        const productVariantID = parseInt(document.getElementById('productVariantID').value, 10);
+        const fkProduct = parseInt(document.getElementById('modalProduct').value, 10);
+        const sku = (document.getElementById('sku').value || '').trim();
+        const mrp = parseFloat(document.getElementById('mrp').value) || 0;
+        const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+        const variantLabel = (document.getElementById('variantLabel').value || '').trim();
+        const isActive = document.getElementById('isActive').checked;
         const isDefault = document.getElementById('isDefault').checked;
 
         if (!fkProduct || fkProduct <= 0) {
             alert('Please select a product.');
             return;
         }
+        if (!sku) {
+            alert('Please enter SKU.');
+            return;
+        }
+        if (!Number.isFinite(sellingPrice) || sellingPrice <= 0) {
+            alert('Selling price must be greater than zero.');
+            return;
+        }
 
-        // Collect variant attributes
-        const variantAttributes = [];
-        const rows = document.querySelectorAll('.variant-attribute-row');
-        rows.forEach(row => {
-            const variantSelect = row.querySelector('.variant-select');
-            const valueSelect = row.querySelector('.variant-value-select');
-            const variantId = parseInt(variantSelect.value);
-            const valueId = parseInt(valueSelect.value);
-            
-            if (variantId && valueId) {
-                variantAttributes.push({
-                    FK_Variant: variantId,
-                    FK_VariantValue: valueId
-                });
-            }
-        });
+        let variantValues;
+        try {
+            variantValues = collectVariantValuesFromForm();
+        } catch (e) {
+            alert(e.message || 'Invalid variant selection.');
+            return;
+        }
 
-        if (variantAttributes.length === 0) {
-            alert('Please add at least one variant attribute.');
+        if (variantValues.length === 0) {
+            alert('Please add at least one complete variant row (variant + value).');
             return;
         }
 
         const input = {
             ID_ProductVariant: productVariantID,
             FK_Product: fkProduct,
-            PriceAdjustment: priceAdjustment,
+            SKU: sku,
+            MRP: mrp,
+            SellingPrice: sellingPrice,
+            VariantLabel: variantLabel,
+            IsActive: isActive,
             IsDefault: isDefault,
-            VariantAttributes: variantAttributes
+            VariantValues: variantValues
         };
 
         const url = productVariantID === 0 ? '/Admin/ProductVariant/Create' : '/Admin/ProductVariant/Update';

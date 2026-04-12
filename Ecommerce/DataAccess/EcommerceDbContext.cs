@@ -31,11 +31,5 @@ namespace Ecommerce.DataAccess
         public DbSet<ProductVariantEntity> ProductVariants => Set<ProductVariantEntity>();
 
         public DbSet<ProductVariantAttributeEntity> ProductVariantAttributes => Set<ProductVariantAttributeEntity>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<ProductVariantAttributeEntity>()
-                .HasKey(e => new { e.FkProductVariant, e.FkVariant });
-        }
     }
 }

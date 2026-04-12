@@ -75,8 +75,9 @@ namespace Ecommerce.Models.Enums
     public enum ProductVariantSortColumn
     {
         Id = 0,
-        PriceAdjustment = 1,
-        CreatedOn = 2,
-        StockAvailable = 3
+        Sku = 1,
+        SellingPrice = 2,
+        VariantLabel = 3,
+        CreatedAt = 4
     }
 }

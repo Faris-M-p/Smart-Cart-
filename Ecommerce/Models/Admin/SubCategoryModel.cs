@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Ecommerce.CustomModelValidation;
 
 namespace Ecommerce.Models.Admin
@@ -135,6 +136,7 @@ namespace Ecommerce.Models.Admin
         public class SubCategory
         {
             [Display(Name = "SubCategory ID")]
+            [JsonPropertyName("subCategoryId")]
             public int ID_SubCategory { get; set; }
 
             [Display(Name = "SubCategory Name")]
