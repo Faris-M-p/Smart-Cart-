@@ -288,17 +288,54 @@
 
     async function loadProducts() {
         try {
+            // ProductListInputVIEW enforces PageSize <= 100
+            const maxPageSize = 100;
+            const all = [];
+            let page = 1;
+            let totalCount = null;
+
+            // Fetch pages until we have all rows (for dropdown usage)
+            while (totalCount == null || all.length < totalCount) {
             const response = await fetch('/Admin/Product/GetProductList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PageIndex: 1, PageSize: 1000, SearchText: '', FilterCategoryIDs: '', FilterSubCategoryIDs: '', FilterBrandIDs: '', FilterStatusIDs: '', SortColumn: 0, SortMode: 'ASC' })
+                    body: JSON.stringify({
+                        PageIndex: page,
+                        PageSize: maxPageSize,
+                        SearchText: '',
+                        FilterCategoryIDs: '',
+                        FilterSubCategoryIDs: '',
+                        FilterBrandIDs: '',
+                        SortColumn: 0,
+                        SortMode: 'ASC'
+                    })
             });
             if (!response.ok) throw new Error('Failed to fetch products');
 
-            const payload = await response.json();
-            const api = payload.data ?? payload.Data ?? payload;
-            const wrapped = api ?? {};
-            products = wrapped.tableData ?? wrapped.TableData ?? payload.TableData ?? [];
+                const payload = await response.json();
+                const success = payload.success ?? payload.Success ?? true;
+                if (!success) {
+                    throw new Error(payload.message ?? payload.Message ?? 'Failed to fetch products');
+                }
+
+                const data = payload.data ?? payload.Data ?? payload;
+                const rows = data.tableData ?? data.TableData ?? [];
+                const settings = data.tableSettings ?? data.TableSettings ?? null;
+
+                all.push(...rows);
+                if (settings && (settings.totalCount ?? settings.TotalCount) != null) {
+                    totalCount = Number(settings.totalCount ?? settings.TotalCount) || 0;
+                } else if (rows.length < maxPageSize) {
+                    totalCount = all.length;
+                }
+
+                if (rows.length < maxPageSize) {
+                    break;
+                }
+                page++;
+            }
+
+            products = all;
 
             const selectProduct = document.getElementById('selectProduct');
             const modalProduct = document.getElementById('modalProduct');
@@ -322,50 +359,31 @@
 
     async function loadVariants() {
         try {
+            // VariantListInputVIEW enforces PageSize <= 100
             const response = await fetch('/Admin/Variant/GetVariantList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pageIndex: 1, pageSize: 1000, searchText: '', filterVariantIDs: '', sortColumn: 0, sortMode: 'ASC' })
+                body: JSON.stringify({
+                    PageIndex: 1,
+                    PageSize: 100,
+                    SearchText: '',
+                    FilterVariantIDs: '',
+                    SortColumn: 0,
+                    SortMode: 'ASC'
+                })
             });
             if (!response.ok) throw new Error('Failed to fetch variants');
 
             const payload = await response.json();
-            variants = (payload.data?.tableData ?? payload.Data?.TableData ?? payload.tableData ?? payload.TableData) ?? [];
-
-            // Load variant values
-            const variantValueResponse = await fetch('/Admin/VariantValue/GetList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fk_Variant: 0,
-                    pageIndex: 1,
-                    pageSize: 10000,
-                    searchText: '',
-                    filterVariantIDs: '',
-                    sortColumn: 0,
-                    sortMode: 'ASC'
-                })
-            });
-            if (!variantValueResponse.ok) throw new Error('Failed to fetch variant values');
-
-            const variantValuePayload = await variantValueResponse.json();
-            variantValues = variantValuePayload.data?.tableData
-                ?? variantValuePayload.Data?.TableData
-                ?? variantValuePayload.tableData
-                ?? variantValuePayload.TableData
-                ?? [];
-
-            // Build variant value map
+            const success = payload.success ?? payload.Success ?? true;
+            if (!success) {
+                throw new Error(payload.message ?? payload.Message ?? 'Failed to fetch variants');
+            }
+            const data = payload.data ?? payload.Data ?? payload;
+            variants = (data.tableData ?? data.TableData) ?? [];
+            // Load variant values on-demand per selected variant (see fetchVariantValuesByVariantId)
+            variantValues = [];
             variantValueMap = {};
-            variantValues.forEach(vv => {
-                if (!vv.Cancelled) {
-                    const fk = vv.fk_Variant ?? vv.FK_Variant;
-                    if (!variantValueMap[fk]) {
-                        variantValueMap[fk] = [];
-                    }
-                    variantValueMap[fk].push(vv);
-                }
-            });
 
             // Populate variant dropdowns in modal
             const variantSelects = document.querySelectorAll('.variant-select');
@@ -382,6 +400,27 @@
         } catch (error) {
             console.error('Error loading variants:', error);
         }
+    }
+
+    async function fetchVariantValuesByVariantId(variantId) {
+        const vid = Number(variantId) || 0;
+        if (vid <= 0) return [];
+
+        const key = String(vid);
+        if (Array.isArray(variantValueMap[key]) && variantValueMap[key].length > 0) {
+            return variantValueMap[key];
+        }
+
+        const response = await fetch(`/Admin/VariantValue/GetByVariant/${vid}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch variant values');
+        }
+
+        const rows = await response.json();
+        const list = Array.isArray(rows) ? rows : [];
+
+        variantValueMap[key] = list;
+        return list;
     }
 
     function onProductChange() {
@@ -694,7 +733,17 @@
         
         // If variant is selected, populate values
         if (selectedVariantId) {
-            populateVariantValues(valueSelect, selectedVariantId, selectedValueId);
+            (async () => {
+                try {
+                    const rows = await fetchVariantValuesByVariantId(selectedVariantId);
+                    populateVariantValues(valueSelect, selectedVariantId, selectedValueId, rows);
+                } catch (e) {
+                    console.error('Error loading variant values:', e);
+                    populateVariantValues(valueSelect, 0);
+                } finally {
+                    updateVariantLabelPreview();
+                }
+            })();
         }
         updateVariantLabelPreview();
     }
@@ -718,16 +767,31 @@
         const row = select.closest('.variant-attribute-row');
         const valueSelect = row.querySelector('.variant-value-select');
         const variantId = parseInt(select.value, 10);
-        populateVariantValues(valueSelect, variantId);
-        updateVariantLabelPreview();
+        (async () => {
+            try {
+                const rows = await fetchVariantValuesByVariantId(variantId);
+                populateVariantValues(valueSelect, variantId, null, rows);
+            } catch (e) {
+                console.error('Error loading variant values:', e);
+                populateVariantValues(valueSelect, 0);
+            } finally {
+                updateVariantLabelPreview();
+            }
+        })();
     }
 
-    function populateVariantValues(valueSelect, variantId, selectedValueId = null) {
+    function populateVariantValues(valueSelect, variantId, selectedValueId = null, overrideRows = null) {
         valueSelect.innerHTML = '<option value="">Select Value</option>';
-        if (variantId && variantValueMap[variantId]) {
-            variantValueMap[variantId].forEach(vv => {
-                const vvid = vv.id_VariantValue ?? vv.ID_VariantValue ?? vv.iD_VariantValue;
+        const key = String(Number(variantId) || 0);
+        const source = overrideRows ?? (key !== '0' ? variantValueMap[key] : null);
+        if (Array.isArray(source) && source.length > 0) {
+            source.forEach(vv => {
+                const vvid =
+                    vv.variantValueID ?? vv.VariantValueID ??
+                    vv.idVariantValue ?? vv.IdVariantValue ??
+                    vv.id_VariantValue ?? vv.ID_VariantValue ?? vv.iD_VariantValue;
                 const vvn = vv.name ?? vv.Name ?? vv.valueName ?? vv.ValueName ?? '';
+                if (!vvid) return;
                 const option = new Option(vvn, vvid);
                 if (selectedValueId != null && selectedValueId !== '' && Number(vvid) === Number(selectedValueId)) {
                     option.selected = true;
