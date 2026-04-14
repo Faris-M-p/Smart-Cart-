@@ -426,6 +426,7 @@
             });
 
             if (!response.ok) {
+                handleApiError?.('failure', 'Category Save', { url, method: 'POST', payload: input, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -437,10 +438,12 @@
                 loadCategories(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Category saved successfully.');
             } else {
+                handleApiError?.('failure', 'Category Save (business)', { url, method: 'POST', payload: input, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving category.');
             }
         } catch (error) {
             console.error('Error saving category:', error);
+            handleApiError?.('crash', 'Category Save', { url, method: 'POST', payload: input, error });
             showError('Error', 'Error saving category. Please try again.');
         }
     }
@@ -455,7 +458,8 @@
         };
 
         try {
-            const response = await fetch('/Admin/Category/Delete', {
+            const url = '/Admin/Category/Delete';
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -464,6 +468,7 @@
             });
 
             if (!response.ok) {
+                handleApiError?.('failure', 'Category Delete', { url, method: 'POST', payload: input, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -475,10 +480,12 @@
                 loadCategories(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Category deleted successfully.');
             } else {
+                handleApiError?.('failure', 'Category Delete (business)', { url, method: 'POST', payload: input, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting category.');
             }
         } catch (error) {
             console.error('Error deleting category:', error);
+            handleApiError?.('crash', 'Category Delete', { url, method: 'POST', payload: input, error });
             showError('Error', 'Error deleting category. Please try again.');
         }
     }

@@ -435,7 +435,7 @@
 
     async function loadProductVariants(page = 1) {
         if (selectedProductId === 0) {
-            alert('Please select a product first.');
+            showWarning('Validation Error', 'Please select a product first.');
             return;
         }
 
@@ -484,6 +484,7 @@
                     </td>
                 </tr>
             `;
+            showError('Error', error?.message || 'Error loading SKUs. Please try again.');
         }
     }
 
@@ -682,7 +683,7 @@
             modal.show();
         } catch (error) {
             console.error('Error loading product variant:', error);
-            alert('Error loading SKU details.');
+            showError('Error', 'Error loading SKU details.');
         }
     }
 
@@ -825,7 +826,7 @@
         if (container.children.length > 1) {
             button.closest('.variant-attribute-row').remove();
         } else {
-            alert('At least one variant attribute is required.');
+            showWarning('Validation Error', 'At least one variant value is required.');
         }
     }
 
@@ -873,15 +874,15 @@
         const isDefault = document.getElementById('isDefault').checked;
 
         if (!fkProduct || fkProduct <= 0) {
-            alert('Please select a product.');
+            showWarning('Validation Error', 'Please select a product.');
             return;
         }
         if (!sku) {
-            alert('Please enter SKU.');
+            showWarning('Validation Error', 'Please enter SKU.');
             return;
         }
         if (!Number.isFinite(sellingPrice) || sellingPrice <= 0) {
-            alert('Selling price must be greater than zero.');
+            showWarning('Validation Error', 'Selling price must be greater than zero.');
             return;
         }
 
@@ -889,12 +890,12 @@
         try {
             variantValues = collectVariantValuesFromForm();
         } catch (e) {
-            alert(e.message || 'Invalid variant selection.');
+            showWarning('Validation Error', e?.message || 'Invalid variant selection.');
             return;
         }
 
         if (variantValues.length === 0) {
-            alert('Please add at least one complete variant row (variant + value).');
+            showWarning('Validation Error', 'Please add at least one complete variant row (variant + value).');
             return;
         }
 
@@ -919,23 +920,45 @@
                 body: JSON.stringify(input)
             });
 
-            const result = await response.json();
+            let result = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
 
-            if (result.StatusCode) {
+            // Handle MVC validation 400s that return { message, errors }
+            if (!response.ok) {
+                handleApiError?.('failure', 'Save SKU', { url, method: 'POST', payload: input, response, result });
+                const msg = result?.message || result?.Message || 'Validation failed.';
+                const errs = result?.errors || result?.Errors || [];
+                if (Array.isArray(errs) && errs.length > 0) {
+                    showWarning('Validation Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));
+                } else {
+                    showWarning('Validation Error', msg);
+                }
+                return;
+            }
+
+            if (result?.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('productVariantModal'));
                 modal.hide();
                 loadProductVariants(currentPage);
-                alert(result.ResponseMsg || 'SKU saved successfully.');
+                showSuccess('Success', result?.ResponseMsg || 'SKU saved successfully.');
             } else {
-                if (result.errors && result.errors.length > 0) {
-                    alert('Validation errors:\n' + result.errors.join('\n'));
+                handleApiError?.('failure', 'Save SKU (business)', { url, method: 'POST', payload: input, response, result });
+                // CommonResponse { StatusCode, ResponseMsg } OR other error shapes
+                const msg = result?.ResponseMsg || result?.message || result?.Message || 'Error saving SKU.';
+                const errs = result?.errors || result?.Errors || [];
+                if (Array.isArray(errs) && errs.length > 0) {
+                    showError('Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));
                 } else {
-                    alert(result.ResponseMsg || 'Error saving SKU.');
+                    showError('Error', msg);
                 }
             }
         } catch (error) {
-            console.error('Error saving product variant:', error);
-            alert('Error saving SKU. Please try again.');
+            handleApiError?.('crash', 'Save SKU', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error saving SKU. Please try again.');
         }
     }
 
@@ -949,25 +972,44 @@
         };
 
         try {
-            const response = await fetch('/Admin/ProductVariant/Delete', {
+            const url = '/Admin/ProductVariant/Delete';
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            const result = await response.json();
+            let result = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
 
-            if (result.StatusCode) {
+            if (!response.ok) {
+                handleApiError?.('failure', 'Delete SKU', { url, method: 'POST', payload: input, response, result });
+                const msg = result?.message || result?.Message || result?.ResponseMsg || 'Error deleting SKU.';
+                const errs = result?.errors || result?.Errors || [];
+                if (Array.isArray(errs) && errs.length > 0) {
+                    showError('Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));
+                } else {
+                    showError('Error', msg);
+                }
+                return;
+            }
+
+            if (result?.StatusCode) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
                 loadProductVariants(currentPage);
-                alert(result.ResponseMsg || 'SKU deleted successfully.');
+                showSuccess('Success', result?.ResponseMsg || 'SKU deleted successfully.');
             } else {
-                alert(result.ResponseMsg || 'Error deleting SKU.');
+                handleApiError?.('failure', 'Delete SKU (business)', { url, method: 'POST', payload: input, response, result });
+                showError('Error', result?.ResponseMsg || 'Error deleting SKU.');
             }
         } catch (error) {
-            console.error('Error deleting product variant:', error);
-            alert('Error deleting SKU. Please try again.');
+            handleApiError?.('crash', 'Delete SKU', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error deleting SKU. Please try again.');
         }
     }
 

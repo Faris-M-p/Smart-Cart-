@@ -424,6 +424,7 @@
             initTableTooltips(inner);
         } catch (e) {
             console.error(e);
+            handleApiError?.('crash', 'VariantValue Panel Load', { url: '/Admin/VariantValue/GetByVariant/' + variantId, method: 'GET', payload: { variantId }, error: e });
             inner.innerHTML = '<span class="text-danger small">Could not load values.</span>';
         }
     }

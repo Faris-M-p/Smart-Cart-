@@ -594,6 +594,7 @@
             });
 
             if (!response.ok) {
+                handleApiError?.('failure', 'Supplier Save', { url, method: 'POST', payload: input, response, result: null });
                 throw new Error('HTTP ' + response.status + ': ' + response.statusText);
             }
 
@@ -605,10 +606,12 @@
                 loadSuppliers(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Supplier saved successfully.');
             } else {
+                handleApiError?.('failure', 'Supplier Save (business)', { url, method: 'POST', payload: input, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving supplier.');
             }
         } catch (error) {
             console.error('Error saving supplier:', error);
+            handleApiError?.('crash', 'Supplier Save', { url, method: 'POST', payload: input, error });
             showError('Error', 'Error saving supplier. Please try again.');
         }
     }
@@ -623,13 +626,15 @@
         };
 
         try {
-            const response = await fetch('/Admin/Supplier/Delete', {
+            const url = '/Admin/Supplier/Delete';
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
             if (!response.ok) {
+                handleApiError?.('failure', 'Supplier Delete', { url, method: 'POST', payload: input, response, result: null });
                 throw new Error('HTTP ' + response.status + ': ' + response.statusText);
             }
 
@@ -641,10 +646,12 @@
                 loadSuppliers(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Supplier deleted successfully.');
             } else {
+                handleApiError?.('failure', 'Supplier Delete (business)', { url, method: 'POST', payload: input, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting supplier.');
             }
         } catch (error) {
             console.error('Error deleting supplier:', error);
+            handleApiError?.('crash', 'Supplier Delete', { url, method: 'POST', payload: input, error });
             showError('Error', 'Error deleting supplier. Please try again.');
         }
     }

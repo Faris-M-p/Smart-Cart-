@@ -390,6 +390,7 @@
             });
 
             if (!response.ok) {
+                handleApiError?.('failure', 'Brand Save', { url, method: 'POST', payload: input, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -401,10 +402,12 @@
                 loadBrands(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand saved successfully.');
             } else {
+                handleApiError?.('failure', 'Brand Save (business)', { url, method: 'POST', payload: input, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving brand.');
             }
         } catch (error) {
             console.error('Error saving brand:', error);
+            handleApiError?.('crash', 'Brand Save', { url, method: 'POST', payload: input, error });
             showError('Error', 'Error saving brand. Please try again.');
         }
     }
@@ -419,13 +422,15 @@
         };
 
         try {
-            const response = await fetch('/Admin/Brand/Delete', {
+            const url = '/Admin/Brand/Delete';
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
             if (!response.ok) {
+                handleApiError?.('failure', 'Brand Delete', { url, method: 'POST', payload: input, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -437,10 +442,12 @@
                 loadBrands(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand deleted successfully.');
             } else {
+                handleApiError?.('failure', 'Brand Delete (business)', { url, method: 'POST', payload: input, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting brand.');
             }
         } catch (error) {
             console.error('Error deleting brand:', error);
+            handleApiError?.('crash', 'Brand Delete', { url, method: 'POST', payload: input, error });
             showError('Error', 'Error deleting brand. Please try again.');
         }
     }
