@@ -28,6 +28,10 @@ namespace Ecommerce.DataAccess
 
         public DbSet<StockEntity> Stock => Set<StockEntity>();
 
+        public DbSet<PurchaseEntity> Purchases => Set<PurchaseEntity>();
+
+        public DbSet<PurchaseDetailEntity> PurchaseDetails => Set<PurchaseDetailEntity>();
+
         public DbSet<ProductVariantEntity> ProductVariants => Set<ProductVariantEntity>();
 
         public DbSet<ProductVariantAttributeEntity> ProductVariantAttributes => Set<ProductVariantAttributeEntity>();

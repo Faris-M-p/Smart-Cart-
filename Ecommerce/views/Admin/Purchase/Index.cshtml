@@ -539,7 +539,8 @@
             modal.show();
         } catch (error) {
             console.error('Error loading purchase:', error);
-            alert('Error loading purchase details.');
+            handleApiError?.('crash', 'Purchase GetById (edit)', { url: `/Admin/Purchase/GetById/${purchaseID}`, method: 'GET', payload: { purchaseID }, error });
+            showError('Error', 'Error loading purchase details.');
         }
     }
 
@@ -653,7 +654,8 @@
             modal.show();
         } catch (error) {
             console.error('Error loading purchase:', error);
-            alert('Error loading purchase details.');
+            handleApiError?.('crash', 'Purchase GetById (view)', { url: `/Admin/Purchase/GetById/${purchaseID}`, method: 'GET', payload: { purchaseID }, error });
+            showError('Error', 'Error loading purchase details.');
         }
     }
 
@@ -696,11 +698,14 @@
         const productSelect = row.querySelector('.product-select');
         const variantSelect = row.querySelector('.product-variant-select');
         
-        // Populate products
+        // Populate products (supports both camelCase + PascalCase)
         products.forEach(p => {
-            if (!p.Cancelled) {
-                const option = new Option(p.Name, p.ID_Product);
-                if (productId && p.ID_Product === productId) {
+            const cancelled = p.cancelled ?? p.Cancelled;
+            const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
+            const pname = p.name ?? p.Name ?? '';
+            if (!cancelled && pid > 0) {
+                const option = new Option(pname, String(pid));
+                if (productId != null && Number(pid) === Number(productId)) {
                     option.selected = true;
                 }
                 productSelect.add(option);
@@ -729,7 +734,7 @@
         if (tbody.children.length > 1) {
             button.closest('.purchase-detail-row').remove();
         } else {
-            alert('At least one purchase detail is required.');
+            showWarning('Validation Error', 'At least one purchase detail is required.');
         }
     }
 
@@ -748,12 +753,12 @@
         const notes = document.getElementById('notes').value.trim();
 
         if (!fkSupplier || fkSupplier <= 0) {
-            alert('Please select a supplier.');
+            showWarning('Validation Error', 'Please select a supplier.');
             return;
         }
 
         if (!purchaseDate) {
-            alert('Please select purchase date.');
+            showWarning('Validation Error', 'Please select purchase date.');
             return;
         }
 
@@ -788,7 +793,7 @@
         });
 
         if (purchaseDetails.length === 0) {
-            alert('Please add at least one valid purchase detail.');
+            showWarning('Validation Error', 'Please add at least one valid purchase detail.');
             return;
         }
 
@@ -810,23 +815,41 @@
                 body: JSON.stringify(input)
             });
 
-            const result = await response.json();
+            let result = null;
+            try { result = await response.json(); } catch { result = null; }
 
-            if (result.StatusCode) {
+            if (!response.ok) {
+                handleApiError?.('failure', 'Purchase Save', { url, method: 'POST', payload: input, response, result });
+                const msg = result?.message || result?.Message || 'Validation failed.';
+                const errs = result?.errors || result?.Errors || [];
+                if (Array.isArray(errs) && errs.length > 0) {
+                    showWarning('Validation Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));
+                } else {
+                    showWarning('Validation Error', msg);
+                }
+                return;
+            }
+
+            const ok = (result?.statusCode ?? result?.StatusCode) === true;
+            if (ok) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
                 modal.hide();
                 loadPurchases(currentPage);
-                alert(result.ResponseMsg || 'Purchase saved successfully.');
+                showSuccess('Success', result?.responseMsg || result?.ResponseMsg || 'Purchase saved successfully.');
             } else {
-                if (result.errors && result.errors.length > 0) {
-                    alert('Validation errors:\n' + result.errors.join('\n'));
+                handleApiError?.('failure', 'Purchase Save (business)', { url, method: 'POST', payload: input, response, result });
+                const msg = result?.responseMsg || result?.ResponseMsg || result?.message || result?.Message || 'Error saving purchase.';
+                const errs = result?.errors || result?.Errors || [];
+                if (Array.isArray(errs) && errs.length > 0) {
+                    showError('Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));
                 } else {
-                    alert(result.ResponseMsg || 'Error saving purchase.');
+                    showError('Error', msg);
                 }
             }
         } catch (error) {
             console.error('Error saving purchase:', error);
-            alert('Error saving purchase. Please try again.');
+            handleApiError?.('crash', 'Purchase Save', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error saving purchase. Please try again.');
         }
     }
 
@@ -840,25 +863,42 @@
         };
 
         try {
-            const response = await fetch('/Admin/Purchase/Delete', {
+            const url = '/Admin/Purchase/Delete';
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            const result = await response.json();
+            let result = null;
+            try { result = await response.json(); } catch { result = null; }
 
-            if (result.StatusCode) {
+            if (!response.ok) {
+                handleApiError?.('failure', 'Purchase Delete', { url, method: 'POST', payload: input, response, result });
+                const msg = result?.message || result?.Message || result?.ResponseMsg || 'Error deleting purchase.';
+                const errs = result?.errors || result?.Errors || [];
+                if (Array.isArray(errs) && errs.length > 0) {
+                    showError('Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));
+                } else {
+                    showError('Error', msg);
+                }
+                return;
+            }
+
+            const ok = (result?.statusCode ?? result?.StatusCode) === true;
+            if (ok) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
                 loadPurchases(currentPage);
-                alert(result.ResponseMsg || 'Purchase deleted successfully.');
+                showSuccess('Success', result?.responseMsg || result?.ResponseMsg || 'Purchase deleted successfully.');
             } else {
-                alert(result.ResponseMsg || 'Error deleting purchase.');
+                handleApiError?.('failure', 'Purchase Delete (business)', { url, method: 'POST', payload: input, response, result });
+                showError('Error', result?.responseMsg || result?.ResponseMsg || 'Error deleting purchase.');
             }
         } catch (error) {
             console.error('Error deleting purchase:', error);
-            alert('Error deleting purchase. Please try again.');
+            handleApiError?.('crash', 'Purchase Delete', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error deleting purchase. Please try again.');
         }
     }
 

@@ -7,22 +7,28 @@ namespace Ecommerce.Models.Entities
     public class StockEntity
     {
         [Key]
-        [Column("StockId")]
-        public int StockId { get; set; }
+        [Column("ID_Stock")]
+        public int ID_Stock { get; set; }
 
-        public int? ProductId { get; set; }
+        [Column("FK_PurchaseDetail")]
+        public int FK_PurchaseDetail { get; set; }
+
+        [Column("FK_ProductVariant")]
+        public int FK_ProductVariant { get; set; }
 
         public int Quantity { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal? Price { get; set; }
+        public DateTime CreatedOn { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal? MRP { get; set; }
+        public int? EnterBy { get; set; }
 
-        [Column(TypeName = "decimal(2,1)")]
-        public decimal? Rating { get; set; }
+        public bool Cancelled { get; set; }
 
-        public bool? Cancelled { get; set; }
+        public DateTime? CancelledOn { get; set; }
+
+        [MaxLength(255)]
+        public string? CancelledReason { get; set; }
+
+        public int? CancelledBy { get; set; }
     }
 }

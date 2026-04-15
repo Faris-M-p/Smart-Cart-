@@ -35,6 +35,22 @@ IF OBJECT_ID(N'[dbo].[ProductVariants]', N'U') IS NOT NULL
     DROP TABLE [dbo].[ProductVariants];
 GO
 
+IF OBJECT_ID(N'[dbo].[Stock]', N'U') IS NOT NULL
+    DROP TABLE [dbo].[Stock];
+GO
+
+IF OBJECT_ID(N'[dbo].[PurchaseDetail]', N'U') IS NOT NULL
+    DROP TABLE [dbo].[PurchaseDetail];
+GO
+
+IF OBJECT_ID(N'[dbo].[Purchase]', N'U') IS NOT NULL
+    DROP TABLE [dbo].[Purchase];
+GO
+
+IF OBJECT_ID(N'[dbo].[Supplier]', N'U') IS NOT NULL
+    DROP TABLE [dbo].[Supplier];
+GO
+
 IF OBJECT_ID(N'[dbo].[Products]', N'U') IS NOT NULL
     DROP TABLE [dbo].[Products];
 GO
@@ -223,6 +239,98 @@ CREATE TABLE [dbo].[ProductVariantAttributes] (
         REFERENCES [dbo].[VariantValues] ([ID_VariantValue]),
     CONSTRAINT [UQ_ProductVariantAttributes_FK_ProductVariant_FK_Variant]
         UNIQUE ([FK_ProductVariant], [FK_Variant])
+);
+GO
+
+/* ==========================================================
+   9) Supplier (physical table name: dbo.Supplier)
+   ========================================================== */
+CREATE TABLE [dbo].[Supplier](
+    [ID_Supplier] INT IDENTITY(1,1) NOT NULL,
+    [Name] NVARCHAR(250) NOT NULL,
+    [CompanyName] NVARCHAR(250) NULL,
+    [Email] NVARCHAR(250) NULL,
+    [Phone] NVARCHAR(20) NULL,
+    [State] NVARCHAR(150) NOT NULL,
+    [District] NVARCHAR(150) NOT NULL,
+    [City] NVARCHAR(150) NOT NULL,
+    [Address] NVARCHAR(500) NULL,
+    [Pincode] NVARCHAR(10) NULL,
+    [Description] NVARCHAR(1000) NULL,
+    [IsActive] BIT NOT NULL DEFAULT 1,
+    [CreatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
+    [UpdatedAt] DATETIME NULL,
+    [Cancelled] BIT NOT NULL DEFAULT 0,
+    [CancelledOn] DATETIME NULL,
+    [CancelledReason] NVARCHAR(255) NULL,
+    CONSTRAINT [PK_Supplier] PRIMARY KEY CLUSTERED ([ID_Supplier] ASC)
+);
+GO
+
+CREATE INDEX IX_Supplier_Name ON Supplier(Name);
+GO
+
+/* ==========================================================
+   10) Purchase (physical table name: dbo.Purchase)
+   ========================================================== */
+CREATE TABLE [dbo].[Purchase](
+    [ID_Purchase] INT IDENTITY(1,1) NOT NULL,
+    [FK_Supplier] INT NOT NULL,
+    [PurchaseDate] DATE NOT NULL CONSTRAINT [DF_Purchase_PurchaseDate] DEFAULT (CONVERT(DATE, GETDATE())),
+    [InvoiceNumber] NVARCHAR(100) NULL,
+    [TotalAmount] DECIMAL(12,2) NOT NULL CONSTRAINT [DF_Purchase_TotalAmount] DEFAULT ((0)),
+    [Notes] NVARCHAR(500) NULL,
+    [CreatedOn] DATETIME NOT NULL CONSTRAINT [DF_Purchase_CreatedOn] DEFAULT (GETDATE()),
+    [EnterBy] INT NULL,
+    [Cancelled] BIT NOT NULL CONSTRAINT [DF_Purchase_Cancelled] DEFAULT ((0)),
+    [CancelledOn] DATETIME NULL,
+    [CancelledReason] NVARCHAR(500) NULL,
+    [CancelledBy] INT NULL,
+    CONSTRAINT [PK_Purchase] PRIMARY KEY CLUSTERED ([ID_Purchase] ASC),
+    CONSTRAINT [FK_Purchase_Supplier] FOREIGN KEY ([FK_Supplier]) REFERENCES [dbo].[Supplier]([ID_Supplier])
+);
+GO
+
+/* ==========================================================
+   11) PurchaseDetail (physical table name: dbo.PurchaseDetail)
+   ========================================================== */
+CREATE TABLE [dbo].[PurchaseDetail](
+    [ID_PurchaseDetail] INT IDENTITY(1,1) NOT NULL,
+    [FK_Purchase] INT NOT NULL,
+    [FK_ProductVariant] INT NOT NULL,
+    [Quantity] INT NOT NULL,
+    [PurchasePrice] DECIMAL(18,2) NOT NULL CONSTRAINT [DF_PurchaseDetail_PurchasePrice] DEFAULT ((0)),
+    [MRP] DECIMAL(18,2) NULL,
+    [ExpiryDate] DATE NULL,
+    [CreatedOn] DATETIME NOT NULL CONSTRAINT [DF_PurchaseDetail_CreatedOn] DEFAULT (GETDATE()),
+    [EnterBy] INT NULL,
+    [Cancelled] BIT NOT NULL CONSTRAINT [DF_PurchaseDetail_Cancelled] DEFAULT ((0)),
+    [CancelledOn] DATETIME NULL,
+    [CancelledReason] NVARCHAR(500) NULL,
+    [CancelledBy] INT NULL,
+    CONSTRAINT [PK_PurchaseDetail] PRIMARY KEY CLUSTERED ([ID_PurchaseDetail] ASC),
+    CONSTRAINT [FK_PurchaseDetail_Purchase] FOREIGN KEY ([FK_Purchase]) REFERENCES [dbo].[Purchase]([ID_Purchase]),
+    CONSTRAINT [FK_PurchaseDetail_ProductVariant] FOREIGN KEY ([FK_ProductVariant]) REFERENCES [dbo].[ProductVariants]([ID_ProductVariant])
+);
+GO
+
+/* ==========================================================
+   12) Stock (batch per purchase detail) (physical table name: dbo.Stock)
+   ========================================================== */
+CREATE TABLE [dbo].[Stock](
+    [ID_Stock] INT IDENTITY(1,1) NOT NULL,
+    [FK_PurchaseDetail] INT NOT NULL,
+    [FK_ProductVariant] INT NOT NULL,
+    [Quantity] INT NOT NULL,
+    [CreatedOn] DATETIME NOT NULL CONSTRAINT [DF_Stock_CreatedOn] DEFAULT (GETDATE()),
+    [EnterBy] INT NULL,
+    [Cancelled] BIT NOT NULL CONSTRAINT [DF_Stock_Cancelled] DEFAULT ((0)),
+    [CancelledOn] DATETIME NULL,
+    [CancelledReason] NVARCHAR(255) NULL,
+    [CancelledBy] INT NULL,
+    CONSTRAINT [PK_Stock] PRIMARY KEY CLUSTERED ([ID_Stock] ASC),
+    CONSTRAINT [FK_Stock_PurchaseDetail] FOREIGN KEY ([FK_PurchaseDetail]) REFERENCES [dbo].[PurchaseDetail]([ID_PurchaseDetail]),
+    CONSTRAINT [FK_Stock_ProductVariant] FOREIGN KEY ([FK_ProductVariant]) REFERENCES [dbo].[ProductVariants]([ID_ProductVariant])
 );
 GO
 
