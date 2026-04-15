@@ -59,7 +59,7 @@ namespace Ecommerce.Helpers.Variants
 
             if (normalized.FilterIds.Count > 0)
             {
-                query = query.Where(v => normalized.FilterIds.Contains(v.IdVariant));
+                query = query.Where(v => normalized.FilterIds.Contains(v.ID_Variant));
             }
 
             return query;
@@ -74,7 +74,7 @@ namespace Ecommerce.Helpers.Variants
 
             if (!Enum.IsDefined(typeof(VariantSortColumn), sortColumn))
             {
-                return query.OrderByDescending(v => v.IdVariant);
+                return query.OrderByDescending(v => v.ID_Variant);
             }
 
             var column = (VariantSortColumn)sortColumn;
@@ -92,8 +92,8 @@ namespace Ecommerce.Helpers.Variants
                 case VariantSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(v => v.IdVariant)
-                        : query.OrderBy(v => v.IdVariant);
+                        ? query.OrderByDescending(v => v.ID_Variant)
+                        : query.OrderBy(v => v.ID_Variant);
             }
         }
 

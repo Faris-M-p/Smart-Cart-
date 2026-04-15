@@ -43,7 +43,9 @@ namespace Ecommerce.Repository.Admin
                     {
                         p.ID_Purchase,
                         p.FK_Supplier,
+                        p.GRNNumber,
                         p.InvoiceNumber,
+                        p.PaymentStatus,
                         p.PurchaseDate,
                         p.TotalAmount,
                         p.Notes,
@@ -56,10 +58,10 @@ namespace Ecommerce.Repository.Admin
 
                 var supplierIds = page.Select(x => x.FK_Supplier).Distinct().ToList();
                 var supplierNames = await _dbContext.Suppliers.AsNoTracking()
-                    .Where(s => supplierIds.Contains(s.SupplierId))
-                    .Select(s => new { s.SupplierId, s.Name })
+                    .Where(s => supplierIds.Contains(s.ID_Supplier))
+                    .Select(s => new { s.ID_Supplier, s.Name })
                     .ToListAsync();
-                var nameMap = supplierNames.ToDictionary(x => x.SupplierId, x => x.Name);
+                var nameMap = supplierNames.ToDictionary(x => x.ID_Supplier, x => x.Name);
 
                 var rows = page.Select(p =>
                 {
@@ -69,9 +71,11 @@ namespace Ecommerce.Repository.Admin
                         ID_Purchase = p.ID_Purchase,
                         FK_Supplier = p.FK_Supplier,
                         SupplierName = sname ?? string.Empty,
+                        GRNNumber = string.IsNullOrWhiteSpace(p.GRNNumber) ? $"GRN-{p.ID_Purchase:D6}" : p.GRNNumber!,
                         InvoiceNumber = p.InvoiceNumber ?? string.Empty,
                         PurchaseDate = p.PurchaseDate,
                         TotalAmount = p.TotalAmount,
+                        PaymentStatus = string.IsNullOrWhiteSpace(p.PaymentStatus) ? "Pending" : p.PaymentStatus!,
                         Notes = p.Notes,
                         CreatedOn = p.CreatedOn,
                         Cancelled = p.Cancelled,
@@ -125,7 +129,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var supplierName = await _dbContext.Suppliers.AsNoTracking()
-                    .Where(s => s.SupplierId == header.FK_Supplier)
+                    .Where(s => s.ID_Supplier == header.FK_Supplier)
                     .Select(s => s.Name)
                     .FirstOrDefaultAsync() ?? string.Empty;
 
@@ -149,30 +153,30 @@ namespace Ecommerce.Repository.Admin
                 var pvIds = detailsRaw.Select(d => d.FK_ProductVariant).Distinct().ToList();
 
                 var pvRows = await _dbContext.ProductVariants.AsNoTracking()
-                    .Where(pv => pvIds.Contains(pv.IdProductVariant))
-                    .Select(pv => new { pv.IdProductVariant, pv.FkProduct })
+                    .Where(pv => pvIds.Contains(pv.ID_ProductVariant))
+                    .Select(pv => new { pv.ID_ProductVariant, pv.FK_Product })
                     .ToListAsync();
 
-                var pvToProduct = pvRows.ToDictionary(x => x.IdProductVariant, x => x.FkProduct);
-                var productIds = pvRows.Select(x => x.FkProduct).Distinct().ToList();
+                var pvToProduct = pvRows.ToDictionary(x => x.ID_ProductVariant, x => x.FK_Product);
+                var productIds = pvRows.Select(x => x.FK_Product).Distinct().ToList();
 
                 var prodNames = await _dbContext.Products.AsNoTracking()
-                    .Where(p => productIds.Contains(p.IdProduct))
-                    .Select(p => new { p.IdProduct, p.Name })
+                    .Where(p => productIds.Contains(p.ID_Product))
+                    .Select(p => new { p.ID_Product, p.Name })
                     .ToListAsync();
-                var prodMap = prodNames.ToDictionary(x => x.IdProduct, x => x.Name);
+                var prodMap = prodNames.ToDictionary(x => x.ID_Product, x => x.Name);
 
                 // VariantAttributes string like "Color:Black, Size:XL"
                 var attrRows = await (
                     from pva in _dbContext.ProductVariantAttributes.AsNoTracking()
-                    join v in _dbContext.Variants.AsNoTracking() on pva.FkVariant equals v.IdVariant
-                    join vv in _dbContext.VariantValues.AsNoTracking() on pva.FkVariantValue equals vv.IdVariantValue
-                    where pvIds.Contains(pva.FkProductVariant)
-                    select new { pva.FkProductVariant, VariantName = v.Name, ValueName = vv.Name, v.DisplayOrder }
+                    join v in _dbContext.Variants.AsNoTracking() on pva.FK_Variant equals v.ID_Variant
+                    join vv in _dbContext.VariantValues.AsNoTracking() on pva.FK_VariantValue equals vv.ID_VariantValue
+                    where pvIds.Contains(pva.FK_ProductVariant)
+                    select new { pva.FK_ProductVariant, VariantName = v.Name, ValueName = vv.Name, v.DisplayOrder }
                 ).ToListAsync();
 
                 var attrMap = attrRows
-                    .GroupBy(x => x.FkProductVariant)
+                    .GroupBy(x => x.FK_ProductVariant)
                     .ToDictionary(
                         g => g.Key,
                         g => string.Join(", ", g.OrderBy(x => x.DisplayOrder).ThenBy(x => x.VariantName)
@@ -224,9 +228,11 @@ namespace Ecommerce.Repository.Admin
                         ID_Purchase = header.ID_Purchase,
                         FK_Supplier = header.FK_Supplier,
                         SupplierName = supplierName,
+                        GRNNumber = string.IsNullOrWhiteSpace(header.GRNNumber) ? $"GRN-{header.ID_Purchase:D6}" : header.GRNNumber!,
                         InvoiceNumber = header.InvoiceNumber ?? string.Empty,
                         PurchaseDate = header.PurchaseDate,
                         TotalAmount = header.TotalAmount,
+                        PaymentStatus = string.IsNullOrWhiteSpace(header.PaymentStatus) ? "Pending" : header.PaymentStatus!,
                         Notes = header.Notes,
                         CreatedOn = header.CreatedOn,
                         Cancelled = header.Cancelled,
@@ -279,14 +285,14 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Duplicate SKU found in purchase details.");
                 }
 
-                var supplierOk = await _dbContext.Suppliers.AnyAsync(s => s.SupplierId == input.FK_Supplier && !s.Cancelled && s.IsActive);
+                var supplierOk = await _dbContext.Suppliers.AnyAsync(s => s.ID_Supplier == input.FK_Supplier && !s.Cancelled && s.IsActive);
                 if (!supplierOk)
                 {
                     return Fail("Invalid supplier.");
                 }
 
                 var pvIds = details.Select(d => d.FK_ProductVariant).Where(x => x > 0).Distinct().ToList();
-                var pvCount = await _dbContext.ProductVariants.CountAsync(pv => pvIds.Contains(pv.IdProductVariant) && !pv.Cancelled);
+                var pvCount = await _dbContext.ProductVariants.CountAsync(pv => pvIds.Contains(pv.ID_ProductVariant) && !pv.Cancelled);
                 if (pvCount != pvIds.Count)
                 {
                     return Fail("One or more SKUs are invalid or deleted.");
@@ -296,11 +302,19 @@ namespace Ecommerce.Repository.Admin
                 try
                 {
                     var now = DateTime.Now;
-                var purchase = new PurchaseEntity
+                    var paymentStatus = string.IsNullOrWhiteSpace(input.PaymentStatus) ? "Pending" : input.PaymentStatus.Trim();
+                    if (paymentStatus.Length > 30)
+                    {
+                        paymentStatus = paymentStatus.Substring(0, 30);
+                    }
+
+                    var purchase = new PurchaseEntity
                     {
                     FK_Supplier = input.FK_Supplier,
                         PurchaseDate = (input.PurchaseDate ?? now).Date,
+                        GRNNumber = string.IsNullOrWhiteSpace(input.GRNNumber) ? null : input.GRNNumber.Trim(),
                         InvoiceNumber = string.IsNullOrWhiteSpace(input.InvoiceNumber) ? null : input.InvoiceNumber.Trim(),
+                        PaymentStatus = paymentStatus,
                         Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim(),
                         TotalAmount = 0,
                         CreatedOn = now,
@@ -310,6 +324,12 @@ namespace Ecommerce.Repository.Admin
 
                     _dbContext.Purchases.Add(purchase);
                     await _dbContext.SaveChangesAsync();
+
+                    if (string.IsNullOrWhiteSpace(purchase.GRNNumber))
+                    {
+                        purchase.GRNNumber = $"GRN-{purchase.ID_Purchase:D6}";
+                        await _dbContext.SaveChangesAsync();
+                    }
 
                     decimal total = 0;
                 foreach (var d in details)
@@ -413,14 +433,14 @@ namespace Ecommerce.Repository.Admin
                     return Fail("This purchase is deleted and cannot be edited.");
                 }
 
-                var supplierOk = await _dbContext.Suppliers.AnyAsync(s => s.SupplierId == input.FK_Supplier && !s.Cancelled && s.IsActive);
+                var supplierOk = await _dbContext.Suppliers.AnyAsync(s => s.ID_Supplier == input.FK_Supplier && !s.Cancelled && s.IsActive);
                 if (!supplierOk)
                 {
                     return Fail("Invalid supplier.");
                 }
 
                 var pvIds = details.Select(d => d.FK_ProductVariant).Where(x => x > 0).Distinct().ToList();
-                var pvCount = await _dbContext.ProductVariants.CountAsync(pv => pvIds.Contains(pv.IdProductVariant) && !pv.Cancelled);
+                var pvCount = await _dbContext.ProductVariants.CountAsync(pv => pvIds.Contains(pv.ID_ProductVariant) && !pv.Cancelled);
                 if (pvCount != pvIds.Count)
                 {
                     return Fail("One or more SKUs are invalid or deleted.");
@@ -460,8 +480,15 @@ namespace Ecommerce.Repository.Admin
                     // Update header
                     purchase.FK_Supplier = input.FK_Supplier;
                     purchase.PurchaseDate = (input.PurchaseDate ?? now).Date;
+                    purchase.GRNNumber = string.IsNullOrWhiteSpace(input.GRNNumber) ? purchase.GRNNumber : input.GRNNumber.Trim();
                     purchase.InvoiceNumber = string.IsNullOrWhiteSpace(input.InvoiceNumber) ? null : input.InvoiceNumber.Trim();
+                    purchase.PaymentStatus = string.IsNullOrWhiteSpace(input.PaymentStatus) ? (purchase.PaymentStatus ?? "Pending") : input.PaymentStatus.Trim();
                     purchase.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
+
+                    if (string.IsNullOrWhiteSpace(purchase.GRNNumber))
+                    {
+                        purchase.GRNNumber = $"GRN-{purchase.ID_Purchase:D6}";
+                    }
 
                     // Insert new details + new stock batches
                     decimal total = 0;

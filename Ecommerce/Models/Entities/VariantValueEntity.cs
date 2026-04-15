@@ -8,11 +8,9 @@ namespace Ecommerce.Models.Entities
     public class VariantValueEntity
     {
         [Key]
-        [Column("ID_VariantValue")]
-        public int IdVariantValue { get; set; }
+        public int ID_VariantValue { get; set; }
 
-        [Column("FK_Variant")]
-        public int FkVariant { get; set; }
+        public int FK_Variant { get; set; }
 
         [Required]
         [MaxLength(255)]

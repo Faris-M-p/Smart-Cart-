@@ -47,7 +47,7 @@ namespace Ecommerce.Repository.Admin
                 var rows = await pagedEntityQuery
                     .Select(x => new Supplier
                     {
-                        SupplierID = x.SupplierId,
+                        SupplierID = x.ID_Supplier,
                         Name = x.Name,
                         CompanyName = x.CompanyName,
                         Email = x.Email,
@@ -89,10 +89,10 @@ namespace Ecommerce.Repository.Admin
 
             return await _dbContext.Suppliers
                 .AsNoTracking()
-                .Where(s => s.SupplierId == id)
+                .Where(s => s.ID_Supplier == id)
                 .Select(s => new Supplier
                 {
-                    SupplierID = s.SupplierId,
+                    SupplierID = s.ID_Supplier,
                     Name = s.Name,
                     CompanyName = s.CompanyName,
                     Email = s.Email,
@@ -157,7 +157,7 @@ namespace Ecommerce.Repository.Admin
                 _dbContext.Suppliers.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.SupplierId, "Supplier created successfully.");
+                return Ok(entity.ID_Supplier, "Supplier created successfully.");
             }
             catch (Exception ex)
             {
@@ -191,7 +191,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please select state, district, and city.");
                 }
 
-                var entity = await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.SupplierId == id);
+                var entity = await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.ID_Supplier == id);
                 if (entity == null)
                 {
                     return Fail("Invalid supplier ID.");
@@ -245,7 +245,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid supplier ID.");
                 }
 
-                var entity = await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.SupplierId == id);
+                var entity = await _dbContext.Suppliers.FirstOrDefaultAsync(s => s.ID_Supplier == id);
                 if (entity == null)
                 {
                     return Fail("Invalid supplier ID.");
@@ -280,7 +280,7 @@ namespace Ecommerce.Repository.Admin
             var key = email.Trim().ToLowerInvariant();
             return await _dbContext.Suppliers.AnyAsync(s =>
                 !s.Cancelled &&
-                s.SupplierId != excludeSupplierId &&
+                s.ID_Supplier != excludeSupplierId &&
                 s.Email != null &&
                 s.Email.ToLower() == key);
         }

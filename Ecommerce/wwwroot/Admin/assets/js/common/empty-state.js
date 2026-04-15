@@ -1,9 +1,17 @@
 /**
  * Empty State Handler - Common utility for all pages
  * Handles all empty state scenarios: no data, errors, network issues, etc.
+ *
+ * IMPORTANT: This file may be included more than once by layouts/pages.
+ * Guard against re-declaration to avoid "Identifier has already been declared".
  */
 
-class EmptyStateHandler {
+(function () {
+  if (window.EmptyStateHandler) {
+    return;
+  }
+
+  class EmptyStateHandler {
     constructor() {
         this.states = {
             noData: 'no-data',
@@ -327,27 +335,9 @@ class EmptyStateHandler {
     showNoData(tbodyId, options = {}, colspan = 6) {
         this.showInTable(tbodyId, 'no-data', options, colspan);
     }
-}
+  }
 
-// Create global instance
-const emptyState = new EmptyStateHandler();
-
-// Global helper functions for backward compatibility
-function showErrorState(error, tbodyId = 'productTableBody', options = {}, colspan = 6) {
-    emptyState.showError(tbodyId, error, options, colspan);
-}
-
-function showNoDataState(tbodyId = 'productTableBody', options = {}, colspan = 6) {
-    emptyState.showNoData(tbodyId, options, colspan);
-}
-
-function clearSearch() {
-    const searchInput = document.getElementById('searchText');
-    if (searchInput) {
-        searchInput.value = '';
-    }
-    // Reload products if function exists
-    if (typeof loadProducts === 'function') {
-        loadProducts(1);
-    }
-}
+  // Expose globally (no instance here to avoid duplicate 'emptyState' declarations).
+  // Pages should create their own instance: `const emptyState = new EmptyStateHandler();`
+  window.EmptyStateHandler = EmptyStateHandler;
+})();

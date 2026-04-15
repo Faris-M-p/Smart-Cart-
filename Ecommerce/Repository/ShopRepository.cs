@@ -65,11 +65,11 @@ namespace Ecommerce.Repository
                     .Take(normalized.PageSize)
                     .Select(p => new Product
                     {
-                        ProductId = p.IdProduct,
+                        ProductId = p.ID_Product,
                         Name = p.Name,
                         CategoryId = 0,
-                        SubCategoryId = p.FkSubCategory,
-                        BrandId = p.FkBrand ?? 0,
+                        SubCategoryId = p.FK_SubCategory,
+                        BrandId = p.FK_Brand ?? 0,
                         Rating = 0,
                         Gender = string.Empty,
                         Price = 0,

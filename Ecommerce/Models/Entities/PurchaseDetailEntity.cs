@@ -8,18 +8,15 @@ namespace Ecommerce.Models.Entities
     public class PurchaseDetailEntity
     {
         [Key]
-        [Column("ID_PurchaseDetail")]
         public int ID_PurchaseDetail { get; set; }
 
-        [Column("FK_Purchase")]
         public int FK_Purchase { get; set; }
 
-        [Column("FK_ProductVariant")]
         public int FK_ProductVariant { get; set; }
 
         public int Quantity { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(18,2)")]
         public decimal PurchasePrice { get; set; }
 
         

@@ -62,7 +62,7 @@ namespace Ecommerce.Helpers.Brands
 
             if (normalized.FilterIds.Count > 0)
             {
-                query = query.Where(b => normalized.FilterIds.Contains(b.BrandId));
+                query = query.Where(b => normalized.FilterIds.Contains(b.ID_Brand));
             }
 
             return query;
@@ -77,7 +77,7 @@ namespace Ecommerce.Helpers.Brands
 
             if (!Enum.IsDefined(typeof(BrandSortColumn), sortColumn))
             {
-                return query.OrderByDescending(b => b.BrandId);
+                return query.OrderByDescending(b => b.ID_Brand);
             }
 
             var column = (BrandSortColumn)sortColumn;
@@ -95,8 +95,8 @@ namespace Ecommerce.Helpers.Brands
                 case BrandSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(b => b.BrandId)
-                        : query.OrderBy(b => b.BrandId);
+                        ? query.OrderByDescending(b => b.ID_Brand)
+                        : query.OrderBy(b => b.ID_Brand);
             }
         }
 

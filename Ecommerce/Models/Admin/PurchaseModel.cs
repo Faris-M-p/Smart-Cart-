@@ -20,6 +20,10 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "To Date")]
             public DateTime? ToDate { get; set; }
 
+            [Display(Name = "Payment Status")]
+            [MaxLength(30)]
+            public string PaymentStatus { get; set; } = string.Empty;
+
             [Display(Name = "Page Index")]
             [GreaterThanZero]
             public int PageIndex { get; set; } = 1;
@@ -54,6 +58,14 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Invoice Number")]
             [MaxLength(100, ErrorMessage = "{0} cannot exceed 100 characters.")]
             public string InvoiceNumber { get; set; } = string.Empty;
+
+            [Display(Name = "GRN Number")]
+            [MaxLength(100, ErrorMessage = "{0} cannot exceed 100 characters.")]
+            public string GRNNumber { get; set; } = string.Empty;
+
+            [Display(Name = "Payment Status")]
+            [MaxLength(30, ErrorMessage = "{0} cannot exceed 30 characters.")]
+            public string PaymentStatus { get; set; } = "Pending";
 
             [Display(Name = "Notes")]
             [MaxLength(500, ErrorMessage = "{0} cannot exceed 500 characters.")]
@@ -111,6 +123,7 @@ namespace Ecommerce.Models.Admin
             public string FilterSupplierIDs { get; set; } = string.Empty;
             public DateTime? FromDate { get; set; }
             public DateTime? ToDate { get; set; }
+            public string PaymentStatus { get; set; } = string.Empty;
             public int PageIndex { get; set; } = 1;
             public int PageSize { get; set; } = 20;
             public int SortColumn { get; set; }
@@ -124,6 +137,8 @@ namespace Ecommerce.Models.Admin
             public int FK_Supplier { get; set; } = 0;
             public DateTime? PurchaseDate { get; set; }
             public string InvoiceNumber { get; set; } = string.Empty;
+            public string GRNNumber { get; set; } = string.Empty;
+            public string PaymentStatus { get; set; } = "Pending";
             public string Notes { get; set; } = string.Empty;
             public string PurchaseDetails { get; set; } = string.Empty; // JSON string
             public int EnterBy { get; set; } = 1; // TODO: Get from session/auth
@@ -144,9 +159,11 @@ namespace Ecommerce.Models.Admin
             public int ID_Purchase { get; set; }
             public int FK_Supplier { get; set; }
             public string SupplierName { get; set; } = string.Empty;
+            public string GRNNumber { get; set; } = string.Empty;
             public string InvoiceNumber { get; set; } = string.Empty;
             public DateTime PurchaseDate { get; set; }
             public decimal TotalAmount { get; set; }
+            public string PaymentStatus { get; set; } = string.Empty;
             public string? Notes { get; set; }
             public DateTime CreatedOn { get; set; }
             public bool Cancelled { get; set; }

@@ -10,10 +10,8 @@ namespace Ecommerce.Models.Entities
     public class ProductImageEntity
     {
         [Key]
-        [Column("ProductImageId")]
         public int ProductImageId { get; set; }
 
-        [Column("ProductId")]
         public int ProductId { get; set; }
 
         public string ImageUrl { get; set; } = string.Empty;

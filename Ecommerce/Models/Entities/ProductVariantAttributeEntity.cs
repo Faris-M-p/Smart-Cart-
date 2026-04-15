@@ -8,17 +8,13 @@ namespace Ecommerce.Models.Entities
     public class ProductVariantAttributeEntity
     {
         [Key]
-        [Column("ID_ProductVariantAttribute")]
-        public int IdProductVariantAttribute { get; set; }
+        public int ID_ProductVariantAttribute { get; set; }
 
-        [Column("FK_ProductVariant")]
-        public int FkProductVariant { get; set; }
+        public int FK_ProductVariant { get; set; }
 
-        [Column("FK_Variant")]
-        public int FkVariant { get; set; }
+        public int FK_Variant { get; set; }
 
-        [Column("FK_VariantValue")]
-        public int FkVariantValue { get; set; }
+        public int FK_VariantValue { get; set; }
 
         [MaxLength(500)]
         public string? Description { get; set; }

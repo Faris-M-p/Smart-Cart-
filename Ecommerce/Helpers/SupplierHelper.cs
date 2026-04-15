@@ -92,7 +92,7 @@ namespace Ecommerce.Helpers.Suppliers
 
             if (normalized.FilterIds.Count > 0)
             {
-                query = query.Where(x => normalized.FilterIds.Contains(x.SupplierId));
+                query = query.Where(x => normalized.FilterIds.Contains(x.ID_Supplier));
             }
 
             return query;
@@ -107,7 +107,7 @@ namespace Ecommerce.Helpers.Suppliers
 
             if (!Enum.IsDefined(typeof(SupplierSortColumn), sortColumn))
             {
-                return query.OrderByDescending(s => s.SupplierId);
+                return query.OrderByDescending(s => s.ID_Supplier);
             }
 
             var column = (SupplierSortColumn)sortColumn;
@@ -133,8 +133,8 @@ namespace Ecommerce.Helpers.Suppliers
                 case SupplierSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(s => s.SupplierId)
-                        : query.OrderBy(s => s.SupplierId);
+                        ? query.OrderByDescending(s => s.ID_Supplier)
+                        : query.OrderBy(s => s.ID_Supplier);
             }
         }
 

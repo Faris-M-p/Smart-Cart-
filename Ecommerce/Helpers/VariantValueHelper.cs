@@ -62,11 +62,11 @@ namespace Ecommerce.Helpers.VariantValues
 
             if (n.FkVariantFilter > 0)
             {
-                query = query.Where(vv => vv.FkVariant == n.FkVariantFilter);
+                query = query.Where(vv => vv.FK_Variant == n.FkVariantFilter);
             }
             else if (n.FilterVariantIds.Count > 0)
             {
-                query = query.Where(vv => n.FilterVariantIds.Contains(vv.FkVariant));
+                query = query.Where(vv => n.FilterVariantIds.Contains(vv.FK_Variant));
             }
 
             if (n.SearchLower != null)
@@ -88,8 +88,8 @@ namespace Ecommerce.Helpers.VariantValues
             if (!Enum.IsDefined(typeof(VariantValueSortColumn), sortColumn))
             {
                 return desc
-                    ? query.OrderByDescending(vv => vv.IdVariantValue)
-                    : query.OrderBy(vv => vv.IdVariantValue);
+                    ? query.OrderByDescending(vv => vv.ID_VariantValue)
+                    : query.OrderBy(vv => vv.ID_VariantValue);
             }
 
             var column = (VariantValueSortColumn)sortColumn;
@@ -107,8 +107,8 @@ namespace Ecommerce.Helpers.VariantValues
                 case VariantValueSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(vv => vv.IdVariantValue)
-                        : query.OrderBy(vv => vv.IdVariantValue);
+                        ? query.OrderByDescending(vv => vv.ID_VariantValue)
+                        : query.OrderBy(vv => vv.ID_VariantValue);
             }
         }
 

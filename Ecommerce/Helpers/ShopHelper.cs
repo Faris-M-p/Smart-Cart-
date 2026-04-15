@@ -48,12 +48,12 @@ namespace Ecommerce.Helpers.Shop
 
             if (n.SubCategoryIds.Count > 0)
             {
-                query = query.Where(p => n.SubCategoryIds.Contains(p.FkSubCategory));
+                query = query.Where(p => n.SubCategoryIds.Contains(p.FK_SubCategory));
             }
 
             if (n.BrandIds.Count > 0)
             {
-                query = query.Where(p => p.FkBrand != null && n.BrandIds.Contains(p.FkBrand.Value));
+                query = query.Where(p => p.FK_Brand != null && n.BrandIds.Contains(p.FK_Brand.Value));
             }
 
             return query;
@@ -69,8 +69,8 @@ namespace Ecommerce.Helpers.Shop
             if (!Enum.IsDefined(typeof(ShopProductSortColumn), sortColumn))
             {
                 return desc
-                    ? query.OrderByDescending(p => p.IdProduct)
-                    : query.OrderBy(p => p.IdProduct);
+                    ? query.OrderByDescending(p => p.ID_Product)
+                    : query.OrderBy(p => p.ID_Product);
             }
 
             var column = (ShopProductSortColumn)sortColumn;
@@ -87,13 +87,13 @@ namespace Ecommerce.Helpers.Shop
                         : query.OrderBy(p => p.Name);
                 case ShopProductSortColumn.SubCategoryId:
                     return desc
-                        ? query.OrderByDescending(p => p.FkSubCategory)
-                        : query.OrderBy(p => p.FkSubCategory);
+                        ? query.OrderByDescending(p => p.FK_SubCategory)
+                        : query.OrderBy(p => p.FK_SubCategory);
                 case ShopProductSortColumn.ProductId:
                 default:
                     return desc
-                        ? query.OrderByDescending(p => p.IdProduct)
-                        : query.OrderBy(p => p.IdProduct);
+                        ? query.OrderByDescending(p => p.ID_Product)
+                        : query.OrderBy(p => p.ID_Product);
             }
         }
 

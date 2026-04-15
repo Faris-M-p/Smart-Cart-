@@ -47,7 +47,7 @@ namespace Ecommerce.Repository.Admin
                 var rows = await pagedEntityQuery
                     .Select(x => new Variant
                     {
-                        VariantID = x.IdVariant,
+                        VariantID = x.ID_Variant,
                         Name = x.Name,
                         Description = x.Description,
                         DisplayOrder = x.DisplayOrder,
@@ -82,10 +82,10 @@ namespace Ecommerce.Repository.Admin
 
             return await _dbContext.Variants
                 .AsNoTracking()
-                .Where(v => v.IdVariant == id)
+                .Where(v => v.ID_Variant == id)
                 .Select(v => new Variant
                 {
-                    VariantID = v.IdVariant,
+                    VariantID = v.ID_Variant,
                     Name = v.Name,
                     Description = v.Description,
                     DisplayOrder = v.DisplayOrder,
@@ -128,7 +128,7 @@ namespace Ecommerce.Repository.Admin
                 _dbContext.Variants.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.IdVariant, "Variant created successfully.");
+                return Ok(entity.ID_Variant, "Variant created successfully.");
             }
             catch (Exception ex)
             {
@@ -157,7 +157,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.Variants
-                    .FirstOrDefaultAsync(v => v.IdVariant == input.VariantID);
+                    .FirstOrDefaultAsync(v => v.ID_Variant == input.VariantID);
 
                 if (entity == null)
                 {
@@ -205,7 +205,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.Variants
-                    .FirstOrDefaultAsync(v => v.IdVariant == variantId);
+                    .FirstOrDefaultAsync(v => v.ID_Variant == variantId);
 
                 if (entity == null)
                 {
@@ -240,14 +240,14 @@ namespace Ecommerce.Repository.Admin
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.Variants.AnyAsync(v =>
                 !v.Cancelled &&
-                v.IdVariant != excludeVariantId &&
+                v.ID_Variant != excludeVariantId &&
                 v.Name.ToLower() == key);
         }
 
         private Task<bool> HasActiveVariantValuesAsync(int variantId)
         {
             return _dbContext.VariantValues.AnyAsync(vv =>
-                vv.FkVariant == variantId &&
+                vv.FK_Variant == variantId &&
                 vv.Cancelled != true);
         }
 

@@ -46,8 +46,8 @@ namespace Ecommerce.Repository.Admin
                 var rows = await pagedEntityQuery
                     .Select(vv => new VariantValue
                     {
-                        VariantValueID = vv.IdVariantValue,
-                        FK_Variant = vv.FkVariant,
+                        VariantValueID = vv.ID_VariantValue,
+                        FK_Variant = vv.FK_Variant,
                         Name = vv.Name,
                         Description = vv.Description,
                         DisplayOrder = vv.DisplayOrder
@@ -80,13 +80,13 @@ namespace Ecommerce.Repository.Admin
 
             return await _dbContext.VariantValues
                 .AsNoTracking()
-                .Where(vv => vv.FkVariant == variantId && vv.Cancelled != true)
+                .Where(vv => vv.FK_Variant == variantId && vv.Cancelled != true)
                 .OrderBy(vv => vv.DisplayOrder)
                 .ThenBy(vv => vv.Name)
                 .Select(vv => new VariantValue
                 {
-                    VariantValueID = vv.IdVariantValue,
-                    FK_Variant = vv.FkVariant,
+                    VariantValueID = vv.ID_VariantValue,
+                    FK_Variant = vv.FK_Variant,
                     Name = vv.Name,
                     Description = vv.Description,
                     DisplayOrder = vv.DisplayOrder
@@ -103,12 +103,12 @@ namespace Ecommerce.Repository.Admin
 
             return await (
                 from vv in _dbContext.VariantValues.AsNoTracking()
-                join v in _dbContext.Variants.AsNoTracking() on vv.FkVariant equals v.IdVariant
-                where vv.IdVariantValue == id
+                join v in _dbContext.Variants.AsNoTracking() on vv.FK_Variant equals v.ID_Variant
+                where vv.ID_VariantValue == id
                 select new VariantValue
                 {
-                    VariantValueID = vv.IdVariantValue,
-                    FK_Variant = vv.FkVariant,
+                    VariantValueID = vv.ID_VariantValue,
+                    FK_Variant = vv.FK_Variant,
                     Name = vv.Name,
                     Description = vv.Description,
                     DisplayOrder = vv.DisplayOrder,
@@ -148,7 +148,7 @@ namespace Ecommerce.Repository.Admin
 
                 var entity = new VariantValueEntity
                 {
-                    FkVariant = n.FkVariant,
+                    FK_Variant = n.FkVariant,
                     Name = n.Name,
                     Description = n.Description,
                     DisplayOrder = n.DisplayOrder,
@@ -159,7 +159,7 @@ namespace Ecommerce.Repository.Admin
                 _dbContext.VariantValues.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.IdVariantValue, "Variant value created successfully.");
+                return Ok(entity.ID_VariantValue, "Variant value created successfully.");
             }
             catch (Exception ex)
             {
@@ -187,7 +187,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Please enter name.");
                 }
 
-                var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.IdVariantValue == n.Id);
+                var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.ID_VariantValue == n.Id);
                 if (entity == null)
                 {
                     return Fail("Invalid variant value ID.");
@@ -198,7 +198,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("This variant value is deleted and cannot be edited.");
                 }
 
-                if (await NameExistsInVariantAsync(entity.FkVariant, n.Name, excludeId: n.Id))
+                if (await NameExistsInVariantAsync(entity.FK_Variant, n.Name, excludeId: n.Id))
                 {
                     return Fail($"Value \"{n.Name}\" already exists for this variant.");
                 }
@@ -231,7 +231,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid variant value ID.");
                 }
 
-                var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.IdVariantValue == input.VariantValueID);
+                var entity = await _dbContext.VariantValues.FirstOrDefaultAsync(vv => vv.ID_VariantValue == input.VariantValueID);
                 if (entity == null)
                 {
                     return Fail("Invalid variant value ID.");
@@ -243,7 +243,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var inUse = await _dbContext.ProductVariantAttributes.AsNoTracking()
-                    .AnyAsync(pva => pva.FkVariantValue == input.VariantValueID);
+                    .AnyAsync(pva => pva.FK_VariantValue == input.VariantValueID);
 
                 if (inUse)
                 {
@@ -264,15 +264,15 @@ namespace Ecommerce.Repository.Admin
         }
 
         private Task<bool> VariantExistsActiveAsync(int variantId) =>
-            _dbContext.Variants.AnyAsync(v => v.IdVariant == variantId && v.Cancelled != true);
+            _dbContext.Variants.AnyAsync(v => v.ID_Variant == variantId && v.Cancelled != true);
 
         private async Task<bool> NameExistsInVariantAsync(int fkVariant, string trimmedName, int excludeId)
         {
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.VariantValues.AnyAsync(vv =>
-                vv.FkVariant == fkVariant &&
+                vv.FK_Variant == fkVariant &&
                 vv.Cancelled != true &&
-                vv.IdVariantValue != excludeId &&
+                vv.ID_VariantValue != excludeId &&
                 vv.Name.ToLower() == key);
         }
 

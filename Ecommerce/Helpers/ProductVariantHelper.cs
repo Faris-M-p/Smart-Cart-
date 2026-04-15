@@ -163,13 +163,13 @@ namespace Ecommerce.Helpers.ProductVariants
             int fkProduct,
             NormalizedProductVariantListInput n)
         {
-            query = query.Where(pv => pv.FkProduct == fkProduct && !pv.Cancelled);
+            query = query.Where(pv => pv.FK_Product == fkProduct && !pv.Cancelled);
 
             if (n.SearchLower != null)
             {
                 var s = n.SearchLower;
                 query = query.Where(pv =>
-                    pv.Sku.ToLower().Contains(s) ||
+                    pv.SKU.ToLower().Contains(s) ||
                     pv.VariantLabel.ToLower().Contains(s));
             }
 
@@ -186,8 +186,8 @@ namespace Ecommerce.Helpers.ProductVariants
             if (!Enum.IsDefined(typeof(ProductVariantSortColumn), sortColumn))
             {
                 return desc
-                    ? query.OrderByDescending(pv => pv.IdProductVariant)
-                    : query.OrderBy(pv => pv.IdProductVariant);
+                    ? query.OrderByDescending(pv => pv.ID_ProductVariant)
+                    : query.OrderBy(pv => pv.ID_ProductVariant);
             }
 
             var column = (ProductVariantSortColumn)sortColumn;
@@ -196,8 +196,8 @@ namespace Ecommerce.Helpers.ProductVariants
             {
                 case ProductVariantSortColumn.Sku:
                     return desc
-                        ? query.OrderByDescending(pv => pv.Sku)
-                        : query.OrderBy(pv => pv.Sku);
+                        ? query.OrderByDescending(pv => pv.SKU)
+                        : query.OrderBy(pv => pv.SKU);
                 case ProductVariantSortColumn.SellingPrice:
                     return desc
                         ? query.OrderByDescending(pv => pv.SellingPrice)
@@ -213,8 +213,8 @@ namespace Ecommerce.Helpers.ProductVariants
                 case ProductVariantSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(pv => pv.IdProductVariant)
-                        : query.OrderBy(pv => pv.IdProductVariant);
+                        ? query.OrderByDescending(pv => pv.ID_ProductVariant)
+                        : query.OrderBy(pv => pv.ID_ProductVariant);
             }
         }
 

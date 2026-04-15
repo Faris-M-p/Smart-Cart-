@@ -10,10 +10,8 @@ namespace Ecommerce.Models.Entities
     public class SupplierEntity
     {
         [Key]
-        [Column("ID_Supplier")]
-        public int SupplierId { get; set; }
+        public int ID_Supplier { get; set; }
 
-        [Column("Name")]
         [MaxLength(250)]
         public string Name { get; set; } = string.Empty;
 

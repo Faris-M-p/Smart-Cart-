@@ -62,6 +62,16 @@
                                             <option value="">All Suppliers</option>
                                         </select>
                                     </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">Payment Status</label>
+                                        <select id="filterPaymentStatus" class="form-select">
+                                            <option value="">All</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Paid">Paid</option>
+                                            <option value="PartialPaid">PartialPaid</option>
+                                        </select>
+                                    </div>
                                     
                                     <div class="col-md-3">
                                         <label class="form-label small text-muted mb-1">From Date</label>
@@ -94,13 +104,13 @@
                                 <table class="table table-hover align-middle mb-0" id="purchaseTable">
                                     <thead>
                                         <tr>
-                                            <th class="text-muted">ID</th>
+                                            <th class="text-muted">GRN Number</th>
                                             <th class="text-muted">Invoice Number</th>
                                             <th class="text-muted">Supplier</th>
                                             <th class="text-muted">Purchase Date</th>
                                             <th class="text-muted">Total Amount</th>
+                                            <th class="text-muted">Payment Status</th>
                                             <th class="text-muted">Created Date</th>
-                                            <th class="text-muted">Status</th>
                                             <th class="text-muted text-end">Actions</th>
                                         </tr>
                                     </thead>
@@ -262,6 +272,7 @@
 </div>
 
 <script>
+    let emptyState;
     let currentPage = 1;
     let pageSize = 20;
     let suppliers = [];
@@ -270,6 +281,7 @@
     let purchaseSearchTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
+        emptyState = window.__emptyStateInstance || (window.__emptyStateInstance = new EmptyStateHandler());
         loadSuppliers();
         loadProducts();
         loadPurchases();
@@ -281,9 +293,31 @@
                 if (value.length === 0 || value.length >= 1) {
                     loadPurchases(1);
                 }
-            }, 500);
+            }, 300);
         });
     });
+
+    function showPurchaseLoading() {
+        const tbody = document.getElementById('purchaseTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    function hasPurchaseFiltersApplied() {
+        const searchText = (document.getElementById('searchText')?.value || '').trim();
+        const supplier = (document.getElementById('filterSupplier')?.value || '').trim();
+        const ps = (document.getElementById('filterPaymentStatus')?.value || '').trim();
+        const from = (document.getElementById('fromDate')?.value || '').trim();
+        const to = (document.getElementById('toDate')?.value || '').trim();
+        return !!searchText || !!supplier || !!ps || !!from || !!to;
+    }
 
     async function loadSuppliers() {
         try {
@@ -351,6 +385,7 @@
         pageSize = parseInt(document.getElementById('pageSize')?.value) || 20;
         const searchText = document.getElementById('searchText')?.value || '';
         const filterSupplierID = document.getElementById('filterSupplier')?.value || '';
+        const paymentStatus = document.getElementById('filterPaymentStatus')?.value || '';
         const fromDate = document.getElementById('fromDate')?.value || '';
         const toDate = document.getElementById('toDate')?.value || '';
 
@@ -364,6 +399,7 @@
             FilterSupplierIDs: filterSupplierIDs,
             FromDate: fromDate || null,
             ToDate: toDate || null,
+            PaymentStatus: paymentStatus,
             PageIndex: page,
             PageSize: pageSize,
             SortColumn: 0,
@@ -371,29 +407,35 @@
         };
 
         try {
+            showPurchaseLoading();
             const response = await fetch('/Admin/Purchase/GetPurchaseList', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) {
+                handleApiError('failure', 'Purchase List Load', { url: '/Admin/Purchase/GetPurchaseList', method: 'POST', payload: input, response });
+                emptyState.showInTable('purchaseTableBody', emptyState.states.serverError, {
+                    title: 'Something went wrong while loading purchases',
+                    message: 'Please try again in a moment.',
+                    onRetry: 'loadPurchases(1)'
+                }, 8);
+                return;
+            }
 
             const data = await response.json();
-            displayPurchases(data.TableData || []);
-            displayPagination(data.TableSettings);
+            const rows = data.tableData || data.TableData || [];
+            const settings = data.tableSettings || data.TableSettings;
+            displayPurchases(rows);
+            displayPagination(settings);
         } catch (error) {
-            console.error('Error loading purchases:', error);
-            const tbody = document.getElementById('purchaseTableBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="empty-state">
-                        <i class="ti ti-alert-circle"></i>
-                        <h5>Error loading purchases</h5>
-                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading purchases. Please try again.')}</p>
-                    </td>
-                </tr>
-            `;
+            handleApiError('crash', 'Purchase List Load', { url: '/Admin/Purchase/GetPurchaseList', method: 'POST', payload: input, error });
+            emptyState.showInTable('purchaseTableBody', emptyState.states.serverError, {
+                title: 'Something went wrong while loading purchases',
+                message: 'Unable to connect to server.',
+                onRetry: 'loadPurchases(1)'
+            }, 8);
         }
     }
 
@@ -401,44 +443,46 @@
         const tbody = document.getElementById('purchaseTableBody');
         
         if (!purchases || purchases.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="empty-state">
-                        <i class="ti ti-package-off"></i>
-                        <h5>No purchases found</h5>
-                        <p class="text-muted">Try adjusting your filters or search term</p>
-                    </td>
-                </tr>
-            `;
+            const filtered = hasPurchaseFiltersApplied();
+            emptyState.showInTable('purchaseTableBody', emptyState.states.noData, {
+                title: filtered ? 'No results match your filters' : 'No purchases found',
+                message: filtered
+                    ? 'Try adjusting your filters.'
+                    : 'Try adjusting your filters or create a new purchase.',
+                onReset: 'resetFilters()'
+            }, 8);
             return;
         }
 
         tbody.innerHTML = purchases.map(p => {
-            const statusClass = p.Cancelled ? 'badge-inactive' : 'badge-active';
-            const statusText = p.Cancelled ? 'Cancelled' : 'Active';
+            const pid = p.id_Purchase ?? p.ID_Purchase ?? 0;
+            const grn = p.grnNumber ?? p.GRNNumber ?? (`GRN-${String(pid).padStart(6, '0')}`);
+            const inv = p.invoiceNumber ?? p.InvoiceNumber ?? '-';
+            const supplier = p.supplierName ?? p.SupplierName ?? 'N/A';
+            const pdate = p.purchaseDate ?? p.PurchaseDate;
+            const total = p.totalAmount ?? p.TotalAmount ?? 0;
+            const pay = p.paymentStatus ?? p.PaymentStatus ?? 'Pending';
+            const created = p.createdOn ?? p.CreatedOn;
+            const cancelled = p.cancelled ?? p.Cancelled ?? false;
             
             return `
                 <tr>
-                    <td>${p.ID_Purchase}</td>
-                    <td>${escapeHtml(p.InvoiceNumber || '-')}</td>
-                    <td>${escapeHtml(p.SupplierName || 'N/A')}</td>
-                    <td>${p.PurchaseDate ? new Date(p.PurchaseDate).toLocaleDateString() : '-'}</td>
-                    <td><strong>$${p.TotalAmount?.toFixed(2) || '0.00'}</strong></td>
-                    <td>${p.CreatedOn ? new Date(p.CreatedOn).toLocaleDateString() : '-'}</td>
-                    <td>
-                        <span class="badge ${statusClass}">
-                            ${statusText}
-                        </span>
-                    </td>
+                    <td><strong>${escapeHtml(grn)}</strong></td>
+                    <td>${escapeHtml(inv)}</td>
+                    <td>${escapeHtml(supplier)}</td>
+                    <td>${pdate ? new Date(pdate).toLocaleDateString() : '-'}</td>
+                    <td><strong>₹${Number(total).toFixed(2)}</strong></td>
+                    <td>${escapeHtml(pay)}</td>
+                    <td>${created ? new Date(created).toLocaleDateString() : '-'}</td>
                     <td class="text-end">
-                        ${p.Cancelled ? '' : `
-                            <button class="btn-action btn-view" onclick="viewPurchase(${p.ID_Purchase})" title="View">
+                        ${cancelled ? '' : `
+                            <button class="btn-action btn-view" onclick="viewPurchase(${pid})" title="View">
                                 <i class="ti ti-eye"></i>
                             </button>
-                            <button class="btn-action btn-edit" onclick="openEditModal(${p.ID_Purchase})" title="Edit">
+                            <button class="btn-action btn-edit" onclick="openEditModal(${pid})" title="Edit">
                                 <i class="ti ti-edit"></i>
                             </button>
-                            <button class="btn-action btn-delete" onclick="openDeleteModal(${p.ID_Purchase})" title="Delete">
+                            <button class="btn-action btn-delete" onclick="openDeleteModal(${pid})" title="Delete">
                                 <i class="ti ti-trash"></i>
                             </button>
                         `}
@@ -905,6 +949,7 @@
     function resetFilters() {
         document.getElementById('searchText').value = '';
         document.getElementById('filterSupplier').value = '';
+        document.getElementById('filterPaymentStatus').value = '';
         document.getElementById('fromDate').value = '';
         document.getElementById('toDate').value = '';
         document.getElementById('pageSize').value = '20';

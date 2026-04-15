@@ -11,6 +11,7 @@ namespace Ecommerce.Helpers.Purchases
         IReadOnlyList<int> FilterSupplierIds,
         DateTime? FromDate,
         DateTime? ToDate,
+        string? PaymentStatus,
         int PageIndex,
         int PageSize,
         int SortColumn,
@@ -32,6 +33,7 @@ namespace Ecommerce.Helpers.Purchases
                 StringHelper.ParseFilterIds(input.FilterSupplierIDs),
                 input.FromDate,
                 input.ToDate,
+                string.IsNullOrWhiteSpace(input.PaymentStatus) ? null : input.PaymentStatus.Trim(),
                 pageIndex,
                 pageSize,
                 input.SortColumn,
@@ -65,7 +67,14 @@ namespace Ecommerce.Helpers.Purchases
             {
                 var s = normalized.SearchLower;
                 query = query.Where(p =>
+                    (p.GRNNumber ?? string.Empty).ToLower().Contains(s) ||
                     (p.InvoiceNumber ?? string.Empty).ToLower().Contains(s));
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalized.PaymentStatus))
+            {
+                var ps = normalized.PaymentStatus.Trim();
+                query = query.Where(p => (p.PaymentStatus ?? "Pending") == ps);
             }
 
             return query;

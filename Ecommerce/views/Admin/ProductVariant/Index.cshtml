@@ -940,15 +940,20 @@
                 return;
             }
 
-            if (result?.StatusCode) {
+            const ok =
+                (result?.statusCode ?? result?.StatusCode) === true ||
+                (result?.success ?? result?.Success) === true;
+
+            if (ok) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('productVariantModal'));
                 modal.hide();
                 loadProductVariants(currentPage);
-                showSuccess('Success', result?.ResponseMsg || 'SKU saved successfully.');
+                const msg = result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? result?.Message;
+                showSuccess('Success', msg || 'SKU saved successfully.');
             } else {
                 handleApiError?.('failure', 'Save SKU (business)', { url, method: 'POST', payload: input, response, result });
                 // CommonResponse { StatusCode, ResponseMsg } OR other error shapes
-                const msg = result?.ResponseMsg || result?.message || result?.Message || 'Error saving SKU.';
+                const msg = result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? result?.Message || 'Error saving SKU.';
                 const errs = result?.errors || result?.Errors || [];
                 if (Array.isArray(errs) && errs.length > 0) {
                     showError('Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));

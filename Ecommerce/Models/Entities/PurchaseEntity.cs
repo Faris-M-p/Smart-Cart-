@@ -8,19 +8,22 @@ namespace Ecommerce.Models.Entities
     public class PurchaseEntity
     {
         [Key]
-        [Column("ID_Purchase")]
         public int ID_Purchase { get; set; }
 
-        [Column("FK_Supplier")]
         public int FK_Supplier { get; set; }
 
-        [Column("PurchaseDate")]
         public DateTime PurchaseDate { get; set; }
+
+        [MaxLength(100)]
+        public string? GRNNumber { get; set; }
 
         [MaxLength(100)]
         public string? InvoiceNumber { get; set; }
 
-        [Column(TypeName = "decimal(12,2)")]
+        [MaxLength(30)]
+        public string? PaymentStatus { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(12,2)")]
         public decimal TotalAmount { get; set; }
 
         [MaxLength(500)]

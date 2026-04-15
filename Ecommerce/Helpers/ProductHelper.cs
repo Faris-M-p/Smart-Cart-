@@ -96,12 +96,12 @@ namespace Ecommerce.Helpers.Products
 
             if (n.FilterSubCategoryIds.Count > 0)
             {
-                query = query.Where(p => n.FilterSubCategoryIds.Contains(p.FkSubCategory));
+                query = query.Where(p => n.FilterSubCategoryIds.Contains(p.FK_SubCategory));
             }
 
             if (n.FilterBrandIds.Count > 0)
             {
-                query = query.Where(p => p.FkBrand != null && n.FilterBrandIds.Contains(p.FkBrand.Value));
+                query = query.Where(p => p.FK_Brand != null && n.FilterBrandIds.Contains(p.FK_Brand.Value));
             }
 
             return query;
@@ -117,8 +117,8 @@ namespace Ecommerce.Helpers.Products
             if (!Enum.IsDefined(typeof(ProductSortColumn), sortColumn))
             {
                 return desc
-                    ? query.OrderByDescending(p => p.IdProduct)
-                    : query.OrderBy(p => p.IdProduct);
+                    ? query.OrderByDescending(p => p.ID_Product)
+                    : query.OrderBy(p => p.ID_Product);
             }
 
             var column = (ProductSortColumn)sortColumn;
@@ -140,8 +140,8 @@ namespace Ecommerce.Helpers.Products
                 case ProductSortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(p => p.IdProduct)
-                        : query.OrderBy(p => p.IdProduct);
+                        ? query.OrderByDescending(p => p.ID_Product)
+                        : query.OrderBy(p => p.ID_Product);
             }
         }
 

@@ -10,8 +10,7 @@ namespace Ecommerce.Models.Entities
     public class BrandEntity
     {
         [Key]
-        [Column("ID_Brand")]
-        public int BrandId { get; set; }
+        public int ID_Brand { get; set; }
 
         [MaxLength(100)]
         public string BrandName { get; set; } = string.Empty;

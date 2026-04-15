@@ -8,8 +8,7 @@ namespace Ecommerce.Models.Entities
     public class VariantEntity
     {
         [Key]
-        [Column("ID_Variant")]
-        public int IdVariant { get; set; }
+        public int ID_Variant { get; set; }
 
         [Required]
         [MaxLength(255)]

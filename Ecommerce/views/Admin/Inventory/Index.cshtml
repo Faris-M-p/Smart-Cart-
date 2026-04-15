@@ -1,0 +1,344 @@
+@{
+    ViewData["Title"] = "Inventory (Stock)";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Inventory (Stock)</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item">Inventory</li>
+                    <li class="breadcrumb-item" aria-current="page">Stock</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <h5 class="mb-0">Stock List</h5>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="input-group" style="min-width: 280px;">
+                            <span class="input-group-text"><i class="ti ti-search"></i></span>
+                            <input type="text" id="searchText" class="form-control" placeholder="Search product or SKU...">
+                        </div>
+                        <div class="form-check ms-2">
+                            <input class="form-check-input" type="checkbox" id="lowStockOnly">
+                            <label class="form-check-label" for="lowStockOnly">Low stock only</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body pt-3">
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-muted">Product Name</th>
+                                    <th class="text-muted">SKU</th>
+                                    <th class="text-muted text-end">Available Qty</th>
+                                    <th class="text-muted text-end">Reserved Qty</th>
+                                    <th class="text-muted text-end">Reorder Level</th>
+                                    <th class="text-muted">Last Updated</th>
+                                    <th class="text-muted text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Show</span>
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="text-muted small">per page</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="paginationInfo" class="text-muted small"></span>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+<div class="modal fade" id="adjustModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjust Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="adjustSkuId" />
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small text-muted mb-1">SKU</label>
+                        <input type="text" id="adjustSkuText" class="form-control" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted mb-1">Current Stock</label>
+                        <input type="text" id="adjustCurrentStock" class="form-control" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted mb-1">Adjust (+ / -)</label>
+                        <input type="number" id="adjustBy" class="form-control" placeholder="e.g. 10 or -5" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted mb-1">Reason</label>
+                        <input type="text" id="adjustReason" class="form-control" placeholder="Why are you adjusting?" maxlength="255" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAdjustment()">
+                    <i class="ti ti-device-floppy"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let emptyState;
+    let currentPage = 1;
+    let searchTimeout;
+    let lastRows = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        emptyState = window.__emptyStateInstance || (window.__emptyStateInstance = new EmptyStateHandler());
+        document.getElementById('pageSize')?.addEventListener('change', function () { loadStock(1); });
+        document.getElementById('lowStockOnly')?.addEventListener('change', function () { loadStock(1); });
+
+        document.getElementById('searchText')?.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function () { loadStock(1); }, 300);
+        });
+
+        loadStock(1);
+    });
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
+
+    function showLoading() {
+        const tbody = document.getElementById('stockTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    function hasActiveFilters() {
+        const s = (document.getElementById('searchText')?.value || '').trim();
+        const low = document.getElementById('lowStockOnly')?.checked || false;
+        return !!s || low;
+    }
+
+    async function loadStock(page = 1) {
+        currentPage = page;
+        const pageSize = parseInt(document.getElementById('pageSize')?.value) || 20;
+        const searchText = document.getElementById('searchText')?.value || '';
+        const lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
+
+        const input = { SearchText: searchText, LowStockOnly: lowStockOnly, PageIndex: page, PageSize: pageSize };
+        showLoading();
+
+        try {
+            const resp = await fetch('/Admin/Inventory/GetStockList', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!resp.ok) {
+                handleApiError('failure', 'Inventory Load', { url: '/Admin/Inventory/GetStockList', method: 'POST', payload: input, response: resp });
+                emptyState.showInTable('stockTableBody', emptyState.states.serverError, {
+                    title: 'Something went wrong while loading stock',
+                    message: 'Please try again in a moment.',
+                    onRetry: 'loadStock(1)'
+                }, 7);
+                return;
+            }
+
+            const data = await resp.json();
+            const rows = data.tableData || data.TableData || [];
+            const settings = data.tableSettings || data.TableSettings;
+            lastRows = rows;
+            renderStock(rows);
+            renderPagination(settings);
+        } catch (error) {
+            handleApiError('crash', 'Inventory Load', { url: '/Admin/Inventory/GetStockList', method: 'POST', payload: input, error });
+            emptyState.showInTable('stockTableBody', emptyState.states.serverError, {
+                title: 'Something went wrong while loading stock',
+                message: 'Unable to connect to server.',
+                onRetry: 'loadStock(1)'
+            }, 7);
+        }
+    }
+
+    function renderStock(rows) {
+        if (!rows || rows.length === 0) {
+            const filtered = hasActiveFilters();
+            emptyState.showInTable('stockTableBody', emptyState.states.noData, {
+                title: filtered ? 'No results match your filters' : 'No stock found',
+                message: filtered
+                    ? 'Try adjusting your filters or search term.'
+                    : 'Stock will appear after purchases or manual adjustments.',
+                onReset: 'resetFilters()'
+            }, 7);
+            return;
+        }
+
+        const tbody = document.getElementById('stockTableBody');
+        tbody.innerHTML = rows.map(function (r) {
+            const id = r.fk_ProductVariant ?? r.FK_ProductVariant ?? 0;
+            const sku = r.sku ?? r.SKU ?? '';
+            const pn = r.productName ?? r.ProductName ?? '';
+            const a = r.availableQty ?? r.AvailableQty ?? 0;
+            const rs = r.reservedQty ?? r.ReservedQty ?? 0;
+            const rl = r.reorderLevel ?? r.ReorderLevel ?? 10;
+            const lu = r.lastUpdated ?? r.LastUpdated;
+            const luText = lu ? new Date(lu).toLocaleString() : '-';
+            return `
+                <tr>
+                    <td>${escapeHtml(pn)}</td>
+                    <td><strong>${escapeHtml(sku)}</strong></td>
+                    <td class="text-end">${a}</td>
+                    <td class="text-end">${rs}</td>
+                    <td class="text-end">${rl}</td>
+                    <td>${escapeHtml(luText)}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="openAdjust(${id}, '${escapeHtml(sku)}', ${a})">
+                            <i class="ti ti-pencil"></i> Adjust
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderPagination(settings) {
+        const pagination = document.getElementById('pagination');
+        const info = document.getElementById('paginationInfo');
+        if (!settings) { pagination.innerHTML = ''; info.textContent = ''; return; }
+
+        const totalCount = settings.totalCount ?? settings.TotalCount ?? 0;
+        const pageIndex = settings.pageIndex ?? settings.PageIndex ?? 1;
+        const pageSize = settings.pageSize ?? settings.PageSize ?? 20;
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+        const start = totalCount === 0 ? 0 : ((pageIndex - 1) * pageSize) + 1;
+        const end = Math.min(pageIndex * pageSize, totalCount);
+        info.textContent = totalCount ? `Showing ${start}-${end} of ${totalCount}` : '';
+
+        const btn = (label, page, disabled, active) => `
+            <li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="${disabled ? 'return false' : `loadStock(${page})`}">${label}</a>
+            </li>`;
+
+        let html = '';
+        html += btn('&laquo;', Math.max(1, pageIndex - 1), pageIndex === 1, false);
+
+        const windowSize = 3;
+        const from = Math.max(1, pageIndex - windowSize);
+        const to = Math.min(totalPages, pageIndex + windowSize);
+
+        for (let p = from; p <= to; p++) {
+            html += btn(p, p, false, p === pageIndex);
+        }
+
+        html += btn('&raquo;', Math.min(totalPages, pageIndex + 1), pageIndex === totalPages, false);
+        pagination.innerHTML = html;
+    }
+
+    function resetFilters() {
+        document.getElementById('searchText').value = '';
+        document.getElementById('lowStockOnly').checked = false;
+        loadStock(1);
+    }
+
+    function openAdjust(id, sku, currentQty) {
+        document.getElementById('adjustSkuId').value = id;
+        document.getElementById('adjustSkuText').value = sku || '';
+        document.getElementById('adjustCurrentStock').value = String(currentQty ?? 0);
+        document.getElementById('adjustBy').value = '';
+        document.getElementById('adjustReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('adjustModal'));
+        modal.show();
+    }
+
+    async function saveAdjustment() {
+        const id = parseInt(document.getElementById('adjustSkuId').value || '0');
+        const adjustBy = parseInt(document.getElementById('adjustBy').value || '0');
+        const reason = document.getElementById('adjustReason').value || '';
+
+        const payload = { FK_ProductVariant: id, AdjustBy: adjustBy, Reason: reason, EnterBy: 1 };
+
+        try {
+            const resp = await fetch('/Admin/Inventory/AdjustStock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await resp.json();
+            const ok = (result.statusCode ?? result.StatusCode) === true;
+            const msg = result.responseMsg ?? result.ResponseMsg ?? '';
+
+            if (!ok) {
+                handleApiError('failure', 'Inventory Adjust (business)', { url: '/Admin/Inventory/AdjustStock', method: 'POST', payload, response: resp, result });
+                showError('Stock', msg || 'Unable to adjust stock.');
+                return;
+            }
+
+            showSuccess('Stock', msg || 'Stock adjusted.');
+            bootstrap.Modal.getInstance(document.getElementById('adjustModal'))?.hide();
+            loadStock(currentPage);
+        } catch (error) {
+            handleApiError('crash', 'Inventory Adjust', { url: '/Admin/Inventory/AdjustStock', method: 'POST', payload, error });
+            showError('Stock', 'Something went wrong while adjusting stock.');
+        }
+    }
+</script>
+

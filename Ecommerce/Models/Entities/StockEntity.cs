@@ -7,13 +7,10 @@ namespace Ecommerce.Models.Entities
     public class StockEntity
     {
         [Key]
-        [Column("ID_Stock")]
         public int ID_Stock { get; set; }
 
-        [Column("FK_PurchaseDetail")]
         public int FK_PurchaseDetail { get; set; }
 
-        [Column("FK_ProductVariant")]
         public int FK_ProductVariant { get; set; }
 
         public int Quantity { get; set; }

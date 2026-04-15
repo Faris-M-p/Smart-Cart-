@@ -8,15 +8,13 @@ namespace Ecommerce.Models.Entities
     public class ProductVariantEntity
     {
         [Key]
-        [Column("ID_ProductVariant")]
-        public int IdProductVariant { get; set; }
+        public int ID_ProductVariant { get; set; }
 
-        [Column("FK_Product")]
-        public int FkProduct { get; set; }
+        public int FK_Product { get; set; }
 
         [Required]
         [MaxLength(100)]
-        public string Sku { get; set; } = string.Empty;
+        public string SKU { get; set; } = string.Empty;
 
         [MaxLength(100)]
         public string? Barcode { get; set; }
@@ -28,16 +26,15 @@ namespace Ecommerce.Models.Entities
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal Mrp { get; set; }
+        public decimal MRP { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(10,2)")]
         public decimal SellingPrice { get; set; }
 
         [MaxLength(20)]
         public string? UnitOfMeasure { get; set; }
 
-        [Column(TypeName = "decimal(10,3)")]
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(10,3)")]
         public decimal? UnitValue { get; set; }
 
         public bool IsDefault { get; set; }

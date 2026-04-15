@@ -28,7 +28,7 @@ namespace Ecommerce.Repository.Admin
             return await (
                 from s in _dbContext.SubCategories.AsNoTracking()
                 where s.ID_SubCategory == id
-                join c in _dbContext.Categories.AsNoTracking() on s.FK_Category equals c.IdCategory into cg
+                join c in _dbContext.Categories.AsNoTracking() on s.FK_Category equals c.ID_Category into cg
                 from c in cg.DefaultIfEmpty()
                 select new SubCategory
                 {
@@ -67,7 +67,7 @@ namespace Ecommerce.Repository.Admin
 
                 var joinedQuery =
                     from s in sortedQuery
-                    join c in _dbContext.Categories.AsNoTracking() on s.FK_Category equals c.IdCategory into cg
+                    join c in _dbContext.Categories.AsNoTracking() on s.FK_Category equals c.ID_Category into cg
                     from c in cg.DefaultIfEmpty()
                     select new { s, c };
 
@@ -257,11 +257,11 @@ namespace Ecommerce.Repository.Admin
 
         private Task<bool> CategoryExistsActiveAsync(int categoryId) =>
             _dbContext.Categories.AnyAsync(c =>
-                c.IdCategory == categoryId && !c.Cancelled && c.IsActive);
+                c.ID_Category == categoryId && !c.Cancelled && c.IsActive);
 
         private Task<bool> HasActiveProductsForSubCategoryAsync(int subCategoryId) =>
             _dbContext.Products.AnyAsync(p =>
-                p.FkSubCategory == subCategoryId && p.Cancelled != true);
+                p.FK_SubCategory == subCategoryId && p.Cancelled != true);
 
         private async Task<bool> SubCategoryNameExistsAsync(string trimmedName, int categoryId, int excludeId)
         {

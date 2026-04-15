@@ -62,7 +62,7 @@ namespace Ecommerce.Helpers.Categories
 
             if (normalized.FilterIds.Count > 0)
             {
-                query = query.Where(c => normalized.FilterIds.Contains(c.IdCategory));
+                query = query.Where(c => normalized.FilterIds.Contains(c.ID_Category));
             }
 
             return query;
@@ -77,7 +77,7 @@ namespace Ecommerce.Helpers.Categories
 
             if (!Enum.IsDefined(typeof(CategorySortColumn), sortColumn))
             {
-                return query.OrderByDescending(c => c.IdCategory);
+                return query.OrderByDescending(c => c.ID_Category);
             }
 
             var column = (CategorySortColumn)sortColumn;
@@ -94,13 +94,13 @@ namespace Ecommerce.Helpers.Categories
                         : query.OrderBy(c => c.Description);
                 case CategorySortColumn.CreatedDate:
                     return desc
-                        ? query.OrderByDescending(c => c.IdCategory)
-                        : query.OrderBy(c => c.IdCategory);
+                        ? query.OrderByDescending(c => c.ID_Category)
+                        : query.OrderBy(c => c.ID_Category);
                 case CategorySortColumn.Id:
                 default:
                     return desc
-                        ? query.OrderByDescending(c => c.IdCategory)
-                        : query.OrderBy(c => c.IdCategory);
+                        ? query.OrderByDescending(c => c.ID_Category)
+                        : query.OrderBy(c => c.ID_Category);
             }
         }
 

@@ -8,14 +8,11 @@ namespace Ecommerce.Models.Entities
     public class ProductEntity
     {
         [Key]
-        [Column("ID_Product")]
-        public int IdProduct { get; set; }
+        public int ID_Product { get; set; }
 
-        [Column("FK_SubCategory")]
-        public int FkSubCategory { get; set; }
+        public int FK_SubCategory { get; set; }
 
-        [Column("FK_Brand")]
-        public int? FkBrand { get; set; }
+        public int? FK_Brand { get; set; }
 
         [Required]
         [MaxLength(255)]

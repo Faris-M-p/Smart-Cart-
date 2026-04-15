@@ -26,7 +26,7 @@ namespace Ecommerce.Repository.Admin
                 .OrderBy(c => c.Name)
                 .Select(c => new Category
                 {
-                    CategoryID = c.IdCategory,
+                    CategoryID = c.ID_Category,
                     CategoryName = c.Name,
                     IsActive = c.IsActive,
                     Cancelled = c.Cancelled
@@ -43,10 +43,10 @@ namespace Ecommerce.Repository.Admin
 
             return await _dbContext.Categories
                 .AsNoTracking()
-                .Where(c => c.IdCategory == id)
+                .Where(c => c.ID_Category == id)
                 .Select(c => new Category
                 {
-                    CategoryID = c.IdCategory,
+                    CategoryID = c.ID_Category,
                     CategoryName = c.Name,
                     Description = c.Description,
                     IsActive = c.IsActive,
@@ -87,7 +87,7 @@ namespace Ecommerce.Repository.Admin
                 var rows = await pagedEntityQuery
                     .Select(c => new Category
                     {
-                        CategoryID = c.IdCategory,
+                        CategoryID = c.ID_Category,
                         CategoryName = c.Name,
                         Description = c.Description,
                         IsActive = c.IsActive,
@@ -145,7 +145,7 @@ namespace Ecommerce.Repository.Admin
                 _dbContext.Categories.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.IdCategory, "Category created successfully.");
+                return Ok(entity.ID_Category, "Category created successfully.");
             }
             catch (Exception ex)
             {
@@ -174,7 +174,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.Categories
-                    .FirstOrDefaultAsync(c => c.IdCategory == input.CategoryID);
+                    .FirstOrDefaultAsync(c => c.ID_Category == input.CategoryID);
 
                 if (entity == null)
                 {
@@ -221,7 +221,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.Categories
-                    .FirstOrDefaultAsync(c => c.IdCategory == categoryId);
+                    .FirstOrDefaultAsync(c => c.ID_Category == categoryId);
 
                 if (entity == null)
                 {
@@ -257,7 +257,7 @@ namespace Ecommerce.Repository.Admin
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.Categories.AnyAsync(c =>
                 !c.Cancelled &&
-                c.IdCategory != excludeCategoryId &&
+                c.ID_Category != excludeCategoryId &&
                 (c.Name ?? string.Empty).ToLower() == key);
         }
 

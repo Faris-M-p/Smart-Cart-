@@ -277,7 +277,9 @@ CREATE TABLE [dbo].[Purchase](
     [ID_Purchase] INT IDENTITY(1,1) NOT NULL,
     [FK_Supplier] INT NOT NULL,
     [PurchaseDate] DATE NOT NULL CONSTRAINT [DF_Purchase_PurchaseDate] DEFAULT (CONVERT(DATE, GETDATE())),
+    [GRNNumber] NVARCHAR(100) NULL,
     [InvoiceNumber] NVARCHAR(100) NULL,
+    [PaymentStatus] NVARCHAR(30) NULL CONSTRAINT [DF_Purchase_PaymentStatus] DEFAULT ('Pending'),
     [TotalAmount] DECIMAL(12,2) NOT NULL CONSTRAINT [DF_Purchase_TotalAmount] DEFAULT ((0)),
     [Notes] NVARCHAR(500) NULL,
     [CreatedOn] DATETIME NOT NULL CONSTRAINT [DF_Purchase_CreatedOn] DEFAULT (GETDATE()),
@@ -289,6 +291,9 @@ CREATE TABLE [dbo].[Purchase](
     CONSTRAINT [PK_Purchase] PRIMARY KEY CLUSTERED ([ID_Purchase] ASC),
     CONSTRAINT [FK_Purchase_Supplier] FOREIGN KEY ([FK_Supplier]) REFERENCES [dbo].[Supplier]([ID_Supplier])
 );
+GO
+
+CREATE UNIQUE INDEX [UQ_Purchase_GRNNumber] ON [dbo].[Purchase]([GRNNumber]) WHERE [GRNNumber] IS NOT NULL;
 GO
 
 /* ==========================================================

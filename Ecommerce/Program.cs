@@ -83,6 +83,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IVariantValueInterface, VariantValueRepository>();
         services.AddTransient<IProductVariantInterface, ProductVariantRepository>();
         services.AddTransient<IPurchaseInterface, PurchaseRepository>();
+        services.AddTransient<IInventoryInterface, InventoryRepository>();
         
         return services;
     }

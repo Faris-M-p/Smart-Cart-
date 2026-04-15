@@ -43,8 +43,8 @@ namespace Ecommerce.Repository.Admin
                     var fids = normalized.FilterVariantIds;
                     filteredQuery = filteredQuery.Where(pv =>
                         _dbContext.ProductVariantAttributes.AsNoTracking().Any(pva =>
-                            pva.FkProductVariant == pv.IdProductVariant &&
-                            fids.Contains(pva.FkVariant)));
+                            pva.FK_ProductVariant == pv.ID_ProductVariant &&
+                            fids.Contains(pva.FK_Variant)));
                 }
 
                 if (normalized.FilterVariantValueIds.Count > 0)
@@ -52,14 +52,14 @@ namespace Ecommerce.Repository.Admin
                     var vids = normalized.FilterVariantValueIds;
                     filteredQuery = filteredQuery.Where(pv =>
                         _dbContext.ProductVariantAttributes.AsNoTracking().Any(pva =>
-                            pva.FkProductVariant == pv.IdProductVariant &&
-                            vids.Contains(pva.FkVariantValue)));
+                            pva.FK_ProductVariant == pv.ID_ProductVariant &&
+                            vids.Contains(pva.FK_VariantValue)));
                 }
 
                 var totalCount = await filteredQuery.LongCountAsync();
 
                 var productName = await _dbContext.Products.AsNoTracking()
-                    .Where(p => p.IdProduct == input.FK_Product && !p.Cancelled)
+                    .Where(p => p.ID_Product == input.FK_Product && !p.Cancelled)
                     .Select(p => p.Name)
                     .FirstOrDefaultAsync() ?? string.Empty;
 
@@ -73,11 +73,11 @@ namespace Ecommerce.Repository.Admin
                     .Take(normalized.PageSize)
                     .Select(pv => new
                     {
-                        pv.IdProductVariant,
-                        pv.FkProduct,
-                        pv.Sku,
+                        pv.ID_ProductVariant,
+                        pv.FK_Product,
+                        pv.SKU,
                         pv.VariantLabel,
-                        pv.Mrp,
+                        pv.MRP,
                         pv.SellingPrice,
                         pv.IsActive,
                         pv.IsDefault,
@@ -86,24 +86,24 @@ namespace Ecommerce.Repository.Admin
                     })
                     .ToListAsync();
 
-                var ids = pageRows.Select(r => r.IdProductVariant).ToList();
+                var ids = pageRows.Select(r => r.ID_ProductVariant).ToList();
                 var comboByVariant = await BuildCombinationMapsAsync(ids);
 
                 var rows = pageRows.Select(pv =>
                 {
-                    comboByVariant.Labels.TryGetValue(pv.IdProductVariant, out var shortLabel);
-                    comboByVariant.Combos.TryGetValue(pv.IdProductVariant, out var longCombo);
-                    comboByVariant.Signatures.TryGetValue(pv.IdProductVariant, out var sig);
+                    comboByVariant.Labels.TryGetValue(pv.ID_ProductVariant, out var shortLabel);
+                    comboByVariant.Combos.TryGetValue(pv.ID_ProductVariant, out var longCombo);
+                    comboByVariant.Signatures.TryGetValue(pv.ID_ProductVariant, out var sig);
 
                     return new ProductVariant
                     {
-                        ID_ProductVariant = pv.IdProductVariant,
-                        FK_Product = pv.FkProduct,
-                        SKU = pv.Sku,
+                        ID_ProductVariant = pv.ID_ProductVariant,
+                        FK_Product = pv.FK_Product,
+                        SKU = pv.SKU,
                         VariantLabel = pv.VariantLabel,
                         Combination = longCombo ?? string.Empty,
                         AttributeSignature = string.IsNullOrEmpty(shortLabel) ? (sig ?? string.Empty) : shortLabel!,
-                        MRP = pv.Mrp,
+                        MRP = pv.MRP,
                         SellingPrice = pv.SellingPrice,
                         Price = pv.SellingPrice,
                         ProductName = productName,
@@ -141,7 +141,7 @@ namespace Ecommerce.Repository.Admin
             try
             {
                 var row = await _dbContext.ProductVariants.AsNoTracking()
-                    .FirstOrDefaultAsync(pv => pv.IdProductVariant == id && !pv.Cancelled);
+                    .FirstOrDefaultAsync(pv => pv.ID_ProductVariant == id && !pv.Cancelled);
 
                 if (row == null)
                 {
@@ -150,25 +150,25 @@ namespace Ecommerce.Repository.Admin
 
                 var attributes = await (
                     from pva in _dbContext.ProductVariantAttributes.AsNoTracking()
-                    join v in _dbContext.Variants.AsNoTracking() on pva.FkVariant equals v.IdVariant
-                    join vv in _dbContext.VariantValues.AsNoTracking() on pva.FkVariantValue equals vv.IdVariantValue
-                    where pva.FkProductVariant == id
+                    join v in _dbContext.Variants.AsNoTracking() on pva.FK_Variant equals v.ID_Variant
+                    join vv in _dbContext.VariantValues.AsNoTracking() on pva.FK_VariantValue equals vv.ID_VariantValue
+                    where pva.FK_ProductVariant == id
                     orderby v.Name
                     select new VariantAttributeDetail
                     {
-                        FK_Variant = pva.FkVariant,
+                        FK_Variant = pva.FK_Variant,
                         VariantName = v.Name,
-                        FK_VariantValue = pva.FkVariantValue,
+                        FK_VariantValue = pva.FK_VariantValue,
                         ValueName = vv.Name
                     }).ToListAsync();
 
                 return new ProductVariantDetail
                 {
-                    ID_ProductVariant = row.IdProductVariant,
-                    FK_Product = row.FkProduct,
-                    SKU = row.Sku,
+                    ID_ProductVariant = row.ID_ProductVariant,
+                    FK_Product = row.FK_Product,
+                    SKU = row.SKU,
                     VariantLabel = row.VariantLabel,
-                    MRP = row.Mrp,
+                    MRP = row.MRP,
                     SellingPrice = row.SellingPrice,
                     IsActive = row.IsActive,
                     IsDefault = row.IsDefault,
@@ -276,10 +276,10 @@ namespace Ecommerce.Repository.Admin
 
                     var entity = new ProductVariantEntity
                     {
-                        FkProduct = normalized.FK_Product,
-                        Sku = normalized.SKU,
+                        FK_Product = normalized.FK_Product,
+                        SKU = normalized.SKU,
                         VariantLabel = variantLabel,
-                        Mrp = normalized.MRP,
+                        MRP = normalized.MRP,
                         SellingPrice = normalized.SellingPrice,
                         IsActive = normalized.IsActive,
                         IsDefault = normalized.IsDefault,
@@ -294,16 +294,16 @@ namespace Ecommerce.Repository.Admin
                     {
                         _dbContext.ProductVariantAttributes.Add(new ProductVariantAttributeEntity
                         {
-                            FkProductVariant = entity.IdProductVariant,
-                            FkVariant = r.FkVariant,
-                            FkVariantValue = r.FkVariantValue
+                            FK_ProductVariant = entity.ID_ProductVariant,
+                            FK_Variant = r.FkVariant,
+                            FK_VariantValue = r.FkVariantValue
                         });
                     }
 
                     await _dbContext.SaveChangesAsync();
                     await tx.CommitAsync();
 
-                    return Ok(entity.IdProductVariant, "Product variant created successfully.");
+                    return Ok(entity.ID_ProductVariant, "Product variant created successfully.");
                 }
                 catch
                 {
@@ -389,7 +389,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.ProductVariants
-                    .FirstOrDefaultAsync(pv => pv.IdProductVariant == normalized.ID_ProductVariant);
+                    .FirstOrDefaultAsync(pv => pv.ID_ProductVariant == normalized.ID_ProductVariant);
 
                 if (entity == null)
                 {
@@ -401,7 +401,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("This product variant is deleted and cannot be edited.");
                 }
 
-                if (entity.FkProduct != normalized.FK_Product)
+                if (entity.FK_Product != normalized.FK_Product)
                 {
                     return Fail("Product cannot be changed for an existing SKU.");
                 }
@@ -425,15 +425,15 @@ namespace Ecommerce.Repository.Admin
                         await ClearDefaultFlagsForProductAsync(normalized.FK_Product, exceptVariantId: normalized.ID_ProductVariant);
                     }
 
-                    entity.Sku = normalized.SKU;
+                    entity.SKU = normalized.SKU;
                     entity.VariantLabel = variantLabel;
-                    entity.Mrp = normalized.MRP;
+                    entity.MRP = normalized.MRP;
                     entity.SellingPrice = normalized.SellingPrice;
                     entity.IsActive = normalized.IsActive;
                     entity.IsDefault = normalized.IsDefault;
 
                     var existingAttrs = await _dbContext.ProductVariantAttributes
-                        .Where(a => a.FkProductVariant == entity.IdProductVariant)
+                        .Where(a => a.FK_ProductVariant == entity.ID_ProductVariant)
                         .ToListAsync();
 
                     _dbContext.ProductVariantAttributes.RemoveRange(existingAttrs);
@@ -442,9 +442,9 @@ namespace Ecommerce.Repository.Admin
                     {
                         _dbContext.ProductVariantAttributes.Add(new ProductVariantAttributeEntity
                         {
-                            FkProductVariant = entity.IdProductVariant,
-                            FkVariant = r.FkVariant,
-                            FkVariantValue = r.FkVariantValue
+                            FK_ProductVariant = entity.ID_ProductVariant,
+                            FK_Variant = r.FkVariant,
+                            FK_VariantValue = r.FkVariantValue
                         });
                     }
 
@@ -483,7 +483,7 @@ namespace Ecommerce.Repository.Admin
                 try
                 {
                     var entity = await _dbContext.ProductVariants
-                        .FirstOrDefaultAsync(pv => pv.IdProductVariant == input.ID_ProductVariant);
+                        .FirstOrDefaultAsync(pv => pv.ID_ProductVariant == input.ID_ProductVariant);
 
                     if (entity == null)
                     {
@@ -498,7 +498,7 @@ namespace Ecommerce.Repository.Admin
                     }
 
                     var attrs = await _dbContext.ProductVariantAttributes
-                        .Where(a => a.FkProductVariant == entity.IdProductVariant)
+                        .Where(a => a.FK_ProductVariant == entity.ID_ProductVariant)
                         .ToListAsync();
 
                     _dbContext.ProductVariantAttributes.RemoveRange(attrs);
@@ -537,23 +537,23 @@ namespace Ecommerce.Repository.Admin
 
             var rows = await (
                 from pva in _dbContext.ProductVariantAttributes.AsNoTracking()
-                join vv in _dbContext.VariantValues.AsNoTracking() on pva.FkVariantValue equals vv.IdVariantValue
-                join v in _dbContext.Variants.AsNoTracking() on pva.FkVariant equals v.IdVariant
-                where productVariantIds.Contains(pva.FkProductVariant)
+                join vv in _dbContext.VariantValues.AsNoTracking() on pva.FK_VariantValue equals vv.ID_VariantValue
+                join v in _dbContext.Variants.AsNoTracking() on pva.FK_Variant equals v.ID_Variant
+                where productVariantIds.Contains(pva.FK_ProductVariant)
                 select new
                 {
-                    pva.FkProductVariant,
+                    pva.FK_ProductVariant,
                     VariantName = v.Name,
                     ValueName = vv.Name,
-                    pva.FkVariantValue
+                    pva.FK_VariantValue
                 }).ToListAsync();
 
-            foreach (var g in rows.GroupBy(r => r.FkProductVariant))
+            foreach (var g in rows.GroupBy(r => r.FK_ProductVariant))
             {
                 var tupleRows = g.Select(x => (x.VariantName, x.ValueName)).ToList();
                 labels[g.Key] = ProductVariantHelper.GenerateVariantLabel(tupleRows);
                 combos[g.Key] = ProductVariantHelper.GenerateCombination(tupleRows);
-                var sig = string.Join("-", g.Select(x => x.FkVariantValue).OrderBy(x => x));
+                var sig = string.Join("-", g.Select(x => x.FK_VariantValue).OrderBy(x => x));
                 signatures[g.Key] = sig;
             }
 
@@ -571,15 +571,15 @@ namespace Ecommerce.Repository.Admin
 
             var rows = await (
                 from vv in _dbContext.VariantValues.AsNoTracking()
-                join v in _dbContext.Variants.AsNoTracking() on vv.FkVariant equals v.IdVariant
-                where distinctIds.Contains(vv.IdVariantValue) &&
+                join v in _dbContext.Variants.AsNoTracking() on vv.FK_Variant equals v.ID_Variant
+                where distinctIds.Contains(vv.ID_VariantValue) &&
                       !vv.Cancelled &&
                       !v.Cancelled &&
                       v.IsActive
                 select new
                 {
-                    vv.IdVariantValue,
-                    vv.FkVariant,
+                    vv.ID_VariantValue,
+                    vv.FK_Variant,
                     VariantName = v.Name,
                     ValueName = vv.Name
                 }).ToListAsync();
@@ -589,7 +589,7 @@ namespace Ecommerce.Repository.Admin
                 return null;
             }
 
-            var byValueId = rows.ToDictionary(r => r.IdVariantValue, r => r);
+            var byValueId = rows.ToDictionary(r => r.ID_VariantValue, r => r);
             var ordered = new List<(int FkVariant, int FkVariantValue, string VariantName, string ValueName)>();
             foreach (var p in pairs)
             {
@@ -598,12 +598,12 @@ namespace Ecommerce.Repository.Admin
                     return null;
                 }
 
-                if (hit.FkVariant != p.VariantId)
+                if (hit.FK_Variant != p.VariantId)
                 {
                     return null;
                 }
 
-                ordered.Add((hit.FkVariant, hit.IdVariantValue, hit.VariantName, hit.ValueName));
+                ordered.Add((hit.FK_Variant, hit.ID_VariantValue, hit.VariantName, hit.ValueName));
             }
 
             return ordered;
@@ -612,9 +612,9 @@ namespace Ecommerce.Repository.Admin
         private async Task<bool> CombinationExistsAsync(int fkProduct, IReadOnlyList<int> valueIds, int excludeVariantId)
         {
             var candidates = await _dbContext.ProductVariants.AsNoTracking()
-                .Where(pv => pv.FkProduct == fkProduct && !pv.Cancelled &&
-                             (excludeVariantId == 0 || pv.IdProductVariant != excludeVariantId))
-                .Select(pv => pv.IdProductVariant)
+                .Where(pv => pv.FK_Product == fkProduct && !pv.Cancelled &&
+                             (excludeVariantId == 0 || pv.ID_ProductVariant != excludeVariantId))
+                .Select(pv => pv.ID_ProductVariant)
                 .ToListAsync();
 
             if (candidates.Count == 0)
@@ -623,13 +623,13 @@ namespace Ecommerce.Repository.Admin
             }
 
             var attrs = await _dbContext.ProductVariantAttributes.AsNoTracking()
-                .Where(a => candidates.Contains(a.FkProductVariant))
-                .Select(a => new { a.FkProductVariant, a.FkVariantValue })
+                .Where(a => candidates.Contains(a.FK_ProductVariant))
+                .Select(a => new { a.FK_ProductVariant, a.FK_VariantValue })
                 .ToListAsync();
 
-            foreach (var grp in attrs.GroupBy(a => a.FkProductVariant))
+            foreach (var grp in attrs.GroupBy(a => a.FK_ProductVariant))
             {
-                var theirs = grp.Select(x => x.FkVariantValue).ToList();
+                var theirs = grp.Select(x => x.FK_VariantValue).ToList();
                 if (ProductVariantHelper.SameVariantValueSet(theirs, valueIds))
                 {
                     return true;
@@ -641,17 +641,17 @@ namespace Ecommerce.Repository.Admin
 
         private Task<bool> SkuExistsAsync(string sku, int excludeVariantId) =>
             _dbContext.ProductVariants.AnyAsync(pv =>
-                pv.Sku == sku &&
-                (excludeVariantId == 0 || pv.IdProductVariant != excludeVariantId));
+                pv.SKU == sku &&
+                (excludeVariantId == 0 || pv.ID_ProductVariant != excludeVariantId));
 
         private Task<bool> ProductExistsAsync(int productId) =>
-            _dbContext.Products.AnyAsync(p => p.IdProduct == productId && !p.Cancelled);
+            _dbContext.Products.AnyAsync(p => p.ID_Product == productId && !p.Cancelled);
 
         private async Task ClearDefaultFlagsForProductAsync(int fkProduct, int exceptVariantId)
         {
             var others = await _dbContext.ProductVariants
-                .Where(pv => pv.FkProduct == fkProduct && !pv.Cancelled &&
-                             (exceptVariantId == 0 || pv.IdProductVariant != exceptVariantId) &&
+                .Where(pv => pv.FK_Product == fkProduct && !pv.Cancelled &&
+                             (exceptVariantId == 0 || pv.ID_ProductVariant != exceptVariantId) &&
                              pv.IsDefault)
                 .ToListAsync();
 

@@ -37,7 +37,7 @@ namespace Ecommerce.Repository.Admin
                     var allowedSubIds = _dbContext.SubCategories.AsNoTracking()
                         .Where(sc => categoryIds.Contains(sc.FK_Category) && sc.Cancelled != true)
                         .Select(sc => sc.ID_SubCategory);
-                    query = query.Where(p => allowedSubIds.Contains(p.FkSubCategory));
+                    query = query.Where(p => allowedSubIds.Contains(p.FK_SubCategory));
                 }
 
                 query = ProductHelper.ApplyFilters(query, normalized);
@@ -48,7 +48,7 @@ namespace Ecommerce.Repository.Admin
                 var pageIds = await sortedQuery
                     .Skip((normalized.PageIndex - 1) * normalized.PageSize)
                     .Take(normalized.PageSize)
-                    .Select(p => p.IdProduct)
+                    .Select(p => p.ID_Product)
                     .ToListAsync();
 
                 if (pageIds.Count == 0)
@@ -67,18 +67,18 @@ namespace Ecommerce.Repository.Admin
 
                 var rowsUnordered = await (
                     from p in _dbContext.Products.AsNoTracking()
-                    join sc in _dbContext.SubCategories.AsNoTracking() on p.FkSubCategory equals sc.ID_SubCategory
-                    join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.IdCategory
-                    join b in _dbContext.Brands.AsNoTracking() on p.FkBrand equals b.BrandId into bg
+                    join sc in _dbContext.SubCategories.AsNoTracking() on p.FK_SubCategory equals sc.ID_SubCategory
+                    join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.ID_Category
+                    join b in _dbContext.Brands.AsNoTracking() on p.FK_Brand equals b.ID_Brand into bg
                     from b in bg.DefaultIfEmpty()
-                    where pageIds.Contains(p.IdProduct)
+                    where pageIds.Contains(p.ID_Product)
                     select new Product
                     {
-                        ID_Product = p.IdProduct,
+                        ID_Product = p.ID_Product,
                         Name = p.Name,
                         Slug = p.Slug,
-                        FK_SubCategory = p.FkSubCategory,
-                        FK_Brand = p.FkBrand,
+                        FK_SubCategory = p.FK_SubCategory,
+                        FK_Brand = p.FK_Brand,
                         FK_Category = sc.FK_Category,
                         CategoryName = c.Name,
                         SubCategoryName = sc.Name,
@@ -117,18 +117,18 @@ namespace Ecommerce.Repository.Admin
 
             return await (
                 from p in _dbContext.Products.AsNoTracking()
-                join sc in _dbContext.SubCategories.AsNoTracking() on p.FkSubCategory equals sc.ID_SubCategory
-                join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.IdCategory
-                join b in _dbContext.Brands.AsNoTracking() on p.FkBrand equals b.BrandId into bg
+                join sc in _dbContext.SubCategories.AsNoTracking() on p.FK_SubCategory equals sc.ID_SubCategory
+                join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.ID_Category
+                join b in _dbContext.Brands.AsNoTracking() on p.FK_Brand equals b.ID_Brand into bg
                 from b in bg.DefaultIfEmpty()
-                where p.IdProduct == id && !p.Cancelled
+                where p.ID_Product == id && !p.Cancelled
                 select new Product
                 {
-                    ID_Product = p.IdProduct,
+                    ID_Product = p.ID_Product,
                     Name = p.Name,
                     Slug = p.Slug,
-                    FK_SubCategory = p.FkSubCategory,
-                    FK_Brand = p.FkBrand,
+                    FK_SubCategory = p.FK_SubCategory,
+                    FK_Brand = p.FK_Brand,
                     FK_Category = sc.FK_Category,
                     CategoryName = c.Name,
                     SubCategoryName = sc.Name,
@@ -171,8 +171,8 @@ namespace Ecommerce.Repository.Admin
 
                 var entity = new ProductEntity
                 {
-                    FkSubCategory = n.FK_SubCategory,
-                    FkBrand = n.FK_Brand,
+                    FK_SubCategory = n.FK_SubCategory,
+                    FK_Brand = n.FK_Brand,
                     Name = n.Name,
                     Slug = slug,
                     Description = n.Description,
@@ -186,7 +186,7 @@ namespace Ecommerce.Repository.Admin
                 _dbContext.Products.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.IdProduct, "Product created successfully.");
+                return Ok(entity.ID_Product, "Product created successfully.");
             }
             catch (Exception ex)
             {
@@ -224,7 +224,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid brand.");
                 }
 
-                var entity = await _dbContext.Products.FirstOrDefaultAsync(p => p.IdProduct == input.ID_Product);
+                var entity = await _dbContext.Products.FirstOrDefaultAsync(p => p.ID_Product == input.ID_Product);
                 if (entity == null)
                 {
                     return Fail("Invalid product ID.");
@@ -243,8 +243,8 @@ namespace Ecommerce.Repository.Admin
                 entity.Name = n.Name;
                 entity.Slug = slug;
                 entity.Description = n.Description;
-                entity.FkSubCategory = n.FK_SubCategory;
-                entity.FkBrand = n.FK_Brand;
+                entity.FK_SubCategory = n.FK_SubCategory;
+                entity.FK_Brand = n.FK_Brand;
                 entity.IsActive = n.IsActive;
                 entity.ModifiedAt = DateTime.Now;
 
@@ -272,7 +272,7 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Invalid product ID.");
                 }
 
-                var entity = await _dbContext.Products.FirstOrDefaultAsync(p => p.IdProduct == input.ID_Product);
+                var entity = await _dbContext.Products.FirstOrDefaultAsync(p => p.ID_Product == input.ID_Product);
                 if (entity == null)
                 {
                     return Fail("Invalid product ID.");
@@ -314,7 +314,7 @@ namespace Ecommerce.Repository.Admin
             var key = slug.ToLowerInvariant();
             return _dbContext.Products.AnyAsync(p =>
                 !p.Cancelled &&
-                p.IdProduct != excludeProductId &&
+                p.ID_Product != excludeProductId &&
                 p.Slug.ToLower() == key);
         }
 
@@ -324,7 +324,7 @@ namespace Ecommerce.Repository.Admin
                 sc.Cancelled != true);
 
         private Task<bool> BrandExistsAsync(int brandId) =>
-            _dbContext.Brands.AnyAsync(b => b.BrandId == brandId && !b.Cancelled);
+            _dbContext.Brands.AnyAsync(b => b.ID_Brand == brandId && !b.Cancelled);
 
         private static CommonResponse Ok(long responseCode, string message) =>
             new()

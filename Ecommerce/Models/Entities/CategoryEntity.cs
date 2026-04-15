@@ -10,10 +10,8 @@ namespace Ecommerce.Models.Entities
     public class CategoryEntity
     {
         [Key]
-        [Column("ID_Category")]
-        public int IdCategory { get; set; }
+        public int ID_Category { get; set; }
 
-        [Column("Name")]
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
 

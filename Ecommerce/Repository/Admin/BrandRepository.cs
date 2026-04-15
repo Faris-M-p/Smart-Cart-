@@ -47,7 +47,7 @@ namespace Ecommerce.Repository.Admin
                 var rows = await pagedEntityQuery
                     .Select(b => new Brand
                     {
-                        BrandID = b.BrandId,
+                        BrandID = b.ID_Brand,
                         BrandName = b.BrandName,
                         Description = b.Description,
                         IsActive = b.IsActive,
@@ -83,10 +83,10 @@ namespace Ecommerce.Repository.Admin
 
             return await _dbContext.Brands
                 .AsNoTracking()
-                .Where(b => b.BrandId == id)
+                .Where(b => b.ID_Brand == id)
                 .Select(b => new Brand
                 {
-                    BrandID = b.BrandId,
+                    BrandID = b.ID_Brand,
                     BrandName = b.BrandName,
                     Description = b.Description,
                     IsActive = b.IsActive,
@@ -128,7 +128,7 @@ namespace Ecommerce.Repository.Admin
                 _dbContext.Brands.Add(entity);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(entity.BrandId, "Brand created successfully.");
+                return Ok(entity.ID_Brand, "Brand created successfully.");
             }
             catch (Exception ex)
             {
@@ -157,7 +157,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.Brands
-                    .FirstOrDefaultAsync(b => b.BrandId == input.BrandID);
+                    .FirstOrDefaultAsync(b => b.ID_Brand == input.BrandID);
 
                 if (entity == null)
                 {
@@ -204,7 +204,7 @@ namespace Ecommerce.Repository.Admin
                 }
 
                 var entity = await _dbContext.Brands
-                    .FirstOrDefaultAsync(b => b.BrandId == brandId);
+                    .FirstOrDefaultAsync(b => b.ID_Brand == brandId);
 
                 if (entity == null)
                 {
@@ -240,14 +240,14 @@ namespace Ecommerce.Repository.Admin
             var key = trimmedName.ToLowerInvariant();
             return await _dbContext.Brands.AnyAsync(b =>
                 !b.Cancelled &&
-                b.BrandId != excludeBrandId &&
+                b.ID_Brand != excludeBrandId &&
                 (b.BrandName ?? string.Empty).ToLower() == key);
         }
 
         private Task<bool> HasActiveProductsForBrandAsync(int brandId)
         {
             return _dbContext.Products.AnyAsync(p =>
-                p.FkBrand == brandId &&
+                p.FK_Brand == brandId &&
                 p.Cancelled != true);
         }
 

@@ -59,6 +59,7 @@ namespace Ecommerce.Controllers.Admin
                     FilterSupplierIDs = viewInput.FilterSupplierIDs,
                     FromDate = viewInput.FromDate,
                     ToDate = viewInput.ToDate,
+                    PaymentStatus = viewInput.PaymentStatus,
                     PageIndex = viewInput.PageIndex,
                     PageSize = viewInput.PageSize,
                     SortColumn = viewInput.SortColumn,
