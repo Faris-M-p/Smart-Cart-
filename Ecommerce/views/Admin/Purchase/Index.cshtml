@@ -455,7 +455,10 @@
         }
 
         tbody.innerHTML = purchases.map(p => {
-            const pid = p.id_Purchase ?? p.ID_Purchase ?? 0;
+            debugger;
+            const pid =
+                p.id_Purchase ?? p.ID_Purchase ??
+                p.iD_Purchase ?? p.iD_Purchase ?? p.IDPurchase ?? p.idPurchase ?? 0;
             const grn = p.grnNumber ?? p.GRNNumber ?? (`GRN-${String(pid).padStart(6, '0')}`);
             const inv = p.invoiceNumber ?? p.InvoiceNumber ?? '-';
             const supplier = p.supplierName ?? p.SupplierName ?? 'N/A';
@@ -495,29 +498,37 @@
     function displayPagination(settings) {
         if (!settings) return;
 
-        const totalPages = Math.ceil(settings.TotalCount / settings.PageSize);
+        const totalCount = settings.totalCount ?? settings.TotalCount ?? 0;
+        const pageSize = settings.pageSize ?? settings.PageSize ?? 20;
+        const pageIndex = settings.pageIndex ?? settings.PageIndex ?? 1;
+
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
         const pagination = document.getElementById('pagination');
         const paginationInfo = document.getElementById('paginationInfo');
 
-        const start = ((settings.PageIndex - 1) * settings.PageSize) + 1;
-        const end = Math.min(settings.PageIndex * settings.PageSize, settings.TotalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${settings.TotalCount} entries`;
+        if (!totalCount) {
+            paginationInfo.textContent = '';
+        } else {
+            const start = ((pageIndex - 1) * pageSize) + 1;
+            const end = Math.min(pageIndex * pageSize, totalCount);
+            paginationInfo.textContent = `${start} to ${end} of ${totalCount} entries`;
+        }
 
         let paginationHTML = '';
         
         // Previous button
-        if (settings.PageIndex <= 1) {
+        if (pageIndex <= 1) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
         } else {
             paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadPurchases(${settings.PageIndex - 1}); return false;">Previous</a>
+                <a class="page-link" href="#!" onclick="loadPurchases(${pageIndex - 1}); return false;">Previous</a>
             </li>`;
         }
 
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= settings.PageIndex - 1 && i <= settings.PageIndex + 1)) {
-                if (i === settings.PageIndex) {
+            if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
+                if (i === pageIndex) {
                     paginationHTML += `<li class="page-item active">
                         <span class="page-link">${i}<span class="sr-only">(current)</span></span>
                     </li>`;
@@ -526,17 +537,17 @@
                         <a class="page-link" href="#!" onclick="loadPurchases(${i}); return false;">${i}</a>
                     </li>`;
                 }
-            } else if (i === settings.PageIndex - 2 || i === settings.PageIndex + 2) {
+            } else if (i === pageIndex - 2 || i === pageIndex + 2) {
                 paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
         // Next button
-        if (settings.PageIndex >= totalPages) {
+        if (pageIndex >= totalPages) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
         } else {
             paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadPurchases(${settings.PageIndex + 1}); return false;">Next</a>
+                <a class="page-link" href="#!" onclick="loadPurchases(${pageIndex + 1}); return false;">Next</a>
             </li>`;
         }
 
@@ -554,26 +565,49 @@
 
     async function openEditModal(purchaseID) {
         try {
+            if (!purchaseID || Number(purchaseID) <= 0) {
+                showWarning('Validation', 'Invalid purchase selected.');
+                return;
+            }
             const response = await fetch(`/Admin/Purchase/GetById/${purchaseID}`);
             if (!response.ok) throw new Error('Failed to fetch purchase');
 
             const purchaseData = await response.json();
-            const purchase = purchaseData.PurchaseHeader;
-            const details = purchaseData.PurchaseDetails || [];
+            const purchase = purchaseData?.purchaseHeader ?? purchaseData?.PurchaseHeader;
+            const details = purchaseData?.purchaseDetails ?? purchaseData?.PurchaseDetails ?? [];
+
+            if (!purchase) {
+                handleApiError?.('failure', 'Purchase GetById (edit) - empty', { url: `/Admin/Purchase/GetById/${purchaseID}`, method: 'GET', payload: { purchaseID }, response, result: purchaseData });
+                showError('Error', 'Purchase details not found.');
+                return;
+            }
             
             document.getElementById('purchaseModalLabel').textContent = 'Edit Purchase';
-            document.getElementById('purchaseID').value = purchase.ID_Purchase;
-            document.getElementById('fkSupplier').value = purchase.FK_Supplier;
-            document.getElementById('purchaseDate').value = purchase.PurchaseDate ? new Date(purchase.PurchaseDate).toISOString().split('T')[0] : '';
-            document.getElementById('invoiceNumber').value = purchase.InvoiceNumber || '';
-            document.getElementById('notes').value = purchase.Notes || '';
+            const pid = purchase.id_Purchase ?? purchase.ID_Purchase ?? purchase.iD_Purchase ?? 0;
+            const sid = purchase.fk_Supplier ?? purchase.FK_Supplier ?? purchase.fkSupplier ?? purchase.FKSupplier ?? 0;
+            const pdate = purchase.purchaseDate ?? purchase.PurchaseDate;
+            const inv = purchase.invoiceNumber ?? purchase.InvoiceNumber ?? '';
+            const notes = purchase.notes ?? purchase.Notes ?? '';
+
+            document.getElementById('purchaseID').value = pid;
+            document.getElementById('fkSupplier').value = sid;
+            document.getElementById('purchaseDate').value = pdate ? new Date(pdate).toISOString().split('T')[0] : '';
+            document.getElementById('invoiceNumber').value = inv || '';
+            document.getElementById('notes').value = notes || '';
             
             // Populate purchase details
             const tbody = document.getElementById('purchaseDetailsTableBody');
             tbody.innerHTML = '';
             if (details.length > 0) {
                 for (const detail of details) {
-                    await addPurchaseDetailRow(detail.ID_PurchaseDetail, detail.FK_Product, detail.FK_ProductVariant, detail.Quantity, detail.PurchasePrice, detail.MRP, detail.ExpiryDate);
+                    const did = detail.id_PurchaseDetail ?? detail.ID_PurchaseDetail ?? detail.iD_PurchaseDetail ?? 0;
+                    const fkProduct = detail.fk_Product ?? detail.FK_Product ?? detail.fkProduct ?? detail.FKProduct ?? 0;
+                    const fkPv = detail.fk_ProductVariant ?? detail.FK_ProductVariant ?? detail.fkProductVariant ?? detail.FKProductVariant ?? 0;
+                    const qty = detail.quantity ?? detail.Quantity ?? 0;
+                    const price = detail.purchasePrice ?? detail.PurchasePrice ?? 0;
+                    const mrp = detail.mrp ?? detail.MRP ?? null;
+                    const exp = detail.expiryDate ?? detail.ExpiryDate ?? null;
+                    await addPurchaseDetailRow(did, fkProduct, fkPv, qty, price, mrp, exp);
                 }
             } else {
                 addPurchaseDetailRow();
@@ -590,32 +624,48 @@
 
     async function viewPurchase(purchaseID) {
         try {
+            if (!purchaseID || Number(purchaseID) <= 0) {
+                showWarning('Validation', 'Invalid purchase selected.');
+                return;
+            }
             const response = await fetch(`/Admin/Purchase/GetById/${purchaseID}`);
             if (!response.ok) throw new Error('Failed to fetch purchase');
 
             const purchaseData = await response.json();
-            const purchase = purchaseData.PurchaseHeader;
-            const details = purchaseData.PurchaseDetails || [];
-            const stockBatches = purchaseData.StockBatches || [];
+            const purchase = purchaseData?.purchaseHeader ?? purchaseData?.PurchaseHeader;
+            const details = purchaseData?.purchaseDetails ?? purchaseData?.PurchaseDetails ?? [];
+            const stockBatches = purchaseData?.stockBatches ?? purchaseData?.StockBatches ?? [];
+
+            if (!purchase) {
+                handleApiError?.('failure', 'Purchase GetById (view) - empty', { url: `/Admin/Purchase/GetById/${purchaseID}`, method: 'GET', payload: { purchaseID }, response, result: purchaseData });
+                showError('Error', 'Purchase details not found.');
+                return;
+            }
+
+            const inv = purchase.invoiceNumber ?? purchase.InvoiceNumber ?? '-';
+            const supplierName = purchase.supplierName ?? purchase.SupplierName ?? 'N/A';
+            const pdate = purchase.purchaseDate ?? purchase.PurchaseDate;
+            const total = purchase.totalAmount ?? purchase.TotalAmount ?? 0;
+            const notes = purchase.notes ?? purchase.Notes ?? '';
             
             let html = `
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong>Invoice Number:</strong> ${escapeHtml(purchase.InvoiceNumber || '-')}
+                        <strong>Invoice Number:</strong> ${escapeHtml(inv)}
                     </div>
                     <div class="col-md-6">
-                        <strong>Supplier:</strong> ${escapeHtml(purchase.SupplierName || 'N/A')}
+                        <strong>Supplier:</strong> ${escapeHtml(supplierName)}
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong>Purchase Date:</strong> ${purchase.PurchaseDate ? new Date(purchase.PurchaseDate).toLocaleDateString() : '-'}
+                        <strong>Purchase Date:</strong> ${pdate ? new Date(pdate).toLocaleDateString() : '-'}
                     </div>
                     <div class="col-md-6">
-                        <strong>Total Amount:</strong> ${purchase.TotalAmount?.toFixed(2) || '0.00'}
+                        <strong>Total Amount:</strong> ${Number(total).toFixed(2)}
                     </div>
                 </div>
-                ${purchase.Notes ? `<div class="row mb-3"><div class="col-md-12"><strong>Notes:</strong> ${escapeHtml(purchase.Notes)}</div></div>` : ''}
+                ${notes ? `<div class="row mb-3"><div class="col-md-12"><strong>Notes:</strong> ${escapeHtml(notes)}</div></div>` : ''}
                 <hr>
                 <h6>Purchase Details</h6>
                 <div class="table-responsive">
@@ -634,14 +684,20 @@
             `;
             
             details.forEach(detail => {
+                const pn = detail.productName ?? detail.ProductName ?? 'N/A';
+                const attrs = detail.variantAttributes ?? detail.VariantAttributes ?? '-';
+                const qty = detail.quantity ?? detail.Quantity ?? 0;
+                const price = detail.purchasePrice ?? detail.PurchasePrice ?? 0;
+                const mrp = detail.mrp ?? detail.MRP ?? null;
+                const exp = detail.expiryDate ?? detail.ExpiryDate ?? null;
                 html += `
                     <tr>
-                        <td>${escapeHtml(detail.ProductName || 'N/A')}</td>
-                        <td>${escapeHtml(detail.VariantAttributes || '-')}</td>
-                        <td>${detail.Quantity}</td>
-                        <td>${detail.PurchasePrice?.toFixed(2) || '0.00'}</td>
-                        <td>${detail.MRP?.toFixed(2) || '-'}</td>
-                        <td>${detail.ExpiryDate ? new Date(detail.ExpiryDate).toLocaleDateString() : '-'}</td>
+                        <td>${escapeHtml(pn)}</td>
+                        <td>${escapeHtml(attrs)}</td>
+                        <td>${qty}</td>
+                        <td>${Number(price).toFixed(2)}</td>
+                        <td>${mrp != null ? Number(mrp).toFixed(2) : '-'}</td>
+                        <td>${exp ? new Date(exp).toLocaleDateString() : '-'}</td>
                     </tr>
                 `;
             });
@@ -671,15 +727,21 @@
                 `;
                 
                 stockBatches.forEach(stock => {
+                    const sid = stock.id_Stock ?? stock.ID_Stock ?? stock.iD_Stock ?? 0;
+                    const fkPv = stock.fk_ProductVariant ?? stock.FK_ProductVariant ?? stock.fkProductVariant ?? stock.FKProductVariant ?? 0;
+                    const qty = stock.quantity ?? stock.Quantity ?? 0;
+                    const created = stock.createdOn ?? stock.CreatedOn;
+                    const cancelled = stock.cancelled ?? stock.Cancelled ?? false;
+                    const skuText = stock.sku ?? stock.SKU ?? (fkPv ? `SKU #${fkPv}` : '-');
                     html += `
                         <tr>
-                            <td>${stock.ID_Stock}</td>
-                            <td>SKU #${stock.FK_ProductVariant}</td>
-                            <td>${stock.Quantity}</td>
-                            <td>${stock.CreatedOn ? new Date(stock.CreatedOn).toLocaleDateString() : '-'}</td>
+                            <td>${sid || '-'}</td>
+                            <td>${escapeHtml(skuText)}</td>
+                            <td>${qty}</td>
+                            <td>${created ? new Date(created).toLocaleDateString() : '-'}</td>
                             <td>
-                                <span class="badge ${stock.Cancelled ? 'bg-danger' : 'bg-success'}">
-                                    ${stock.Cancelled ? 'Cancelled' : 'Active'}
+                                <span class="badge ${cancelled ? 'bg-danger' : 'bg-success'}">
+                                    ${cancelled ? 'Cancelled' : 'Active'}
                                 </span>
                             </td>
                         </tr>
