@@ -953,7 +953,7 @@
             } else {
                 handleApiError?.('failure', 'Save SKU (business)', { url, method: 'POST', payload: input, response, result });
                 // CommonResponse { StatusCode, ResponseMsg } OR other error shapes
-                const msg = result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? result?.Message || 'Error saving SKU.';
+                const msg = result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? result?.Message;
                 const errs = result?.errors || result?.Errors || [];
                 if (Array.isArray(errs) && errs.length > 0) {
                     showError('Error', escapeHtml(msg) + '<br><br>' + errs.map(escapeHtml).join('<br>'));

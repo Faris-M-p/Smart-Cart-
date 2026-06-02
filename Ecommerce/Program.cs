@@ -3,6 +3,7 @@ using Ecommerce.DataAccess;
 using Ecommerce.Interface;
 using Ecommerce.Repository;
 using Ecommerce.Interface.Admin;
+using Ecommerce.Middleware;
 using Ecommerce.Repository.Admin;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,13 +34,12 @@ var app = builder.Build();
 // =========================
 // Configure pipeline
 // =========================
-if (app.Environment.IsDevelopment())
+// Global middleware: all requests and unhandled errors pass through this pipeline
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+if (!app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
-}
-else
-{
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 

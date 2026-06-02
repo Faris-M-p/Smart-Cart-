@@ -278,6 +278,7 @@ namespace Ecommerce.Repository.Admin
                     {
                         FK_Product = normalized.FK_Product,
                         SKU = normalized.SKU,
+                        Barcode = normalized.SKU,
                         VariantLabel = variantLabel,
                         MRP = normalized.MRP,
                         SellingPrice = normalized.SellingPrice,
@@ -305,15 +306,20 @@ namespace Ecommerce.Repository.Admin
 
                     return Ok(entity.ID_ProductVariant, "Product variant created successfully.");
                 }
-                catch
+                catch (Exception ex)
                 {
                     await tx.RollbackAsync();
-                    throw;
+
+                    throw new Exception(
+                        $"Failed to create product variant. Original Error: {ex.Message}",
+                        ex);
                 }
             }
             catch (Exception ex)
             {
-                return Fail($"An error occurred while creating product variant: {ex.Message}");
+                throw new Exception(
+                        $"Failed to create product variant. Original Error: {ex.Message}",
+                        ex);
             }
         }
 
@@ -426,6 +432,7 @@ namespace Ecommerce.Repository.Admin
                     }
 
                     entity.SKU = normalized.SKU;
+                    entity.Barcode = normalized.SKU;
                     entity.VariantLabel = variantLabel;
                     entity.MRP = normalized.MRP;
                     entity.SellingPrice = normalized.SellingPrice;
@@ -459,9 +466,9 @@ namespace Ecommerce.Repository.Admin
                     throw;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating product variant: {ex.Message}");
+                throw;
             }
         }
 
@@ -517,9 +524,9 @@ namespace Ecommerce.Repository.Admin
                     throw;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting product variant: {ex.Message}");
+                throw;
             }
         }
 
