@@ -203,6 +203,10 @@
 </div>
 
 <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        emptyState = window.__emptyStateInstance ||
+            (window.__emptyStateInstance = new EmptyStateHandler());
+    });
     let currentPage = 1;
     let pageSize = 10;
     let paginationInstance;
@@ -351,7 +355,7 @@
 
     async function loadSuppliers(page = 1) {
         currentPage = page;
-
+         debugger;
         const input = {
             searchText: document.getElementById('searchText').value || '',
             filterSupplierIDs: '',
@@ -360,7 +364,7 @@
             sortColumn: 0,
             sortMode: ''
         };
-
+        debugger;
         try {
             const response = await fetch('/Admin/Supplier/GetSupplierList', {
                 method: 'POST',
@@ -401,8 +405,7 @@
             if (paginationInstance && data.tableSettings) {
                 paginationInstance.render(data.tableSettings);
             }
-        } catch (error) {
-            console.error(error);
+        } catch (error) {           
             emptyState.showError(
                 'supplierTableBody',
                 "Unable to connect to server.",
