@@ -162,6 +162,20 @@ namespace Ecommerce.Repository.Admin
                         ValueName = vv.Name
                     }).ToListAsync();
 
+                var images = await _dbContext.ProductVariantImages.AsNoTracking()
+                    .Where(i => i.FK_ProductVariant == id)
+                    .OrderBy(i => i.DisplayOrder)
+                    .ThenBy(i => i.ID_ProductVariantImage)
+                    .Select(i => new ProductVariantImageDto
+                    {
+                        ID_ProductVariantImage = i.ID_ProductVariantImage,
+                        FK_ProductVariant = i.FK_ProductVariant,
+                        ImageUrl = i.ImageUrl,
+                        IsPrimary = i.IsPrimary,
+                        DisplayOrder = i.DisplayOrder
+                    })
+                    .ToListAsync();
+
                 return new ProductVariantDetail
                 {
                     ID_ProductVariant = row.ID_ProductVariant,
@@ -180,7 +194,8 @@ namespace Ecommerce.Repository.Admin
                             VariantId = a.FK_Variant,
                             VariantValueId = a.FK_VariantValue
                         })
-                        .ToList()
+                        .ToList(),
+                    Images = images
                 };
             }
             catch
@@ -504,11 +519,24 @@ namespace Ecommerce.Repository.Admin
                         return Fail("This product variant is already deleted.");
                     }
 
+                    var activeSkuCount = await _dbContext.ProductVariants
+                        .CountAsync(pv => pv.FK_Product == entity.FK_Product && !pv.Cancelled);
+                    if (activeSkuCount <= 1)
+                    {
+                        await tx.RollbackAsync();
+                        return Fail("Each product must have at least one SKU.");
+                    }
+
                     var attrs = await _dbContext.ProductVariantAttributes
                         .Where(a => a.FK_ProductVariant == entity.ID_ProductVariant)
                         .ToListAsync();
 
                     _dbContext.ProductVariantAttributes.RemoveRange(attrs);
+
+                    var images = await _dbContext.ProductVariantImages
+                        .Where(a => a.FK_ProductVariant == entity.ID_ProductVariant)
+                        .ToListAsync();
+                    _dbContext.ProductVariantImages.RemoveRange(images);
 
                     entity.Cancelled = true;
                     entity.CancelledOn = DateTime.Now;

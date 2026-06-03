@@ -212,6 +212,22 @@
                         </button>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Product Images</label>
+                        <div id="imageDropZone" class="border rounded p-3 text-center bg-light" style="cursor: pointer;">
+                            <div class="mb-2">
+                                <i class="ti ti-photo-up fs-3 text-primary"></i>
+                            </div>
+                            <div class="fw-semibold">Drag &amp; Drop Area</div>
+                            <div class="small text-muted mb-2">or click to upload images</div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnPickImages">
+                                <i class="ti ti-upload"></i> Upload Images
+                            </button>
+                            <input type="file" id="skuImageFiles" accept=".jpg,.jpeg,.png,.webp" multiple class="d-none">
+                        </div>
+                        <div class="form-text mt-1">Maximum 5 images. Allowed: jpg, jpeg, png, webp. Max 2MB each.</div>
+                        <div id="skuImagePreviewList" class="row g-2 mt-2"></div>
+                    </div>
+                    <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="isActive" name="IsActive" checked>
                             <label class="form-check-label" for="isActive">Active</label>
@@ -272,6 +288,9 @@
     let autoLabelEnabled = true;
     let lastGeneratedSku = '';
     let lastGeneratedLabel = '';
+    let skuImageItems = [];
+    let skuExistingImageIdsOnOpen = [];
+    let skuImageDragKey = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadProducts();
@@ -304,6 +323,48 @@
         modalProduct?.addEventListener('change', function () {
             updateVariantLabelPreview();
         });
+
+        const dropZone = document.getElementById('imageDropZone');
+        const fileInput = document.getElementById('skuImageFiles');
+        const pickButton = document.getElementById('btnPickImages');
+
+        pickButton?.addEventListener('click', function () {
+            fileInput?.click();
+        });
+
+        dropZone?.addEventListener('click', function (e) {
+            if (e.target && e.target.closest('#btnPickImages')) {
+                return;
+            }
+            fileInput?.click();
+        });
+
+        fileInput?.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                appendSelectedImages(Array.from(this.files));
+                this.value = '';
+            }
+        });
+
+        dropZone?.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropZone.classList.add('border-primary');
+        });
+
+        dropZone?.addEventListener('dragleave', function () {
+            dropZone.classList.remove('border-primary');
+        });
+
+        dropZone?.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary');
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (files.length > 0) {
+                appendSelectedImages(files);
+            }
+        });
+
+        renderSkuImagePreviews();
 
         document.getElementById('searchText')?.addEventListener('input', function () {
             const value = this.value.trim();
@@ -649,6 +710,14 @@
         autoLabelEnabled = true;
         lastGeneratedSku = '';
         lastGeneratedLabel = '';
+        skuImageItems.forEach(x => {
+            if (x.previewUrl && x.previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(x.previewUrl);
+            }
+        });
+        skuImageItems = [];
+        skuExistingImageIdsOnOpen = [];
+        renderSkuImagePreviews();
         
         // Reset variant attributes to one row
         const container = document.getElementById('variantAttributesContainer');
@@ -681,6 +750,13 @@
         try {
             autoSkuEnabled = false;
             autoLabelEnabled = false;
+            skuImageItems.forEach(x => {
+                if (x.previewUrl && x.previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(x.previewUrl);
+                }
+            });
+            skuImageItems = [];
+            skuExistingImageIdsOnOpen = [];
 
             const response = await fetch(`/Admin/ProductVariant/GetById/${productVariantID}`);
             if (!response.ok) throw new Error('Failed to fetch product variant');
@@ -715,6 +791,27 @@
                 });
             } else {
                 addVariantAttributeRow();
+            }
+
+            const imageResponse = await fetch(`/Admin/ProductVariant/GetImages/${productVariantID}`);
+            if (imageResponse.ok) {
+                const images = await imageResponse.json();
+                skuImageItems = (Array.isArray(images) ? images : []).map(img => ({
+                    key: `existing_${img.idProductVariantImage ?? img.ID_ProductVariantImage}`,
+                    isExisting: true,
+                    imageId: img.idProductVariantImage ?? img.ID_ProductVariantImage ?? 0,
+                    file: null,
+                    imageUrl: img.imageUrl ?? img.ImageUrl ?? '',
+                    previewUrl: img.imageUrl ?? img.ImageUrl ?? '',
+                    isPrimary: (img.isPrimary ?? img.IsPrimary ?? false) === true
+                }));
+                if (!skuImageItems.some(x => x.isPrimary) && skuImageItems.length > 0) {
+                    skuImageItems[0].isPrimary = true;
+                }
+                skuExistingImageIdsOnOpen = skuImageItems
+                    .filter(x => x.isExisting && x.imageId > 0)
+                    .map(x => x.imageId);
+                renderSkuImagePreviews();
             }
             
             updateVariantLabelPreview();
@@ -916,6 +1013,130 @@
         }
     }
 
+    function appendSelectedImages(files) {
+        if (!Array.isArray(files) || files.length === 0) {
+            return;
+        }
+
+        const allowed = new Set(['image/jpeg', 'image/png', 'image/webp']);
+        const extAllowed = ['.jpg', '.jpeg', '.png', '.webp'];
+
+        for (const file of files) {
+            const nameLower = (file.name || '').toLowerCase();
+            const hasValidExt = extAllowed.some(ext => nameLower.endsWith(ext));
+            if (!allowed.has(file.type) && !hasValidExt) {
+                showWarning('Validation Error', 'Only jpg, jpeg, png, and webp files are allowed.');
+                continue;
+            }
+            if ((file.size || 0) > 2 * 1024 * 1024) {
+                showWarning('Validation Error', 'Each image must be less than or equal to 2 MB.');
+                continue;
+            }
+            if (skuImageItems.length >= 5) {
+                showWarning('Validation Error', 'Maximum 5 images are allowed per SKU.');
+                break;
+            }
+
+            const key = `new_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            skuImageItems.push({
+                key,
+                isExisting: false,
+                imageId: 0,
+                file,
+                imageUrl: '',
+                previewUrl: URL.createObjectURL(file),
+                isPrimary: false
+            });
+        }
+
+        if (!skuImageItems.some(x => x.isPrimary) && skuImageItems.length > 0) {
+            skuImageItems[0].isPrimary = true;
+        }
+
+        renderSkuImagePreviews();
+    }
+
+    function renderSkuImagePreviews() {
+        const holder = document.getElementById('skuImagePreviewList');
+        if (!holder) return;
+
+        if (skuImageItems.length === 0) {
+            holder.innerHTML = '<div class="col-12 text-muted small">No images selected.</div>';
+            return;
+        }
+
+        holder.innerHTML = skuImageItems.map((item, index) => {
+            const url = item.previewUrl || item.imageUrl || '';
+            const primaryCls = item.isPrimary ? 'border-primary' : '';
+            return `
+                <div class="col-md-4">
+                    <div class="card h-100 ${primaryCls}" draggable="true"
+                        ondragstart="onSkuImageDragStart('${item.key}')"
+                        ondragover="onSkuImageDragOver(event)"
+                        ondrop="onSkuImageDrop('${item.key}')">
+                        <img src="${escapeHtml(url)}" class="card-img-top" style="height: 140px; object-fit: cover;" alt="SKU image ${index + 1}">
+                        <div class="card-body p-2">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="skuPrimaryImage" ${item.isPrimary ? 'checked' : ''}
+                                    onchange="setSkuPrimaryImage('${item.key}')">
+                                <label class="form-check-label small">Primary</label>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSkuImage('${item.key}')">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                                <span class="small text-muted">#${index + 1}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function onSkuImageDragStart(key) {
+        skuImageDragKey = key;
+    }
+
+    function onSkuImageDragOver(e) {
+        e.preventDefault();
+    }
+
+    function onSkuImageDrop(targetKey) {
+        if (!skuImageDragKey || skuImageDragKey === targetKey) {
+            return;
+        }
+
+        const fromIndex = skuImageItems.findIndex(x => x.key === skuImageDragKey);
+        const toIndex = skuImageItems.findIndex(x => x.key === targetKey);
+        if (fromIndex < 0 || toIndex < 0) {
+            return;
+        }
+
+        const [moved] = skuImageItems.splice(fromIndex, 1);
+        skuImageItems.splice(toIndex, 0, moved);
+        skuImageDragKey = null;
+        renderSkuImagePreviews();
+    }
+
+    function setSkuPrimaryImage(key) {
+        skuImageItems = skuImageItems.map(x => ({ ...x, isPrimary: x.key === key }));
+        renderSkuImagePreviews();
+    }
+
+    function removeSkuImage(key) {
+        const idx = skuImageItems.findIndex(x => x.key === key);
+        if (idx < 0) return;
+        const item = skuImageItems[idx];
+        if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(item.previewUrl);
+        }
+        skuImageItems.splice(idx, 1);
+        if (!skuImageItems.some(x => x.isPrimary) && skuImageItems.length > 0) {
+            skuImageItems[0].isPrimary = true;
+        }
+        renderSkuImagePreviews();
+    }
+
     function openDeleteModal(productVariantID) {
         document.getElementById('deleteProductVariantID').value = productVariantID;
         document.getElementById('deleteReason').value = '';
@@ -947,6 +1168,94 @@
             out.push({ variantId, variantValueId });
         });
         return out;
+    }
+
+    async function syncSkuImages(skuId) {
+        const currentExistingIds = skuImageItems
+            .filter(x => x.isExisting && x.imageId > 0)
+            .map(x => x.imageId);
+
+        const toDelete = skuExistingImageIdsOnOpen.filter(id => !currentExistingIds.includes(id));
+        for (const imageId of toDelete) {
+            await $.ajax({
+                url: '/Admin/ProductVariant/DeleteImage',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ imageId })
+            });
+        }
+
+        const newItems = skuImageItems.filter(x => !x.isExisting && x.file);
+        const existingOrder = skuImageItems
+            .filter(x => x.isExisting && x.imageId > 0)
+            .map(x => x.imageId);
+
+        if (newItems.length > 0) {
+            const formData = new FormData();
+            formData.append('SKUId', String(skuId));
+            existingOrder.forEach(id => formData.append('ExistingImageOrder', String(id)));
+
+            newItems.forEach((item) => {
+                formData.append('Files', item.file);
+            });
+
+            const newPrimaryIndex = newItems.findIndex(x => x.isPrimary);
+            if (newPrimaryIndex >= 0) {
+                formData.append('PrimaryIndex', String(newPrimaryIndex));
+            }
+
+            const uploadResponse = await $.ajax({
+                url: '/Admin/ProductVariant/UploadImages',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            });
+
+            const uploaded = uploadResponse?.images ?? uploadResponse?.Images ?? [];
+            const uploadedList = Array.isArray(uploaded) ? uploaded : [];
+            const knownExisting = new Set(existingOrder);
+            const addedRows = uploadedList
+                .filter(x => !knownExisting.has(x.idProductVariantImage ?? x.ID_ProductVariantImage))
+                .sort((a, b) =>
+                    (a.displayOrder ?? a.DisplayOrder ?? 0) - (b.displayOrder ?? b.DisplayOrder ?? 0));
+
+            let addCursor = 0;
+            skuImageItems = skuImageItems.map(item => {
+                if (item.isExisting) {
+                    return item;
+                }
+                const hit = addedRows[addCursor++];
+                return {
+                    key: `existing_${hit?.idProductVariantImage ?? hit?.ID_ProductVariantImage ?? 0}`,
+                    isExisting: true,
+                    imageId: hit?.idProductVariantImage ?? hit?.ID_ProductVariantImage ?? 0,
+                    file: null,
+                    imageUrl: hit?.imageUrl ?? hit?.ImageUrl ?? '',
+                    previewUrl: hit?.imageUrl ?? hit?.ImageUrl ?? '',
+                    isPrimary: item.isPrimary
+                };
+            });
+        }
+
+        const orderedIds = skuImageItems
+            .filter(x => x.imageId > 0)
+            .map(x => x.imageId);
+        const primary = skuImageItems.find(x => x.isPrimary && x.imageId > 0);
+        if (primary) {
+            await $.ajax({
+                url: '/Admin/ProductVariant/SetPrimaryImage',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    skuId,
+                    imageId: primary.imageId,
+                    orderedImageIds: orderedIds
+                })
+            });
+        }
+
+        skuExistingImageIdsOnOpen = orderedIds.slice();
     }
 
     async function saveProductVariant() {
@@ -1041,6 +1350,20 @@
                 (result?.success ?? result?.Success) === true;
 
             if (ok) {
+                const savedSkuId = Number(result?.responseCode ?? result?.ResponseCode ?? productVariantID) || productVariantID;
+                try {
+                    await syncSkuImages(savedSkuId);
+                } catch (imageSyncError) {
+                    console.error('Image sync failed:', imageSyncError);
+                    const msg = imageSyncError?.responseJSON?.responseMsg ||
+                        imageSyncError?.responseJSON?.ResponseMsg ||
+                        imageSyncError?.responseJSON?.message ||
+                        imageSyncError?.statusText ||
+                        'SKU saved, but image update failed.';
+                    showError('Image Error', msg);
+                    return;
+                }
+
                 const modal = bootstrap.Modal.getInstance(document.getElementById('productVariantModal'));
                 modal.hide();
                 loadProductVariants(currentPage);

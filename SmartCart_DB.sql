@@ -31,6 +31,10 @@ IF OBJECT_ID(N'[dbo].[ProductVariantAttributes]', N'U') IS NOT NULL
     DROP TABLE [dbo].[ProductVariantAttributes];
 GO
 
+IF OBJECT_ID(N'[dbo].[ProductVariantImages]', N'U') IS NOT NULL
+    DROP TABLE [dbo].[ProductVariantImages];
+GO
+
 IF OBJECT_ID(N'[dbo].[ProductVariants]', N'U') IS NOT NULL
     DROP TABLE [dbo].[ProductVariants];
 GO
@@ -205,7 +209,24 @@ CREATE TABLE [dbo].[ProductVariants] (
 GO
 
 /* ==========================================================
-   8) ProductVariantAttributes (physical table name: dbo.ProductVariantAttributes)
+   8) ProductVariantImages (physical table name: dbo.ProductVariantImages)
+   ========================================================== */
+CREATE TABLE [dbo].[ProductVariantImages] (
+    [ID_ProductVariantImage]  INT IDENTITY(1,1) NOT NULL,
+    [FK_ProductVariant]       INT NOT NULL,
+    [ImageUrl]                NVARCHAR(500) NOT NULL,
+    [IsPrimary]               BIT NOT NULL CONSTRAINT [DF_ProductVariantImages_IsPrimary] DEFAULT ((0)),
+    [DisplayOrder]            INT NOT NULL CONSTRAINT [DF_ProductVariantImages_DisplayOrder] DEFAULT ((0)),
+    [CreatedAt]               DATETIME NOT NULL CONSTRAINT [DF_ProductVariantImages_CreatedAt] DEFAULT (GETDATE()),
+
+    CONSTRAINT [PK_ProductVariantImages] PRIMARY KEY ([ID_ProductVariantImage]),
+    CONSTRAINT [FK_ProductVariantImages_ProductVariant] FOREIGN KEY ([FK_ProductVariant])
+        REFERENCES [dbo].[ProductVariants] ([ID_ProductVariant])
+);
+GO
+
+/* ==========================================================
+   9) ProductVariantAttributes (physical table name: dbo.ProductVariantAttributes)
    ========================================================== */
 CREATE TABLE [dbo].[ProductVariantAttributes] (
     [ID_ProductVariantAttribute]  INT IDENTITY(1,1) NOT NULL,
@@ -238,6 +259,18 @@ IF NOT EXISTS (
 BEGIN
     CREATE NONCLUSTERED INDEX [IX_Products_Name]
         ON [dbo].[Products] ([Name] ASC);
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = N'IX_ProductVariantImages_FK_ProductVariant'
+      AND object_id = OBJECT_ID(N'[dbo].[ProductVariantImages]')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_ProductVariantImages_FK_ProductVariant]
+        ON [dbo].[ProductVariantImages] ([FK_ProductVariant] ASC);
 END
 GO
 

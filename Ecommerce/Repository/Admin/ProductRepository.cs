@@ -84,6 +84,16 @@ namespace Ecommerce.Repository.Admin
                         SubCategoryName = sc.Name,
                         BrandName = b != null ? b.BrandName : null,
                         Description = p.Description,
+                        ImageUrl = (
+                            from pv in _dbContext.ProductVariants.AsNoTracking()
+                            join pvi in _dbContext.ProductVariantImages.AsNoTracking() on pv.ID_ProductVariant equals pvi.FK_ProductVariant
+                            where pv.FK_Product == p.ID_Product &&
+                                  !pv.Cancelled &&
+                                  pv.IsDefault &&
+                                  pvi.IsPrimary
+                            orderby pvi.DisplayOrder, pvi.ID_ProductVariantImage
+                            select pvi.ImageUrl
+                        ).FirstOrDefault(),
                         IsActive = p.IsActive,
                         Cancelled = p.Cancelled
                     }).ToListAsync();
@@ -134,6 +144,16 @@ namespace Ecommerce.Repository.Admin
                     SubCategoryName = sc.Name,
                     BrandName = b != null ? b.BrandName : null,
                     Description = p.Description,
+                    ImageUrl = (
+                        from pv in _dbContext.ProductVariants.AsNoTracking()
+                        join pvi in _dbContext.ProductVariantImages.AsNoTracking() on pv.ID_ProductVariant equals pvi.FK_ProductVariant
+                        where pv.FK_Product == p.ID_Product &&
+                              !pv.Cancelled &&
+                              pv.IsDefault &&
+                              pvi.IsPrimary
+                        orderby pvi.DisplayOrder, pvi.ID_ProductVariantImage
+                        select pvi.ImageUrl
+                    ).FirstOrDefault(),
                     IsActive = p.IsActive,
                     Cancelled = p.Cancelled
                 }).FirstOrDefaultAsync();

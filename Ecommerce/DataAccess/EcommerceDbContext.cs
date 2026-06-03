@@ -35,5 +35,7 @@ namespace Ecommerce.DataAccess
         public DbSet<ProductVariantEntity> ProductVariants => Set<ProductVariantEntity>();
 
         public DbSet<ProductVariantAttributeEntity> ProductVariantAttributes => Set<ProductVariantAttributeEntity>();
+
+        public DbSet<ProductVariantImageEntity> ProductVariantImages => Set<ProductVariantImageEntity>();
     }
 }

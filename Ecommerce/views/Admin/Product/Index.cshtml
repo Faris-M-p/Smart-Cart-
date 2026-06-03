@@ -302,6 +302,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (typeof EmptyStateHandler === 'function') {
+            emptyState = window.__emptyStateInstance || (window.__emptyStateInstance = new EmptyStateHandler());
+        } else {
+            console.error('EmptyStateHandler is not loaded. Check /Admin/assets/js/common/empty-state.js.');
+        }
+
         paginationInstance = new Pagination({
             containerId: 'pagination',
             infoId: 'paginationInfo',

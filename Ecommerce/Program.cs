@@ -5,6 +5,7 @@ using Ecommerce.Repository;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Middleware;
 using Ecommerce.Repository.Admin;
+using Ecommerce.Services.Admin;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,6 +85,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IProductVariantInterface, ProductVariantRepository>();
         services.AddTransient<IPurchaseInterface, PurchaseRepository>();
         services.AddTransient<IInventoryInterface, InventoryRepository>();
+        services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();
+        services.AddTransient<ProductVariantImageService>();
         
         return services;
     }

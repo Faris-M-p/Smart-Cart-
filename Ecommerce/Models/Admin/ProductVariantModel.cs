@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Ecommerce.CustomModelValidation;
+using Microsoft.AspNetCore.Http;
 
 namespace Ecommerce.Models.Admin
 {
@@ -86,6 +87,35 @@ namespace Ecommerce.Models.Admin
 
             [MaxLength(500)]
             public string? CancelledReason { get; set; }
+        }
+
+        public class ProductVariantImageUploadInput
+        {
+            [GreaterThanZero]
+            public int SKUId { get; set; }
+
+            public List<IFormFile> Files { get; set; } = new();
+
+            public int? PrimaryIndex { get; set; }
+
+            public List<int> ExistingImageOrder { get; set; } = new();
+        }
+
+        public class ProductVariantImageDeleteInput
+        {
+            [GreaterThanZero]
+            public int ImageId { get; set; }
+        }
+
+        public class ProductVariantImageSetPrimaryInput
+        {
+            [GreaterThanZero]
+            public int SKUId { get; set; }
+
+            [GreaterThanZero]
+            public int ImageId { get; set; }
+
+            public List<int> OrderedImageIds { get; set; } = new();
         }
 
         public class ProductVariantListInput
@@ -205,6 +235,27 @@ namespace Ecommerce.Models.Admin
 
             [JsonPropertyName("variantValues")]
             public List<VariantValueRowDetail> VariantValues { get; set; } = new();
+
+            [JsonPropertyName("images")]
+            public List<ProductVariantImageDto> Images { get; set; } = new();
+        }
+
+        public class ProductVariantImageDto
+        {
+            [JsonPropertyName("idProductVariantImage")]
+            public int ID_ProductVariantImage { get; set; }
+
+            [JsonPropertyName("fkProductVariant")]
+            public int FK_ProductVariant { get; set; }
+
+            [JsonPropertyName("imageUrl")]
+            public string ImageUrl { get; set; } = string.Empty;
+
+            [JsonPropertyName("isPrimary")]
+            public bool IsPrimary { get; set; }
+
+            [JsonPropertyName("displayOrder")]
+            public int DisplayOrder { get; set; }
         }
 
         public class VariantValueRowDetail
