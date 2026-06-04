@@ -51,7 +51,7 @@ namespace Ecommerce.Controllers.Admin
             }
             catch
             {
-                return StatusCode(500, new { message = "Internal server error" });
+                throw;
             }
         }
 
@@ -83,7 +83,7 @@ namespace Ecommerce.Controllers.Admin
             }
             catch
             {
-                return StatusCode(500, new { message = "Internal server error" });
+                throw;
             }
         }
     }

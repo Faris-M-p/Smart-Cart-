@@ -76,16 +76,9 @@ namespace Ecommerce.Controllers.Admin
                     Data = result
                 });
             }
-            catch (Exception ex)
+            catch
             {
-                //----------------------------------
-                // SERVER FAILURE
-                //----------------------------------
-                return StatusCode(500, new ApiResponse<TableOutput<Category>>
-                {
-                    Success = false,
-                    Message = "Internal server error"
-                });
+                throw;
             }
         }
 
@@ -119,14 +112,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _categoryInterface.CreateCategoryAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -159,14 +147,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _categoryInterface.UpdateCategoryAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -196,14 +179,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _categoryInterface.DeleteCategoryAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -221,9 +199,9 @@ namespace Ecommerce.Controllers.Admin
 
                 return Ok(row);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                throw;
             }
         }
        

@@ -97,7 +97,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return PurchaseHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -245,12 +245,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return new PurchaseDetailFull
-                {
-                    PurchaseHeader = new Purchase(),
-                    PurchaseDetails = new List<PurchaseDetail>(),
-                    StockBatches = new List<Stock>()
-                };
+                throw;
             }
         }
 
@@ -380,9 +375,9 @@ namespace Ecommerce.Repository.Admin
                     throw;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating purchase: {ex.Message}");
+                throw;
             }
         }
 
@@ -540,9 +535,9 @@ namespace Ecommerce.Repository.Admin
                     throw;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating purchase: {ex.Message}");
+                throw;
             }
         }
 
@@ -617,9 +612,9 @@ namespace Ecommerce.Repository.Admin
                     throw;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting purchase: {ex.Message}");
+                throw;
             }
         }
 

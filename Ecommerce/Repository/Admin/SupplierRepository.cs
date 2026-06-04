@@ -76,7 +76,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return SupplierHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -159,9 +159,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(entity.ID_Supplier, "Supplier created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating supplier: {ex.Message}");
+                throw;
             }
         }
 
@@ -224,9 +224,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(id, "Supplier updated successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating supplier: {ex.Message}");
+                throw;
             }
         }
 
@@ -264,9 +264,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(id, "Supplier deleted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting supplier: {ex.Message}");
+                throw;
             }
         }
 

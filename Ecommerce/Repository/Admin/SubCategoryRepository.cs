@@ -103,7 +103,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return SubCategoryHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -148,9 +148,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(entity.ID_SubCategory, "SubCategory created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating subcategory: {ex.Message}");
+                throw;
             }
         }
 
@@ -204,9 +204,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(input.SubCategoryID, "SubCategory updated successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating subcategory: {ex.Message}");
+                throw;
             }
         }
 
@@ -249,9 +249,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(id, "SubCategory deleted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting subcategory: {ex.Message}");
+                throw;
             }
         }
 

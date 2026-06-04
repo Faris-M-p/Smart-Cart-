@@ -67,7 +67,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return VariantValueHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -161,9 +161,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(entity.ID_VariantValue, "Variant value created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating variant value: {ex.Message}");
+                throw;
             }
         }
 
@@ -211,9 +211,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(n.Id, "Variant value updated successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating variant value: {ex.Message}");
+                throw;
             }
         }
 
@@ -257,9 +257,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(input.VariantValueID, "Variant value deleted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting variant value: {ex.Message}");
+                throw;
             }
         }
 

@@ -27,6 +27,11 @@ public class GlobalExceptionMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception for request {Method} {Path}", context.Request.Method, context.Request.Path);
+            if (context.Response.HasStarted)
+            {
+                throw;
+            }
+
             await HandleExceptionAsync(context, ex, _environment.IsDevelopment());
         }
     }
@@ -37,13 +42,16 @@ public class GlobalExceptionMiddleware
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
         object response;
-        if (includeDetails)
+         if (includeDetails)
         {
             response = new
             {
                 success = false,
+                exceptionType = ex.GetType().FullName,
                 message = ex.Message,
                 innerMessage = ex.InnerException?.Message,
+                path = context.Request.Path.Value,
+                method = context.Request.Method,
                 traceId = context.TraceIdentifier
             };
         }

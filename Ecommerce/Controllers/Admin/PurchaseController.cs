@@ -69,9 +69,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _purchaseInterface.GetPurchaseListAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                throw;
             }
         }
 
@@ -90,9 +90,9 @@ namespace Ecommerce.Controllers.Admin
 
                 return NotFound(new { message = "Purchase not found." });
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                throw;
             }
         }
 
@@ -118,9 +118,9 @@ namespace Ecommerce.Controllers.Admin
                     .ToList() ?? new List<Supplier>();
                 return Ok(suppliers);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred while fetching suppliers: {ex.Message}" });
+                throw;
             }
         }
 
@@ -145,9 +145,9 @@ namespace Ecommerce.Controllers.Admin
                 var products = result.TableData?.Where(p => !p.Cancelled).ToList() ?? new List<Product>();
                 return Ok(products);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred while fetching products: {ex.Message}" });
+                throw;
             }
         }
 
@@ -172,9 +172,9 @@ namespace Ecommerce.Controllers.Admin
                 var variants = result.TableData?.ToList() ?? new List<ProductVariant>();
                 return Ok(variants);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred while fetching product variants: {ex.Message}" });
+                throw;
             }
         }
 
@@ -225,14 +225,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _purchaseInterface.CreatePurchaseAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -283,14 +278,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _purchaseInterface.UpdatePurchaseAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -320,14 +310,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _purchaseInterface.DeletePurchaseAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
     }

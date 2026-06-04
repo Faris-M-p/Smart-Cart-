@@ -69,13 +69,9 @@ namespace Ecommerce.Controllers.Admin
                     Data = result
                 });
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new ApiResponse<TableOutput<VariantValue>>
-                {
-                    Success = false,
-                    Message = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -88,9 +84,9 @@ namespace Ecommerce.Controllers.Admin
                 var rows = await _variantValueInterface.GetByVariantIdAsync(variantId);
                 return Ok(rows);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                throw;
             }
         }
 
@@ -121,14 +117,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _variantValueInterface.CreateVariantValueAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -159,14 +150,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _variantValueInterface.UpdateVariantValueAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -194,14 +180,9 @@ namespace Ecommerce.Controllers.Admin
                 var result = await _variantValueInterface.DeleteVariantValueAsync(input);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new CommonResponse
-                {
-                    ResponseCode = -1,
-                    StatusCode = false,
-                    ResponseMsg = $"An error occurred: {ex.Message}"
-                });
+                throw;
             }
         }
 
@@ -220,9 +201,9 @@ namespace Ecommerce.Controllers.Admin
 
                 return NotFound(new { message = "Variant Value not found." });
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                throw;
             }
         }
 
@@ -255,9 +236,9 @@ namespace Ecommerce.Controllers.Admin
 
                 return Ok(new List<object>());
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                throw;
             }
         }
     }

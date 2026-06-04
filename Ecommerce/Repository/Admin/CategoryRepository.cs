@@ -110,7 +110,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return CategoryHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -147,9 +147,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(entity.ID_Category, "Category created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating category: {ex.Message}");
+                throw;
             }
         }
 
@@ -199,9 +199,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(input.CategoryID, "Category updated successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating category: {ex.Message}");
+                throw;
             }
         }
 
@@ -246,9 +246,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(categoryId, "Category deleted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting category: {ex.Message}");
+                throw;
             }
         }
 

@@ -70,7 +70,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return BrandHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -130,9 +130,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(entity.ID_Brand, "Brand created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating brand: {ex.Message}");
+                throw;
             }
         }
 
@@ -182,9 +182,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(input.BrandID, "Brand updated successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating brand: {ex.Message}");
+                throw;
             }
         }
 
@@ -229,9 +229,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(brandId, "Brand deleted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting brand: {ex.Message}");
+                throw;
             }
         }
 

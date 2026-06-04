@@ -90,7 +90,7 @@ namespace Ecommerce.Repository
             }
             catch
             {
-                return ShopHelper.EmptyTableOutput(input);
+                throw;
             }
         }
     }

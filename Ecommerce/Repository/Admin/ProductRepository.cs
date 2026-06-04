@@ -114,7 +114,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return ProductHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -208,9 +208,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(entity.ID_Product, "Product created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while creating product: {ex.Message}");
+                throw;
             }
         }
 
@@ -272,9 +272,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(input.ID_Product, "Product updated successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while updating product: {ex.Message}");
+                throw;
             }
         }
 
@@ -310,9 +310,9 @@ namespace Ecommerce.Repository.Admin
 
                 return Ok(input.ID_Product, "Product deleted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while deleting product: {ex.Message}");
+                throw;
             }
         }
 

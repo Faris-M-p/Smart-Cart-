@@ -88,7 +88,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return InventoryHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -127,9 +127,9 @@ namespace Ecommerce.Repository.Admin
                 await _db.SaveChangesAsync();
                 return Ok(0, "Stock adjusted successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                return Fail($"An error occurred while adjusting stock: {ex.Message}");
+                throw;
             }
         }
 
