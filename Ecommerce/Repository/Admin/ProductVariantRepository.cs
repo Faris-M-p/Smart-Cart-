@@ -82,7 +82,8 @@ namespace Ecommerce.Repository.Admin
                         pv.IsActive,
                         pv.IsDefault,
                         pv.Cancelled,
-                        pv.CreatedAt
+                        pv.CreatedAt,
+                        TotalImages = _dbContext.ProductVariantImages.Count(i => i.FK_ProductVariant == pv.ID_ProductVariant)
                     })
                     .ToListAsync();
 
@@ -110,7 +111,8 @@ namespace Ecommerce.Repository.Admin
                         IsActive = pv.IsActive,
                         IsDefault = pv.IsDefault,
                         Cancelled = pv.Cancelled,
-                        CreatedAt = pv.CreatedAt
+                        CreatedAt = pv.CreatedAt,
+                        TotalImages = pv.TotalImages
                     };
                 }).ToList();
 
@@ -127,7 +129,7 @@ namespace Ecommerce.Repository.Admin
             }
             catch
             {
-                return ProductVariantHelper.EmptyTableOutput(input);
+                throw;
             }
         }
 
@@ -195,12 +197,14 @@ namespace Ecommerce.Repository.Admin
                             VariantValueId = a.FK_VariantValue
                         })
                         .ToList(),
-                    Images = images
+                    Images = images,
+                    PrimaryImageId = images.FirstOrDefault(x => x.IsPrimary)?.ID_ProductVariantImage,
+                    ImageOrder = images.Select(x => x.ID_ProductVariantImage).ToList()
                 };
             }
             catch
             {
-                return null;
+                throw;
             }
         }
 
@@ -281,60 +285,44 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Unable to build variant label; please enter a label.");
                 }
 
-                await using var tx = await _dbContext.Database.BeginTransactionAsync();
-                try
+                if (normalized.IsDefault)
                 {
-                    if (normalized.IsDefault)
-                    {
-                        await ClearDefaultFlagsForProductAsync(normalized.FK_Product, exceptVariantId: 0);
-                    }
-
-                    var entity = new ProductVariantEntity
-                    {
-                        FK_Product = normalized.FK_Product,
-                        SKU = normalized.SKU,
-                        Barcode = normalized.SKU,
-                        VariantLabel = variantLabel,
-                        MRP = normalized.MRP,
-                        SellingPrice = normalized.SellingPrice,
-                        IsActive = normalized.IsActive,
-                        IsDefault = normalized.IsDefault,
-                        CreatedAt = DateTime.Now,
-                        Cancelled = false
-                    };
-
-                    _dbContext.ProductVariants.Add(entity);
-                    await _dbContext.SaveChangesAsync();
-
-                    foreach (var r in resolved)
-                    {
-                        _dbContext.ProductVariantAttributes.Add(new ProductVariantAttributeEntity
-                        {
-                            FK_ProductVariant = entity.ID_ProductVariant,
-                            FK_Variant = r.FkVariant,
-                            FK_VariantValue = r.FkVariantValue
-                        });
-                    }
-
-                    await _dbContext.SaveChangesAsync();
-                    await tx.CommitAsync();
-
-                    return Ok(entity.ID_ProductVariant, "Product variant created successfully.");
+                    await ClearDefaultFlagsForProductAsync(normalized.FK_Product, exceptVariantId: 0);
                 }
-                catch (Exception ex)
+
+                var entity = new ProductVariantEntity
                 {
-                    await tx.RollbackAsync();
+                    FK_Product = normalized.FK_Product,
+                    SKU = normalized.SKU,
+                    Barcode = normalized.SKU,
+                    VariantLabel = variantLabel,
+                    MRP = normalized.MRP,
+                    SellingPrice = normalized.SellingPrice,
+                    IsActive = normalized.IsActive,
+                    IsDefault = normalized.IsDefault,
+                    CreatedAt = DateTime.Now,
+                    Cancelled = false
+                };
 
-                    throw new Exception(
-                        $"Failed to create product variant. Original Error: {ex.Message}",
-                        ex);
+                _dbContext.ProductVariants.Add(entity);
+                await _dbContext.SaveChangesAsync();
+
+                foreach (var r in resolved)
+                {
+                    _dbContext.ProductVariantAttributes.Add(new ProductVariantAttributeEntity
+                    {
+                        FK_ProductVariant = entity.ID_ProductVariant,
+                        FK_Variant = r.FkVariant,
+                        FK_VariantValue = r.FkVariantValue
+                    });
                 }
+
+                await _dbContext.SaveChangesAsync();
+                return Ok(entity.ID_ProductVariant, "Product variant created successfully.");
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception(
-                        $"Failed to create product variant. Original Error: {ex.Message}",
-                        ex);
+                throw;
             }
         }
 
@@ -422,11 +410,6 @@ namespace Ecommerce.Repository.Admin
                     return Fail("This product variant is deleted and cannot be edited.");
                 }
 
-                if (entity.FK_Product != normalized.FK_Product)
-                {
-                    return Fail("Product cannot be changed for an existing SKU.");
-                }
-
                 var labelRows = resolved.Select(r => (r.VariantName, r.ValueName)).ToList();
                 var autoLabel = ProductVariantHelper.GenerateVariantLabel(labelRows);
                 var variantLabel = string.IsNullOrEmpty(normalized.VariantLabel)
@@ -438,48 +421,38 @@ namespace Ecommerce.Repository.Admin
                     return Fail("Unable to build variant label; please enter a label.");
                 }
 
-                await using var tx = await _dbContext.Database.BeginTransactionAsync();
-                try
+                if (normalized.IsDefault)
                 {
-                    if (normalized.IsDefault)
-                    {
-                        await ClearDefaultFlagsForProductAsync(normalized.FK_Product, exceptVariantId: normalized.ID_ProductVariant);
-                    }
-
-                    entity.SKU = normalized.SKU;
-                    entity.Barcode = normalized.SKU;
-                    entity.VariantLabel = variantLabel;
-                    entity.MRP = normalized.MRP;
-                    entity.SellingPrice = normalized.SellingPrice;
-                    entity.IsActive = normalized.IsActive;
-                    entity.IsDefault = normalized.IsDefault;
-
-                    var existingAttrs = await _dbContext.ProductVariantAttributes
-                        .Where(a => a.FK_ProductVariant == entity.ID_ProductVariant)
-                        .ToListAsync();
-
-                    _dbContext.ProductVariantAttributes.RemoveRange(existingAttrs);
-
-                    foreach (var r in resolved)
-                    {
-                        _dbContext.ProductVariantAttributes.Add(new ProductVariantAttributeEntity
-                        {
-                            FK_ProductVariant = entity.ID_ProductVariant,
-                            FK_Variant = r.FkVariant,
-                            FK_VariantValue = r.FkVariantValue
-                        });
-                    }
-
-                    await _dbContext.SaveChangesAsync();
-                    await tx.CommitAsync();
-
-                    return Ok(normalized.ID_ProductVariant, "Product variant updated successfully.");
+                    await ClearDefaultFlagsForProductAsync(normalized.FK_Product, exceptVariantId: normalized.ID_ProductVariant);
                 }
-                catch
+
+                entity.SKU = normalized.SKU;
+                entity.Barcode = normalized.SKU;
+                entity.FK_Product = normalized.FK_Product;
+                entity.VariantLabel = variantLabel;
+                entity.MRP = normalized.MRP;
+                entity.SellingPrice = normalized.SellingPrice;
+                entity.IsActive = normalized.IsActive;
+                entity.IsDefault = normalized.IsDefault;
+
+                var existingAttrs = await _dbContext.ProductVariantAttributes
+                    .Where(a => a.FK_ProductVariant == entity.ID_ProductVariant)
+                    .ToListAsync();
+
+                _dbContext.ProductVariantAttributes.RemoveRange(existingAttrs);
+
+                foreach (var r in resolved)
                 {
-                    await tx.RollbackAsync();
-                    throw;
+                    _dbContext.ProductVariantAttributes.Add(new ProductVariantAttributeEntity
+                    {
+                        FK_ProductVariant = entity.ID_ProductVariant,
+                        FK_Variant = r.FkVariant,
+                        FK_VariantValue = r.FkVariantValue
+                    });
                 }
+
+                await _dbContext.SaveChangesAsync();
+                return Ok(normalized.ID_ProductVariant, "Product variant updated successfully.");
             }
             catch
             {
@@ -647,7 +620,7 @@ namespace Ecommerce.Repository.Admin
         private async Task<bool> CombinationExistsAsync(int fkProduct, IReadOnlyList<int> valueIds, int excludeVariantId)
         {
             var candidates = await _dbContext.ProductVariants.AsNoTracking()
-                .Where(pv => pv.FK_Product == fkProduct && !pv.Cancelled &&
+                .Where(pv => pv.FK_Product == fkProduct && !pv.Cancelled && pv.IsActive &&
                              (excludeVariantId == 0 || pv.ID_ProductVariant != excludeVariantId))
                 .Select(pv => pv.ID_ProductVariant)
                 .ToListAsync();

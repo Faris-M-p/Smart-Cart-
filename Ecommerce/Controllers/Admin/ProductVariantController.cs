@@ -1,7 +1,10 @@
+using Ecommerce.DataAccess;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Entities;
 using Ecommerce.Services.Admin;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using static Ecommerce.Models.Admin.ProductVariantModel;
 using static Ecommerce.Models.CommonModel;
 
@@ -11,6 +14,7 @@ namespace Ecommerce.Controllers.Admin
     public class ProductVariantController : Controller
     {
         private const int MaxFilesPerSku = 5;
+        private readonly EcommerceDbContext _dbContext;
         private readonly IProductVariantInterface _productVariantInterface;
         private readonly IProductVariantImageRepository _productVariantImageRepository;
         private readonly ProductVariantImageService _productVariantImageService;
@@ -18,12 +22,14 @@ namespace Ecommerce.Controllers.Admin
         private readonly ILogger<ProductVariantController> _logger;
 
         public ProductVariantController(
+            EcommerceDbContext dbContext,
             IProductVariantInterface productVariantInterface,
             IProductVariantImageRepository productVariantImageRepository,
             ProductVariantImageService productVariantImageService,
             IWebHostEnvironment environment,
             ILogger<ProductVariantController> logger)
         {
+            _dbContext = dbContext;
             _productVariantInterface = productVariantInterface;
             _productVariantImageRepository = productVariantImageRepository;
             _productVariantImageService = productVariantImageService;
@@ -84,7 +90,8 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
-        public async Task<IActionResult> Create([FromBody] ProductVariantUpdateInputVIEW viewInput)
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        public async Task<IActionResult> Create([FromForm] ProductVariantUpdateInputVIEW viewInput)
         {
             if (!ModelState.IsValid)
             {
@@ -95,7 +102,8 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(new { message = "Validation failed.", errors });
             }
 
-            if (viewInput.VariantValues == null || viewInput.VariantValues.Count == 0)
+            var variantRows = ResolveVariantValues(viewInput);
+            if (variantRows.Count == 0)
             {
                 return BadRequest(new { message = "At least one variant value row is required." });
             }
@@ -110,7 +118,7 @@ namespace Ecommerce.Controllers.Admin
                 SellingPrice = viewInput.SellingPrice,
                 IsActive = viewInput.IsActive,
                 IsDefault = viewInput.IsDefault,
-                VariantValues = viewInput.VariantValues
+                VariantValues = variantRows
                     .Where(v => v.VariantId > 0 && v.VariantValueId > 0)
                     .Select(v => new ProductVariantValueRowInput
                     {
@@ -121,13 +129,60 @@ namespace Ecommerce.Controllers.Admin
                 EnterBy = 1
             };
 
-            var result = await _productVariantInterface.CreateProductVariantAsync(input);
-            return Ok(result);
+            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+            var savedFiles = new List<string>();
+            var deferredDeleteFiles = new List<string>();
+            try
+            {
+                var result = await _productVariantInterface.CreateProductVariantAsync(input);
+                if (!result.StatusCode)
+                {
+                    await tx.RollbackAsync();
+                    return BadRequest(result);
+                }
+
+                var skuId = (int)result.ResponseCode;
+                if (skuId <= 0)
+                {
+                    await tx.RollbackAsync();
+                    return BadRequest(Fail("Failed to save SKU."));
+                }
+
+                var imageSync = await SyncImagesInCreateUpdateAsync(viewInput, skuId);
+                if (!imageSync.StatusCode)
+                {
+                    await tx.RollbackAsync();
+                    imageSync.SavedFileAbsolutePaths.ForEach(_productVariantImageService.TryDeleteFile);
+                    return BadRequest(Fail(imageSync.Message));
+                }
+
+                savedFiles.AddRange(imageSync.SavedFileAbsolutePaths);
+                deferredDeleteFiles.AddRange(imageSync.DeferredDeleteAbsolutePaths);
+
+                await tx.CommitAsync();
+                deferredDeleteFiles.ForEach(_productVariantImageService.TryDeleteFile);
+
+                var images = await GetImagesForSkuAsync(skuId);
+                return Ok(new
+                {
+                    result.ResponseCode,
+                    result.StatusCode,
+                    result.ResponseMsg,
+                    Images = images
+                });
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                savedFiles.ForEach(_productVariantImageService.TryDeleteFile);
+                throw;
+            }
         }
 
         [HttpPost]
         [Route("Update")]
-        public async Task<IActionResult> Update([FromBody] ProductVariantUpdateInputVIEW viewInput)
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        public async Task<IActionResult> Update([FromForm] ProductVariantUpdateInputVIEW viewInput)
         {
             if (!ModelState.IsValid)
             {
@@ -138,7 +193,8 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(new { message = "Validation failed.", errors });
             }
 
-            if (viewInput.VariantValues == null || viewInput.VariantValues.Count == 0)
+            var variantRows = ResolveVariantValues(viewInput);
+            if (variantRows.Count == 0)
             {
                 return BadRequest(new { message = "At least one variant value row is required." });
             }
@@ -153,7 +209,7 @@ namespace Ecommerce.Controllers.Admin
                 SellingPrice = viewInput.SellingPrice,
                 IsActive = viewInput.IsActive,
                 IsDefault = viewInput.IsDefault,
-                VariantValues = viewInput.VariantValues
+                VariantValues = variantRows
                     .Where(v => v.VariantId > 0 && v.VariantValueId > 0)
                     .Select(v => new ProductVariantValueRowInput
                     {
@@ -164,8 +220,54 @@ namespace Ecommerce.Controllers.Admin
                 EnterBy = 1
             };
 
-            var result = await _productVariantInterface.UpdateProductVariantAsync(input);
-            return Ok(result);
+            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+            var savedFiles = new List<string>();
+            var deferredDeleteFiles = new List<string>();
+            try
+            {
+                var result = await _productVariantInterface.UpdateProductVariantAsync(input);
+                if (!result.StatusCode)
+                {
+                    await tx.RollbackAsync();
+                    return BadRequest(result);
+                }
+
+                var skuId = viewInput.ID_ProductVariant;
+                if (skuId <= 0)
+                {
+                    await tx.RollbackAsync();
+                    return BadRequest(Fail("Invalid SKU."));
+                }
+
+                var imageSync = await SyncImagesInCreateUpdateAsync(viewInput, skuId);
+                if (!imageSync.StatusCode)
+                {
+                    await tx.RollbackAsync();
+                    imageSync.SavedFileAbsolutePaths.ForEach(_productVariantImageService.TryDeleteFile);
+                    return BadRequest(Fail(imageSync.Message));
+                }
+
+                savedFiles.AddRange(imageSync.SavedFileAbsolutePaths);
+                deferredDeleteFiles.AddRange(imageSync.DeferredDeleteAbsolutePaths);
+
+                await tx.CommitAsync();
+                deferredDeleteFiles.ForEach(_productVariantImageService.TryDeleteFile);
+
+                var images = await GetImagesForSkuAsync(skuId);
+                return Ok(new
+                {
+                    result.ResponseCode,
+                    result.StatusCode,
+                    result.ResponseMsg,
+                    Images = images
+                });
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                savedFiles.ForEach(_productVariantImageService.TryDeleteFile);
+                throw;
+            }
         }
 
         [HttpPost]
@@ -210,6 +312,12 @@ namespace Ecommerce.Controllers.Admin
         [RequestSizeLimit(20 * 1024 * 1024)]
         public async Task<IActionResult> UploadImages([FromForm] ProductVariantImageUploadInput input)
         {
+            var pathContext = await GetImagePathContextAsync(input.SKUId);
+            if (pathContext == null)
+            {
+                return BadRequest(Fail("Invalid SKU."));
+            }
+
             var validationError = _productVariantImageService.ValidateUploadInput(input);
             if (!string.IsNullOrWhiteSpace(validationError))
             {
@@ -227,7 +335,7 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(Fail($"Maximum {MaxFilesPerSku} images are allowed per SKU."));
             }
 
-            var uploadRoot = _productVariantImageService.GetUploadRoot(_environment.WebRootPath);
+            var uploadRoot = _productVariantImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
             Directory.CreateDirectory(uploadRoot);
 
             var orderedExisting = _productVariantImageService.ReorderExisting(existing, input.ExistingImageOrder);
@@ -239,13 +347,18 @@ namespace Ecommerce.Controllers.Admin
             var savedAbsolutePaths = new List<string>();
             var newRows = new List<ProductVariantImageEntity>();
             var nextOrder = orderedExisting.Count;
+            var nextImageNumber = _productVariantImageService.GetNextImageNumber(uploadRoot);
 
             try
             {
                 foreach (var file in input.Files)
                 {
                     var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    var fileName = $"{Guid.NewGuid():N}{ext}";
+                    var fileName = $"{nextImageNumber++}{ext}";
+                    while (System.IO.File.Exists(Path.Combine(uploadRoot, fileName)))
+                    {
+                        fileName = $"{nextImageNumber++}{ext}";
+                    }
                     var absolutePath = Path.Combine(uploadRoot, fileName);
                     await using (var stream = new FileStream(absolutePath, FileMode.Create))
                     {
@@ -257,7 +370,7 @@ namespace Ecommerce.Controllers.Admin
                     newRows.Add(new ProductVariantImageEntity
                     {
                         FK_ProductVariant = input.SKUId,
-                        ImageUrl = _productVariantImageService.BuildImageUrl(fileName),
+                        ImageUrl = _productVariantImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
                         IsPrimary = false,
                         DisplayOrder = nextOrder++,
                         CreatedAt = DateTime.Now
@@ -306,7 +419,7 @@ namespace Ecommerce.Controllers.Admin
                 }
 
                 _logger.LogError(ex, "Failed uploading images for SKU {SkuId}", input.SKUId);
-                return BadRequest(Fail("Failed to upload images."));
+                throw;
             }
         }
 
@@ -408,5 +521,196 @@ namespace Ecommerce.Controllers.Admin
                 StatusCode = false,
                 ResponseMsg = message
             };
+
+        private static List<VariantValueRowVIEW> ResolveVariantValues(ProductVariantUpdateInputVIEW viewInput)
+        {
+            if (viewInput.VariantValues != null && viewInput.VariantValues.Count > 0)
+            {
+                return viewInput.VariantValues;
+            }
+
+            if (string.IsNullOrWhiteSpace(viewInput.VariantValuesJson))
+            {
+                return new List<VariantValueRowVIEW>();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<VariantValueRowVIEW>>(viewInput.VariantValuesJson) ?? new List<VariantValueRowVIEW>();
+            }
+            catch
+            {
+                return new List<VariantValueRowVIEW>();
+            }
+        }
+
+        private async Task<List<ProductVariantImageDto>> GetImagesForSkuAsync(int skuId)
+        {
+            var rows = await _productVariantImageRepository.GetBySkuIdAsync(skuId);
+            return rows.Select(_productVariantImageService.MapToDto).ToList();
+        }
+
+        private async Task<ImageSyncResult> SyncImagesInCreateUpdateAsync(ProductVariantUpdateInputVIEW viewInput, int skuId)
+        {
+            var result = new ImageSyncResult();
+            var pathContext = await GetImagePathContextAsync(skuId);
+            if (pathContext == null)
+            {
+                return ImageSyncResult.Fail("Invalid SKU.");
+            }
+
+            var existing = await _productVariantImageRepository.GetBySkuIdAsync(skuId);
+            var removedIds = (viewInput.RemovedImageIds ?? new List<int>()).Where(x => x > 0).Distinct().ToHashSet();
+
+            var orderedExisting = _productVariantImageService.ReorderExisting(existing, viewInput.ExistingImageOrder);
+            orderedExisting = orderedExisting
+                .Where(x => !removedIds.Contains(x.ID_ProductVariantImage))
+                .ToList();
+
+            foreach (var row in existing.Where(x => removedIds.Contains(x.ID_ProductVariantImage)))
+            {
+                await _productVariantImageRepository.RemoveAsync(row);
+                var removePath = Path.Combine(_environment.WebRootPath, row.ImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                result.DeferredDeleteAbsolutePaths.Add(removePath);
+            }
+
+            var newRows = new List<ProductVariantImageEntity>();
+            var incomingFiles = viewInput.Files ?? new List<IFormFile>();
+            var uploadRoot = _productVariantImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
+            Directory.CreateDirectory(uploadRoot);
+            var nextImageNumber = _productVariantImageService.GetNextImageNumber(uploadRoot);
+
+            if (orderedExisting.Count + incomingFiles.Count > MaxFilesPerSku)
+            {
+                return ImageSyncResult.Fail($"Maximum {MaxFilesPerSku} images are allowed per SKU.");
+            }
+
+            foreach (var file in incomingFiles)
+            {
+                var uploadValidation = _productVariantImageService.ValidateUploadInput(new ProductVariantImageUploadInput
+                {
+                    SKUId = skuId,
+                    Files = new List<IFormFile> { file }
+                });
+                if (!string.IsNullOrWhiteSpace(uploadValidation))
+                {
+                    return ImageSyncResult.Fail(uploadValidation);
+                }
+
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                var fileName = $"{nextImageNumber++}{ext}";
+                while (System.IO.File.Exists(Path.Combine(uploadRoot, fileName)))
+                {
+                    fileName = $"{nextImageNumber++}{ext}";
+                }
+                var absolutePath = Path.Combine(uploadRoot, fileName);
+                await using (var stream = new FileStream(absolutePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                result.SavedFileAbsolutePaths.Add(absolutePath);
+                newRows.Add(new ProductVariantImageEntity
+                {
+                    FK_ProductVariant = skuId,
+                    ImageUrl = _productVariantImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
+                    IsPrimary = false,
+                    DisplayOrder = 0,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            var finalRows = new List<ProductVariantImageEntity>();
+            finalRows.AddRange(orderedExisting);
+            finalRows.AddRange(newRows);
+            var existingPrimaryId = orderedExisting.FirstOrDefault(x => x.IsPrimary)?.ID_ProductVariantImage;
+
+            if (finalRows.Count == 0)
+            {
+                return ImageSyncResult.Fail("At least one image is required for this SKU.");
+            }
+
+            foreach (var row in finalRows)
+            {
+                row.IsPrimary = false;
+            }
+
+            if (viewInput.PrimaryImageId.HasValue && viewInput.PrimaryImageId.Value > 0)
+            {
+                var target = finalRows.FirstOrDefault(x => x.ID_ProductVariantImage == viewInput.PrimaryImageId.Value);
+                if (target != null)
+                {
+                    target.IsPrimary = true;
+                }
+            }
+            else if (viewInput.PrimaryIndex.HasValue &&
+                     viewInput.PrimaryIndex.Value >= 0 &&
+                     viewInput.PrimaryIndex.Value < newRows.Count)
+            {
+                newRows[viewInput.PrimaryIndex.Value].IsPrimary = true;
+            }
+            else
+            {
+                var originalPrimary = existingPrimaryId.HasValue
+                    ? orderedExisting.FirstOrDefault(x => x.ID_ProductVariantImage == existingPrimaryId.Value)
+                    : null;
+                if (originalPrimary != null)
+                {
+                    originalPrimary.IsPrimary = true;
+                }
+            }
+
+            if (!finalRows.Any(x => x.IsPrimary))
+            {
+                finalRows[0].IsPrimary = true;
+            }
+
+            for (var i = 0; i < finalRows.Count; i++)
+            {
+                finalRows[i].DisplayOrder = i;
+            }
+
+            if (newRows.Count > 0)
+            {
+                await _productVariantImageRepository.AddRangeAsync(newRows);
+            }
+
+            await _productVariantImageRepository.SaveChangesAsync();
+            return result;
+        }
+
+        private sealed class ImageSyncResult
+        {
+            public bool StatusCode { get; set; } = true;
+            public string Message { get; set; } = string.Empty;
+            public List<string> SavedFileAbsolutePaths { get; } = new();
+            public List<string> DeferredDeleteAbsolutePaths { get; } = new();
+
+            public static ImageSyncResult Fail(string message) =>
+                new()
+                {
+                    StatusCode = false,
+                    Message = message
+                };
+        }
+
+        private async Task<ImagePathContext?> GetImagePathContextAsync(int skuId)
+        {
+            var row = await (
+                from pv in _dbContext.ProductVariants.AsNoTracking()
+                join p in _dbContext.Products.AsNoTracking() on pv.FK_Product equals p.ID_Product
+                where pv.ID_ProductVariant == skuId && !pv.Cancelled && !p.Cancelled
+                select new { p.Slug, pv.SKU }
+            ).FirstOrDefaultAsync();
+
+            if (row == null || string.IsNullOrWhiteSpace(row.Slug) || string.IsNullOrWhiteSpace(row.SKU))
+            {
+                return null;
+            }
+
+            return new ImagePathContext(row.Slug, row.SKU);
+        }
+
+        private sealed record ImagePathContext(string ProductSlug, string Sku);
     }
 }

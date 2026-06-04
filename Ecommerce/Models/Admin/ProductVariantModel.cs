@@ -76,8 +76,17 @@ namespace Ecommerce.Models.Admin
 
             public bool IsDefault { get; set; }
 
-            [MinLength(1, ErrorMessage = "At least one variant value is required.")]
             public List<VariantValueRowVIEW> VariantValues { get; set; } = new();
+
+            // Used when request is sent as multipart/form-data.
+            public string VariantValuesJson { get; set; } = string.Empty;
+
+            // Image fields submitted in the same create/update request.
+            public List<IFormFile> Files { get; set; } = new();
+            public List<int> ExistingImageOrder { get; set; } = new();
+            public List<int> RemovedImageIds { get; set; } = new();
+            public int? PrimaryIndex { get; set; }
+            public int? PrimaryImageId { get; set; }
         }
 
         public class ProductVariantDeleteInputVIEW
@@ -199,6 +208,9 @@ namespace Ecommerce.Models.Admin
 
             [JsonPropertyName("createdAt")]
             public DateTime? CreatedAt { get; set; }
+
+            [JsonPropertyName("totalImages")]
+            public int TotalImages { get; set; }
         }
 
         public class ProductVariantDetail
@@ -238,6 +250,12 @@ namespace Ecommerce.Models.Admin
 
             [JsonPropertyName("images")]
             public List<ProductVariantImageDto> Images { get; set; } = new();
+
+            [JsonPropertyName("primaryImageId")]
+            public int? PrimaryImageId { get; set; }
+
+            [JsonPropertyName("imageOrder")]
+            public List<int> ImageOrder { get; set; } = new();
         }
 
         public class ProductVariantImageDto

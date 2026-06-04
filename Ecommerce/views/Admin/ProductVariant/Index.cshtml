@@ -102,13 +102,14 @@
                                             <th class="text-muted">Price</th>
                                             <th class="text-muted">Active</th>
                                             <th class="text-muted">Default</th>
+                                            <th class="text-muted">Images</th>
                                             <th class="text-muted">Created</th>
                                             <th class="text-muted text-end">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="productVariantTableBody">
                                         <tr>
-                                            <td colspan="11" class="text-center py-5">
+                                            <td colspan="12" class="text-center py-5">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
@@ -570,7 +571,7 @@
             const tbody = document.getElementById('productVariantTableBody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="empty-state">
+                    <td colspan="12" class="empty-state">
                         <i class="ti ti-alert-circle"></i>
                         <h5>Error loading SKUs</h5>
                         <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading SKUs. Please try again.')}</p>
@@ -587,7 +588,7 @@
         if (!variants || variants.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="empty-state">
+                    <td colspan="12" class="empty-state">
                         <i class="ti ti-package-off"></i>
                         <h5>No SKUs found</h5>
                         <p class="text-muted">No SKUs found for this product. Try selecting a different product.</p>
@@ -609,6 +610,7 @@
             const sp = Number(pv.price ?? pv.Price ?? pv.sellingPrice ?? pv.SellingPrice ?? 0);
             const isDef = pv.isDefault ?? pv.IsDefault;
             const isAct = pv.isActive ?? pv.IsActive;
+            const totalImages = Number(pv.totalImages ?? pv.TotalImages ?? 0);
             const created = pv.createdAt ?? pv.CreatedAt;
             const defaultClass = isDef ? 'badge-active' : 'bg-secondary';
             const defaultText = isDef ? 'Yes' : 'No';
@@ -625,6 +627,7 @@
                     <td>${sp.toFixed(2)}</td>
                     <td><span class="badge ${activeClass}">${activeText}</span></td>
                     <td><span class="badge ${defaultClass}">${defaultText}</span></td>
+                    <td>${totalImages}</td>
                     <td>${created ? new Date(created).toLocaleDateString() : '—'}</td>
                     <td class="text-end">
                         <button class="btn-action" onclick="openEditModal(${id})" title="Edit">
@@ -1171,18 +1174,66 @@
     }
 
     async function syncSkuImages(skuId) {
+        async function postJson(url, payload) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            let result = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
+
+            if (!response.ok) {
+                const message =
+                    result?.responseMsg ??
+                    result?.ResponseMsg ??
+                    result?.message ??
+                    result?.Message ??
+                    `Request failed (${response.status})`;
+                throw new Error(message);
+            }
+
+            return result;
+        }
+
+        async function postForm(url, formData) {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData
+            });
+
+            let result = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
+
+            if (!response.ok) {
+                const message =
+                    result?.responseMsg ??
+                    result?.ResponseMsg ??
+                    result?.message ??
+                    result?.Message ??
+                    `Request failed (${response.status})`;
+                throw new Error(message);
+            }
+
+            return result;
+        }
+
         const currentExistingIds = skuImageItems
             .filter(x => x.isExisting && x.imageId > 0)
             .map(x => x.imageId);
 
         const toDelete = skuExistingImageIdsOnOpen.filter(id => !currentExistingIds.includes(id));
         for (const imageId of toDelete) {
-            await $.ajax({
-                url: '/Admin/ProductVariant/DeleteImage',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ imageId })
-            });
+            await postJson('/Admin/ProductVariant/DeleteImage', { imageId });
         }
 
         const newItems = skuImageItems.filter(x => !x.isExisting && x.file);
@@ -1204,13 +1255,7 @@
                 formData.append('PrimaryIndex', String(newPrimaryIndex));
             }
 
-            const uploadResponse = await $.ajax({
-                url: '/Admin/ProductVariant/UploadImages',
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false
-            });
+            const uploadResponse = await postForm('/Admin/ProductVariant/UploadImages', formData);
 
             const uploaded = uploadResponse?.images ?? uploadResponse?.Images ?? [];
             const uploadedList = Array.isArray(uploaded) ? uploaded : [];
@@ -1243,15 +1288,10 @@
             .map(x => x.imageId);
         const primary = skuImageItems.find(x => x.isPrimary && x.imageId > 0);
         if (primary) {
-            await $.ajax({
-                url: '/Admin/ProductVariant/SetPrimaryImage',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    skuId,
-                    imageId: primary.imageId,
-                    orderedImageIds: orderedIds
-                })
+            await postJson('/Admin/ProductVariant/SetPrimaryImage', {
+                skuId,
+                imageId: primary.imageId,
+                orderedImageIds: orderedIds
             });
         }
 
@@ -1304,25 +1344,44 @@
             return;
         }
 
-        const input = {
-            ID_ProductVariant: productVariantID,
-            FK_Product: fkProduct,
-            SKU: sku,
-            MRP: mrp,
-            SellingPrice: sellingPrice,
-            VariantLabel: variantLabel,
-            IsActive: isActive,
-            IsDefault: isDefault,
-            VariantValues: variantValues
-        };
+        const currentExistingIds = skuImageItems
+            .filter(x => x.isExisting && x.imageId > 0)
+            .map(x => x.imageId);
+        const removedImageIds = skuExistingImageIdsOnOpen.filter(id => !currentExistingIds.includes(id));
+        const newItems = skuImageItems.filter(x => !x.isExisting && x.file);
+        const primaryItem = skuImageItems.find(x => x.isPrimary);
+        const primaryExistingImageId = primaryItem?.isExisting ? (primaryItem.imageId || 0) : 0;
+        const primaryNewIndex = !primaryItem?.isExisting
+            ? newItems.findIndex(x => x.key === primaryItem?.key)
+            : -1;
+
+        const formData = new FormData();
+        formData.append('ID_ProductVariant', String(productVariantID));
+        formData.append('FK_Product', String(fkProduct));
+        formData.append('SKU', sku);
+        formData.append('MRP', String(mrp));
+        formData.append('SellingPrice', String(sellingPrice));
+        formData.append('VariantLabel', variantLabel || '');
+        formData.append('IsActive', String(isActive));
+        formData.append('IsDefault', String(isDefault));
+        formData.append('VariantValuesJson', JSON.stringify(variantValues));
+
+        currentExistingIds.forEach(id => formData.append('ExistingImageOrder', String(id)));
+        removedImageIds.forEach(id => formData.append('RemovedImageIds', String(id)));
+        newItems.forEach(item => formData.append('Files', item.file));
+
+        if (primaryExistingImageId > 0) {
+            formData.append('PrimaryImageId', String(primaryExistingImageId));
+        } else if (primaryNewIndex >= 0) {
+            formData.append('PrimaryIndex', String(primaryNewIndex));
+        }
 
         const url = productVariantID === 0 ? '/Admin/ProductVariant/Create' : '/Admin/ProductVariant/Update';
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
+                body: formData
             });
 
             let result = null;
@@ -1334,7 +1393,7 @@
 
             // Handle MVC validation 400s that return { message, errors }
             if (!response.ok) {
-                handleApiError?.('failure', 'Save SKU', { url, method: 'POST', payload: input, response, result });
+                handleApiError?.('failure', 'Save SKU', { url, method: 'POST', payload: { productVariantID, fkProduct, variantValuesCount: variantValues.length }, response, result });
                 const msg = result?.message || result?.Message || 'Validation failed.';
                 const errs = result?.errors || result?.Errors || [];
                 if (Array.isArray(errs) && errs.length > 0) {
@@ -1350,27 +1409,13 @@
                 (result?.success ?? result?.Success) === true;
 
             if (ok) {
-                const savedSkuId = Number(result?.responseCode ?? result?.ResponseCode ?? productVariantID) || productVariantID;
-                try {
-                    await syncSkuImages(savedSkuId);
-                } catch (imageSyncError) {
-                    console.error('Image sync failed:', imageSyncError);
-                    const msg = imageSyncError?.responseJSON?.responseMsg ||
-                        imageSyncError?.responseJSON?.ResponseMsg ||
-                        imageSyncError?.responseJSON?.message ||
-                        imageSyncError?.statusText ||
-                        'SKU saved, but image update failed.';
-                    showError('Image Error', msg);
-                    return;
-                }
-
                 const modal = bootstrap.Modal.getInstance(document.getElementById('productVariantModal'));
                 modal.hide();
                 loadProductVariants(currentPage);
                 const msg = result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? result?.Message;
                 showSuccess('Success', msg || 'SKU saved successfully.');
             } else {
-                handleApiError?.('failure', 'Save SKU (business)', { url, method: 'POST', payload: input, response, result });
+                handleApiError?.('failure', 'Save SKU (business)', { url, method: 'POST', payload: { productVariantID, fkProduct, variantValuesCount: variantValues.length }, response, result });
                 // CommonResponse { StatusCode, ResponseMsg } OR other error shapes
                 const msg = result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? result?.Message;
                 const errs = result?.errors || result?.Errors || [];
@@ -1381,7 +1426,7 @@
                 }
             }
         } catch (error) {
-            handleApiError?.('crash', 'Save SKU', { url, method: 'POST', payload: input, error });
+            handleApiError?.('crash', 'Save SKU', { url, method: 'POST', payload: { productVariantID, fkProduct, variantValuesCount: variantValues.length }, error });
             showError('Error', 'Error saving SKU. Please try again.');
         }
     }

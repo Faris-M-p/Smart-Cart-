@@ -99,11 +99,32 @@ namespace Ecommerce.Services.Admin
             };
 
         // Used by controller to resolve the physical upload directory.
-        public string GetUploadRoot(string webRootPath) =>
-            Path.Combine(webRootPath, "uploads", "products");
+        public string GetUploadRoot(string webRootPath, string productSlug, string sku) =>
+            Path.Combine(webRootPath, "uploads", "products", NormalizePathSegment(productSlug), NormalizePathSegment(sku));
 
         // Used by controller to generate URL stored in database.
-        public string BuildImageUrl(string fileName) => $"/uploads/products/{fileName}";
+        public string BuildImageUrl(string productSlug, string sku, string fileName) =>
+            $"/uploads/products/{NormalizePathSegment(productSlug)}/{NormalizePathSegment(sku)}/{fileName}";
+
+        public int GetNextImageNumber(string folderPath)
+        {
+            if (!Directory.Exists(folderPath))
+            {
+                return 1;
+            }
+
+            var maxNumber = 0;
+            foreach (var file in Directory.GetFiles(folderPath))
+            {
+                var name = Path.GetFileNameWithoutExtension(file);
+                if (int.TryParse(name, out var n) && n > maxNumber)
+                {
+                    maxNumber = n;
+                }
+            }
+
+            return maxNumber + 1;
+        }
 
         // Used by controller when DB write fails and files must be cleaned up.
         public void TryDeleteFile(string absolutePath)
@@ -119,6 +140,23 @@ namespace Ecommerce.Services.Admin
             {
                 // Best-effort file cleanup only.
             }
+        }
+
+        private static string NormalizePathSegment(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "unknown";
+            }
+
+            var normalized = value.Trim();
+            foreach (var invalid in Path.GetInvalidFileNameChars())
+            {
+                normalized = normalized.Replace(invalid, '-');
+            }
+
+            normalized = normalized.Replace('/', '-').Replace('\\', '-');
+            return string.IsNullOrWhiteSpace(normalized) ? "unknown" : normalized;
         }
     }
 }
