@@ -1,0 +1,467 @@
+// SmartCart database structure (DBML)
+// Source of truth for diagram: keep in sync with Ecommerce/Database/01_Tables/*.sql
+// Docs: https://dbml.dbdiagram.io/docs
+
+// =============================================================================
+// Core / catalog
+// =============================================================================
+
+Table Users {
+  UserId int [pk, increment, not null]
+  UserName nvarchar(50) [not null]
+  PasswordHash nvarchar(255) [not null]
+  Email nvarchar(100) [not null]
+  PhoneNumber nvarchar(15)
+  IsAdmin bit [not null]
+  CreatedAt datetime [default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Category {
+  ID_Category int [pk, increment, not null]
+  Name nvarchar(100) [not null]
+  Description nvarchar(1000)
+  IsActive bit [not null, default: 1]
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table SubCategory {
+  ID_SubCategory int [pk, increment, not null]
+  Name nvarchar(100) [not null]
+  Description nvarchar(1000)
+  FK_Category int [not null]
+  IsActive bit [not null, default: 1]
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Brand {
+  ID_Brand int [pk, increment, not null]
+  BrandName nvarchar(100) [not null]
+  Description nvarchar(1000)
+  IsActive bit [not null, default: 1]
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Supplier {
+  ID_Supplier int [pk, increment, not null]
+  Name nvarchar(250) [not null]
+  CompanyName nvarchar(250)
+  Email nvarchar(250) [unique]
+  Phone nvarchar(20)
+  State nvarchar(150) [not null]
+  District nvarchar(150) [not null]
+  City nvarchar(150) [not null]
+  Address nvarchar(500)
+  Pincode nvarchar(10)
+  Description nvarchar(1000)
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table ProductStatus {
+  StatusId int [pk, increment, not null]
+  StatusName nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Products {
+  ID_Product int [pk, increment, not null]
+  FK_SubCategory int [not null]
+  FK_Brand int
+  Name nvarchar(255) [not null]
+  Slug nvarchar(255) [not null, unique]
+  Description nvarchar(max)
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [default: `getdate()`]
+  ModifiedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+}
+
+Table ProductImages {
+  ProductImageId int [pk, increment, not null]
+  ProductId int [not null]
+  ImageUrl nvarchar(max) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+// =============================================================================
+// Variants
+// =============================================================================
+
+Table Variants {
+  ID_Variant int [pk, increment, not null]
+  Name nvarchar(255) [not null, unique]
+  Description nvarchar(500)
+  DisplayOrder int [default: 0]
+  IsActive bit [default: 1]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+}
+
+Table VariantValues {
+  ID_VariantValue int [pk, increment, not null]
+  FK_Variant int [not null]
+  Name nvarchar(255) [not null]
+  Description nvarchar(500)
+  DisplayOrder int [default: 0]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+
+  indexes {
+    (FK_Variant, Name) [unique]
+  }
+}
+
+Table ProductVariants {
+  ID_ProductVariant int [pk, increment, not null]
+  FK_Product int [not null]
+  SKU nvarchar(100) [not null, unique]
+  Barcode nvarchar(100) [unique]
+  VariantLabel nvarchar(255) [not null]
+  Description nvarchar(1000)
+  MRP decimal(10,2) [not null]
+  SellingPrice decimal(10,2) [not null]
+  UnitOfMeasure nvarchar(20)
+  UnitValue decimal(10,3)
+  IsDefault bit [default: 0]
+  MaxOrderQty int [default: 10]
+  IsActive bit [default: 1]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+}
+
+Table ProductVariantAttributes {
+  ID_ProductVariantAttribute int [pk, increment, not null]
+  FK_ProductVariant int [not null]
+  FK_Variant int [not null]
+  FK_VariantValue int [not null]
+  Description nvarchar(500)
+
+  indexes {
+    (FK_ProductVariant, FK_Variant) [unique]
+  }
+}
+
+Table ProductVariantImages {
+  ID_ProductVariantImage int [pk, increment, not null]
+  FK_ProductVariant int [not null]
+  ImageUrl nvarchar(500) [not null]
+  IsPrimary bit [not null, default: 0]
+  DisplayOrder int [not null, default: 0]
+  CreatedAt datetime [not null, default: `getdate()`]
+}
+
+// =============================================================================
+// Purchasing / stock
+// =============================================================================
+
+Table Purchase {
+  ID_Purchase int [pk, increment, not null]
+  FK_Supplier int [not null]
+  PurchaseDate date [not null]
+  InvoiceNumber nvarchar(100)
+  TotalAmount decimal(12,2) [not null, default: 0]
+  Notes nvarchar(500)
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(500)
+  CancelledBy int
+}
+
+Table PurchaseDetail {
+  ID_PurchaseDetail int [pk, increment, not null]
+  FK_Purchase int [not null]
+  FK_ProductVariant int [not null]
+  Quantity int [not null]
+  PurchasePrice decimal(18,2) [not null, default: 0]
+  MRP decimal(18,2)
+  ExpiryDate date
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(500)
+  CancelledBy int
+}
+
+Table Stock {
+  ID_Stock int [pk, increment, not null]
+  FK_PurchaseDetail int [not null]
+  FK_ProductVariant int [not null]
+  Quantity int [not null]
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+  CancelledBy int
+}
+
+// =============================================================================
+// Cart / wishlist
+// =============================================================================
+
+Table Cart {
+  CartId int [pk, increment, not null]
+  UserId int [not null]
+  CreatedAt datetime [default: `getdate()`]
+}
+
+Table CartItems {
+  CartItemId int [pk, increment, not null]
+  CartId int [not null]
+  ProductId int [not null]
+  Quantity int [not null]
+  Price decimal(10,2) [not null]
+  CreatedAt datetime [default: `getdate()`]
+}
+
+Table Wishlist {
+  WishlistId int [pk, increment, not null]
+  UserId int [not null]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table WishlistItems {
+  WishlistItemId int [pk, increment, not null]
+  WishlistId int [not null]
+  ProductId int [not null]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+// =============================================================================
+// Orders / payments / shipping / ratings / audit
+// =============================================================================
+
+Table Orders {
+  OrderId int [pk, increment, not null]
+  UserId int [not null]
+  OrderDate datetime [default: `getdate()`]
+  TotalAmount decimal(10,2) [not null]
+  OrderStatus nvarchar(50) [not null]
+  ShippingAddress nvarchar(max)
+  PaymentMethod nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Payments {
+  PaymentId int [pk, increment, not null]
+  OrderId int [not null]
+  PaymentDate datetime [default: `getdate()`]
+  PaymentAmount decimal(10,2) [not null]
+  PaymentStatus nvarchar(50) [not null]
+  PaymentMethod nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Shipping {
+  ShippingId int [pk, increment, not null]
+  OrderId int [not null]
+  ShippingAddress nvarchar(max) [not null]
+  ShippingDate datetime
+  EstimatedDeliveryDate datetime
+  ShippingStatus nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Ratings {
+  RatingId int [pk, increment, not null]
+  ProductId int [not null]
+  UserId int [not null]
+  RatingValue decimal(2,1) [not null]
+  Review nvarchar(max)
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table AuditLogs {
+  LogId int [pk, increment, not null]
+  Action nvarchar(100) [not null]
+  UserId int [not null]
+  TableName nvarchar(100) [not null]
+  RecordId int [not null]
+  ChangeDetails nvarchar(max)
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+// =============================================================================
+// Relationships (only FKs defined in 01_Tables/*.sql)
+// =============================================================================
+
+Ref: SubCategory.FK_Category > Category.ID_Category
+Ref: Products.FK_SubCategory > SubCategory.ID_SubCategory
+Ref: Products.FK_Brand > Brand.ID_Brand
+Ref: ProductImages.ProductId > Products.ID_Product
+
+Ref: VariantValues.FK_Variant > Variants.ID_Variant
+Ref: ProductVariants.FK_Product > Products.ID_Product
+Ref: ProductVariantAttributes.FK_ProductVariant > ProductVariants.ID_ProductVariant
+Ref: ProductVariantAttributes.FK_Variant > Variants.ID_Variant
+Ref: ProductVariantAttributes.FK_VariantValue > VariantValues.ID_VariantValue
+Ref: ProductVariantImages.FK_ProductVariant > ProductVariants.ID_ProductVariant
+
+Ref: Purchase.FK_Supplier > Supplier.ID_Supplier
+Ref: PurchaseDetail.FK_Purchase > Purchase.ID_Purchase
+Ref: PurchaseDetail.FK_ProductVariant > ProductVariants.ID_ProductVariant
+Ref: Stock.FK_PurchaseDetail > PurchaseDetail.ID_PurchaseDetail
+Ref: Stock.FK_ProductVariant > ProductVariants.ID_ProductVariant
+
+Ref: CartItems.CartId > Cart.CartId
+Ref: CartItems.ProductId > Products.ID_Product
+Ref: WishlistItems.WishlistId > Wishlist.WishlistId
+Ref: WishlistItems.ProductId > Products.ID_Product
+
+Ref: Orders.UserId > Users.UserId
+Ref: Payments.OrderId > Orders.OrderId
+Ref: Shipping.OrderId > Orders.OrderId
+Ref: Ratings.ProductId > Products.ID_Product
+Ref: Ratings.UserId > Users.UserId
+
+// =============================================================================
+// Sample records (relationship-safe)
+// =============================================================================
+
+Records Users(UserId, UserName, PasswordHash, Email, PhoneNumber, IsAdmin, Cancelled) {
+  1, 'admin', 'hash_admin', 'admin@smartcart.local', '9000000001', 1, 0
+  2, 'alice', 'hash_alice', 'alice@example.com', '9000000002', 0, 0
+}
+
+Records Category(ID_Category, Name, Description, IsActive, Cancelled) {
+  1, 'Electronics', 'Electronic devices and accessories', 1, 0
+}
+
+Records SubCategory(ID_SubCategory, Name, Description, FK_Category, IsActive, Cancelled) {
+  1, 'Smartphones', 'Mobile phones', 1, 1, 0
+}
+
+Records Brand(ID_Brand, BrandName, Description, IsActive, Cancelled) {
+  1, 'Apple', 'Apple Inc.', 1, 0
+}
+
+Records Supplier(ID_Supplier, Name, CompanyName, Email, Phone, State, District, City, IsActive, Cancelled) {
+  1, 'Tech Distributors', 'Tech Distributors Pvt Ltd', 'orders@techdist.local', '9888000001', 'Kerala', 'Ernakulam', 'Kochi', 1, 0
+}
+
+Records ProductStatus(StatusId, StatusName, Cancelled) {
+  1, 'Active', 0
+  2, 'Inactive', 0
+}
+
+Records Products(ID_Product, FK_SubCategory, FK_Brand, Name, Slug, IsActive, Cancelled) {
+  1, 1, 1, 'iPhone 15', 'iphone-15', 1, 0
+}
+
+Records ProductImages(ProductImageId, ProductId, ImageUrl, Cancelled) {
+  1, 1, '/assets/img/product/iphone-15.png', 0
+}
+
+Records Variants(ID_Variant, Name, Description, DisplayOrder, IsActive, Cancelled) {
+  1, 'Color', 'Product color', 1, 1, 0
+  2, 'Storage', 'Storage capacity', 2, 1, 0
+}
+
+Records VariantValues(ID_VariantValue, FK_Variant, Name, DisplayOrder, Cancelled) {
+  1, 1, 'Black', 1, 0
+  2, 1, 'Blue', 2, 0
+  3, 2, '128GB', 1, 0
+  4, 2, '256GB', 2, 0
+}
+
+Records ProductVariants(ID_ProductVariant, FK_Product, SKU, VariantLabel, MRP, SellingPrice, IsDefault, IsActive, Cancelled) {
+  1, 1, 'IP15-BLK-128', 'Black / 128GB', 79900.00, 74900.00, 1, 1, 0
+}
+
+Records ProductVariantAttributes(ID_ProductVariantAttribute, FK_ProductVariant, FK_Variant, FK_VariantValue) {
+  1, 1, 1, 1
+  2, 1, 2, 3
+}
+
+Records ProductVariantImages(ID_ProductVariantImage, FK_ProductVariant, ImageUrl, IsPrimary, DisplayOrder) {
+  1, 1, '/assets/img/product/iphone-15-black.png', 1, 1
+}
+
+Records Purchase(ID_Purchase, FK_Supplier, PurchaseDate, InvoiceNumber, TotalAmount, Cancelled) {
+  1, 1, '2026-03-01', 'INV-1001', 70000.00, 0
+}
+
+Records PurchaseDetail(ID_PurchaseDetail, FK_Purchase, FK_ProductVariant, Quantity, PurchasePrice, MRP, Cancelled) {
+  1, 1, 1, 10, 7000.00, 79900.00, 0
+}
+
+Records Stock(ID_Stock, FK_PurchaseDetail, FK_ProductVariant, Quantity, Cancelled) {
+  1, 1, 1, 10, 0
+}
+
+Records Cart(CartId, UserId) {
+  1, 2
+}
+
+Records CartItems(CartItemId, CartId, ProductId, Quantity, Price) {
+  1, 1, 1, 1, 74900.00
+}
+
+Records Wishlist(WishlistId, UserId, Cancelled) {
+  1, 2, 0
+}
+
+Records WishlistItems(WishlistItemId, WishlistId, ProductId, Cancelled) {
+  1, 1, 1, 0
+}
+
+Records Orders(OrderId, UserId, TotalAmount, OrderStatus, ShippingAddress, PaymentMethod, Cancelled) {
+  1, 2, 74900.00, 'Confirmed', '12 MG Road, Kochi', 'UPI', 0
+}
+
+Records Payments(PaymentId, OrderId, PaymentAmount, PaymentStatus, PaymentMethod, Cancelled) {
+  1, 1, 74900.00, 'Paid', 'UPI', 0
+}
+
+Records Shipping(ShippingId, OrderId, ShippingAddress, ShippingStatus, Cancelled) {
+  1, 1, '12 MG Road, Kochi', 'Processing', 0
+}
+
+Records Ratings(RatingId, ProductId, UserId, RatingValue, Review, Cancelled) {
+  1, 1, 2, 4.5, 'Great phone', 0
+}
+
+Records AuditLogs(LogId, Action, UserId, TableName, RecordId, ChangeDetails, Cancelled) {
+  1, 'INSERT', 1, 'Products', 1, 'Created product iPhone 15', 0
+}

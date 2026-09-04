@@ -1,0 +1,14 @@
+---
+description: Keep SmartCart.dbml in sync with Database table SQL changes
+globs: Ecommerce/Database/**/*
+alwaysApply: false
+---
+
+# SmartCart DBML maintenance
+
+Whenever a database table, column, primary key, foreign key, or relationship is added, removed, or modified under `Ecommerce/Database/01_Tables/`:
+
+1. Update `Ecommerce/Database/SmartCart.dbml` in the same change.
+2. Mirror only the real schema — do not invent tables, columns, or relationships that are not defined in the SQL scripts.
+3. Keep sample `Records` consistent with existing foreign keys when touched.
+4. The DBML file must remain the latest complete SmartCart database structure for dbdiagram.io.
