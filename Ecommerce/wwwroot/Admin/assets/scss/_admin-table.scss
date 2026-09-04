@@ -117,6 +117,27 @@
   }
 }
 
+#userRoleTable.admin-master-list-table {
+  th,
+  td {
+    &.col-name {
+      width: 22%;
+    }
+
+    &.col-desc {
+      width: 33%;
+    }
+
+    &.col-status {
+      width: 12%;
+    }
+
+    &.col-actions {
+      width: 21%;
+    }
+  }
+}
+
 // Beat `.table-scroll-wrapper .table` rules from themes/pages/_product.scss (same specificity, later source)
 .table-scroll-wrapper .admin-master-list-table {
   min-width: 0;

@@ -1,0 +1,288 @@
+@model Ecommerce.Models.Admin.UserRoleModel.UserRole?
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var isBlocked = ViewBag.IsBlocked == true;
+    var blockedMessage = ViewBag.BlockedMessage as string ?? "This system role cannot be modified.";
+    var roleId = Model?.UserRoleID ?? 0;
+    var roleName = Model?.RoleName ?? string.Empty;
+    var roleDescription = Model?.Description ?? string.Empty;
+    var selectedPermissionIds = Model?.SelectedPermissionIds ?? new List<int>();
+}
+
+<style>
+    .permission-mapping-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .permission-module-card {
+        height: 100%;
+    }
+
+    .permission-module-card .card-body {
+        padding: 1rem 1.15rem;
+    }
+
+    .permission-module-card .form-check {
+        margin-bottom: 0.35rem;
+    }
+
+    .permission-mapping-error {
+        min-height: 1.25rem;
+    }
+</style>
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Permission Mapping</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/UserRole">User Roles</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Permission Mapping</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+@if (isBlocked)
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert alert-warning mb-3">@blockedMessage</div>
+                    <a href="/Admin/UserRole" class="btn btn-secondary">Back to User Roles</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="mb-2">Permission Mapping</h5>
+                    <div class="mb-1"><strong>Role:</strong> @roleName</div>
+                    <div class="text-muted">
+                        <strong>Description:</strong>
+                        @(string.IsNullOrWhiteSpace(roleDescription) ? "—" : roleDescription)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="permission-mapping-toolbar">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllPermissions">
+                            <label class="form-check-label fw-semibold" for="selectAllPermissions">Select All Permissions</label>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="/Admin/UserRole" class="btn btn-secondary">Cancel</a>
+                            <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
+                        </div>
+                    </div>
+                    <div class="invalid-feedback d-block permission-mapping-error" id="permissionTreeError"></div>
+                    <div id="permissionTree" class="row g-3">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!isBlocked)
+{
+<script>
+    const permissionUserRoleId = @roleId;
+    const existingPermissionIds = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedPermissionIds));
+    let permissionTreeBound = false;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadPermissionTree();
+    });
+
+    async function loadPermissionTree() {
+        const container = document.getElementById('permissionTree');
+
+        try {
+            const response = await fetch('/Admin/UserRole/GetPermissionTree');
+            if (!response.ok) throw new Error('Failed to fetch permissions');
+
+            const modules = await response.json();
+            const tree = Array.isArray(modules) ? modules : [];
+            renderPermissionTree(tree);
+            bindPermissionTreeEvents();
+            setSelectedPermissionIds(existingPermissionIds);
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = '<div class="col-12"><div class="text-danger">Unable to load permissions.</div></div>';
+        }
+    }
+
+    function renderPermissionTree(modules) {
+        const container = document.getElementById('permissionTree');
+        if (!modules.length) {
+            container.innerHTML = '<div class="col-12"><div class="text-muted">No permissions found.</div></div>';
+            return;
+        }
+
+        container.innerHTML = modules.map(module => {
+            const moduleId = module.moduleID ?? module.ModuleID;
+            const moduleName = module.displayName || module.DisplayName || module.moduleName || module.ModuleName || '';
+            const permissions = module.permissions || module.Permissions || [];
+            const items = permissions.map(p => {
+                const permissionId = p.permissionID ?? p.PermissionID;
+                const permissionName = p.permissionName || p.PermissionName || '';
+                return `
+                    <div class="form-check">
+                        <input class="form-check-input permission-check" type="checkbox"
+                               id="perm_${permissionId}" value="${permissionId}"
+                               data-module-id="${moduleId}">
+                        <label class="form-check-label" for="perm_${permissionId}">${escapeHtml(permissionName)}</label>
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card permission-module-card border">
+                        <div class="card-body">
+                            <div class="form-check fw-semibold mb-2">
+                                <input class="form-check-input module-check" type="checkbox" id="module_${moduleId}" data-module-id="${moduleId}">
+                                <label class="form-check-label" for="module_${moduleId}">${escapeHtml(moduleName)}</label>
+                            </div>
+                            ${items}
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function bindPermissionTreeEvents() {
+        const selectAll = document.getElementById('selectAllPermissions');
+        if (!permissionTreeBound) {
+            permissionTreeBound = true;
+            selectAll.addEventListener('change', function () {
+                document.querySelectorAll('.permission-check').forEach(cb => { cb.checked = this.checked; });
+                syncModuleAndSelectAll();
+            });
+        }
+
+        document.querySelectorAll('.module-check').forEach(moduleCb => {
+            moduleCb.addEventListener('change', function () {
+                document.querySelectorAll(`.permission-check[data-module-id="${this.dataset.moduleId}"]`)
+                    .forEach(cb => { cb.checked = this.checked; });
+                syncModuleAndSelectAll();
+            });
+        });
+
+        document.querySelectorAll('.permission-check').forEach(cb => {
+            cb.addEventListener('change', syncModuleAndSelectAll);
+        });
+    }
+
+    function syncModuleAndSelectAll() {
+        const allPerms = document.querySelectorAll('.permission-check');
+        const checkedPerms = document.querySelectorAll('.permission-check:checked');
+        const selectAll = document.getElementById('selectAllPermissions');
+        selectAll.checked = allPerms.length > 0 && checkedPerms.length === allPerms.length;
+        selectAll.indeterminate = checkedPerms.length > 0 && checkedPerms.length < allPerms.length;
+
+        document.querySelectorAll('.module-check').forEach(moduleCb => {
+            const modulePerms = document.querySelectorAll(`.permission-check[data-module-id="${moduleCb.dataset.moduleId}"]`);
+            const moduleChecked = document.querySelectorAll(`.permission-check[data-module-id="${moduleCb.dataset.moduleId}"]:checked`);
+            moduleCb.checked = modulePerms.length > 0 && moduleChecked.length === modulePerms.length;
+            moduleCb.indeterminate = moduleChecked.length > 0 && moduleChecked.length < modulePerms.length;
+        });
+    }
+
+    function setSelectedPermissionIds(selectedIds) {
+        const selected = new Set((selectedIds || []).map(Number));
+        document.querySelectorAll('.permission-check').forEach(cb => {
+            cb.checked = selected.has(Number(cb.value));
+        });
+        syncModuleAndSelectAll();
+    }
+
+    function getSelectedPermissionIds() {
+        return Array.from(document.querySelectorAll('.permission-check:checked'))
+            .map(cb => parseInt(cb.value, 10))
+            .filter(id => id > 0);
+    }
+
+    async function savePermissions() {
+        const selectedPermissionIds = getSelectedPermissionIds();
+        const errorEl = document.getElementById('permissionTreeError');
+        errorEl.textContent = '';
+
+        if (!selectedPermissionIds.length) {
+            errorEl.textContent = 'At least one permission must be selected.';
+            showWarning('Validation Error', 'At least one permission must be selected.');
+            return;
+        }
+
+        const input = {
+            id_UserRole: permissionUserRoleId,
+            selectedPermissionIds: selectedPermissionIds
+        };
+
+        const url = '/Admin/UserRole/SavePermissions';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) {
+                handleApiError?.('failure', 'Permission Mapping Save', { url, method: 'POST', payload: input, response, result: null });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.statusCode || result.StatusCode) {
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Permissions saved successfully.');
+                window.location.href = '/Admin/UserRole';
+            } else {
+                handleApiError?.('failure', 'Permission Mapping Save (business)', { url, method: 'POST', payload: input, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving permissions.');
+            }
+        } catch (error) {
+            console.error(error);
+            handleApiError?.('crash', 'Permission Mapping Save', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error saving permissions. Please try again.');
+        }
+    }
+
+    function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+</script>
+}

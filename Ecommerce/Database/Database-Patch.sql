@@ -53,6 +53,10 @@ GO
 :r .\01_Tables\Patch.sql
 GO
 
+/* Seed: comment unused :r lines inside 05_Seed\Patch.sql */
+:r .\05_Seed\Patch.sql
+GO
+
 /* Procedures: comment unused :r lines inside each module Patch.sql.
    To skip a whole module, comment that module's :r line below. */
 
@@ -69,6 +73,10 @@ GO
 :r .\02_Procedures\01_Admin\06_Purchases\Patch.sql
 GO
 :r .\02_Procedures\01_Admin\07_Stock\Patch.sql
+GO
+:r .\02_Procedures\01_Admin\08_UserRoles\Patch.sql
+GO
+:r .\02_Procedures\01_Admin\09_Permissions\Patch.sql
 GO
 :r .\02_Procedures\02_Users\01_Shop\Patch.sql
 GO

@@ -37,5 +37,15 @@ namespace Ecommerce.DataAccess
         public DbSet<ProductVariantAttributeEntity> ProductVariantAttributes => Set<ProductVariantAttributeEntity>();
 
         public DbSet<ProductVariantImageEntity> ProductVariantImages => Set<ProductVariantImageEntity>();
+
+        public DbSet<UserRoleEntity> UserRoles => Set<UserRoleEntity>();
+
+        public DbSet<ModuleEntity> Modules => Set<ModuleEntity>();
+
+        public DbSet<PermissionEntity> Permissions => Set<PermissionEntity>();
+
+        public DbSet<UserRolePermissionEntity> UserRolePermissions => Set<UserRolePermissionEntity>();
+
+        public DbSet<AdminUserEntity> AdminUsers => Set<AdminUserEntity>();
     }
 }

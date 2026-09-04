@@ -323,6 +323,80 @@ Table AuditLogs {
 }
 
 // =============================================================================
+// Admin / roles
+// =============================================================================
+
+Table UserRoles {
+  ID_UserRole int [pk, increment, not null]
+  RoleName nvarchar(100) [unique, not null]
+  Description nvarchar(1000)
+  IsSystemRole bit [not null, default: 0]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Modules {
+  ID_Module int [pk, increment, not null]
+  ModuleName nvarchar(100) [unique, not null]
+  DisplayName nvarchar(150) [not null]
+  DisplayOrder int [not null, default: 0]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table Permissions {
+  ID_Permission int [pk, increment, not null]
+  FK_Module int [not null]
+  PermissionName nvarchar(100) [not null]
+  PermissionCode nvarchar(150) [unique, not null]
+  DisplayOrder int [not null, default: 0]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table AdminUsers {
+  ID_AdminUser int [pk, increment, not null]
+  FK_UserRole int [not null]
+  UserName nvarchar(50) [unique, not null]
+  PasswordHash nvarchar(255) [not null]
+  FullName nvarchar(150) [not null]
+  Email nvarchar(100) [not null]
+  PhoneNumber nvarchar(15)
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+}
+
+Table UserRolePermissions {
+  ID_UserRolePermission int [pk, increment, not null]
+  FK_UserRole int [not null]
+  FK_Permission int [not null]
+  CreatedAt datetime [not null, default: `getdate()`]
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  indexes {
+    (FK_UserRole, FK_Permission) [unique]
+  }
+}
+
+// =============================================================================
 // Relationships (only FKs defined in 01_Tables/*.sql)
 // =============================================================================
 
@@ -354,6 +428,11 @@ Ref: Payments.OrderId > Orders.OrderId
 Ref: Shipping.OrderId > Orders.OrderId
 Ref: Ratings.ProductId > Products.ID_Product
 Ref: Ratings.UserId > Users.UserId
+
+Ref: Permissions.FK_Module > Modules.ID_Module
+Ref: AdminUsers.FK_UserRole > UserRoles.ID_UserRole
+Ref: UserRolePermissions.FK_UserRole > UserRoles.ID_UserRole
+Ref: UserRolePermissions.FK_Permission > Permissions.ID_Permission
 
 // =============================================================================
 // Sample records (relationship-safe)
@@ -464,4 +543,30 @@ Records Ratings(RatingId, ProductId, UserId, RatingValue, Review, Cancelled) {
 
 Records AuditLogs(LogId, Action, UserId, TableName, RecordId, ChangeDetails, Cancelled) {
   1, 'INSERT', 1, 'Products', 1, 'Created product iPhone 15', 0
+}
+
+Records UserRoles(ID_UserRole, RoleName, Description, IsSystemRole, IsActive, Cancelled) {
+  1, 'Admin', 'System Administrator with complete access', 1, 1, 0
+}
+
+Records Modules(ID_Module, ModuleName, DisplayName, DisplayOrder, IsActive, Cancelled) {
+  1, 'Dashboard', 'Dashboard', 10, 1, 0
+  2, 'Categories', 'Categories', 20, 1, 0
+  3, 'UserRoles', 'User Roles', 150, 1, 0
+}
+
+Records Permissions(ID_Permission, FK_Module, PermissionName, PermissionCode, DisplayOrder, IsActive, Cancelled) {
+  1, 1, 'View', 'Dashboard.View', 10, 1, 0
+  2, 2, 'View', 'Categories.View', 10, 1, 0
+  3, 3, 'View', 'UserRoles.View', 10, 1, 0
+}
+
+Records UserRolePermissions(ID_UserRolePermission, FK_UserRole, FK_Permission, Cancelled) {
+  1, 1, 1, 0
+  2, 1, 2, 0
+  3, 1, 3, 0
+}
+
+Records AdminUsers(ID_AdminUser, FK_UserRole, UserName, PasswordHash, FullName, Email, IsActive, Cancelled) {
+  1, 1, 'admin', 'hash_admin', 'System Administrator', 'admin@smartcart.local', 1, 0
 }

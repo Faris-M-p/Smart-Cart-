@@ -31,6 +31,14 @@ namespace Ecommerce.Models.Enums
         CreatedDate = 3
     }
 
+    public enum UserRoleSortColumn
+    {
+        Id = 0,
+        Name = 1,
+        Description = 2,
+        CreatedDate = 3
+    }
+
     public enum SupplierSortColumn
     {
         Id = 0,

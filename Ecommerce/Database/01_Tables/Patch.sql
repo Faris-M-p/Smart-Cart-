@@ -34,3 +34,8 @@
 :r .\01_Tables\Purchases.sql
 :r .\01_Tables\PurchaseDetails.sql
 :r .\01_Tables\Stock.sql
+:r .\01_Tables\UserRoles.sql
+:r .\01_Tables\Modules.sql
+:r .\01_Tables\Permissions.sql
+:r .\01_Tables\AdminUsers.sql
+:r .\01_Tables\UserRolePermissions.sql

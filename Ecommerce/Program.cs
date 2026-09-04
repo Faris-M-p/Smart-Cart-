@@ -85,6 +85,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IProductVariantInterface, ProductVariantRepository>();
         services.AddTransient<IPurchaseInterface, PurchaseRepository>();
         services.AddTransient<IInventoryInterface, InventoryRepository>();
+        services.AddTransient<IUserRoleInterface, UserRoleRepository>();
         services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();
         services.AddTransient<ProductVariantImageService>();
         

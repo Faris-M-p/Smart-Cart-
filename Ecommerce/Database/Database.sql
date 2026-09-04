@@ -12,6 +12,7 @@
    Flow:
      Database.sql
          → 01_Tables/Patch.sql          (all table :r lines uncommented)
+         → 05_Seed/Patch.sql            (all seed :r lines uncommented)
          → each procedure module Patch.sql  (all procedure :r lines uncommented)
 
    For incremental updates to an existing database, use Database-Patch.sql
@@ -51,6 +52,14 @@ GO
 PRINT '--- Creating tables ---';
 GO
 :r .\01_Tables\Patch.sql
+GO
+
+/* =============================================================================
+   1b) SEED DATA  (authentication / authorization)
+   ============================================================================= */
+PRINT '--- Seeding authentication data ---';
+GO
+:r .\05_Seed\Patch.sql
 GO
 
 /* =============================================================================
@@ -99,6 +108,16 @@ GO
 PRINT 'Admin / Stock';
 GO
 :r .\02_Procedures\01_Admin\07_Stock\Patch.sql
+GO
+
+PRINT 'Admin / UserRoles';
+GO
+:r .\02_Procedures\01_Admin\08_UserRoles\Patch.sql
+GO
+
+PRINT 'Admin / Permissions';
+GO
+:r .\02_Procedures\01_Admin\09_Permissions\Patch.sql
 GO
 
 PRINT 'Users / Shop';

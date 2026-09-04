@@ -22523,6 +22523,22 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
 #subCategoryTable.admin-master-list-table td.col-actions {
   width: 15%;
 }
+#userRoleTable.admin-master-list-table th.col-name,
+#userRoleTable.admin-master-list-table td.col-name {
+  width: 22%;
+}
+#userRoleTable.admin-master-list-table th.col-desc,
+#userRoleTable.admin-master-list-table td.col-desc {
+  width: 33%;
+}
+#userRoleTable.admin-master-list-table th.col-status,
+#userRoleTable.admin-master-list-table td.col-status {
+  width: 12%;
+}
+#userRoleTable.admin-master-list-table th.col-actions,
+#userRoleTable.admin-master-list-table td.col-actions {
+  width: 21%;
+}
 
 .table-scroll-wrapper .admin-master-list-table {
   min-width: 0;
