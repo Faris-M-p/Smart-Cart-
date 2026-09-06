@@ -10,7 +10,7 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Search Text")]
             public string SearchText { get; set; } = string.Empty;
 
-            [Display(Name = "Low Stock Only")]
+            [Display(Name = "Sort by Low Stock")]
             public bool LowStockOnly { get; set; } = false;
 
             [Display(Name = "Page Index")]

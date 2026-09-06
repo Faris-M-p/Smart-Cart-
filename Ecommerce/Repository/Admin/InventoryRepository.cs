@@ -61,16 +61,19 @@ namespace Ecommerce.Repository.Admin
                         (x.SKU ?? string.Empty).ToLower().Contains(s));
                 }
 
-                if (normalized.LowStockOnly)
-                {
-                    baseQuery = baseQuery.Where(x => x.AvailableQty < x.ReorderLevel);
-                }
-
                 var total = await baseQuery.LongCountAsync();
 
-                var rows = await baseQuery
-                    .OrderBy(x => x.ProductName)
-                    .ThenBy(x => x.SKU)
+                var orderedQuery = normalized.LowStockOnly
+                    ? baseQuery
+                        .OrderBy(x => x.AvailableQty >= x.ReorderLevel)
+                        .ThenBy(x => x.AvailableQty)
+                        .ThenBy(x => x.ProductName)
+                        .ThenBy(x => x.SKU)
+                    : baseQuery
+                        .OrderBy(x => x.ProductName)
+                        .ThenBy(x => x.SKU);
+
+                var rows = await orderedQuery
                     .Skip((normalized.PageIndex - 1) * normalized.PageSize)
                     .Take(normalized.PageSize)
                     .ToListAsync();
