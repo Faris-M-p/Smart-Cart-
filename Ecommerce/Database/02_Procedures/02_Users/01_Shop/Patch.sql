@@ -9,6 +9,18 @@
    ============================================================================= */
 
 :r .\02_Procedures\02_Users\01_Shop\GetProducts.sql
+GO
+PRINT N'GetProducts patch successfully completed.';
+GO
 :r .\02_Procedures\02_Users\01_Shop\GetProductDetails.sql
+GO
+PRINT N'GetProductDetails patch successfully completed.';
+GO
 :r .\02_Procedures\02_Users\01_Shop\GetShopFilters.sql
+GO
+PRINT N'GetShopFilters patch successfully completed.';
+GO
 :r .\02_Procedures\02_Users\01_Shop\GetProductDetailsById.sql
+GO
+PRINT N'GetProductDetailsById patch successfully completed.';
+GO

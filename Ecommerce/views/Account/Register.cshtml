@@ -1,0 +1,41 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Register";
+    var returnUrl = ViewBag.ReturnUrl as string ?? "/Shop";
+}
+
+<link rel="stylesheet" href="/css/content-pages.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Register</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Register</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="content-page">
+    <div class="container">
+        <div class="contact-card auth-card">
+            <h3>Create your SmartCart account</h3>
+            <p class="contact-note">Name, email, and password only.</p>
+            <p id="auth-status" class="shop-status" hidden></p>
+            <form id="user-register-form" class="contact-form" data-return-url="@returnUrl">
+                <label for="register-name">Name</label>
+                <input id="register-name" name="name" type="text" required minlength="2">
+                <label for="register-email">Email</label>
+                <input id="register-email" name="email" type="email" required>
+                <label for="register-password">Password</label>
+                <input id="register-password" name="password" type="password" required minlength="6">
+                <button type="submit">Create account</button>
+            </form>
+            <p class="contact-note">Already have an account? <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">Login</a></p>
+        </div>
+    </div>
+</section>
+
+<script src="/js/user-auth.js"></script>

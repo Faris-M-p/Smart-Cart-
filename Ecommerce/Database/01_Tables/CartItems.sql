@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[CartItems](
 	[CartItemId] [int] IDENTITY(1,1) NOT NULL,
 	[CartId] [int] NOT NULL,
 	[ProductId] [int] NOT NULL,
+	[ProductVariantId] [int] NULL,
 	[Quantity] [int] NOT NULL,
 	[Price] [decimal](10, 2) NOT NULL,
 	[CreatedAt] [datetime] NULL,

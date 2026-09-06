@@ -49,17 +49,27 @@ GO
 /* =============================================================================
    1) TABLES
    ============================================================================= */
-PRINT '--- Creating tables ---';
+PRINT N'--- Creating tables ---';
+GO
+:r .\01_Tables\Create.sql
+GO
+PRINT N'Tables create module successfully completed.';
+GO
+PRINT N'--- Applying table patches ---';
 GO
 :r .\01_Tables\Patch.sql
+GO
+PRINT N'Tables patch module successfully completed.';
 GO
 
 /* =============================================================================
    1b) SEED DATA  (authentication / authorization)
    ============================================================================= */
-PRINT '--- Seeding authentication data ---';
+PRINT N'--- Seeding authentication data ---';
 GO
 :r .\05_Seed\Patch.sql
+GO
+PRINT N'Seed patch module successfully completed.';
 GO
 
 /* =============================================================================
@@ -75,69 +85,116 @@ GO
 PRINT '--- Creating stored procedures ---';
 GO
 
-PRINT 'Admin / Products';
+PRINT N'--- Admin / Products ---';
 GO
 :r .\02_Procedures\01_Admin\01_Products\Patch.sql
 GO
+PRINT N'Admin / Products patch module successfully completed.';
+GO
 
-PRINT 'Admin / Brands';
+PRINT N'--- Admin / Brands ---';
 GO
 :r .\02_Procedures\01_Admin\02_Brands\Patch.sql
 GO
+PRINT N'Admin / Brands patch module successfully completed.';
+GO
 
-PRINT 'Admin / Categories';
+PRINT N'--- Admin / Categories ---';
 GO
 :r .\02_Procedures\01_Admin\03_Categories\Patch.sql
 GO
+PRINT N'Admin / Categories patch module successfully completed.';
+GO
 
-PRINT 'Admin / Variants';
+PRINT N'--- Admin / Variants ---';
 GO
 :r .\02_Procedures\01_Admin\04_Variants\Patch.sql
 GO
+PRINT N'Admin / Variants patch module successfully completed.';
+GO
 
-PRINT 'Admin / Suppliers';
+PRINT N'--- Admin / Suppliers ---';
 GO
 :r .\02_Procedures\01_Admin\05_Suppliers\Patch.sql
 GO
+PRINT N'Admin / Suppliers patch module successfully completed.';
+GO
 
-PRINT 'Admin / Purchases';
+PRINT N'--- Admin / Purchases ---';
 GO
 :r .\02_Procedures\01_Admin\06_Purchases\Patch.sql
 GO
+PRINT N'Admin / Purchases patch module successfully completed.';
+GO
 
-PRINT 'Admin / Stock';
+PRINT N'--- Admin / Stock ---';
 GO
 :r .\02_Procedures\01_Admin\07_Stock\Patch.sql
 GO
+PRINT N'Admin / Stock patch module successfully completed.';
+GO
 
-PRINT 'Admin / UserRoles';
+PRINT N'--- Admin / UserRoles ---';
 GO
 :r .\02_Procedures\01_Admin\08_UserRoles\Patch.sql
 GO
+PRINT N'Admin / UserRoles patch module successfully completed.';
+GO
 
-PRINT 'Admin / Permissions';
+PRINT N'--- Admin / Permissions ---';
 GO
 :r .\02_Procedures\01_Admin\09_Permissions\Patch.sql
 GO
+PRINT N'Admin / Permissions patch module successfully completed.';
+GO
 
-PRINT 'Admin / Employees';
+PRINT N'--- Admin / Employees ---';
 GO
 :r .\02_Procedures\01_Admin\10_Employees\Patch.sql
 GO
+PRINT N'Admin / Employees patch module successfully completed.';
+GO
 
-PRINT 'Admin / Auth';
+PRINT N'--- Admin / Auth ---';
 GO
 :r .\02_Procedures\01_Admin\11_Auth\Patch.sql
 GO
+PRINT N'Admin / Auth patch module successfully completed.';
+GO
 
-PRINT 'Users / Shop';
+PRINT N'--- Users / Shop ---';
 GO
 :r .\02_Procedures\02_Users\01_Shop\Patch.sql
 GO
+PRINT N'Users / Shop patch module successfully completed.';
+GO
 
-PRINT 'Common / Stock';
+PRINT N'--- Users / Cart ---';
+GO
+:r .\02_Procedures\02_Users\02_Cart\Patch.sql
+GO
+PRINT N'Users / Cart patch module successfully completed.';
+GO
+
+PRINT N'--- Users / Wishlist ---';
+GO
+:r .\02_Procedures\02_Users\03_Wishlist\Patch.sql
+GO
+PRINT N'Users / Wishlist patch module successfully completed.';
+GO
+
+PRINT N'--- Users / Auth ---';
+GO
+:r .\02_Procedures\02_Users\04_Auth\Patch.sql
+GO
+PRINT N'Users / Auth patch module successfully completed.';
+GO
+
+PRINT N'--- Common / Stock ---';
 GO
 :r .\02_Procedures\03_Common\01_Stock\Patch.sql
+GO
+PRINT N'Common / Stock patch module successfully completed.';
 GO
 
 /* =============================================================================

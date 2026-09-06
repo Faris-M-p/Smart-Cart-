@@ -9,4 +9,10 @@
    ============================================================================= */
 
 :r .\02_Procedures\01_Admin\07_Stock\ProProductVariantStockUpsert.sql
+GO
+PRINT N'ProProductVariantStockUpsert patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\07_Stock\ProProductVariantStockSelect.sql
+GO
+PRINT N'ProProductVariantStockSelect patch successfully completed.';
+GO

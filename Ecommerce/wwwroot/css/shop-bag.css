@@ -1,0 +1,261 @@
+.shop-bag-page {
+    padding-bottom: 56px;
+}
+
+.shop-bag-page .container {
+    width: min(1100px, calc(100% - 32px));
+    margin: 0 auto;
+}
+
+.shop-bag-note {
+    color: #666;
+    margin: 0 0 20px;
+}
+
+.shop-bag-empty {
+    padding: 28px 0;
+    color: #666;
+}
+
+.shop-cart-list {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.shop-cart-line {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+}
+
+.shop-cart-line img,
+.shop-cart-fallback {
+    width: 88px;
+    height: 88px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #f4f4f4;
+}
+
+.shop-cart-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 12px;
+}
+
+.shop-cart-line h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+}
+
+.shop-cart-line h3 a {
+    text-decoration: none;
+}
+
+.shop-cart-meta {
+    margin: 0 0 6px;
+    color: #777;
+    font-size: 13px;
+}
+
+.shop-cart-price {
+    font-weight: 600;
+}
+
+.shop-cart-old {
+    margin-left: 8px;
+    color: #999;
+    text-decoration: line-through;
+    font-weight: 400;
+}
+
+.shop-cart-oos {
+    display: inline-block;
+    margin-top: 6px;
+    color: #c0392b;
+    font-size: 13px;
+}
+
+.shop-cart-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.shop-qty {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.shop-qty button,
+.shop-bag-remove,
+.shop-bag-cta {
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.shop-qty button {
+    width: 32px;
+    height: 32px;
+    background: #f3f3f3;
+}
+
+.shop-qty span {
+    min-width: 24px;
+    text-align: center;
+}
+
+.shop-bag-remove {
+    background: transparent;
+    color: #c0392b;
+    padding: 0;
+}
+
+.shop-cart-summary {
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.shop-cart-summary strong {
+    font-size: 20px;
+}
+
+.shop-bag-cta {
+    display: inline-block;
+    background: #ff4545;
+    color: #fff;
+    padding: 10px 16px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.shop-wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.shop-wishlist-card {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+}
+
+.shop-wishlist-card img,
+.shop-wishlist-fallback {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: #f4f4f4;
+}
+
+.shop-wishlist-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+}
+
+.shop-wishlist-card .shop-wishlist-body {
+    padding: 12px 14px 16px;
+}
+
+.shop-wishlist-card h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+}
+
+.shop-wishlist-card h3 a {
+    text-decoration: none;
+}
+
+.header__account--btn {
+    position: relative;
+}
+
+.items__count {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ff4545;
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+}
+
+.items__count[data-count="0"] {
+    display: none;
+}
+
+.shop-details-actions {
+    align-items: center;
+}
+
+.shop-details-wish {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    color: #888;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shop-details-wish svg {
+    width: 22px;
+    height: 22px;
+}
+
+.shop-details-wish.is-active {
+    border-color: #ff4545;
+    color: #ff4545;
+    background: #fff5f5;
+}
+
+.shop-details-wish.is-active svg path {
+    fill: #ff4545;
+}
+
+@media (max-width: 800px) {
+    .shop-cart-line,
+    .shop-cart-summary {
+        grid-template-columns: 72px 1fr;
+    }
+
+    .shop-cart-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .shop-wishlist-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

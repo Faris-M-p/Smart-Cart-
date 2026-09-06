@@ -8,7 +8,8 @@
 
 Table Users {
   UserId int [pk, increment, not null]
-  UserName nvarchar(50) [not null]
+  UserName nvarchar(100) [not null]
+  FullName nvarchar(150)
   PasswordHash nvarchar(255) [not null]
   Email nvarchar(100) [not null]
   PhoneNumber nvarchar(15)
@@ -225,6 +226,7 @@ Table Stock {
 Table Cart {
   CartId int [pk, increment, not null]
   UserId int [not null]
+  SessionKey uuid
   CreatedAt datetime [default: `getdate()`]
 }
 
@@ -232,6 +234,7 @@ Table CartItems {
   CartItemId int [pk, increment, not null]
   CartId int [not null]
   ProductId int [not null]
+  ProductVariantId int
   Quantity int [not null]
   Price decimal(10,2) [not null]
   CreatedAt datetime [default: `getdate()`]
@@ -240,6 +243,7 @@ Table CartItems {
 Table Wishlist {
   WishlistId int [pk, increment, not null]
   UserId int [not null]
+  SessionKey uuid
   CreatedAt datetime [default: `getdate()`]
   Cancelled bit [default: 0]
   CancelledOn datetime
@@ -420,6 +424,7 @@ Ref: Stock.FK_ProductVariant > ProductVariants.ID_ProductVariant
 
 Ref: CartItems.CartId > Cart.CartId
 Ref: CartItems.ProductId > Products.ID_Product
+Ref: CartItems.ProductVariantId > ProductVariants.ID_ProductVariant
 Ref: WishlistItems.WishlistId > Wishlist.WishlistId
 Ref: WishlistItems.ProductId > Products.ID_Product
 
@@ -509,16 +514,16 @@ Records Stock(ID_Stock, FK_PurchaseDetail, FK_ProductVariant, Quantity, Cancelle
   1, 1, 1, 10, 0
 }
 
-Records Cart(CartId, UserId) {
-  1, 2
+Records Cart(CartId, UserId, SessionKey) {
+  1, 2, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 }
 
-Records CartItems(CartItemId, CartId, ProductId, Quantity, Price) {
-  1, 1, 1, 1, 74900.00
+Records CartItems(CartItemId, CartId, ProductId, ProductVariantId, Quantity, Price) {
+  1, 1, 1, 1, 1, 74900.00
 }
 
-Records Wishlist(WishlistId, UserId, Cancelled) {
-  1, 2, 0
+Records Wishlist(WishlistId, UserId, SessionKey, Cancelled) {
+  1, 2, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 0
 }
 
 Records WishlistItems(WishlistItemId, WishlistId, ProductId, Cancelled) {

@@ -7,7 +7,7 @@ REM  Executes Database-Patch.sql only. Does not recreate the full database.
 REM =============================================================================
 
 REM --- Connection (edit these values; do not commit real passwords) ---
-set "SQL_SERVER=localhost"
+set "SQL_SERVER=(localdb)\MSSQLLocalDB"
 set "SQL_DATABASE=SmartCart"
 
 REM Authentication: WINDOWS  (trusted / Integrated Security)
@@ -28,16 +28,26 @@ echo  Database : %SQL_DATABASE%
 echo  Auth     : %SQL_AUTH_MODE%
 echo ============================================
 echo.
+echo Applying Database-Patch.sql...
+echo Each script will print when it completes.
+echo.
+
+REM LocalDB is not running until something starts the instance.
+if /I "%SQL_SERVER%"=="(localdb)\MSSQLLocalDB" (
+    sqllocaldb start MSSQLLocalDB >nul 2>&1
+)
 
 where sqlcmd >nul 2>&1
 if errorlevel 1 (
     echo ERROR: sqlcmd was not found on PATH.
     echo Install SQL Server Command Line Utilities and try again.
+    pause
     exit /b 1
 )
 
 if not exist "Database-Patch.sql" (
     echo ERROR: Database-Patch.sql was not found in "%CD%".
+    pause
     exit /b 1
 )
 
@@ -45,19 +55,27 @@ if /I "%SQL_AUTH_MODE%"=="SQL" (
     if "%SQL_USER%"=="" (
         echo ERROR: SQL_USER is required when SQL_AUTH_MODE=SQL.
         echo Set SQL_USER and SQL_PASSWORD at the top of this file.
+        pause
         exit /b 1
     )
-    sqlcmd -S "%SQL_SERVER%" -U "%SQL_USER%" -P "%SQL_PASSWORD%" -d master -I -b -f 65001 -i "Database-Patch.sql" -v DatabaseName="%SQL_DATABASE%"
+    sqlcmd -S "%SQL_SERVER%" -U "%SQL_USER%" -P "%SQL_PASSWORD%" -d master -I -b -m-1 -f 65001 -i "Database-Patch.sql" -v DatabaseName="%SQL_DATABASE%"
 ) else (
-    sqlcmd -S "%SQL_SERVER%" -E -d master -I -b -f 65001 -i "Database-Patch.sql" -v DatabaseName="%SQL_DATABASE%"
+    sqlcmd -S "%SQL_SERVER%" -E -d master -I -b -m-1 -f 65001 -i "Database-Patch.sql" -v DatabaseName="%SQL_DATABASE%"
 )
 
 if errorlevel 1 (
     echo.
-    echo ERROR: Database patch failed. Review the sqlcmd output above.
+    echo ============================================
+    echo ERROR: Database patch failed.
+    echo ============================================
+    echo Review the sqlcmd output above.
+    pause
     exit /b 1
 )
 
 echo.
+echo ============================================
 echo SUCCESS: Patch applied to [%SQL_DATABASE%] on [%SQL_SERVER%].
+echo ============================================
+pause
 exit /b 0

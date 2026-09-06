@@ -9,8 +9,26 @@
    ============================================================================= */
 
 :r .\02_Procedures\01_Admin\03_Categories\ProCategoryUpdate.sql
+GO
+PRINT N'ProCategoryUpdate patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\03_Categories\ProCategoryListSelect.sql
+GO
+PRINT N'ProCategoryListSelect patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\03_Categories\ProCategoryDelete.sql
+GO
+PRINT N'ProCategoryDelete patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\03_Categories\ProSubCategoryUpdate.sql
+GO
+PRINT N'ProSubCategoryUpdate patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\03_Categories\ProSubCategoryListSelect.sql
+GO
+PRINT N'ProSubCategoryListSelect patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\03_Categories\ProSubCategoryDelete.sql
+GO
+PRINT N'ProSubCategoryDelete patch successfully completed.';
+GO

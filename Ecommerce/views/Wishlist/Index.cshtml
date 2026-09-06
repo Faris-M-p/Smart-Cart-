@@ -1,0 +1,29 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Wishlist";
+}
+
+<link rel="stylesheet" href="/css/shop-bag.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Wishlist</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Wishlist</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="shop-bag-page">
+    <div class="container">
+        <p class="shop-bag-note">Saved with the heart on product details. Up to 10 products. Login is not required yet.</p>
+        <p id="wishlist-status" class="shop-status" hidden></p>
+        <p id="wishlist-empty" class="shop-bag-empty" hidden>Your wishlist is empty. <a href="/Shop">Find something to save</a></p>
+        <div id="wishlist-grid" class="shop-wishlist-grid"></div>
+    </div>
+</section>
+
+<script src="/js/shop-wishlist.js"></script>

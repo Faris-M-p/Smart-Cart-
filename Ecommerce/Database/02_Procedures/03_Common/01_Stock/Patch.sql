@@ -9,3 +9,6 @@
    ============================================================================= */
 
 :r .\02_Procedures\03_Common\01_Stock\ProStockAvailableSelect.sql
+GO
+PRINT N'ProStockAvailableSelect patch successfully completed.';
+GO

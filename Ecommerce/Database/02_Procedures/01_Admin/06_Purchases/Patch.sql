@@ -9,5 +9,14 @@
    ============================================================================= */
 
 :r .\02_Procedures\01_Admin\06_Purchases\ProPurchaseUpdate.sql
+GO
+PRINT N'ProPurchaseUpdate patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\06_Purchases\ProPurchaseListSelect.sql
+GO
+PRINT N'ProPurchaseListSelect patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\06_Purchases\ProPurchaseDetailSelect.sql
+GO
+PRINT N'ProPurchaseDetailSelect patch successfully completed.';
+GO

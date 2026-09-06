@@ -9,10 +9,25 @@
    ============================================================================= */
 
 :r .\05_Seed\Modules.sql
+GO
+PRINT N'Modules patch successfully completed.';
+GO
 :r .\05_Seed\Permissions.sql
+GO
+PRINT N'Permissions patch successfully completed.';
+GO
 :r .\05_Seed\UserRoles.sql
+GO
+PRINT N'UserRoles patch successfully completed.';
+GO
 :r .\05_Seed\UserRolePermissions.sql
+GO
+PRINT N'UserRolePermissions patch successfully completed.';
+GO
 :r .\05_Seed\AdminUsers.sql
+GO
+PRINT N'AdminUsers patch successfully completed.';
+GO
 
 /* Development sample catalog (LocalDB / testing only).
    Do not uncomment these lines for production patches.

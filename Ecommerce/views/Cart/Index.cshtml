@@ -1,0 +1,36 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Cart";
+}
+
+<link rel="stylesheet" href="/css/shop-bag.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Cart</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Cart</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="shop-bag-page">
+    <div class="container">
+        <p class="shop-bag-note">Your cart keeps the exact SKU you picked. Up to 20 products. Checkout comes later.</p>
+        <p id="cart-status" class="shop-status" hidden></p>
+        <p id="cart-empty" class="shop-bag-empty" hidden>Your cart is empty. <a href="/Shop">Browse the shop</a></p>
+        <div id="cart-list" class="shop-cart-list"></div>
+        <div id="cart-summary" class="shop-cart-summary" hidden>
+            <p>Subtotal <strong id="cart-subtotal">₹0</strong></p>
+            <div>
+                <button id="cart-clear" class="shop-bag-remove" type="button" data-clear>Clear cart</button>
+                <a class="shop-bag-cta" href="/Shop">Continue shopping</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="/js/shop-cart.js"></script>

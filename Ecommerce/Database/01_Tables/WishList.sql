@@ -8,6 +8,7 @@ GO
 CREATE TABLE [dbo].[Wishlist](
 	[WishlistId] [int] IDENTITY(1,1) NOT NULL,
 	[UserId] [int] NOT NULL,
+	[SessionKey] [uniqueidentifier] NULL,
 	[CreatedAt] [datetime] NULL,
 	[Cancelled] [bit] NULL,
 	[CancelledOn] [datetime] NULL,

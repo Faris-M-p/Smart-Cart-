@@ -9,5 +9,14 @@
    ============================================================================= */
 
 :r .\02_Procedures\01_Admin\05_Suppliers\ProSupplierUpdate.sql
+GO
+PRINT N'ProSupplierUpdate patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\05_Suppliers\ProSupplierListSelect.sql
+GO
+PRINT N'ProSupplierListSelect patch successfully completed.';
+GO
 :r .\02_Procedures\01_Admin\05_Suppliers\ProSupplierSelectById.sql
+GO
+PRINT N'ProSupplierSelectById patch successfully completed.';
+GO

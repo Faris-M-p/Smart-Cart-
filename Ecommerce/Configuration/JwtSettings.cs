@@ -10,6 +10,8 @@ namespace Ecommerce.Configuration
 
         public string Audience { get; set; } = string.Empty;
 
+        public string UserAudience { get; set; } = "SmartCartUser";
+
         public int ExpiryMinutes { get; set; } = 60;
     }
 }

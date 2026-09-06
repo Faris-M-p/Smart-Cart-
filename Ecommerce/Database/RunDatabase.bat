@@ -81,6 +81,7 @@ if /I "%SQL_AUTH_MODE%"=="SQL" (
         -d master ^
         -I ^
         -b ^
+        -m-1 ^
         -f 65001 ^
         -i "Database.sql" ^
         -v DatabaseName="%SQL_DATABASE%"
@@ -91,6 +92,7 @@ if /I "%SQL_AUTH_MODE%"=="SQL" (
         -d master ^
         -I ^
         -b ^
+        -m-1 ^
         -f 65001 ^
         -i "Database.sql" ^
         -v DatabaseName="%SQL_DATABASE%"

@@ -1,0 +1,39 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Login";
+    var returnUrl = ViewBag.ReturnUrl as string ?? "/Shop";
+}
+
+<link rel="stylesheet" href="/css/content-pages.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Login</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Login</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="content-page">
+    <div class="container">
+        <div class="contact-card auth-card">
+            <h3>Sign in to SmartCart</h3>
+            <p class="contact-note">Cart and wishlist stay with your account.</p>
+            <p id="auth-status" class="shop-status" hidden></p>
+            <form id="user-login-form" class="contact-form" data-return-url="@returnUrl">
+                <label for="login-email">Email</label>
+                <input id="login-email" name="email" type="email" required>
+                <label for="login-password">Password</label>
+                <input id="login-password" name="password" type="password" required>
+                <button type="submit">Login</button>
+            </form>
+            <p class="contact-note">New here? <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@returnUrl">Create an account</a></p>
+        </div>
+    </div>
+</section>
+
+<script src="/js/user-auth.js"></script>

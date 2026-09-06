@@ -4,6 +4,8 @@ using Ecommerce.Controllers;
 using Ecommerce.DataAccess;
 using Ecommerce.Helpers.AdminAuth;
 using Ecommerce.Helpers.Common;
+using Ecommerce.Helpers.UserAuth;
+using static Ecommerce.Models.UserAuthModel;
 using Ecommerce.Interface;
 using Ecommerce.Repository;
 using Ecommerce.Interface.Admin;
@@ -52,7 +54,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings.Issuer,
-            ValidAudience = jwtSettings.Audience,
+            ValidAudiences = new[]
+            {
+                jwtSettings.Audience,
+                string.IsNullOrWhiteSpace(jwtSettings.UserAudience) ? "SmartCartUser" : jwtSettings.UserAudience
+            },
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
             ClockSkew = TimeSpan.Zero
         };
@@ -60,11 +66,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
-                if (string.IsNullOrEmpty(context.Token)
-                    && context.Request.Cookies.TryGetValue(AdminAuthHelper.TokenCookieName, out var cookieToken)
-                    && !string.IsNullOrWhiteSpace(cookieToken))
+                if (!string.IsNullOrEmpty(context.Token))
                 {
-                    context.Token = cookieToken;
+                    return Task.CompletedTask;
+                }
+
+                var path = context.Request.Path.Value ?? string.Empty;
+                var isAdminPath = path.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase);
+
+                if (isAdminPath
+                    && context.Request.Cookies.TryGetValue(AdminAuthHelper.TokenCookieName, out var adminToken)
+                    && !string.IsNullOrWhiteSpace(adminToken))
+                {
+                    context.Token = adminToken;
+                    return Task.CompletedTask;
+                }
+
+                if (context.Request.Cookies.TryGetValue(UserAuthHelper.TokenCookieName, out var userToken)
+                    && !string.IsNullOrWhiteSpace(userToken))
+                {
+                    context.Token = userToken;
+                    return Task.CompletedTask;
+                }
+
+                if (context.Request.Cookies.TryGetValue(AdminAuthHelper.TokenCookieName, out var fallbackAdmin)
+                    && !string.IsNullOrWhiteSpace(fallbackAdmin))
+                {
+                    context.Token = fallbackAdmin;
                 }
 
                 return Task.CompletedTask;
@@ -137,6 +166,11 @@ public static class ServiceCollectionExtensions
     {
         // IDataAccessDapper is already registered above, no need to register again
         services.AddTransient<ShopInterface, ShopRepository>();
+        services.AddTransient<CartInterface, CartRepository>();
+        services.AddTransient<WishlistInterface, WishlistRepository>();
+        services.AddTransient<UserAuthInterface, UserAuthRepository>();
+        services.AddSingleton<UserJwtTokenService>();
+        services.AddSingleton<IPasswordHasher<StorefrontUser>, PasswordHasher<StorefrontUser>>();
         
         // Admin Services
         services.AddTransient<ICategoryInterface, CategoryRepository>();

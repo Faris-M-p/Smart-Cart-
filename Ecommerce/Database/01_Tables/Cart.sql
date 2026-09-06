@@ -8,6 +8,7 @@ GO
 CREATE TABLE [dbo].[Cart](
 	[CartId] [int] IDENTITY(1,1) NOT NULL,
 	[UserId] [int] NOT NULL,
+	[SessionKey] [uniqueidentifier] NULL,
 	[CreatedAt] [datetime] NULL,
 PRIMARY KEY CLUSTERED 
 (
