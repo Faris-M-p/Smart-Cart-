@@ -15,8 +15,10 @@
 :r .\05_Seed\AdminUsers.sql
 
 /* Development sample catalog (LocalDB / testing only).
-   Do not uncomment this line for production patches.
+   Do not uncomment these lines for production patches.
    Apply separately against SmartCart LocalDB when listing screens need data:
      sqlcmd -S "(localdb)\MSSQLLocalDB" -d SmartCart -E -I -b -f 65001 -i 05_Seed\DevSampleCatalog.sql
+     sqlcmd -S "(localdb)\MSSQLLocalDB" -d SmartCart -E -I -b -f 65001 -i 05_Seed\SuperMarketCatalog.sql
 */
 -- :r .\05_Seed\DevSampleCatalog.sql
+-- :r .\05_Seed\SuperMarketCatalog.sql
