@@ -21,13 +21,17 @@
         return;
     }
 
+    const heartSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>';
+
     const state = {
         pageIndex: 1,
         totalCount: 0,
         loadedCount: 0,
         loading: false,
         done: false,
-        allSubCategories: []
+        allSubCategories: [],
+        wishIds: new Set(),
+        wishLoaded: false
     };
 
     function queryValue(name) {
@@ -98,11 +102,48 @@
         fillSelect(subcategorySelect, rows, "All subcategories", selected);
     }
 
+    function productId(product) {
+        return product.productId || product.ProductId || 0;
+    }
+
+    function setWishButton(button, active) {
+        if (!button) {
+            return;
+        }
+        button.classList.toggle("is-active", !!active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+        button.setAttribute("aria-label", active ? "Remove from wishlist" : "Add to wishlist");
+    }
+
+    function applyWishState() {
+        grid.querySelectorAll("[data-wishlist-product]").forEach(function (button) {
+            var id = Number(button.getAttribute("data-wishlist-product"));
+            setWishButton(button, state.wishIds.has(id));
+        });
+    }
+
+    async function refreshWishState() {
+        try {
+            var response = await fetch("/Wishlist/Get");
+            if (!response.ok) {
+                return;
+            }
+            var items = await response.json();
+            state.wishIds = new Set((items || []).map(function (item) {
+                return Number(item.productId || item.ProductId);
+            }));
+            applyWishState();
+        } catch (error) {
+            /* guest or unauthenticated */
+        }
+    }
+
     function renderCard(product) {
         const name = escapeHtml(product.name);
         const href = detailsUrl(product);
         const subtitle = [product.categoryName, product.brandName].filter(Boolean).join(" · ");
         const inStock = !!product.inStock;
+        const id = productId(product);
         const image = product.imageUrl
             ? '<img class="product__items--img product__primary--img" src="' + escapeHtml(product.imageUrl) + '" alt="' + name + '">'
             : '<div class="product__items--img-fallback">No image</div>';
@@ -118,6 +159,7 @@
                 '<div class="product__items--thumbnail">' +
                     '<a class="product__items--link" href="' + href + '">' + image + "</a>" +
                     badge +
+                    '<button type="button" class="shop-card-wish" data-wishlist-product="' + id + '" aria-pressed="false" aria-label="Add to wishlist">' + heartSvg + "</button>" +
                 "</div>" +
                 '<div class="product__items--content">' +
                     '<span class="product__items--content__subtitle">' + escapeHtml(subtitle) + "</span>" +
@@ -164,6 +206,7 @@
             state.loadedCount = 0;
             state.totalCount = 0;
             state.done = false;
+            state.wishLoaded = false;
             grid.innerHTML = "";
         }
 
@@ -203,6 +246,11 @@
             if (rows.length > 0) {
                 grid.insertAdjacentHTML("beforeend", rows.map(renderCard).join(""));
                 state.loadedCount += rows.length;
+                applyWishState();
+                if (!state.wishLoaded) {
+                    state.wishLoaded = true;
+                    refreshWishState();
+                }
             }
 
             state.pageIndex += 1;
@@ -232,6 +280,47 @@
         var rect = sentinel.getBoundingClientRect();
         return rect.top < (window.innerHeight + 240);
     }
+
+    grid.addEventListener("click", async function (event) {
+        var button = event.target.closest("[data-wishlist-product]");
+        if (!button) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        var id = Number(button.getAttribute("data-wishlist-product"));
+        if (!id) {
+            return;
+        }
+
+        try {
+            var response = await fetch("/Wishlist/Toggle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId: id })
+            });
+            if (window.smartCartHandleAuth && window.smartCartHandleAuth(response)) {
+                return;
+            }
+            var result = await response.json();
+            if (!(result.statusCode || result.StatusCode)) {
+                return;
+            }
+            var added = Number(result.responseCode || result.ResponseCode) > 0;
+            setWishButton(button, added);
+            if (added) {
+                state.wishIds.add(id);
+            } else {
+                state.wishIds.delete(id);
+            }
+            if (window.refreshSmartCartBag) {
+                window.refreshSmartCartBag();
+            }
+        } catch (error) {
+            /* keep current heart */
+        }
+    });
 
     function bindFilters() {
         if (searchForm) {
