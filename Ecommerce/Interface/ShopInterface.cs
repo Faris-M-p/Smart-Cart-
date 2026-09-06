@@ -8,5 +8,7 @@ namespace Ecommerce.Interface
         Task<CommonModel.TableOutput<Product>> GetProductListAsync(InputProduct input);
 
         Task<ShopFilterLookups> GetFilterLookupsAsync();
+
+        Task<ShopProductDetails?> GetProductDetailsAsync(string slug);
     }
 }

@@ -55,5 +55,24 @@ namespace Ecommerce.Models
             public List<ShopFilterOption> SubCategories { get; set; } = new();
             public List<ShopFilterOption> Brands { get; set; } = new();
         }
+
+        public class ShopProductDetails
+        {
+            public int ProductId { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Slug { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public int CategoryId { get; set; }
+            public string CategoryName { get; set; } = string.Empty;
+            public int SubCategoryId { get; set; }
+            public string SubCategoryName { get; set; } = string.Empty;
+            public int BrandId { get; set; }
+            public string BrandName { get; set; } = string.Empty;
+            public string ImageUrl { get; set; } = string.Empty;
+            public List<string> ImageUrls { get; set; } = new();
+            public decimal Price { get; set; }
+            public decimal MRP { get; set; }
+            public bool InStock { get; set; }
+        }
     }
 }

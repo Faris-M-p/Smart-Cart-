@@ -248,19 +248,6 @@
     display: none;
 }
 
-.shop-details {
-    padding: 48px 0 72px;
-    text-align: center;
-}
-
-.shop-details h1 {
-    margin-bottom: 8px;
-}
-
-.shop-details p {
-    color: #666;
-}
-
 @media (max-width: 1100px) {
     .product__grid--inner {
         grid-template-columns: repeat(3, minmax(0, 1fr));

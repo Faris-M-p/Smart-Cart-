@@ -45,5 +45,17 @@ namespace Ecommerce.Controllers
             var lookups = await _shopInterface.GetFilterLookupsAsync();
             return Ok(lookups);
         }
+
+        [HttpGet("Shop/GetProduct/{slug}")]
+        public async Task<IActionResult> GetProduct(string slug)
+        {
+            var product = await _shopInterface.GetProductDetailsAsync(slug);
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(product);
+        }
     }
 }

@@ -1,16 +1,73 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Product details";
-    var slug = ViewBag.Slug as string;
+    var slug = ViewBag.Slug as string ?? string.Empty;
 }
 
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/shop-listing.css">
+<link rel="stylesheet" href="/css/shop-details.css">
 
-<section class="shop-page shop-details">
-    <div class="container">
-        <h1>Product details coming soon</h1>
-        <p>@(string.IsNullOrWhiteSpace(slug) ? "This product page is not available yet." : $"“{slug}” will open here in the next phase.")</p>
-        <p><a href="/Shop">Back to shop</a></p>
-    </div>
+<section class="shop-page shop-details-page" data-product-slug="@slug">
+    <section class="breadcrumb__section breadcrumb__bg">
+        <div class="container">
+            <div class="breadcrumb__content text-center">
+                <h1 class="breadcrumb__content--title text-white mb-25">Product Details</h1>
+                <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                    <li class="breadcrumb__content--menu__items"><a class="text-white" href="/">Home</a></li>
+                    <li class="breadcrumb__content--menu__items"><a class="text-white" href="/Shop">Shop</a></li>
+                    <li class="breadcrumb__content--menu__items"><span class="text-white" id="details-crumb-name">Details</span></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="shop-details-body">
+        <div class="container">
+            <p id="details-status" class="shop-status">Loading product...</p>
+            <div id="details-missing" class="shop-status" hidden>This product is not available. <a href="/Shop">Back to shop</a></div>
+
+            <div id="details-content" hidden>
+                <div class="shop-details-grid">
+                    <div class="shop-details-gallery">
+                        <div class="shop-details-main-image">
+                            <img id="details-main-image" alt="">
+                            <div id="details-image-fallback" class="product__items--img-fallback" hidden>No image</div>
+                            <span id="details-stock-badge" class="product__badge--items" hidden>Out of stock</span>
+                        </div>
+                        <div id="details-thumbs" class="shop-details-thumbs"></div>
+                    </div>
+
+                    <div class="shop-details-info">
+                        <p id="details-meta" class="product__items--content__subtitle"></p>
+                        <h1 id="details-name" class="shop-details-name"></h1>
+                        <div class="product__items--price shop-details-price">
+                            <span id="details-price" class="current__price"></span>
+                            <span id="details-mrp" class="old__price" hidden></span>
+                        </div>
+                        <div id="details-description" class="shop-details-description"></div>
+
+                        <div class="shop-details-actions">
+                            <button id="details-buy-now" class="shop-details-btn shop-details-btn-primary" type="button">Buy Now</button>
+                            <button id="details-add-cart" class="shop-details-btn shop-details-btn-secondary" type="button">Add to Cart</button>
+                        </div>
+                        <p id="details-action-note" class="shop-details-action-note" hidden></p>
+                    </div>
+                </div>
+
+                <section class="shop-reviews" aria-labelledby="reviews-heading">
+                    <h2 id="reviews-heading">Ratings and Reviews</h2>
+                    <div class="shop-reviews-summary">
+                        <div class="shop-reviews-score">
+                            <strong id="reviews-average">4.4</strong>
+                            <span class="shop-reviews-stars" aria-hidden="true">★★★★☆</span>
+                            <p id="reviews-count">Based on 3 reviews</p>
+                        </div>
+                        <p class="shop-reviews-hint">Reviews can be submitted after the product is purchased and delivered. Submission will be enabled in a later phase.</p>
+                    </div>
+                    <div id="reviews-list" class="shop-reviews-list"></div>
+                </section>
+            </div>
+        </div>
+    </section>
 </section>
+
+<script src="/js/shop-details.js"></script>

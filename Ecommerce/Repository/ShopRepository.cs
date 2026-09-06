@@ -1,6 +1,7 @@
 ﻿using Ecommerce.DataAccess;
 using Ecommerce.Helpers.Shop;
 using Ecommerce.Interface;
+using Ecommerce.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.ProductModel;
@@ -152,6 +153,112 @@ namespace Ecommerce.Repository
                 Categories = categories,
                 SubCategories = subCategories,
                 Brands = brands
+            };
+        }
+
+        public async Task<ShopProductDetails?> GetProductDetailsAsync(string slug)
+        {
+            var key = (slug ?? string.Empty).Trim();
+            if (key.Length == 0)
+            {
+                return null;
+            }
+
+            var query = _dbContext.Products.AsNoTracking()
+                .Where(p => p.Cancelled != true && p.IsActive);
+
+            ProductEntity? product;
+            if (int.TryParse(key, out var productId) && productId > 0)
+            {
+                product = await query.FirstOrDefaultAsync(p => p.ID_Product == productId || p.Slug == key);
+            }
+            else
+            {
+                product = await query.FirstOrDefaultAsync(p => p.Slug == key);
+            }
+
+            if (product == null)
+            {
+                return null;
+            }
+
+            var categoryRow = await (
+                from sc in _dbContext.SubCategories.AsNoTracking()
+                join cat in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals cat.ID_Category
+                where sc.ID_SubCategory == product.FK_SubCategory
+                select new { CategoryId = cat.ID_Category, CategoryName = cat.Name, SubCategoryName = sc.Name })
+                .FirstOrDefaultAsync();
+
+            string brandName = string.Empty;
+            if (product.FK_Brand.HasValue)
+            {
+                brandName = await _dbContext.Brands.AsNoTracking()
+                    .Where(b => b.ID_Brand == product.FK_Brand.Value)
+                    .Select(b => b.BrandName)
+                    .FirstOrDefaultAsync() ?? string.Empty;
+            }
+
+            var variants = await _dbContext.ProductVariants.AsNoTracking()
+                .Where(v => v.FK_Product == product.ID_Product && !v.Cancelled && v.IsActive)
+                .Select(v => new { v.ID_ProductVariant, v.SellingPrice, v.MRP, v.IsDefault })
+                .ToListAsync();
+
+            var cheapest = variants
+                .OrderBy(v => v.SellingPrice)
+                .ThenByDescending(v => v.IsDefault)
+                .FirstOrDefault();
+
+            var imageUrls = await _dbContext.ProductMedia.AsNoTracking()
+                .Where(m => m.FK_Product == product.ID_Product
+                    && m.MediaType == "Image"
+                    && m.MediaUrl != null
+                    && m.MediaUrl != "")
+                .OrderByDescending(m => m.IsPrimary)
+                .ThenBy(m => m.DisplayOrder)
+                .Select(m => m.MediaUrl)
+                .ToListAsync();
+
+            if (imageUrls.Count == 0 && variants.Count > 0)
+            {
+                var skuIds = variants.Select(v => v.ID_ProductVariant).ToList();
+                imageUrls = await _dbContext.ProductVariantImages.AsNoTracking()
+                    .Where(m => skuIds.Contains(m.FK_ProductVariant)
+                        && m.MediaType == "Image"
+                        && m.ImageUrl != null
+                        && m.ImageUrl != "")
+                    .OrderByDescending(m => m.IsPrimary)
+                    .ThenBy(m => m.DisplayOrder)
+                    .Select(m => m.ImageUrl)
+                    .Distinct()
+                    .ToListAsync();
+            }
+
+            var stockQty = 0;
+            if (variants.Count > 0)
+            {
+                var skuIds = variants.Select(v => v.ID_ProductVariant).ToList();
+                stockQty = await _dbContext.Stock.AsNoTracking()
+                    .Where(s => skuIds.Contains(s.FK_ProductVariant) && !s.Cancelled)
+                    .SumAsync(s => (int?)s.Quantity) ?? 0;
+            }
+
+            return new ShopProductDetails
+            {
+                ProductId = product.ID_Product,
+                Name = product.Name,
+                Slug = product.Slug,
+                Description = product.Description ?? string.Empty,
+                CategoryId = categoryRow?.CategoryId ?? 0,
+                CategoryName = categoryRow?.CategoryName ?? string.Empty,
+                SubCategoryId = product.FK_SubCategory,
+                SubCategoryName = categoryRow?.SubCategoryName ?? string.Empty,
+                BrandId = product.FK_Brand ?? 0,
+                BrandName = brandName,
+                ImageUrl = imageUrls.FirstOrDefault() ?? string.Empty,
+                ImageUrls = imageUrls,
+                Price = cheapest?.SellingPrice ?? 0,
+                MRP = cheapest?.MRP ?? 0,
+                InStock = stockQty > 0
             };
         }
 
