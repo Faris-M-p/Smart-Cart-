@@ -38,4 +38,7 @@
 :r .\01_Tables\Modules.sql
 :r .\01_Tables\Permissions.sql
 :r .\01_Tables\AdminUsers.sql
+:r .\01_Tables\AdminUsers_AddProfileImageUrl.sql
+:r .\01_Tables\ProductMedia.sql
+:r .\01_Tables\SkuMedia.sql
 :r .\01_Tables\UserRolePermissions.sql

@@ -2,12 +2,6 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<style>
-    .sku-section-hidden {
-        display: none !important;
-    }
-</style>
-
 <!-- [ breadcrumb ] start -->
 <div class="page-header">
     <div class="page-block">
@@ -40,55 +34,13 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <!-- Product Selection -->
                         <div class="row mb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-6 col-lg-5">
                                 <label for="selectProduct" class="form-label">Select Product <span class="text-danger">*</span></label>
-                                <select id="selectProduct" class="form-select" onchange="onProductChange()">
-                                    <option value="">-- Select Product --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="button" class="btn btn-secondary w-100" onclick="loadProductVariants()" id="btnLoadVariants" disabled>
-                                    <i class="ti ti-search"></i> Load SKUs
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Filter and Search Bar -->
-                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap sku-section-hidden" id="filterSection">
-                            <!-- Filter Button -->
-                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                                <i class="ti ti-filter"></i> Filter
-                            </button>
-                            
-                            <!-- Search Box -->
-                            <div class="flex-grow-1 mx-3 search-input">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="ti ti-search"></i>
-                                    </span>
-                                    <input type="text" id="searchText" class="form-control" placeholder="Search SKUs...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Collapsible Filter Section -->
-                        <div class="collapse mb-3" id="filterCollapse">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadProductVariants()">
-                                                <i class="ti ti-check"></i> Apply
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                                                <i class="ti ti-refresh"></i> Reset
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div class="searchable-select">
+                                    <select id="selectProduct" class="form-select" onchange="onProductChange()">
+                                        <option value="">-- Select Product --</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -119,7 +71,7 @@
                         </div>
 
                         <!-- Pagination Section -->
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper sku-section-hidden" id="paginationSection">
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper d-none" id="paginationSection">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
                                 <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
@@ -274,11 +226,11 @@
     </div>
 </div>
 
+<script src="/Admin/assets/js/plugins/choices.min.js"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
-    let searchTimeout = null;
     let selectedProductId = 0;
     let products = [];
     let variants = [];
@@ -382,21 +334,10 @@
         });
 
         renderSkuImagePreviews();
-
-        document.getElementById('searchText')?.addEventListener('input', handleSearch);
         showSelectProductState();
     });
 
     // 4. Event Handlers
-    function handleSearch() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(function () {
-            if ((parseInt(document.getElementById('selectProduct').value, 10) || 0) > 0) {
-                loadProductVariants(1);
-            }
-        }, 500);
-    }
-
     function handlePageSizeChange() {
         pageSize = parseInt(document.getElementById('pageSize').value) || 10;
         if (selectedProductId === 0) {
@@ -406,8 +347,7 @@
     }
 
     function setSkuListingChromeVisible(visible) {
-        document.getElementById('filterSection').classList.toggle('sku-section-hidden', !visible);
-        document.getElementById('paginationSection').classList.toggle('sku-section-hidden', !visible);
+        document.getElementById('paginationSection').classList.toggle('d-none', !visible);
     }
 
     function setSkuTableHeadVisible(visible) {
@@ -428,17 +368,11 @@
     }
 
     function onProductChange() {
-        selectedProductId = parseInt(document.getElementById('selectProduct').value) || 0;
-        document.getElementById('btnLoadVariants').disabled = selectedProductId === 0;
+        selectedProductId = parseInt(document.getElementById('selectProduct').value, 10) || 0;
         if (selectedProductId === 0) {
             showSelectProductState();
+            return;
         }
-    }
-
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('pageSize').value = '10';
-        pageSize = 10;
         loadProductVariants(1);
     }
 
@@ -450,11 +384,10 @@
         }
 
         currentPage = page;
-        const searchText = document.getElementById('searchText')?.value || '';
 
         const input = {
             FK_Product: selectedProductId,
-            SearchText: searchText,
+            SearchText: '',
             FilterVariantIDs: '',
             FilterVariantValueIDs: '',
             PageIndex: currentPage,
@@ -1334,10 +1267,10 @@
 
             const selectProduct = document.getElementById('selectProduct');
             const modalProduct = document.getElementById('modalProduct');
-            
+
             selectProduct.innerHTML = '<option value="">-- Select Product --</option>';
             modalProduct.innerHTML = '<option value="">Select Product</option>';
-            
+
             products.forEach(p => {
                 const cancelled = p.cancelled ?? p.Cancelled;
                 const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
@@ -1347,6 +1280,20 @@
                     modalProduct.add(new Option(pname, String(pid)));
                 }
             });
+
+            if (typeof Choices !== 'undefined') {
+                if (selectProduct.choicesInstance) {
+                    selectProduct.choicesInstance.destroy();
+                }
+                selectProduct.choicesInstance = new Choices(selectProduct, {
+                    searchEnabled: true,
+                    searchPlaceholderValue: 'Search products...',
+                    itemSelectText: '',
+                    shouldSort: false,
+                    allowHTML: false,
+                    position: 'bottom'
+                });
+            }
         } catch (error) {
             console.error('Error loading products:', error);
         }

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Ecommerce.CustomModelValidation;
+using Microsoft.AspNetCore.Http;
 
 namespace Ecommerce.Models.Admin
 {
@@ -68,6 +69,29 @@ namespace Ecommerce.Models.Admin
 
             [Display(Name = "Active")]
             public bool IsActive { get; set; } = true;
+
+            public List<IFormFile> Files { get; set; } = new();
+            public List<int> ExistingMediaOrder { get; set; } = new();
+            public List<int> RemovedMediaIds { get; set; } = new();
+            public int? PrimaryIndex { get; set; }
+            public int? PrimaryMediaId { get; set; }
+        }
+
+        public class ProductMediaDeleteInput
+        {
+            [GreaterThanZero]
+            public int MediaId { get; set; }
+        }
+
+        public class ProductMediaSetPrimaryInput
+        {
+            [GreaterThanZero]
+            public int ProductId { get; set; }
+
+            [GreaterThanZero]
+            public int MediaId { get; set; }
+
+            public List<int> OrderedMediaIds { get; set; } = new();
         }
 
         public class ProductDeleteInputVIEW
@@ -133,6 +157,28 @@ namespace Ecommerce.Models.Admin
             public string? ImageUrl { get; set; }
             public bool IsActive { get; set; }
             public bool Cancelled { get; set; }
+            public List<ProductMediaDto> Media { get; set; } = new();
+        }
+
+        public class ProductMediaDto
+        {
+            [JsonPropertyName("idProductMedia")]
+            public int ID_ProductMedia { get; set; }
+
+            [JsonPropertyName("fkProduct")]
+            public int FK_Product { get; set; }
+
+            [JsonPropertyName("mediaType")]
+            public string MediaType { get; set; } = "Image";
+
+            [JsonPropertyName("mediaUrl")]
+            public string MediaUrl { get; set; } = string.Empty;
+
+            [JsonPropertyName("isPrimary")]
+            public bool IsPrimary { get; set; }
+
+            [JsonPropertyName("displayOrder")]
+            public int DisplayOrder { get; set; }
         }
     }
 }

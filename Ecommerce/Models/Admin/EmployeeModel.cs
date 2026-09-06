@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Ecommerce.CustomModelValidation;
+using Microsoft.AspNetCore.Http;
 
 namespace Ecommerce.Models.Admin
 {
@@ -61,6 +62,10 @@ namespace Ecommerce.Models.Admin
 
             [Display(Name = "Active")]
             public bool? IsActive { get; set; }
+
+            public IFormFile? ProfileImage { get; set; }
+
+            public bool RemoveProfileImage { get; set; }
         }
 
         public class EmployeeDeleteInputVIEW
@@ -113,6 +118,7 @@ namespace Ecommerce.Models.Admin
             public string UserRoleName { get; set; } = string.Empty;
             public bool IsActive { get; set; }
             public bool IsProtected { get; set; }
+            public string? ProfileImageUrl { get; set; }
             public DateTime CreatedAt { get; set; }
         }
 

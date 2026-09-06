@@ -13,6 +13,7 @@ BEGIN
         [FullName] NVARCHAR(150) NOT NULL,
         [Email] NVARCHAR(100) NOT NULL,
         [PhoneNumber] NVARCHAR(15) NULL,
+        [ProfileImageUrl] NVARCHAR(500) NULL,
         [IsActive] BIT NOT NULL CONSTRAINT [DF_AdminUsers_IsActive] DEFAULT ((1)),
         [CreatedAt] DATETIME NOT NULL CONSTRAINT [DF_AdminUsers_CreatedAt] DEFAULT (GETDATE()),
         [UpdatedAt] DATETIME NULL,

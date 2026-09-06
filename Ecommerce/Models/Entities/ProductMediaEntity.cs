@@ -3,15 +3,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ecommerce.Models.Entities
 {
-    [Table("SkuMedia")]
-    public class ProductVariantImageEntity
+    [Table("ProductMedia")]
+    public class ProductMediaEntity
     {
         [Key]
-        [Column("ID_SkuMedia")]
-        public int ID_ProductVariantImage { get; set; }
+        public int ID_ProductMedia { get; set; }
 
-        [Column("FK_ProductSKU")]
-        public int FK_ProductVariant { get; set; }
+        public int FK_Product { get; set; }
 
         [Required]
         [MaxLength(20)]
@@ -19,12 +17,11 @@ namespace Ecommerce.Models.Entities
 
         [Required]
         [MaxLength(500)]
-        [Column("MediaUrl")]
-        public string ImageUrl { get; set; } = string.Empty;
-
-        public bool IsPrimary { get; set; }
+        public string MediaUrl { get; set; } = string.Empty;
 
         public int DisplayOrder { get; set; }
+
+        public bool IsPrimary { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

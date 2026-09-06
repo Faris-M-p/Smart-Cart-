@@ -11,5 +11,6 @@ namespace Ecommerce.Interface.Admin
         Task<CommonResponse> CreateEmployeeAsync(EmployeeUpdateInput input);
         Task<CommonResponse> UpdateEmployeeAsync(EmployeeUpdateInput input);
         Task<CommonResponse> DeleteEmployeeAsync(EmployeeDeleteInput input);
+        Task<CommonResponse> SetProfileImageUrlAsync(int employeeId, string? profileImageUrl);
     }
 }

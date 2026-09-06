@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Filters;
+using Ecommerce.Helpers.Common;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.EmployeeModel;
 using static Ecommerce.Models.CommonModel;
@@ -10,10 +11,17 @@ namespace Ecommerce.Controllers.Admin
     public class EmployeeController : Controller
     {
         private readonly IEmployeeInterface _employeeInterface;
+        private readonly CommonImageService _commonImageService;
+        private readonly IWebHostEnvironment _environment;
 
-        public EmployeeController(IEmployeeInterface employeeInterface)
+        public EmployeeController(
+            IEmployeeInterface employeeInterface,
+            CommonImageService commonImageService,
+            IWebHostEnvironment environment)
         {
             _employeeInterface = employeeInterface;
+            _commonImageService = commonImageService;
+            _environment = environment;
         }
 
         [HttpGet("/admin/employees")]
@@ -109,8 +117,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("Employees.Create")]
-        public async Task<IActionResult> Create([FromBody] EmployeeUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Create([FromForm] EmployeeUpdateInputVIEW viewInput)
         {
             try
             {
@@ -123,7 +132,21 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
+                if (viewInput.ProfileImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.ProfileImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
+                }
+
                 var result = await _employeeInterface.CreateEmployeeAsync(MapWriteInput(viewInput));
+                if (result.StatusCode)
+                {
+                    await ApplyProfileImageAsync((int)result.ResponseCode, viewInput);
+                }
+
                 return Ok(result);
             }
             catch
@@ -134,8 +157,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("Employees.Edit")]
-        public async Task<IActionResult> Update([FromBody] EmployeeUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Update([FromForm] EmployeeUpdateInputVIEW viewInput)
         {
             try
             {
@@ -148,7 +172,21 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
+                if (viewInput.ProfileImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.ProfileImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
+                }
+
                 var result = await _employeeInterface.UpdateEmployeeAsync(MapWriteInput(viewInput));
+                if (result.StatusCode)
+                {
+                    await ApplyProfileImageAsync(viewInput.EmployeeID, viewInput);
+                }
+
                 return Ok(result);
             }
             catch
@@ -185,6 +223,44 @@ namespace Ecommerce.Controllers.Admin
             catch
             {
                 throw;
+            }
+        }
+
+        private async Task ApplyProfileImageAsync(int employeeId, EmployeeUpdateInputVIEW viewInput)
+        {
+            if (viewInput.ProfileImage == null && !viewInput.RemoveProfileImage)
+            {
+                return;
+            }
+
+            var current = await _employeeInterface.GetEmployeeByIdAsync(employeeId);
+            if (current == null)
+            {
+                return;
+            }
+
+            var previousUrl = current.ProfileImageUrl;
+            string? nextUrl = previousUrl;
+
+            if (viewInput.ProfileImage != null)
+            {
+                var folder = _commonImageService.GetEmployeeUploadRoot(_environment.WebRootPath, employeeId);
+                var fileName = await _commonImageService.SaveEmployeeProfileAsync(viewInput.ProfileImage, folder);
+                nextUrl = _commonImageService.BuildEmployeeImageUrl(employeeId, fileName);
+            }
+            else if (viewInput.RemoveProfileImage)
+            {
+                nextUrl = null;
+            }
+
+            if (!string.Equals(previousUrl, nextUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                await _employeeInterface.SetProfileImageUrlAsync(employeeId, nextUrl);
+                if (!string.IsNullOrWhiteSpace(previousUrl) &&
+                    !string.Equals(previousUrl, nextUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    _commonImageService.TryDeleteByUrl(_environment.WebRootPath, previousUrl);
+                }
             }
         }
 

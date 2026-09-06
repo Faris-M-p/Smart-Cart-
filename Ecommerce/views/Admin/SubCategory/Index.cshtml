@@ -34,46 +34,13 @@
                         </div>
                     </div>
                     <div class="card-body pt-3">
-                        <!-- Filter and Search Bar -->
-                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-                            <!-- Filter Button -->
-                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                                <i class="ti ti-filter"></i> Filter
-                            </button>
-                            
-                            <!-- Search Box -->
-                            <div class="flex-grow-1 mx-3 search-input">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="ti ti-search"></i>
-                                    </span>
-                                    <input type="text" id="searchText" class="form-control" placeholder="Search subcategories...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Collapsible Filter Section -->
-                        <div class="collapse mb-3" id="filterCollapse">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">Category</label>
-                                        <select id="filterCategory" class="form-select">
-                                            <option value="">All Categories</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="col-md-3">
-                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadSubCategories()">
-                                                <i class="ti ti-check"></i> Apply
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                                                <i class="ti ti-refresh"></i> Reset
-                                            </button>
-                                        </div>
-                                    </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6 col-lg-5">
+                                <label for="filterCategory" class="form-label">Category</label>
+                                <div class="searchable-select">
+                                    <select id="filterCategory" class="form-select" onchange="loadSubCategories(1)">
+                                        <option value="">All Categories</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -197,13 +164,13 @@
     </div>
 </div>
 
+<script src="/Admin/assets/js/plugins/choices.min.js"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
     let categories = [];
     let categoryMap = {};
-    let searchTimeout = null;
 
     const TABLE_BODY_ID = 'subCategoryTableBody';
     const TABLE_COLUMN_COUNT = 5;
@@ -220,10 +187,6 @@
 
     // 3. Page Initialization
     document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('searchText').addEventListener('input', handleSearch);
-        document.getElementById('filterCategory').addEventListener('change', function () {
-            loadSubCategories(1);
-        });
         document.getElementById('subCategoryModal').addEventListener('shown.bs.modal', function () {
             loadCategories();
         });
@@ -233,23 +196,8 @@
     });
 
     // 4. Event Handlers
-    function handleSearch() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(function () {
-            loadSubCategories(1);
-        }, 500);
-    }
-
     function handlePageSizeChange() {
         pageSize = parseInt(document.getElementById('pageSize').value) || 10;
-        loadSubCategories(1);
-    }
-
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('filterCategory').value = '';
-        document.getElementById('pageSize').value = '10';
-        pageSize = 10;
         loadSubCategories(1);
     }
 
@@ -257,7 +205,6 @@
     async function loadSubCategories(page = 1) {
         currentPage = page;
 
-        const searchText = document.getElementById('searchText').value || '';
         const filterCategoryID = document.getElementById('filterCategory').value || '';
 
         let filterCategoryIDs = '';
@@ -266,7 +213,7 @@
         }
 
         const input = {
-            SearchText: searchText,
+            SearchText: '',
             FilterCategoryIDs: filterCategoryIDs,
             FilterSubCategoryIDs: '',
             PageIndex: page,
@@ -583,22 +530,35 @@
                 categoryMap[cid] = cname;
             });
 
-            // Populate category dropdowns
             const filterDropdown = document.getElementById('filterCategory');
             const formDropdown = document.getElementById('fkCategory');
 
-            filterDropdown.innerHTML = '<option value="">All Categories</option>';
             formDropdown.innerHTML = '<option value="">Select Category</option>';
+
+            if (!filterDropdown.choicesInstance) {
+                filterDropdown.innerHTML = '<option value="">All Categories</option>';
+            }
 
             categories.forEach(cat => {
                 const cid = cat.categoryID ?? cat.CategoryID;
                 const cname = cat.categoryName ?? cat.CategoryName ?? '';
                 if (!cid) return;
-                const option1 = new Option(cname, String(cid));
-                const option2 = new Option(cname, String(cid));
-                filterDropdown.add(option1);
-                formDropdown.add(option2);
+                formDropdown.add(new Option(cname, String(cid)));
+                if (!filterDropdown.choicesInstance) {
+                    filterDropdown.add(new Option(cname, String(cid)));
+                }
             });
+
+            if (typeof Choices !== 'undefined' && !filterDropdown.choicesInstance) {
+                filterDropdown.choicesInstance = new Choices(filterDropdown, {
+                    searchEnabled: true,
+                    searchPlaceholderValue: 'Search categories...',
+                    itemSelectText: '',
+                    shouldSort: false,
+                    allowHTML: false,
+                    position: 'bottom'
+                });
+            }
         } catch (error) {
             console.error('Error loading categories:', error);
         }

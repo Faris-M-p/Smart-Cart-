@@ -20,6 +20,8 @@ namespace Ecommerce.Models.Admin
             public string Name { get; set; } = string.Empty;
 
             public string UserName { get; set; } = string.Empty;
+
+            public string? ProfileImageUrl { get; set; }
         }
 
         public class AdminAuthRole

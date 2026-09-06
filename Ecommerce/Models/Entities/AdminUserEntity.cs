@@ -30,6 +30,9 @@ namespace Ecommerce.Models.Entities
         [MaxLength(15)]
         public string? PhoneNumber { get; set; }
 
+        [MaxLength(500)]
+        public string? ProfileImageUrl { get; set; }
+
         public bool IsActive { get; set; }
 
         public DateTime CreatedAt { get; set; }

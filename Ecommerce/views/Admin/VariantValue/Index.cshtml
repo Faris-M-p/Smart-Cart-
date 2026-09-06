@@ -32,17 +32,12 @@
             </div>
             <div class="card-body pt-3">
                 <div class="row g-3 align-items-end mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6 col-lg-5">
                         <label for="variantSelect" class="form-label">Variant <span class="text-danger">*</span></label>
-                        <select id="variantSelect" class="form-select" onchange="onVariantSelectChange()">
-                            <option value="">— Select variant —</option>
-                        </select>
-                    </div>
-                    <div class="col-md-8">
-                        <label for="searchText" class="form-label visually-hidden">Search</label>
-                        <div class="input-group search-input">
-                            <span class="input-group-text"><i class="ti ti-search"></i></span>
-                            <input type="text" id="searchText" class="form-control" placeholder="Search by name…">
+                        <div class="searchable-select">
+                            <select id="variantSelect" class="form-select" onchange="onVariantSelectChange()">
+                                <option value="">— Select variant —</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -149,12 +144,12 @@
     </div>
 </div>
 
+<script src="/Admin/assets/js/plugins/choices.min.js"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
     let paginationInstance = null;
-    let searchTimeout = null;
 
     const TABLE_BODY_ID = 'variantValueTableBody';
     const TABLE_COLUMN_COUNT = 4;
@@ -177,20 +172,10 @@
             onPageChange: loadVariantValues
         });
 
-        document.getElementById('searchText').addEventListener('input', handleSearch);
         loadVariantsForDropdowns();
     });
 
     // 4. Event Handlers
-    function handleSearch() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(function () {
-            if (getSelectedVariantId() > 0) {
-                loadVariantValues(1);
-            }
-        }, 500);
-    }
-
     function handlePageSizeChange() {
         pageSize = parseInt(document.getElementById('pageSize').value) || 10;
         loadVariantValues(1);
@@ -214,7 +199,7 @@
 
         const input = {
             fk_Variant: fk,
-            searchText: document.getElementById('searchText').value || '',
+            searchText: '',
             filterVariantIDs: '',
             pageIndex: currentPage,
             pageSize: pageSize,
@@ -454,6 +439,20 @@
                 pageSel.add(new Option(vname, String(vid)));
                 modalSel.add(new Option(vname, String(vid)));
             });
+
+            if (typeof Choices !== 'undefined') {
+                if (pageSel.choicesInstance) {
+                    pageSel.choicesInstance.destroy();
+                }
+                pageSel.choicesInstance = new Choices(pageSel, {
+                    searchEnabled: true,
+                    searchPlaceholderValue: 'Search variants...',
+                    itemSelectText: '',
+                    shouldSort: false,
+                    allowHTML: false,
+                    position: 'bottom'
+                });
+            }
 
             listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
         } catch (error) {

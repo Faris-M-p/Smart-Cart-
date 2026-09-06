@@ -22559,3 +22559,24 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
   white-space: normal;
 }
 
+/* Searchable select — keep in sync with themes/pages/_product.scss */
+.searchable-select .choices {
+  margin-bottom: 0;
+}
+.searchable-select .choices__list--dropdown,
+.searchable-select .choices.is-flipped .choices__list--dropdown {
+  top: 100% !important;
+  bottom: auto !important;
+  margin-top: 4px;
+  margin-bottom: 0;
+  border-radius: 0.375rem;
+}
+.searchable-select .choices__list--dropdown .choices__list {
+  max-height: 420px;
+}
+.searchable-select .choices__list--dropdown .choices__item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+

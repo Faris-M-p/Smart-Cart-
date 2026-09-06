@@ -85,6 +85,11 @@ namespace Ecommerce.Repository.Admin
                         BrandName = b != null ? b.BrandName : null,
                         Description = p.Description,
                         ImageUrl = (
+                            from pm in _dbContext.ProductMedia.AsNoTracking()
+                            where pm.FK_Product == p.ID_Product && pm.IsPrimary
+                            orderby pm.DisplayOrder, pm.ID_ProductMedia
+                            select pm.MediaUrl
+                        ).FirstOrDefault() ?? (
                             from pv in _dbContext.ProductVariants.AsNoTracking()
                             join pvi in _dbContext.ProductVariantImages.AsNoTracking() on pv.ID_ProductVariant equals pvi.FK_ProductVariant
                             where pv.FK_Product == p.ID_Product &&
@@ -125,7 +130,7 @@ namespace Ecommerce.Repository.Admin
                 return null;
             }
 
-            return await (
+            var product = await (
                 from p in _dbContext.Products.AsNoTracking()
                 join sc in _dbContext.SubCategories.AsNoTracking() on p.FK_SubCategory equals sc.ID_SubCategory
                 join c in _dbContext.Categories.AsNoTracking() on sc.FK_Category equals c.ID_Category
@@ -145,6 +150,11 @@ namespace Ecommerce.Repository.Admin
                     BrandName = b != null ? b.BrandName : null,
                     Description = p.Description,
                     ImageUrl = (
+                        from pm in _dbContext.ProductMedia.AsNoTracking()
+                        where pm.FK_Product == p.ID_Product && pm.IsPrimary
+                        orderby pm.DisplayOrder, pm.ID_ProductMedia
+                        select pm.MediaUrl
+                    ).FirstOrDefault() ?? (
                         from pv in _dbContext.ProductVariants.AsNoTracking()
                         join pvi in _dbContext.ProductVariantImages.AsNoTracking() on pv.ID_ProductVariant equals pvi.FK_ProductVariant
                         where pv.FK_Product == p.ID_Product &&
@@ -157,6 +167,26 @@ namespace Ecommerce.Repository.Admin
                     IsActive = p.IsActive,
                     Cancelled = p.Cancelled
                 }).FirstOrDefaultAsync();
+
+            if (product != null)
+            {
+                product.Media = await _dbContext.ProductMedia.AsNoTracking()
+                    .Where(m => m.FK_Product == product.ID_Product)
+                    .OrderBy(m => m.DisplayOrder)
+                    .ThenBy(m => m.ID_ProductMedia)
+                    .Select(m => new ProductMediaDto
+                    {
+                        ID_ProductMedia = m.ID_ProductMedia,
+                        FK_Product = m.FK_Product,
+                        MediaType = m.MediaType,
+                        MediaUrl = m.MediaUrl,
+                        IsPrimary = m.IsPrimary,
+                        DisplayOrder = m.DisplayOrder
+                    })
+                    .ToListAsync();
+            }
+
+            return product;
         }
 
         public async Task<CommonResponse> CreateProductAsync(ProductUpdateInput input)

@@ -125,6 +125,17 @@
                             <option value="">Select User Role</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Profile image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <img id="employeeProfilePreview" src="" alt="Profile preview" class="rounded border d-none" style="width: 72px; height: 72px; object-fit: cover;">
+                            <div>
+                                <input type="file" class="form-control" id="employeeProfileImage" accept=".jpg,.jpeg,.png,.webp">
+                                <div class="form-text">Maximum 1 image. Allowed: jpg, jpeg, png, webp. Max 2MB. Uploading a new image replaces the current one.</div>
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-none" id="btnRemoveEmployeeImage" onclick="clearEmployeeProfileImage()">Remove image</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="employeeIsActive" checked>
                         <label class="form-check-label" for="employeeIsActive">Status (active)</label>
@@ -168,6 +179,7 @@
     let paginationInstance = null;
     let searchTimeout = null;
     let userRolesLoaded = false;
+    let removeEmployeeProfileImage = false;
 
     const TABLE_BODY_ID = 'employeeTableBody';
     const TABLE_COLUMN_COUNT = 6;
@@ -189,6 +201,7 @@
         });
 
         document.getElementById('searchText').addEventListener('input', handleSearch);
+        document.getElementById('employeeProfileImage').addEventListener('change', previewEmployeeProfileImage);
         loadUserRoles();
         loadEmployees();
     });
@@ -329,11 +342,53 @@
             : 'Confirm New Password';
     }
 
+    function resetEmployeeProfileImage() {
+        removeEmployeeProfileImage = false;
+        const input = document.getElementById('employeeProfileImage');
+        const preview = document.getElementById('employeeProfilePreview');
+        const removeBtn = document.getElementById('btnRemoveEmployeeImage');
+        input.value = '';
+        preview.src = '';
+        preview.classList.add('d-none');
+        removeBtn.classList.add('d-none');
+    }
+
+    function setEmployeeProfilePreview(url) {
+        const preview = document.getElementById('employeeProfilePreview');
+        const removeBtn = document.getElementById('btnRemoveEmployeeImage');
+        if (!url) {
+            preview.src = '';
+            preview.classList.add('d-none');
+            removeBtn.classList.add('d-none');
+            return;
+        }
+        preview.src = url;
+        preview.classList.remove('d-none');
+        removeBtn.classList.remove('d-none');
+    }
+
+    function previewEmployeeProfileImage() {
+        const input = document.getElementById('employeeProfileImage');
+        const file = input.files && input.files[0];
+        if (!file) {
+            return;
+        }
+        removeEmployeeProfileImage = false;
+        setEmployeeProfilePreview(URL.createObjectURL(file));
+    }
+
+    function clearEmployeeProfileImage() {
+        document.getElementById('employeeProfileImage').value = '';
+        removeEmployeeProfileImage = true;
+        setEmployeeProfilePreview('');
+    }
+
     function openCreateModal() {
         document.getElementById('employeeModalLabel').textContent = 'Add Employee';
         document.getElementById('employeeForm').reset();
         document.getElementById('employeeID').value = '0';
         document.getElementById('employeeIsActive').checked = true;
+        resetEmployeeProfileImage();
         setPasswordMode(true);
         if (!userRolesLoaded) {
             loadUserRoles();
@@ -362,6 +417,8 @@
             document.getElementById('userName').value = employee.userName || employee.UserName || '';
             document.getElementById('fkUserRole').value = String(employee.fk_UserRole ?? employee.FK_UserRole ?? '');
             document.getElementById('employeeIsActive').checked = (employee.isActive ?? employee.IsActive ?? true) === true;
+            resetEmployeeProfileImage();
+            setEmployeeProfilePreview(employee.profileImageUrl || employee.ProfileImageUrl || '');
             setPasswordMode(false);
 
             const modal = new bootstrap.Modal(document.getElementById('employeeModal'));
@@ -404,27 +461,30 @@
             return;
         }
 
-        const input = {
-            employeeID: employeeID,
-            employeeName: employeeName,
-            userName: userName,
-            password: password,
-            confirmPassword: confirmPassword,
-            fk_UserRole: fkUserRole,
-            isActive: document.getElementById('employeeIsActive').checked
-        };
+        const formData = new FormData();
+        formData.append('EmployeeID', String(employeeID));
+        formData.append('EmployeeName', employeeName);
+        formData.append('UserName', userName);
+        formData.append('Password', password);
+        formData.append('ConfirmPassword', confirmPassword);
+        formData.append('fk_UserRole', String(fkUserRole));
+        formData.append('IsActive', document.getElementById('employeeIsActive').checked ? 'true' : 'false');
+        formData.append('RemoveProfileImage', removeEmployeeProfileImage ? 'true' : 'false');
+        const profileFile = document.getElementById('employeeProfileImage').files?.[0];
+        if (profileFile) {
+            formData.append('ProfileImage', profileFile);
+        }
 
         const url = isCreate ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
+                body: formData
             });
 
             if (!response.ok) {
-                handleApiError?.('failure', 'Employee Save', { url, method: 'POST', payload: { ...input, password: '***', confirmPassword: '***' }, response, result: null });
+                handleApiError?.('failure', 'Employee Save', { url, method: 'POST', payload: { employeeID, userName }, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -435,12 +495,12 @@
                 loadEmployees(isCreate ? 1 : currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Employee saved successfully.');
             } else {
-                handleApiError?.('failure', 'Employee Save (business)', { url, method: 'POST', payload: { ...input, password: '***', confirmPassword: '***' }, response, result });
+                handleApiError?.('failure', 'Employee Save (business)', { url, method: 'POST', payload: { employeeID, userName }, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving employee.');
             }
         } catch (error) {
             console.error('Error saving employee:', error);
-            handleApiError?.('crash', 'Employee Save', { url, method: 'POST', payload: { ...input, password: '***', confirmPassword: '***' }, error });
+            handleApiError?.('crash', 'Employee Save', { url, method: 'POST', payload: { employeeID, userName }, error });
             showError('Error', 'Error saving employee. Please try again.');
         }
     }

@@ -356,29 +356,18 @@ namespace Ecommerce.Controllers.Admin
             var savedAbsolutePaths = new List<string>();
             var newRows = new List<ProductVariantImageEntity>();
             var nextOrder = orderedExisting.Count;
-            var nextImageNumber = _commonImageService.GetNextImageNumber(uploadRoot);
 
             try
             {
                 foreach (var file in input.Files)
                 {
-                    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    var fileName = $"{nextImageNumber++}{ext}";
-                    while (System.IO.File.Exists(Path.Combine(uploadRoot, fileName)))
-                    {
-                        fileName = $"{nextImageNumber++}{ext}";
-                    }
-                    var absolutePath = Path.Combine(uploadRoot, fileName);
-                    await using (var stream = new FileStream(absolutePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    savedAbsolutePaths.Add(absolutePath);
+                    var fileName = await _commonImageService.SaveFileAsync(file, uploadRoot);
+                    savedAbsolutePaths.Add(Path.Combine(uploadRoot, fileName));
 
                     newRows.Add(new ProductVariantImageEntity
                     {
                         FK_ProductVariant = input.SKUId,
+                        MediaType = "Image",
                         ImageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
                         IsPrimary = false,
                         DisplayOrder = nextOrder++,
@@ -460,6 +449,7 @@ namespace Ecommerce.Controllers.Admin
             for (var i = 0; i < remaining.Count; i++)
             {
                 remaining[i].DisplayOrder = i;
+                remaining[i].UpdatedAt = DateTime.Now;
             }
 
             if (image.IsPrimary && remaining.Count > 0 && !remaining.Any(x => x.IsPrimary))
@@ -469,8 +459,7 @@ namespace Ecommerce.Controllers.Admin
 
             await _productVariantImageRepository.SaveChangesAsync();
 
-            var absolutePath = Path.Combine(_environment.WebRootPath, image.ImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-            _commonImageService.TryDeleteFile(absolutePath);
+            _commonImageService.TryDeleteByUrl(_environment.WebRootPath, image.ImageUrl);
 
             return Ok(Ok(image.ID_ProductVariantImage, "Image deleted successfully."));
         }
@@ -501,6 +490,7 @@ namespace Ecommerce.Controllers.Admin
             {
                 ordered[i].DisplayOrder = i;
                 ordered[i].IsPrimary = ordered[i].ID_ProductVariantImage == input.ImageId;
+                ordered[i].UpdatedAt = DateTime.Now;
             }
 
             await _productVariantImageRepository.SaveChangesAsync();
@@ -581,15 +571,12 @@ namespace Ecommerce.Controllers.Admin
             foreach (var row in existing.Where(x => removedIds.Contains(x.ID_ProductVariantImage)))
             {
                 await _productVariantImageRepository.RemoveAsync(row);
-                var removePath = Path.Combine(_environment.WebRootPath, row.ImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-                result.DeferredDeleteAbsolutePaths.Add(removePath);
+                result.DeferredDeleteAbsolutePaths.Add(_commonImageService.ToAbsolutePath(_environment.WebRootPath, row.ImageUrl));
             }
 
             var newRows = new List<ProductVariantImageEntity>();
             var incomingFiles = viewInput.Files ?? new List<IFormFile>();
             var uploadRoot = _commonImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
-            Directory.CreateDirectory(uploadRoot);
-            var nextImageNumber = _commonImageService.GetNextImageNumber(uploadRoot);
 
             if (orderedExisting.Count + incomingFiles.Count > MaxFilesPerSku)
             {
@@ -598,32 +585,18 @@ namespace Ecommerce.Controllers.Admin
 
             foreach (var file in incomingFiles)
             {
-                var uploadValidation = _commonImageService.ValidateUploadInput(new ProductVariantImageUploadInput
-                {
-                    SKUId = skuId,
-                    Files = new List<IFormFile> { file }
-                });
+                var uploadValidation = _commonImageService.ValidateMediaFile(file, allowVideo: false);
                 if (!string.IsNullOrWhiteSpace(uploadValidation))
                 {
                     return ImageSyncResult.Fail(uploadValidation);
                 }
 
-                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-                var fileName = $"{nextImageNumber++}{ext}";
-                while (System.IO.File.Exists(Path.Combine(uploadRoot, fileName)))
-                {
-                    fileName = $"{nextImageNumber++}{ext}";
-                }
-                var absolutePath = Path.Combine(uploadRoot, fileName);
-                await using (var stream = new FileStream(absolutePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                result.SavedFileAbsolutePaths.Add(absolutePath);
+                var fileName = await _commonImageService.SaveFileAsync(file, uploadRoot);
+                result.SavedFileAbsolutePaths.Add(Path.Combine(uploadRoot, fileName));
                 newRows.Add(new ProductVariantImageEntity
                 {
                     FK_ProductVariant = skuId,
+                    MediaType = "Image",
                     ImageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
                     IsPrimary = false,
                     DisplayOrder = 0,
@@ -679,6 +652,7 @@ namespace Ecommerce.Controllers.Admin
             for (var i = 0; i < finalRows.Count; i++)
             {
                 finalRows[i].DisplayOrder = i;
+                finalRows[i].UpdatedAt = DateTime.Now;
             }
 
             if (newRows.Count > 0)

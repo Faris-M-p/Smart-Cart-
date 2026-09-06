@@ -34,28 +34,34 @@
                 <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
                     <div class="row g-2 flex-grow-1 align-items-end">
                         <div class="col-md-3">
-                            <label for="filterCategory" class="form-label small text-muted mb-0">Category</label>
-                            <select id="filterCategory" class="form-select form-select-sm" onchange="onFilterCategoryChange()">
-                                <option value="">All</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="filterSubCategory" class="form-label small text-muted mb-0">Subcategory</label>
-                            <select id="filterSubCategory" class="form-select form-select-sm">
-                                <option value="">All</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="filterBrand" class="form-label small text-muted mb-0">Brand</label>
-                            <select id="filterBrand" class="form-select form-select-sm">
-                                <option value="">All</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
                             <label for="searchText" class="form-label small text-muted mb-0">Search</label>
                             <div class="input-group search-input">
                                 <span class="input-group-text"><i class="ti ti-search"></i></span>
                                 <input type="text" id="searchText" class="form-control" placeholder="Search by name…">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterCategory" class="form-label small text-muted mb-0">Category</label>
+                            <div class="searchable-select">
+                                <select id="filterCategory" class="form-select form-select-sm" onchange="onFilterCategoryChange()">
+                                    <option value="">All</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterSubCategory" class="form-label small text-muted mb-0">Subcategory</label>
+                            <div class="searchable-select">
+                                <select id="filterSubCategory" class="form-select form-select-sm">
+                                    <option value="">All</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterBrand" class="form-label small text-muted mb-0">Brand</label>
+                            <div class="searchable-select">
+                                <select id="filterBrand" class="form-select form-select-sm">
+                                    <option value="">All</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -153,6 +159,22 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Product media</label>
+                        <div id="productMediaDropZone" class="border rounded p-3 text-center bg-light" style="cursor: pointer;">
+                            <div class="mb-2">
+                                <i class="ti ti-photo-up fs-3 text-primary"></i>
+                            </div>
+                            <div class="fw-semibold">Drag &amp; drop images or one video</div>
+                            <div class="small text-muted mb-2">or click to upload</div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnPickProductMedia">
+                                <i class="ti ti-upload"></i> Upload media
+                            </button>
+                            <input type="file" id="productMediaFiles" accept=".jpg,.jpeg,.png,.webp,.mp4,.webm" multiple class="d-none">
+                        </div>
+                        <div class="form-text mt-1">Maximum 5 items. Maximum 1 video. Images: jpg, jpeg, png, webp (2MB). Video: mp4, webm (20MB).</div>
+                        <div id="productMediaPreviewList" class="row g-2 mt-2"></div>
+                    </div>
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="productIsActive" checked>
                         <label class="form-check-label" for="productIsActive">Active</label>
@@ -186,12 +208,16 @@
     </div>
 </div>
 
+<script src="/Admin/assets/js/plugins/choices.min.js"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
     let paginationInstance = null;
     let searchTimeout = null;
+    let productMediaItems = [];
+    let productExistingMediaIdsOnOpen = [];
+    let productMediaDragKey = null;
 
     const TABLE_BODY_ID = 'productTableBody';
     const TABLE_COLUMN_COUNT = 5;
@@ -203,6 +229,7 @@
         create: '/Admin/Product/Create',
         update: '/Admin/Product/Update',
         delete: '/Admin/Product/Delete',
+        getMedia: '/Admin/Product/GetMedia',
         categories: '/Admin/Product/GetCategories',
         subCategories: '/Admin/Product/GetSubCategories',
         brands: '/Admin/Product/GetBrands'
@@ -224,6 +251,7 @@
         loadSubCategoriesForFilter();
         loadBrands();
         loadProducts();
+        bindProductMediaDropZone();
     });
 
     // 4. Event Handlers
@@ -347,6 +375,7 @@
         document.getElementById('productID').value = '0';
         document.getElementById('fkSubCategory').innerHTML = '<option value="">Select subcategory</option>';
         document.getElementById('productIsActive').checked = true;
+        resetProductMedia();
     }
 
     async function openEditModal(productID) {
@@ -366,6 +395,7 @@
             document.getElementById('fkSubCategory').value = String(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
             const fb = p.fkBrand ?? p.fk_Brand ?? p.FK_Brand;
             document.getElementById('fkBrand').value = fb != null && fb !== '' ? String(fb) : '';
+            await loadProductMediaForEdit(p.media ?? p.Media ?? [], productID);
             new bootstrap.Modal(document.getElementById('productModal')).show();
         } catch (e) {
             console.error(e);
@@ -405,24 +435,43 @@
             return;
         }
 
-        const body = {
-            id_Product: productID,
-            fk_Category: fkCategory,
-            fk_SubCategory: fkSubCategory,
-            fk_Brand: fkBrand,
-            name: name,
-            slug: slug,
-            description: description,
-            isActive: document.getElementById('productIsActive').checked
-        };
+        const currentExistingIds = productMediaItems
+            .filter(x => x.isExisting && x.mediaId > 0)
+            .map(x => x.mediaId);
+        const removedMediaIds = productExistingMediaIdsOnOpen.filter(id => !currentExistingIds.includes(id));
+        const newItems = productMediaItems.filter(x => !x.isExisting && x.file);
+        const primaryItem = productMediaItems.find(x => x.isPrimary);
+        const primaryExistingId = primaryItem?.isExisting ? (primaryItem.mediaId || 0) : 0;
+        const primaryNewIndex = !primaryItem?.isExisting
+            ? newItems.findIndex(x => x.key === primaryItem?.key)
+            : -1;
+
+        const formData = new FormData();
+        formData.append('ID_Product', String(productID));
+        formData.append('FK_Category', String(fkCategory));
+        formData.append('FK_SubCategory', String(fkSubCategory));
+        if (fkBrand) {
+            formData.append('FK_Brand', String(fkBrand));
+        }
+        formData.append('Name', name);
+        formData.append('Slug', slug);
+        formData.append('Description', description);
+        formData.append('IsActive', document.getElementById('productIsActive').checked ? 'true' : 'false');
+        currentExistingIds.forEach(id => formData.append('ExistingMediaOrder', String(id)));
+        removedMediaIds.forEach(id => formData.append('RemovedMediaIds', String(id)));
+        newItems.forEach(item => formData.append('Files', item.file));
+        if (primaryExistingId > 0) {
+            formData.append('PrimaryMediaId', String(primaryExistingId));
+        } else if (primaryNewIndex >= 0) {
+            formData.append('PrimaryIndex', String(primaryNewIndex));
+        }
 
         const url = productID === 0 ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body: formData
             });
             const result = await response.json();
             if (result.statusCode || result.StatusCode) {
@@ -584,6 +633,24 @@
         selectEl.add(new Option(name, String(id)));
     }
 
+    function enableSearchableSelect(selectEl, searchPlaceholder) {
+        if (!selectEl || typeof Choices === 'undefined') {
+            return;
+        }
+        if (selectEl.choicesInstance) {
+            selectEl.choicesInstance.destroy();
+            selectEl.choicesInstance = null;
+        }
+        selectEl.choicesInstance = new Choices(selectEl, {
+            searchEnabled: true,
+            searchPlaceholderValue: searchPlaceholder,
+            itemSelectText: '',
+            shouldSort: false,
+            allowHTML: false,
+            position: 'bottom'
+        });
+    }
+
     function addBrandOption(selectEl, b) {
         const id = pickBrandId(b);
         const name = b.name ?? b.Name ?? b.brandName ?? b.BrandName ?? '';
@@ -607,6 +674,7 @@
                 addCategoryOption(filterSel, cat);
                 addCategoryOption(formSel, cat);
             });
+            enableSearchableSelect(filterSel, 'Search categories...');
         } catch (e) {
             console.error(e);
         }
@@ -625,11 +693,16 @@
             if (!response.ok) throw new Error('Failed to load subcategories');
             const list = await response.json();
             const sel = document.getElementById('filterSubCategory');
+            if (sel.choicesInstance) {
+                sel.choicesInstance.destroy();
+                sel.choicesInstance = null;
+            }
             sel.innerHTML = '<option value="">All</option>';
             list.forEach(function (sc) {
                 if (sc.cancelled || sc.Cancelled) return;
                 addSubCategoryOption(sel, sc);
             });
+            enableSearchableSelect(sel, 'Search subcategories...');
         } catch (e) {
             console.error(e);
         }
@@ -666,8 +739,236 @@
                 addBrandOption(filterSel, b);
                 addBrandOption(formSel, b);
             });
+            enableSearchableSelect(filterSel, 'Search brands...');
         } catch (e) {
             console.error(e);
         }
+    }
+
+    function bindProductMediaDropZone() {
+        const dropZone = document.getElementById('productMediaDropZone');
+        const fileInput = document.getElementById('productMediaFiles');
+        const pickButton = document.getElementById('btnPickProductMedia');
+
+        pickButton?.addEventListener('click', function (e) {
+            e.preventDefault();
+            fileInput?.click();
+        });
+        dropZone?.addEventListener('click', function (e) {
+            if (e.target && e.target.closest('#btnPickProductMedia')) {
+                return;
+            }
+            fileInput?.click();
+        });
+        fileInput?.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                appendProductMedia(Array.from(this.files));
+                this.value = '';
+            }
+        });
+        dropZone?.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropZone.classList.add('border-primary');
+        });
+        dropZone?.addEventListener('dragleave', function () {
+            dropZone.classList.remove('border-primary');
+        });
+        dropZone?.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary');
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (files.length > 0) {
+                appendProductMedia(files);
+            }
+        });
+    }
+
+    function resetProductMedia() {
+        productMediaItems.forEach(item => {
+            if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(item.previewUrl);
+            }
+        });
+        productMediaItems = [];
+        productExistingMediaIdsOnOpen = [];
+        productMediaDragKey = null;
+        renderProductMediaPreviews();
+    }
+
+    async function loadProductMediaForEdit(mediaRows, productId) {
+        resetProductMedia();
+        let rows = Array.isArray(mediaRows) ? mediaRows : [];
+        if (rows.length === 0 && productId) {
+            try {
+                const response = await fetch(`${API.getMedia}/${productId}`);
+                if (response.ok) {
+                    rows = await response.json();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        productMediaItems = (Array.isArray(rows) ? rows : []).map(function (item) {
+            const mediaId = item.idProductMedia ?? item.ID_ProductMedia ?? 0;
+            const mediaType = item.mediaType ?? item.MediaType ?? 'Image';
+            const mediaUrl = item.mediaUrl ?? item.MediaUrl ?? '';
+            return {
+                key: `existing_${mediaId}`,
+                isExisting: true,
+                mediaId: mediaId,
+                file: null,
+                mediaType: mediaType,
+                mediaUrl: mediaUrl,
+                previewUrl: mediaUrl,
+                isPrimary: (item.isPrimary ?? item.IsPrimary ?? false) === true
+            };
+        });
+        if (!productMediaItems.some(x => x.isPrimary) && productMediaItems.length > 0) {
+            productMediaItems[0].isPrimary = true;
+        }
+        productExistingMediaIdsOnOpen = productMediaItems
+            .filter(x => x.isExisting && x.mediaId > 0)
+            .map(x => x.mediaId);
+        renderProductMediaPreviews();
+    }
+
+    function appendProductMedia(files) {
+        const imageExt = ['.jpg', '.jpeg', '.png', '.webp'];
+        const videoExt = ['.mp4', '.webm'];
+
+        for (const file of files) {
+            const nameLower = (file.name || '').toLowerCase();
+            const isImage = imageExt.some(ext => nameLower.endsWith(ext));
+            const isVideo = videoExt.some(ext => nameLower.endsWith(ext));
+            if (!isImage && !isVideo) {
+                if (typeof showWarning === 'function') {
+                    showWarning('Validation', 'Only jpg, jpeg, png, webp images and mp4/webm videos are allowed.');
+                }
+                continue;
+            }
+            if (isImage && (file.size || 0) > 2 * 1024 * 1024) {
+                if (typeof showWarning === 'function') {
+                    showWarning('Validation', 'Each image must be less than or equal to 2 MB.');
+                }
+                continue;
+            }
+            if (isVideo && (file.size || 0) > 20 * 1024 * 1024) {
+                if (typeof showWarning === 'function') {
+                    showWarning('Validation', 'Each video must be less than or equal to 20 MB.');
+                }
+                continue;
+            }
+            if (productMediaItems.length >= 5) {
+                if (typeof showWarning === 'function') {
+                    showWarning('Validation', 'Maximum 5 media items are allowed per product.');
+                }
+                break;
+            }
+            if (isVideo && productMediaItems.some(x => String(x.mediaType).toLowerCase() === 'video')) {
+                if (typeof showWarning === 'function') {
+                    showWarning('Validation', 'Only one video is allowed per product.');
+                }
+                continue;
+            }
+
+            productMediaItems.push({
+                key: `new_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                isExisting: false,
+                mediaId: 0,
+                file: file,
+                mediaType: isVideo ? 'Video' : 'Image',
+                mediaUrl: '',
+                previewUrl: URL.createObjectURL(file),
+                isPrimary: false
+            });
+        }
+
+        if (!productMediaItems.some(x => x.isPrimary) && productMediaItems.length > 0) {
+            productMediaItems[0].isPrimary = true;
+        }
+        renderProductMediaPreviews();
+    }
+
+    function renderProductMediaPreviews() {
+        const holder = document.getElementById('productMediaPreviewList');
+        if (!holder) return;
+        if (productMediaItems.length === 0) {
+            holder.innerHTML = '<div class="col-12 text-muted small">No media selected.</div>';
+            return;
+        }
+
+        holder.innerHTML = productMediaItems.map(function (item, index) {
+            const url = item.previewUrl || item.mediaUrl || '';
+            const isVideo = String(item.mediaType).toLowerCase() === 'video';
+            const mediaHtml = isVideo
+                ? `<video src="${escapeAttr(url)}" class="card-img-top" style="height: 140px; object-fit: cover;" muted></video>`
+                : `<img src="${escapeAttr(url)}" class="card-img-top" style="height: 140px; object-fit: cover;" alt="Product media ${index + 1}">`;
+            return `
+                <div class="col-md-4">
+                    <div class="card h-100 ${item.isPrimary ? 'border-primary' : ''}" draggable="true"
+                        ondragstart="onProductMediaDragStart('${item.key}')"
+                        ondragover="onProductMediaDragOver(event)"
+                        ondrop="onProductMediaDrop('${item.key}')">
+                        ${mediaHtml}
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge ${isVideo ? 'bg-info' : 'bg-secondary'}">${isVideo ? 'Video' : 'Image'}</span>
+                                <span class="small text-muted">#${index + 1}</span>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="productPrimaryMedia" ${item.isPrimary ? 'checked' : ''}
+                                    onchange="setProductPrimaryMedia('${item.key}')">
+                                <label class="form-check-label small">Primary</label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProductMedia('${item.key}')">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function onProductMediaDragStart(key) {
+        productMediaDragKey = key;
+    }
+
+    function onProductMediaDragOver(e) {
+        e.preventDefault();
+    }
+
+    function onProductMediaDrop(targetKey) {
+        if (!productMediaDragKey || productMediaDragKey === targetKey) {
+            return;
+        }
+        const fromIndex = productMediaItems.findIndex(x => x.key === productMediaDragKey);
+        const toIndex = productMediaItems.findIndex(x => x.key === targetKey);
+        if (fromIndex < 0 || toIndex < 0) {
+            return;
+        }
+        const [moved] = productMediaItems.splice(fromIndex, 1);
+        productMediaItems.splice(toIndex, 0, moved);
+        productMediaDragKey = null;
+        renderProductMediaPreviews();
+    }
+
+    function setProductPrimaryMedia(key) {
+        productMediaItems = productMediaItems.map(x => ({ ...x, isPrimary: x.key === key }));
+        renderProductMediaPreviews();
+    }
+
+    function removeProductMedia(key) {
+        const idx = productMediaItems.findIndex(x => x.key === key);
+        if (idx < 0) return;
+        const item = productMediaItems[idx];
+        if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(item.previewUrl);
+        }
+        productMediaItems.splice(idx, 1);
+        if (!productMediaItems.some(x => x.isPrimary) && productMediaItems.length > 0) {
+            productMediaItems[0].isPrimary = true;
+        }
+        renderProductMediaPreviews();
     }
 </script>

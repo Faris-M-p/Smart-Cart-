@@ -20,6 +20,8 @@ namespace Ecommerce.DataAccess
 
         public DbSet<ProductImageEntity> ProductImages => Set<ProductImageEntity>();
 
+        public DbSet<ProductMediaEntity> ProductMedia => Set<ProductMediaEntity>();
+
         public DbSet<SupplierEntity> Suppliers => Set<SupplierEntity>();
 
         public DbSet<VariantEntity> Variants => Set<VariantEntity>();

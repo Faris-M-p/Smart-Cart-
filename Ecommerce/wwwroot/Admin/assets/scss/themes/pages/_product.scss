@@ -218,4 +218,29 @@
     }
 }
 
+.searchable-select {
+    .choices {
+        margin-bottom: 0;
+    }
+
+    .choices__list--dropdown,
+    .choices.is-flipped .choices__list--dropdown {
+        top: 100% !important;
+        bottom: auto !important;
+        margin-top: 4px;
+        margin-bottom: 0;
+        border-radius: 0.375rem;
+    }
+
+    .choices__list--dropdown .choices__list {
+        max-height: 420px;
+    }
+
+    .choices__list--dropdown .choices__item {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
 /**====== Product Management css end ======**/

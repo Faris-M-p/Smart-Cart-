@@ -161,7 +161,8 @@ namespace Ecommerce.Repository.Admin
             {
                 Id = employee.ID_AdminUser,
                 Name = employee.FullName,
-                UserName = employee.UserName
+                UserName = employee.UserName,
+                ProfileImageUrl = employee.ProfileImageUrl
             };
 
         private static AdminAuthRole MapRole(UserRoleEntity role) =>

@@ -51,6 +51,7 @@ namespace Ecommerce.Repository.Admin
                     e.UserName,
                     e.FK_UserRole,
                     e.IsActive,
+                    e.ProfileImageUrl,
                     e.CreatedAt
                 })
                 .ToListAsync();
@@ -74,6 +75,7 @@ namespace Ecommerce.Repository.Admin
                     UserRoleName = roleName ?? string.Empty,
                     IsActive = e.IsActive,
                     IsProtected = EmployeeHelper.IsProtectedSystemAdmin(e.UserName),
+                    ProfileImageUrl = e.ProfileImageUrl,
                     CreatedAt = e.CreatedAt
                 };
             }).ToList();
@@ -119,6 +121,7 @@ namespace Ecommerce.Repository.Admin
                 UserRoleName = roleName,
                 IsActive = entity.IsActive,
                 IsProtected = EmployeeHelper.IsProtectedSystemAdmin(entity.UserName),
+                ProfileImageUrl = entity.ProfileImageUrl,
                 CreatedAt = entity.CreatedAt
             };
         }
@@ -270,6 +273,22 @@ namespace Ecommerce.Repository.Admin
 
             await _dbContext.SaveChangesAsync();
             return Ok(entity.ID_AdminUser, "Employee deleted successfully.");
+        }
+
+        public async Task<CommonResponse> SetProfileImageUrlAsync(int employeeId, string? profileImageUrl)
+        {
+            var entity = await _dbContext.AdminUsers
+                .FirstOrDefaultAsync(e => e.ID_AdminUser == employeeId);
+
+            if (entity == null || entity.Cancelled)
+            {
+                return Fail("Employee not found.");
+            }
+
+            entity.ProfileImageUrl = string.IsNullOrWhiteSpace(profileImageUrl) ? null : profileImageUrl.Trim();
+            entity.UpdatedAt = DateTime.Now;
+            await _dbContext.SaveChangesAsync();
+            return Ok(entity.ID_AdminUser, "Employee profile image updated successfully.");
         }
 
         private CommonResponse? ValidateWrite(NormalizedEmployeeWriteInput input, bool isCreate)

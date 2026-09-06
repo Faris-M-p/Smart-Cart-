@@ -1,18 +1,88 @@
 using Ecommerce.Models.Entities;
+using static Ecommerce.Models.Admin.ProductModel;
 using static Ecommerce.Models.Admin.ProductVariantModel;
 
 namespace Ecommerce.Helpers.Common
 {
     public class CommonImageService
     {
-        private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".jpg", ".jpeg", ".png", ".webp"
         };
 
-        private const long MaxFileBytes = 2 * 1024 * 1024;
+        private static readonly HashSet<string> AllowedVideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp4", ".webm"
+        };
 
-        // Used by controller before upload processing to validate common image request rules.
+        private const long MaxImageBytes = 2 * 1024 * 1024;
+        private const long MaxVideoBytes = 20 * 1024 * 1024;
+        private const int MaxProductMedia = 5;
+        private const int MaxProductVideos = 1;
+
+        public string? ValidateImageFile(IFormFile file)
+        {
+            if (file == null || file.Length <= 0)
+            {
+                return "Please select a valid image.";
+            }
+
+            var ext = Path.GetExtension(file.FileName);
+            if (!AllowedImageExtensions.Contains(ext))
+            {
+                return "Only jpg, jpeg, png, and webp files are allowed.";
+            }
+
+            if (file.Length > MaxImageBytes)
+            {
+                return "Each image must be less than or equal to 2 MB.";
+            }
+
+            return null;
+        }
+
+        public string? ValidateVideoFile(IFormFile file)
+        {
+            if (file == null || file.Length <= 0)
+            {
+                return "Please select a valid video.";
+            }
+
+            var ext = Path.GetExtension(file.FileName);
+            if (!AllowedVideoExtensions.Contains(ext))
+            {
+                return "Only mp4 and webm videos are allowed.";
+            }
+
+            if (file.Length > MaxVideoBytes)
+            {
+                return "Each video must be less than or equal to 20 MB.";
+            }
+
+            return null;
+        }
+
+        public string? ValidateMediaFile(IFormFile file, bool allowVideo)
+        {
+            var mediaType = ResolveMediaType(file.FileName);
+            if (mediaType == null)
+            {
+                return allowVideo
+                    ? "Only jpg, jpeg, png, webp images and mp4/webm videos are allowed."
+                    : "Only jpg, jpeg, png, and webp files are allowed.";
+            }
+
+            if (mediaType == "Video" && !allowVideo)
+            {
+                return "Video is not allowed.";
+            }
+
+            return mediaType == "Video"
+                ? ValidateVideoFile(file)
+                : ValidateImageFile(file);
+        }
+
         public string? ValidateUploadInput(ProductVariantImageUploadInput input)
         {
             if (input == null || input.SKUId <= 0)
@@ -27,7 +97,7 @@ namespace Ecommerce.Helpers.Common
 
             foreach (var file in input.Files)
             {
-                var fileError = ValidateImageFile(file);
+                var fileError = ValidateMediaFile(file, allowVideo: false);
                 if (!string.IsNullOrWhiteSpace(fileError))
                 {
                     return fileError;
@@ -37,24 +107,37 @@ namespace Ecommerce.Helpers.Common
             return null;
         }
 
-        // Used by ValidateUploadInput to enforce extension and size limits per file.
-        private string? ValidateImageFile(IFormFile file)
+        public string? ValidateProductMediaLimits(int videoCount, int totalCount)
         {
-            var ext = Path.GetExtension(file.FileName);
-            if (!AllowedExtensions.Contains(ext))
+            if (totalCount > MaxProductMedia)
             {
-                return "Only jpg, jpeg, png, and webp files are allowed.";
+                return $"Maximum {MaxProductMedia} media items are allowed per product.";
             }
 
-            if (file.Length <= 0 || file.Length > MaxFileBytes)
+            if (videoCount > MaxProductVideos)
             {
-                return "Each image must be less than or equal to 2 MB.";
+                return "Only one video is allowed per product.";
             }
 
             return null;
         }
 
-        // Used by controller to apply client order safely while preserving missing rows.
+        public string? ResolveMediaType(string fileName)
+        {
+            var ext = Path.GetExtension(fileName);
+            if (AllowedImageExtensions.Contains(ext))
+            {
+                return "Image";
+            }
+
+            if (AllowedVideoExtensions.Contains(ext))
+            {
+                return "Video";
+            }
+
+            return null;
+        }
+
         public List<ProductVariantImageEntity> ReorderExisting(
             List<ProductVariantImageEntity> existing,
             List<int>? orderedImageIds)
@@ -87,7 +170,6 @@ namespace Ecommerce.Helpers.Common
             return result;
         }
 
-        // Used by controller to keep API response mapping in one place.
         public ProductVariantImageDto MapToDto(ProductVariantImageEntity row) =>
             new()
             {
@@ -98,35 +180,94 @@ namespace Ecommerce.Helpers.Common
                 DisplayOrder = row.DisplayOrder
             };
 
-        // Used by controller to resolve the physical upload directory.
+        public ProductMediaDto MapToDto(ProductMediaEntity row) =>
+            new()
+            {
+                ID_ProductMedia = row.ID_ProductMedia,
+                FK_Product = row.FK_Product,
+                MediaType = row.MediaType,
+                MediaUrl = row.MediaUrl,
+                IsPrimary = row.IsPrimary,
+                DisplayOrder = row.DisplayOrder
+            };
+
         public string GetUploadRoot(string webRootPath, string productSlug, string sku) =>
             Path.Combine(webRootPath, "uploads", "products", NormalizePathSegment(productSlug), NormalizePathSegment(sku));
 
-        // Used by controller to generate URL stored in database.
         public string BuildImageUrl(string productSlug, string sku, string fileName) =>
             $"/uploads/products/{NormalizePathSegment(productSlug)}/{NormalizePathSegment(sku)}/{fileName}";
 
-        public int GetNextImageNumber(string folderPath)
+        public string GetProductMediaUploadRoot(string webRootPath, string productSlug) =>
+            Path.Combine(webRootPath, "uploads", "products", NormalizePathSegment(productSlug), "media");
+
+        public string BuildProductMediaUrl(string productSlug, string fileName) =>
+            $"/uploads/products/{NormalizePathSegment(productSlug)}/media/{fileName}";
+
+        public string GetEmployeeUploadRoot(string webRootPath, int employeeId) =>
+            Path.Combine(webRootPath, "uploads", "employees", employeeId.ToString());
+
+        public string BuildEmployeeImageUrl(int employeeId, string fileName) =>
+            $"/uploads/employees/{employeeId}/{fileName}";
+
+        public async Task<string> SaveFileAsync(IFormFile file, string folderPath)
         {
-            if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var fileName = CreateUniqueFileName(folderPath, ext);
+            var absolutePath = Path.Combine(folderPath, fileName);
+            await using (var stream = new FileStream(absolutePath, FileMode.CreateNew))
             {
-                return 1;
+                await file.CopyToAsync(stream);
             }
 
-            var maxNumber = 0;
-            foreach (var file in Directory.GetFiles(folderPath))
-            {
-                var name = Path.GetFileNameWithoutExtension(file);
-                if (int.TryParse(name, out var n) && n > maxNumber)
-                {
-                    maxNumber = n;
-                }
-            }
-
-            return maxNumber + 1;
+            return fileName;
         }
 
-        // Used by controller when DB write fails and files must be cleaned up.
+        public async Task<string> SaveEmployeeProfileAsync(IFormFile file, string folderPath)
+        {
+            Directory.CreateDirectory(folderPath);
+            foreach (var existing in Directory.GetFiles(folderPath))
+            {
+                TryDeleteFile(existing);
+            }
+
+            return await SaveFileAsync(file, folderPath);
+        }
+
+        public string ToAbsolutePath(string webRootPath, string publicUrl)
+        {
+            if (string.IsNullOrWhiteSpace(webRootPath) || string.IsNullOrWhiteSpace(publicUrl) || publicUrl.Contains("..", StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            var relative = publicUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var absolutePath = Path.GetFullPath(Path.Combine(webRootPath, relative));
+            var uploadsRoot = Path.GetFullPath(Path.Combine(webRootPath, "uploads"));
+            if (!absolutePath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            return absolutePath;
+        }
+
+        public void TryDeleteByUrl(string webRootPath, string? publicUrl)
+        {
+            if (string.IsNullOrWhiteSpace(publicUrl))
+            {
+                return;
+            }
+
+            var absolutePath = ToAbsolutePath(webRootPath, publicUrl);
+            if (string.IsNullOrWhiteSpace(absolutePath))
+            {
+                return;
+            }
+
+            TryDeleteFile(absolutePath);
+        }
+
         public void TryDeleteFile(string absolutePath)
         {
             try
@@ -140,6 +281,18 @@ namespace Ecommerce.Helpers.Common
             {
                 // Best-effort file cleanup only.
             }
+        }
+
+        private static string CreateUniqueFileName(string folderPath, string extension)
+        {
+            string fileName;
+            do
+            {
+                fileName = $"{Guid.NewGuid():N}{extension}";
+            }
+            while (File.Exists(Path.Combine(folderPath, fileName)));
+
+            return fileName;
         }
 
         private static string NormalizePathSegment(string value)
