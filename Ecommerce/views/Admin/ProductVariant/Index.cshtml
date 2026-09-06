@@ -28,13 +28,13 @@
 <!-- [ breadcrumb ] end -->
 
 <!-- [ Main Content ] start -->
-        <div class="row">
+        <div class="row" data-permission-module="ProductVariants">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5>Product Variant (SKU) List</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productVariantModal" onclick="openCreateModal()">
+                            <button type="button" class="btn btn-primary" data-action="Create" data-bs-toggle="modal" data-bs-target="#productVariantModal" onclick="openCreateModal()">
                                 <i class="ti ti-plus"></i> Add New SKU
                             </button>
                         </div>
@@ -552,10 +552,10 @@
                 <td>${totalImages}</td>
                 <td>${created ? new Date(created).toLocaleDateString() : '—'}</td>
                 <td class="text-end">
-                    <button class="btn-action" onclick="openEditModal(${id})" title="Edit">
+                    <button class="btn-action" data-action="Edit" onclick="openEditModal(${id})" title="Edit">
                         <i class="ti ti-edit"></i>
                     </button>
-                    <button class="btn-action" onclick="openDeleteModal(${id})" title="Delete">
+                    <button class="btn-action" data-action="Delete" onclick="openDeleteModal(${id})" title="Delete">
                         <i class="ti ti-trash"></i>
                     </button>
                 </td>

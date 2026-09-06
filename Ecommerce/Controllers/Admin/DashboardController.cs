@@ -5,6 +5,7 @@ namespace Ecommerce.Controllers.Admin
     [Route("Admin/Dashboard")]
     public class DashboardController : Controller
     {
+        [HttpGet("/admin/dashboard")]
         [Route("")]
         [Route("Index")]
         public IActionResult Index()

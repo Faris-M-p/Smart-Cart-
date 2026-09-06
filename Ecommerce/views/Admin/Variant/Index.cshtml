@@ -19,13 +19,13 @@
     </div>
 </div>
 
-        <div class="row">
+        <div class="row" data-permission-module="Variants">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5>Variant List</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#variantModal" onclick="openCreateVariantModal()">
+                            <button type="button" class="btn btn-primary" data-action="Create" data-bs-toggle="modal" data-bs-target="#variantModal" onclick="openCreateVariantModal()">
                                 <i class="ti ti-plus"></i> Add New Variant
                             </button>
                         </div>
@@ -342,8 +342,8 @@
                     <td class="col-actions text-start">
                         ${cancelled ? '' : `
                         <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditVariantModal(${vid})" title="Edit"><i class="ti ti-edit"></i></button>
-                            <button type="button" class="btn-action" onclick="openDeleteVariantModal(${vid})" title="Delete"><i class="ti ti-trash"></i></button>
+                            <button type="button" class="btn-action" data-action="Edit" onclick="openEditVariantModal(${vid})" title="Edit"><i class="ti ti-edit"></i></button>
+                            <button type="button" class="btn-action" data-action="Delete" onclick="openDeleteVariantModal(${vid})" title="Delete"><i class="ti ti-trash"></i></button>
                         </div>`}
                     </td>
                     <td class="col-expand text-start">
@@ -354,7 +354,7 @@
                     <td colspan="6" class="bg-light p-3 border-top-0">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <strong class="small text-muted">Values</strong>
-                            <button type="button" class="btn btn-sm btn-primary" onclick="openCreateValueModal(${vid})"><i class="ti ti-plus"></i> Add value</button>
+                            <button type="button" class="btn btn-sm btn-primary" data-permission-module="VariantValues" data-action="Create" onclick="openCreateValueModal(${vid})"><i class="ti ti-plus"></i> Add value</button>
                         </div>
                         <div id="vv-inner-${vid}"><span class="text-muted small">Open to load values…</span></div>
                     </td>
@@ -503,8 +503,8 @@
                                 <td class="text-start">${escapeHtml(String(ord))}</td>
                                 <td class="text-start">
                                     <div class="table-actions">
-                                        <button type="button" class="btn-action" onclick="openEditValueModal(${variantId}, ${id})" title="Edit"><i class="ti ti-edit"></i></button>
-                                        <button type="button" class="btn-action" onclick="openDeleteValueModal(${variantId}, ${id})" title="Delete"><i class="ti ti-trash"></i></button>
+                                        <button type="button" class="btn-action" data-permission-module="VariantValues" data-action="Edit" onclick="openEditValueModal(${variantId}, ${id})" title="Edit"><i class="ti ti-edit"></i></button>
+                                        <button type="button" class="btn-action" data-permission-module="VariantValues" data-action="Delete" onclick="openDeleteValueModal(${variantId}, ${id})" title="Delete"><i class="ti ti-trash"></i></button>
                                     </div>
                                 </td>
                             </tr>`;

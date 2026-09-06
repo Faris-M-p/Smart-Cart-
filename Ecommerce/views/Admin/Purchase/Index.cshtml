@@ -22,13 +22,13 @@
 <!-- [ breadcrumb ] end -->
 
 <!-- [ Main Content ] start -->
-        <div class="row">
+        <div class="row" data-permission-module="Purchases">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5>Purchase List</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal" onclick="openCreateModal()">
+                            <button type="button" class="btn btn-primary" data-action="Create" data-bs-toggle="modal" data-bs-target="#purchaseModal" onclick="openCreateModal()">
                                 <i class="ti ti-plus"></i> Add New Purchase
                             </button>
                         </div>
@@ -439,13 +439,13 @@
                 <td>${created ? new Date(created).toLocaleDateString() : '-'}</td>
                 <td class="text-end">
                     ${cancelled ? '' : `
-                        <button class="btn-action btn-view" onclick="viewPurchase(${pid})" title="View">
+                        <button class="btn-action btn-view" data-action="View" onclick="viewPurchase(${pid})" title="View">
                             <i class="ti ti-eye"></i>
                         </button>
-                        <button class="btn-action btn-edit" onclick="openEditModal(${pid})" title="Edit">
+                        <button class="btn-action btn-edit" data-action="Edit" onclick="openEditModal(${pid})" title="Edit">
                             <i class="ti ti-edit"></i>
                         </button>
-                        <button class="btn-action btn-delete" onclick="openDeleteModal(${pid})" title="Delete">
+                        <button class="btn-action btn-delete" data-action="Delete" onclick="openDeleteModal(${pid})" title="Delete">
                             <i class="ti ti-trash"></i>
                         </button>
                     `}

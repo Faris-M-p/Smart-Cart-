@@ -1,0 +1,127 @@
+@{
+    Layout = "~/Views/Shared/_AdminAuthLayout.cshtml";
+}
+
+<div class="auth-main">
+  <div class="auth-wrapper v3">
+    <div class="auth-form">
+      <div class="card my-5">
+        <div class="card-body">
+          <a href="/admin/login" class="d-flex align-items-center justify-content-center mb-4">
+            <img src="/Admin/assets/images/logo-dark.svg" alt="SmartCart" class="img-fluid">
+          </a>
+          <div class="text-center mb-4">
+            <h3 class="mb-2"><b>SmartCart Admin</b></h3>
+            <p class="text-muted">Sign in with your employee account</p>
+          </div>
+
+          <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+
+          <form id="adminLoginForm" novalidate>
+            <div class="form-group mb-3">
+              <label class="form-label" for="adminUserName">Username</label>
+              <input type="text" class="form-control" id="adminUserName" name="userName" autocomplete="username" maxlength="50">
+            </div>
+            <div class="form-group mb-4">
+              <label class="form-label" for="adminPassword">Password</label>
+              <div class="input-group">
+                <input type="password" class="form-control" id="adminPassword" name="password" autocomplete="current-password" maxlength="100">
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Show password">
+                  <i class="ti ti-eye" id="togglePasswordIcon"></i>
+                </button>
+              </div>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary" id="loginButton">Login</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('adminLoginForm');
+    var userNameInput = document.getElementById('adminUserName');
+    var passwordInput = document.getElementById('adminPassword');
+    var loginButton = document.getElementById('loginButton');
+    var loginError = document.getElementById('loginError');
+    var togglePassword = document.getElementById('togglePassword');
+    var togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+    function showError(message) {
+      loginError.textContent = message || 'Invalid username or password.';
+      loginError.classList.remove('d-none');
+    }
+
+    function hideError() {
+      loginError.classList.add('d-none');
+      loginError.textContent = '';
+    }
+
+    togglePassword.addEventListener('click', function () {
+      var hidden = passwordInput.type === 'password';
+      passwordInput.type = hidden ? 'text' : 'password';
+      togglePasswordIcon.className = hidden ? 'ti ti-eye-off' : 'ti ti-eye';
+      togglePassword.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      hideError();
+
+      var userName = (userNameInput.value || '').trim();
+      var password = passwordInput.value || '';
+
+      if (!userName) {
+        showError('Username is required.');
+        userNameInput.focus();
+        return;
+      }
+      if (!password) {
+        showError('Password is required.');
+        passwordInput.focus();
+        return;
+      }
+
+      loginButton.disabled = true;
+      loginButton.textContent = 'Signing in...';
+
+      fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: userName, password: password })
+      })
+        .then(function (res) {
+          return res.json().then(function (body) {
+            return { res: res, body: body };
+          }).catch(function () {
+            return { res: res, body: null };
+          });
+        })
+        .then(function (result) {
+          var body = result.body || {};
+          var success = body.success === true || body.Success === true;
+          var data = body.data || body.Data;
+          if (result.res.ok && success && data) {
+            window.adminAuth.setSession(data);
+            var nextPath = window.adminPermissions && window.adminPermissions.homePath
+              ? window.adminPermissions.homePath()
+              : '/Admin/Dashboard';
+            window.location.replace(nextPath);
+            return;
+          }
+          showError(body.message || body.Message || 'Invalid username or password.');
+        })
+        .catch(function () {
+          showError('Unable to sign in. Please try again.');
+        })
+        .finally(function () {
+          loginButton.disabled = false;
+          loginButton.textContent = 'Login';
+        });
+    });
+  })();
+</script>

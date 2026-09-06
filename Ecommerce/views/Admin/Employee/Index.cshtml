@@ -21,13 +21,13 @@
 </div>
 <!-- [ breadcrumb ] end -->
 
-<div class="row">
+<div class="row" data-permission-module="Employees">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5>Employee List</h5>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#employeeModal" onclick="openCreateModal()">
+                    <button type="button" class="btn btn-primary" data-action="Create" data-bs-toggle="modal" data-bs-target="#employeeModal" onclick="openCreateModal()">
                         <i class="ti ti-plus"></i> Add New Employee
                     </button>
                 </div>
@@ -279,10 +279,10 @@
         const actions = isProtected
             ? '<span class="badge bg-secondary" title="Protected" data-bs-toggle="tooltip" data-bs-placement="top">Protected</span>'
             : `<div class="table-actions">
-                <button type="button" class="btn-action" onclick="openEditModal(${employeeId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                <button type="button" class="btn-action" data-action="Edit" onclick="openEditModal(${employeeId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                     <i class="ti ti-edit"></i>
                 </button>
-                <button type="button" class="btn-action" onclick="openDeleteModal(${employeeId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                <button type="button" class="btn-action" data-action="Deactivate" onclick="openDeleteModal(${employeeId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                     <i class="ti ti-trash"></i>
                 </button>
                </div>`;

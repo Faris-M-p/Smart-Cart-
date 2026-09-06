@@ -160,7 +160,7 @@ else
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" data-permission-module="UserRoles">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
@@ -184,7 +184,7 @@ else
                     </div>
                     <div class="permission-mapping-actions">
                         <a href="/Admin/UserRole" class="btn btn-secondary">Cancel</a>
-                        <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
+                        <button type="button" class="btn btn-primary" data-action="Edit" onclick="savePermissions()">Save Permissions</button>
                     </div>
                 </div>
             </div>

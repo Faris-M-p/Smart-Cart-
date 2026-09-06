@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SmartCart Admin</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <link rel="icon" href="/Admin/assets/images/favicon.svg" type="image/x-icon">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
+  <link rel="stylesheet" href="/Admin/assets/fonts/tabler-icons.min.css">
+  <link rel="stylesheet" href="/Admin/assets/fonts/feather.css">
+  <link rel="stylesheet" href="/Admin/assets/fonts/fontawesome.css">
+  <link rel="stylesheet" href="/Admin/assets/fonts/material.css">
+  <link rel="stylesheet" href="/Admin/assets/css/style.css" id="main-style-link">
+  <link rel="stylesheet" href="/Admin/assets/css/style-preset.css">
+  <script src="/Admin/assets/js/common/admin-auth.js"></script>
+  <script src="/Admin/assets/js/common/admin-permissions.js"></script>
+  <script>window.adminAuth && window.adminAuth.guardLoginPage();</script>
+</head>
+<body>
+  @RenderBody()
+
+  <script src="/Admin/assets/js/plugins/popper.min.js"></script>
+  <script src="/Admin/assets/js/plugins/bootstrap.min.js"></script>
+  <script src="/Admin/assets/js/fonts/custom-font.js"></script>
+  <script src="/Admin/assets/js/pcoded.js"></script>
+  <script src="/Admin/assets/js/common/toast.js"></script>
+  <script>layout_change('light');</script>
+  <script>preset_change("preset-1");</script>
+  <script>font_change("Public-Sans");</script>
+</body>
+</html>

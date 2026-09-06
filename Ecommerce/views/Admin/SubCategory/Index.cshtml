@@ -22,13 +22,13 @@
 <!-- [ breadcrumb ] end -->
 
 <!-- [ Main Content ] start -->
-        <div class="row">
+        <div class="row" data-permission-module="SubCategories">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5>SubCategory List</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subCategoryModal" onclick="openCreateModal()">
+                            <button type="button" class="btn btn-primary" data-action="Create" data-bs-toggle="modal" data-bs-target="#subCategoryModal" onclick="openCreateModal()">
                                 <i class="ti ti-plus"></i> Add New SubCategory
                             </button>
                         </div>
@@ -351,10 +351,10 @@
                 <td class="col-actions">
                     ${cancelled ? '' : `
                         <div class="table-actions">
-                        <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                        <button type="button" class="btn-action" data-action="Edit" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                             <i class="ti ti-edit"></i>
                         </button>
-                        <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                        <button type="button" class="btn-action" data-action="Delete" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                             <i class="ti ti-trash"></i>
                         </button>
                         </div>

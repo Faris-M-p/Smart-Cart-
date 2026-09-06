@@ -30,6 +30,14 @@
 <link rel="stylesheet" href="/Admin/assets/css/style-preset.css" >
 <!-- [Empty State CSS] -->
 <link rel="stylesheet" href="/Admin/assets/css/empty-state.css?v=listing-empty-1" >
+<style>.js-permission-hidden { display: none !important; }</style>
+<script src="/Admin/assets/js/common/admin-auth.js"></script>
+<script src="/Admin/assets/js/common/admin-permissions.js"></script>
+<script>
+  window.adminAuth && window.adminAuth.guardAdminPage();
+  window.adminPermissions && window.adminPermissions.guardCurrentPage();
+  window.adminPermissions && window.adminPermissions.apply();
+</script>
 
 </head>
 <!-- [Head] end -->
@@ -55,7 +63,7 @@
     <div class="navbar-content">
       <ul class="pc-navbar">
         <li class="pc-item">
-          <a href="/Admin/Dashboard" class="pc-link">
+          <a href="/Admin/Dashboard" class="pc-link" data-permission="Dashboard.View">
             <span class="pc-micon"><i class="ti ti-dashboard"></i></span>
             <span class="pc-mtext">Dashboard</span>
           </a>
@@ -69,16 +77,16 @@
           </a>
           <ul class="pc-submenu">
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Category">Categories</a>
+              <a class="pc-link" href="/Admin/Category" data-permission="Categories.View">Categories</a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/SubCategory">Sub Categories</a>
+              <a class="pc-link" href="/Admin/SubCategory" data-permission="SubCategories.View">Sub Categories</a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Brand">Brands</a>
+              <a class="pc-link" href="/Admin/Brand" data-permission="Brands.View">Brands</a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Product">Products</a>
+              <a class="pc-link" href="/Admin/Product" data-permission="Products.View">Products</a>
             </li>
             <li class="pc-item pc-hasmenu">
               <a href="#!" class="pc-link">
@@ -87,15 +95,15 @@
               </a>
               <ul class="pc-submenu">
                 <li class="pc-item">
-                  <a class="pc-link" href="/Admin/Variant">Variants</a>
+                  <a class="pc-link" href="/Admin/Variant" data-permission="Variants.View">Variants</a>
                 </li>
                 <li class="pc-item">
-                  <a class="pc-link" href="/Admin/VariantValue">Variant Values</a>
+                  <a class="pc-link" href="/Admin/VariantValue" data-permission="VariantValues.View">Variant Values</a>
                 </li>
               </ul>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/ProductVariant">Product Variants / SKU</a>
+              <a class="pc-link" href="/Admin/ProductVariant" data-permission="ProductVariants.View">Product Variants / SKU</a>
             </li>
           </ul>
         </li>
@@ -108,13 +116,13 @@
           </a>
           <ul class="pc-submenu">
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Supplier">Suppliers</a>
+              <a class="pc-link" href="/Admin/Supplier" data-permission="Suppliers.View">Suppliers</a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Purchase">Purchases</a>
+              <a class="pc-link" href="/Admin/Purchase" data-permission="Purchases.View">Purchases</a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Inventory">Inventory</a>
+              <a class="pc-link" href="/Admin/Inventory" data-permission="Stock.View">Inventory</a>
             </li>
           </ul>
         </li>
@@ -127,10 +135,10 @@
           </a>
           <ul class="pc-submenu">
             <li class="pc-item">
-              <a class="pc-link" href="/admin/employees" data-menu-prefixes="/admin/employees,/Admin/Employee">Employees</a>
+              <a class="pc-link" href="/admin/employees" data-menu-prefixes="/admin/employees,/Admin/Employee" data-permission="Employees.View">Employees</a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/UserRole" data-menu-prefixes="/Admin/UserRole,/admin/user-roles">User Roles</a>
+              <a class="pc-link" href="/Admin/UserRole" data-menu-prefixes="/Admin/UserRole,/admin/user-roles" data-permission="UserRoles.View">User Roles</a>
             </li>
           </ul>
         </li>
@@ -271,7 +279,7 @@
         aria-expanded="false"
       >
         <img src="/Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar">
-        <span>Stebin Ben</span>
+        <span data-admin-user-name>Admin</span>
       </a>
       <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown">
         <div class="dropdown-header">
@@ -280,10 +288,10 @@
               <img src="/Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar wid-35">
             </div>
             <div class="flex-grow-1 ms-3">
-              <h6 class="mb-1">Stebin Ben</h6>
-              <span>UI/UX Designer</span>
+              <h6 class="mb-1" data-admin-user-name>Admin</h6>
+              <span data-admin-user-role>Employee</span>
             </div>
-            <a href="#!" class="pc-head-link bg-transparent"><i class="ti ti-power text-danger"></i></a>
+            <a href="/admin/login" class="pc-head-link bg-transparent js-admin-logout" title="Logout"><i class="ti ti-power text-danger"></i></a>
           </div>
         </div>
         <ul class="nav drp-tabs nav-fill nav-tabs" id="mydrpTab" role="tablist">
@@ -332,7 +340,7 @@
               <i class="ti ti-wallet"></i>
               <span>Billing</span>
             </a>
-            <a href="#!" class="dropdown-item">
+            <a href="/admin/login" class="dropdown-item js-admin-logout">
               <i class="ti ti-power"></i>
               <span>Logout</span>
             </a>

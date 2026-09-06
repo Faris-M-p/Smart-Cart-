@@ -22,7 +22,7 @@
 </div>
 <!-- [ breadcrumb ] end -->
 
-<div class="row">
+<div class="row" data-permission-module="Stock">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
@@ -249,7 +249,7 @@
                 <td class="text-end">${rl}</td>
                 <td>${escapeHtml(luText)}</td>
                 <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" onclick="openAdjust(${id}, '${escapeHtml(sku)}', ${a})">
+                    <button class="btn btn-sm btn-outline-primary" data-action="Adjust" onclick="openAdjust(${id}, '${escapeHtml(sku)}', ${a})">
                         <i class="ti ti-pencil"></i> Adjust
                     </button>
                 </td>

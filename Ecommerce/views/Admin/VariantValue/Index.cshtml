@@ -19,13 +19,13 @@
     </div>
 </div>
 
-<div class="row">
+<div class="row" data-permission-module="VariantValues">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">Variant values</h5>
-                    <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+                    <button type="button" class="btn btn-primary" data-action="Create" onclick="openCreateModal()">
                         <i class="ti ti-plus"></i> Add value
                     </button>
                 </div>
@@ -291,8 +291,8 @@
                     <td class="text-start">${escapeHtml(String(ord))}</td>
                     <td class="col-actions text-start">
                         <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
-                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
+                            <button type="button" class="btn-action" data-action="Edit" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
+                            <button type="button" class="btn-action" data-action="Delete" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
                         </div>
                     </td>
                 </tr>`;

@@ -22,13 +22,13 @@
 <!-- [ breadcrumb ] end -->
 
 <!-- [ Main Content ] start -->
-        <div class="row">
+        <div class="row" data-permission-module="UserRoles">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5>User Role List</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userRoleModal" onclick="openCreateModal()">
+                            <button type="button" class="btn btn-primary" data-action="Create" data-bs-toggle="modal" data-bs-target="#userRoleModal" onclick="openCreateModal()">
                                 <i class="ti ti-plus"></i> Add New User Role
                             </button>
                         </div>
@@ -280,13 +280,13 @@
         const actions = cancelled ? '' : (isSystem
             ? '<span class="badge bg-secondary" title="Protected" data-bs-toggle="tooltip" data-bs-placement="top">Protected</span>'
             : `<div class="table-actions">
-                <button type="button" class="btn-action" onclick="openEditModal(${roleId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                <button type="button" class="btn-action" data-action="Edit" onclick="openEditModal(${roleId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
                     <i class="ti ti-edit"></i>
                 </button>
-                <a class="btn-action" href="/admin/user-roles/${roleId}/permissions" title="Manage Permissions" data-bs-toggle="tooltip" data-bs-placement="top">
+                <a class="btn-action" data-action="Edit" href="/admin/user-roles/${roleId}/permissions" title="Manage Permissions" data-bs-toggle="tooltip" data-bs-placement="top">
                     <i class="ti ti-key"></i>
                 </a>
-                <button type="button" class="btn-action" onclick="openDeleteModal(${roleId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                <button type="button" class="btn-action" data-action="Delete" onclick="openDeleteModal(${roleId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
                     <i class="ti ti-trash"></i>
                 </button>
                </div>`);

@@ -1,7 +1,7 @@
 using Ecommerce.DataAccess;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Entities;
-using Ecommerce.Services.Admin;
+using Ecommerce.Helpers.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -17,7 +17,7 @@ namespace Ecommerce.Controllers.Admin
         private readonly EcommerceDbContext _dbContext;
         private readonly IProductVariantInterface _productVariantInterface;
         private readonly IProductVariantImageRepository _productVariantImageRepository;
-        private readonly ProductVariantImageService _productVariantImageService;
+        private readonly CommonImageService _commonImageService;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ProductVariantController> _logger;
 
@@ -25,14 +25,14 @@ namespace Ecommerce.Controllers.Admin
             EcommerceDbContext dbContext,
             IProductVariantInterface productVariantInterface,
             IProductVariantImageRepository productVariantImageRepository,
-            ProductVariantImageService productVariantImageService,
+            CommonImageService commonImageService,
             IWebHostEnvironment environment,
             ILogger<ProductVariantController> logger)
         {
             _dbContext = dbContext;
             _productVariantInterface = productVariantInterface;
             _productVariantImageRepository = productVariantImageRepository;
-            _productVariantImageService = productVariantImageService;
+            _commonImageService = commonImageService;
             _environment = environment;
             _logger = logger;
         }
@@ -152,7 +152,7 @@ namespace Ecommerce.Controllers.Admin
                 if (!imageSync.StatusCode)
                 {
                     await tx.RollbackAsync();
-                    imageSync.SavedFileAbsolutePaths.ForEach(_productVariantImageService.TryDeleteFile);
+                    imageSync.SavedFileAbsolutePaths.ForEach(_commonImageService.TryDeleteFile);
                     return BadRequest(Fail(imageSync.Message));
                 }
 
@@ -160,7 +160,7 @@ namespace Ecommerce.Controllers.Admin
                 deferredDeleteFiles.AddRange(imageSync.DeferredDeleteAbsolutePaths);
 
                 await tx.CommitAsync();
-                deferredDeleteFiles.ForEach(_productVariantImageService.TryDeleteFile);
+                deferredDeleteFiles.ForEach(_commonImageService.TryDeleteFile);
 
                 var images = await GetImagesForSkuAsync(skuId);
                 return Ok(new
@@ -174,7 +174,7 @@ namespace Ecommerce.Controllers.Admin
             catch
             {
                 await tx.RollbackAsync();
-                savedFiles.ForEach(_productVariantImageService.TryDeleteFile);
+                savedFiles.ForEach(_commonImageService.TryDeleteFile);
                 throw;
             }
         }
@@ -243,7 +243,7 @@ namespace Ecommerce.Controllers.Admin
                 if (!imageSync.StatusCode)
                 {
                     await tx.RollbackAsync();
-                    imageSync.SavedFileAbsolutePaths.ForEach(_productVariantImageService.TryDeleteFile);
+                    imageSync.SavedFileAbsolutePaths.ForEach(_commonImageService.TryDeleteFile);
                     return BadRequest(Fail(imageSync.Message));
                 }
 
@@ -251,7 +251,7 @@ namespace Ecommerce.Controllers.Admin
                 deferredDeleteFiles.AddRange(imageSync.DeferredDeleteAbsolutePaths);
 
                 await tx.CommitAsync();
-                deferredDeleteFiles.ForEach(_productVariantImageService.TryDeleteFile);
+                deferredDeleteFiles.ForEach(_commonImageService.TryDeleteFile);
 
                 var images = await GetImagesForSkuAsync(skuId);
                 return Ok(new
@@ -265,7 +265,7 @@ namespace Ecommerce.Controllers.Admin
             catch
             {
                 await tx.RollbackAsync();
-                savedFiles.ForEach(_productVariantImageService.TryDeleteFile);
+                savedFiles.ForEach(_commonImageService.TryDeleteFile);
                 throw;
             }
         }
@@ -303,7 +303,7 @@ namespace Ecommerce.Controllers.Admin
             }
 
             var rows = await _productVariantImageRepository.GetBySkuIdAsync(skuId);
-            var result = rows.Select(_productVariantImageService.MapToDto).ToList();
+            var result = rows.Select(_commonImageService.MapToDto).ToList();
             return Ok(result);
         }
 
@@ -318,7 +318,7 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(Fail("Invalid SKU."));
             }
 
-            var validationError = _productVariantImageService.ValidateUploadInput(input);
+            var validationError = _commonImageService.ValidateUploadInput(input);
             if (!string.IsNullOrWhiteSpace(validationError))
             {
                 return BadRequest(Fail(validationError));
@@ -335,10 +335,10 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(Fail($"Maximum {MaxFilesPerSku} images are allowed per SKU."));
             }
 
-            var uploadRoot = _productVariantImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
+            var uploadRoot = _commonImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
             Directory.CreateDirectory(uploadRoot);
 
-            var orderedExisting = _productVariantImageService.ReorderExisting(existing, input.ExistingImageOrder);
+            var orderedExisting = _commonImageService.ReorderExisting(existing, input.ExistingImageOrder);
             for (var i = 0; i < orderedExisting.Count; i++)
             {
                 orderedExisting[i].DisplayOrder = i;
@@ -347,7 +347,7 @@ namespace Ecommerce.Controllers.Admin
             var savedAbsolutePaths = new List<string>();
             var newRows = new List<ProductVariantImageEntity>();
             var nextOrder = orderedExisting.Count;
-            var nextImageNumber = _productVariantImageService.GetNextImageNumber(uploadRoot);
+            var nextImageNumber = _commonImageService.GetNextImageNumber(uploadRoot);
 
             try
             {
@@ -370,7 +370,7 @@ namespace Ecommerce.Controllers.Admin
                     newRows.Add(new ProductVariantImageEntity
                     {
                         FK_ProductVariant = input.SKUId,
-                        ImageUrl = _productVariantImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
+                        ImageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
                         IsPrimary = false,
                         DisplayOrder = nextOrder++,
                         CreatedAt = DateTime.Now
@@ -401,7 +401,7 @@ namespace Ecommerce.Controllers.Admin
 
                 var response = Ok(input.SKUId, "Images uploaded successfully.");
                 var rows = await _productVariantImageRepository.GetBySkuIdAsync(input.SKUId);
-                var images = rows.Select(_productVariantImageService.MapToDto).ToList();
+                var images = rows.Select(_commonImageService.MapToDto).ToList();
 
                 return Ok(new
                 {
@@ -415,7 +415,7 @@ namespace Ecommerce.Controllers.Admin
             {
                 foreach (var path in savedAbsolutePaths)
                 {
-                    _productVariantImageService.TryDeleteFile(path);
+                    _commonImageService.TryDeleteFile(path);
                 }
 
                 _logger.LogError(ex, "Failed uploading images for SKU {SkuId}", input.SKUId);
@@ -460,7 +460,7 @@ namespace Ecommerce.Controllers.Admin
             await _productVariantImageRepository.SaveChangesAsync();
 
             var absolutePath = Path.Combine(_environment.WebRootPath, image.ImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-            _productVariantImageService.TryDeleteFile(absolutePath);
+            _commonImageService.TryDeleteFile(absolutePath);
 
             return Ok(Ok(image.ID_ProductVariantImage, "Image deleted successfully."));
         }
@@ -485,7 +485,7 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(Fail("Primary image does not belong to this SKU."));
             }
 
-            var ordered = _productVariantImageService.ReorderExisting(images, input.OrderedImageIds);
+            var ordered = _commonImageService.ReorderExisting(images, input.OrderedImageIds);
             for (var i = 0; i < ordered.Count; i++)
             {
                 ordered[i].DisplayOrder = i;
@@ -496,7 +496,7 @@ namespace Ecommerce.Controllers.Admin
 
             var response = Ok(input.ImageId, "Primary image updated successfully.");
             var rows = await _productVariantImageRepository.GetBySkuIdAsync(input.SKUId);
-            var resultImages = rows.Select(_productVariantImageService.MapToDto).ToList();
+            var resultImages = rows.Select(_commonImageService.MapToDto).ToList();
             return Ok(new
             {
                 response.ResponseCode,
@@ -547,7 +547,7 @@ namespace Ecommerce.Controllers.Admin
         private async Task<List<ProductVariantImageDto>> GetImagesForSkuAsync(int skuId)
         {
             var rows = await _productVariantImageRepository.GetBySkuIdAsync(skuId);
-            return rows.Select(_productVariantImageService.MapToDto).ToList();
+            return rows.Select(_commonImageService.MapToDto).ToList();
         }
 
         private async Task<ImageSyncResult> SyncImagesInCreateUpdateAsync(ProductVariantUpdateInputVIEW viewInput, int skuId)
@@ -562,7 +562,7 @@ namespace Ecommerce.Controllers.Admin
             var existing = await _productVariantImageRepository.GetBySkuIdAsync(skuId);
             var removedIds = (viewInput.RemovedImageIds ?? new List<int>()).Where(x => x > 0).Distinct().ToHashSet();
 
-            var orderedExisting = _productVariantImageService.ReorderExisting(existing, viewInput.ExistingImageOrder);
+            var orderedExisting = _commonImageService.ReorderExisting(existing, viewInput.ExistingImageOrder);
             orderedExisting = orderedExisting
                 .Where(x => !removedIds.Contains(x.ID_ProductVariantImage))
                 .ToList();
@@ -576,9 +576,9 @@ namespace Ecommerce.Controllers.Admin
 
             var newRows = new List<ProductVariantImageEntity>();
             var incomingFiles = viewInput.Files ?? new List<IFormFile>();
-            var uploadRoot = _productVariantImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
+            var uploadRoot = _commonImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
             Directory.CreateDirectory(uploadRoot);
-            var nextImageNumber = _productVariantImageService.GetNextImageNumber(uploadRoot);
+            var nextImageNumber = _commonImageService.GetNextImageNumber(uploadRoot);
 
             if (orderedExisting.Count + incomingFiles.Count > MaxFilesPerSku)
             {
@@ -587,7 +587,7 @@ namespace Ecommerce.Controllers.Admin
 
             foreach (var file in incomingFiles)
             {
-                var uploadValidation = _productVariantImageService.ValidateUploadInput(new ProductVariantImageUploadInput
+                var uploadValidation = _commonImageService.ValidateUploadInput(new ProductVariantImageUploadInput
                 {
                     SKUId = skuId,
                     Files = new List<IFormFile> { file }
@@ -613,7 +613,7 @@ namespace Ecommerce.Controllers.Admin
                 newRows.Add(new ProductVariantImageEntity
                 {
                     FK_ProductVariant = skuId,
-                    ImageUrl = _productVariantImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
+                    ImageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
                     IsPrimary = false,
                     DisplayOrder = 0,
                     CreatedAt = DateTime.Now

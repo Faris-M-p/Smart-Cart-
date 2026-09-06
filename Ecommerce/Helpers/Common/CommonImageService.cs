@@ -1,9 +1,9 @@
 using Ecommerce.Models.Entities;
 using static Ecommerce.Models.Admin.ProductVariantModel;
 
-namespace Ecommerce.Services.Admin
+namespace Ecommerce.Helpers.Common
 {
-    public class ProductVariantImageService
+    public class CommonImageService
     {
         private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
