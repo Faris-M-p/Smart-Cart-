@@ -7,25 +7,11 @@
  */
 
 (function () {
-  if (window.EmptyStateHandler) {
+  if (window.emptyState && typeof window.emptyState.endListingLoad === 'function') {
     return;
   }
 
   class EmptyStateHandler {
-    constructor() {
-        this.states = {
-            noData: 'no-data',
-            noInternet: 'no-internet',
-            serverError: 'server-error',
-            serviceUnavailable: 'service-unavailable',
-            maintenance: 'maintenance',
-            notFound: 'not-found',
-            accessDenied: 'access-denied',
-            comingSoon: 'coming-soon',
-            sessionExpired: 'session-expired'
-        };
-    }
-
     /**
      * Show empty state in a table body
      * @param {string} tbodyId - ID of the tbody element
@@ -75,14 +61,13 @@
     getStateHtml(stateType, options = {}, compact = true) {
         const config = this.getStateConfig(stateType, options);
         const compactClass = compact ? 'empty-state-compact' : '';
-        const errorClass = stateType.includes('error') || stateType.includes('unavailable') || stateType === 'access-denied' ? 'empty-state-error' : '';
 
         return `
             <div class="empty-state ${compactClass}">
                 ${this.getIconHtml(stateType)}
                 ${config.badge ? `<span class="status-badge ${config.badgeClass}">${config.badge}</span>` : ''}
                 <h2 class="empty-title">${config.title}</h2>
-                <p class="empty-message">${config.message}</p>
+                ${config.message ? `<p class="empty-message">${config.message}</p>` : ''}
                 ${this.getButtonsHtml(config.buttons)}
             </div>
         `;
@@ -174,12 +159,14 @@
     getStateConfig(stateType, options = {}) {
         const defaults = {
             'no-data': {
-                title: options.title || 'No result found',
-                message: options.message || 'We can\'t find any item matching your search.<br>Try adjusting your filters or search terms.',
+                title: options.title || 'No Data Available',
+                message: Object.prototype.hasOwnProperty.call(options, 'message')
+                    ? options.message
+                    : '',
                 badge: null,
-                buttons: options.buttons || [
-                    { text: 'Reset filter', class: 'btn-secondary', onclick: options.onReset || 'resetFilters()', icon: 'ti-arrow-clockwise' }
-                ]
+                buttons: Object.prototype.hasOwnProperty.call(options, 'buttons')
+                    ? options.buttons
+                    : []
             },
             'no-internet': {
                 title: options.title || 'No internet connection',
@@ -287,57 +274,157 @@
     }
 
     /**
-     * Detect error type from error object
+     * Show listing loader in a table body.
      */
-    detectErrorType(error) {
-        if (!error) return 'server-error';
-
-        // Network errors
-        if (error.message && (
-            error.message.includes('Failed to fetch') ||
-            error.message.includes('NetworkError') ||
-            error.message.includes('Network request failed')
-        )) {
-            return 'no-internet';
+    showListingLoader(tbodyId, colspan = 6) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) {
+            console.error(`Table body with ID "${tbodyId}" not found`);
+            return;
         }
 
-        // HTTP status codes
-        if (error.status) {
-            switch (error.status) {
-                case 403:
-                    return 'access-denied';
-                case 404:
-                    return 'not-found';
-                case 503:
-                    return 'service-unavailable';
-                case 500:
-                case 502:
-                case 504:
-                    return 'server-error';
+        tbody.dataset.listingLoading = 'true';
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${colspan}" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    /**
+     * Always clear a leftover listing loader. Safe to call after success or failure.
+     */
+    endListingLoad(tbodyId, colspan = 6) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        delete tbody.dataset.listingLoading;
+        if (tbody.querySelector('.spinner-border')) {
+            this.showListingEmpty(tbodyId, colspan);
+        }
+    }
+
+    endListingLoadInContainer(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        delete container.dataset.listingLoading;
+        if (container.querySelector('.spinner-border')) {
+            this.showListingEmptyInContainer(containerId);
+        }
+    }
+
+    /**
+     * Show generic listing empty state (no action buttons).
+     */
+    showListingEmpty(tbodyId, colspan = 6) {
+        const tbody = document.getElementById(tbodyId);
+        if (tbody) {
+            delete tbody.dataset.listingLoading;
+        }
+        this.showInTable(tbodyId, 'no-data', {
+            title: 'No Data Available',
+            message: '',
+            buttons: []
+        }, colspan);
+    }
+
+    /**
+     * Show generic listing empty state in a non-table container.
+     */
+    showListingEmptyInContainer(containerId) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            delete container.dataset.listingLoading;
+        }
+        this.showInContainer(containerId, 'no-data', {
+            title: 'No Data Available',
+            message: '',
+            buttons: []
+        });
+    }
+
+    /**
+     * Handle listing API failure: log details, toast a friendly message, show generic empty state.
+     */
+    handleListingError(context, details, tbodyId, colspan = 6, containerId) {
+        const type = details && details.error && !details.response ? 'crash' : 'failure';
+
+        try {
+            if (typeof handleApiError === 'function') {
+                handleApiError(type, context, details);
+            } else if (details && details.error) {
+                console.error(details.error);
+            }
+        } catch (logError) {
+            console.error(logError);
+        }
+
+        try {
+            const toastMessage = this.getListingToastMessage(details);
+            if (typeof window.showError === 'function') {
+                window.showError('Error', toastMessage);
+            }
+        } catch (toastError) {
+            console.error(toastError);
+        }
+
+        try {
+            if (tbodyId) {
+                this.showListingEmpty(tbodyId, colspan);
+            }
+            if (containerId) {
+                this.showListingEmptyInContainer(containerId);
+            }
+        } catch (emptyError) {
+            console.error(emptyError);
+        }
+    }
+
+    /**
+     * Prefer a short API message for toasts; keep technical details out of the UI.
+     */
+    getListingToastMessage(details) {
+        const result = details && details.result;
+        const candidates = [];
+
+        if (result) {
+            candidates.push(
+                result.responseMsg,
+                result.ResponseMsg,
+                result.message,
+                result.Message
+            );
+            const errors = result.errors || result.Errors;
+            if (Array.isArray(errors) && errors.length) {
+                candidates.push(errors.filter(function (e) { return typeof e === 'string'; }).join(' '));
             }
         }
 
-        // Default to server error
-        return 'server-error';
+        for (let i = 0; i < candidates.length; i++) {
+            if (this.isUserFriendlyMessage(candidates[i])) {
+                return String(candidates[i]).trim();
+            }
+        }
+
+        return 'Something went wrong. Please try again later.';
     }
 
-    /**
-     * Show error state (auto-detects error type)
-     */
-    showError(tbodyId, error, options = {}, colspan = 6) {
-        const errorType = this.detectErrorType(error);
-        this.showInTable(tbodyId, errorType, options, colspan);
-    }
+    isUserFriendlyMessage(message) {
+        if (message == null) return false;
+        const text = String(message).trim();
+        if (!text || text.length > 160) return false;
 
-    /**
-     * Show no data state
-     */
-    showNoData(tbodyId, options = {}, colspan = 6) {
-        this.showInTable(tbodyId, 'no-data', options, colspan);
+        const technical = /exception|stack trace|sql|database|unauthorized|401|403|404|500|502|503|504|nullreference|timeout|inner exception|nvarchar|constraint|violation|at [A-Za-z0-9_.]+\(/i;
+        return !technical.test(text);
     }
   }
 
-  // Expose globally (no instance here to avoid duplicate 'emptyState' declarations).
-  // Pages should create their own instance: `const emptyState = new EmptyStateHandler();`
   window.EmptyStateHandler = EmptyStateHandler;
+  window.emptyState = window.__emptyStateInstance || new EmptyStateHandler();
+  window.__emptyStateInstance = window.emptyState;
 })();

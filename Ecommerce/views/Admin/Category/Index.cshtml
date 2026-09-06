@@ -76,7 +76,7 @@
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
-                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadCategories()">
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
                                     <option value="10">10</option>
                                     <option value="25">25</option>
                                     <option value="50">50</option>
@@ -159,80 +159,67 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
-    let paginationInstance;
-    let categorySearchTimeout;
+    let paginationInstance = null;
+    let searchTimeout = null;
 
-    function truncateText(text, limit = 25) {
-        if (!text) return '';
-        const s = String(text);
-        return s.length > limit ? s.substring(0, limit) + '...' : s;
-    }
+    const TABLE_BODY_ID = 'categoryTableBody';
+    const TABLE_COLUMN_COUNT = 4;
 
-    function escapeAttr(text) {
-        if (text == null || text === '') return '';
-        return String(text)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-    }
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/Category/GetCategoryList',
+        getById: '/Admin/Category/GetById',
+        create: '/Admin/Category/Create',
+        update: '/Admin/Category/Update',
+        delete: '/Admin/Category/Delete'
+    };
 
-    function truncatedCellHtml(fullText, limit = 25) {
-        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
-        if (!full.trim()) return '<span class="text-muted">—</span>';
-        const short = truncateText(full, limit);
-        const display = escapeHtml(short);
-        const tip = escapeAttr(full);
-        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
-    }
-
-    function initTableTooltips(root) {
-        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
-        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-            const existing = bootstrap.Tooltip.getInstance(el);
-            if (existing) existing.dispose();
-            new bootstrap.Tooltip(el);
-        });
-    }
-    // Load categories on page load
+    // 3. Page Initialization
     document.addEventListener('DOMContentLoaded', function () {
         paginationInstance = new Pagination({
-            containerId: "pagination",
-            infoId: "paginationInfo",
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
             onPageChange: loadCategories
         });
-        loadCategories();
 
-        document.getElementById('searchText').addEventListener('input', function () {
-            const value = this.value.trim();
-            clearTimeout(categorySearchTimeout);
-            categorySearchTimeout = setTimeout(function () {
-                if (value.length === 0 || value.length >= 1) {
-                    loadCategories(1);
-                }
-            }, 500);
-        });
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadCategories();
     });
 
-    async function loadCategories(page = 1) {
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadCategories(1);
+        }, 500);
+    }
 
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadCategories(1);
+    }
+
+    // 5. Listing API
+    async function loadCategories(page = 1) {
         currentPage = page;
 
         const input = {
             searchText: document.getElementById('searchText').value || '',
             filterCategoryIDs: '',
-            pageIndex: page,
-            pageSize: parseInt(document.getElementById('pageSize').value) || 10,
+            pageIndex: currentPage,
+            pageSize: pageSize,
             sortColumn: 0,
             sortMode: ''
         };
 
-        try {
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
 
-            const response = await fetch('/Admin/Category/GetCategoryList', {
+        try {
+            const response = await fetch(API.getList, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
@@ -240,122 +227,80 @@
 
             const result = await response.json();
 
-            //------------------------------------------------
-            // ✅ API FAILURE (validation / business errors)
-            //------------------------------------------------
-            if (!result.success) {
-
-                emptyState.showError(
-                    'categoryTableBody',
-                    result.errors?.length
-                        ? result.errors.join("<br>")
-                        : result.message,
-                    {
-                        onRetry: 'loadCategories()',
-                        title: 'Error loading categories'
-                    },
-                    4
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Category List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
                 );
-
                 return;
             }
 
-            const data = result.data;
+            const data = result?.data;
 
-            //------------------------------------------------
-            // ✅ NO DATA
-            //------------------------------------------------
             if (!data?.tableData?.length) {
-
-                emptyState.showNoData('categoryTableBody', {
-                    title: 'No categories found',
-                    message: 'Try adjusting your search.',
-                    onClear: 'clearSearch()'
-                }, 4);
-
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
                 return;
             }
 
-            //------------------------------------------------
-            // ✅ SUCCESS
-            //------------------------------------------------
             displayCategories(data.tableData);
 
             if (paginationInstance && data.tableSettings) {
                 paginationInstance.render(data.tableSettings);
             }
-
-        }
-        catch (error) {
-
-            console.error(error);
-
-            //------------------------------------------------
-            // ✅ NETWORK / SERVER DOWN
-            //------------------------------------------------
-            emptyState.showError(
-                'categoryTableBody',
-                "Unable to connect to server.",
-                {
-                    onRetry: 'loadCategories()',
-                    title: 'Server Error'
-                },
-                4
+        } catch (error) {
+            listing.handleListingError(
+                'Category List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
             );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
         }
     }
 
-
-
+    // 6. Listing Display
     function displayCategories(categories) {
-        const tbody = document.getElementById('categoryTableBody');
-        
-        if (!categories || categories.length === 0) {
-            // Use emptyState utility for no data
-            emptyState.showNoData('categoryTableBody', {
-                title: 'No categories found',
-                message: 'We can\'t find any categories matching your search.<br>Try adjusting your search term.',
-                onClear: 'clearSearch()'
-            }, 4);
-            return;
-        }
-
-        tbody.innerHTML = categories.map(category => {
-            const isActive = category.isActive ?? category.IsActive ?? true;
-            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
-            const statusText = isActive ? 'Active' : 'Inactive';
-            const nameRaw = category.categoryName || category.CategoryName || '';
-            const descRaw = category.description || category.Description || '';
-            
-            return `
-                <tr>
-                    <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
-                    <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
-                    <td class="col-status">
-                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
-                    </td>
-                    <td class="col-actions">
-                        ${category.cancelled ? '' : `
-                            <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditModal(${category.categoryID})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
-                                <i class="ti ti-edit"></i>
-                            </button>
-                            <button type="button" class="btn-action" onclick="openDeleteModal(${category.categoryID})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
-                                <i class="ti ti-trash"></i>
-                            </button>
-                            </div>
-                        `}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-        initTableTooltips(tbody);
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = categories.map(category => createCategoryRow(category)).join('');
+        initTableTooltips(tableBody);
     }
 
- 
+    // 7. Row Creation
+    function createCategoryRow(category) {
+        const isActive = category.isActive ?? category.IsActive ?? true;
+        const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+        const statusText = isActive ? 'Active' : 'Inactive';
+        const nameRaw = category.categoryName || category.CategoryName || '';
+        const descRaw = category.description || category.Description || '';
+        const categoryID = category.categoryID ?? category.CategoryID;
 
+        return `
+            <tr>
+                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
+                <td class="col-status">
+                    <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
+                </td>
+                <td class="col-actions">
+                    ${category.cancelled ? '' : `
+                        <div class="table-actions">
+                        <button type="button" class="btn-action" onclick="openEditModal(${categoryID})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                            <i class="ti ti-edit"></i>
+                        </button>
+                        <button type="button" class="btn-action" onclick="openDeleteModal(${categoryID})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                        </div>
+                    `}
+                </td>
+            </tr>
+        `;
+    }
 
-
+    // 8. Create / Edit
     function openCreateModal() {
         document.getElementById('categoryModalLabel').textContent = 'Add Category';
         document.getElementById('categoryForm').reset();
@@ -365,7 +310,7 @@
 
     async function openEditModal(categoryID) {
         try {
-            const response = await fetch(`/Admin/Category/GetById/${categoryID}`);
+            const response = await fetch(`${API.getById}/${categoryID}`);
             if (!response.ok) throw new Error('Failed to fetch category');
 
             const data = await response.json();
@@ -390,13 +335,6 @@
         }
     }
 
-    function openDeleteModal(categoryID) {
-        document.getElementById('deleteCategoryID').value = categoryID;
-        document.getElementById('deleteReason').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
-    }
-
     async function saveCategory() {
         const categoryID = parseInt(document.getElementById('categoryID').value);
         const categoryName = document.getElementById('categoryName').value.trim();
@@ -414,7 +352,7 @@
             isActive: document.getElementById('categoryIsActive').checked
         };
 
-        const url = categoryID === 0 ? '/Admin/Category/Create' : '/Admin/Category/Update';
+        const url = categoryID === 0 ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
@@ -448,6 +386,14 @@
         }
     }
 
+    // 9. Delete
+    function openDeleteModal(categoryID) {
+        document.getElementById('deleteCategoryID').value = categoryID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
     async function confirmDelete() {
         const categoryID = parseInt(document.getElementById('deleteCategoryID').value);
         const reason = document.getElementById('deleteReason').value.trim();
@@ -458,7 +404,7 @@
         };
 
         try {
-            const url = '/Admin/Category/Delete';
+            const url = API.delete;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -490,15 +436,39 @@
         }
     }
 
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('pageSize').value = '10';
-        loadCategories(1);
+    // 10. Page-specific Helper Functions
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
     }
 
-    function clearSearch() {
-        document.getElementById('searchText').value = '';
-        loadCategories(1);
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
     }
 
     function escapeHtml(text) {

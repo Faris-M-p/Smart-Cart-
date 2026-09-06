@@ -124,9 +124,9 @@
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper" id="paginationSection" style="display: none;">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
-                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadProductVariants()">
-                                    <option value="10">10</option>
-                                    <option value="20" selected>20</option>
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
                                     <option value="50">50</option>
                                     <option value="100">100</option>
                                 </select>
@@ -277,14 +277,14 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
-    let pageSize = 20;
+    let pageSize = 10;
+    let searchTimeout = null;
     let selectedProductId = 0;
     let products = [];
     let variants = [];
-    let variantValues = [];
     let variantValueMap = {}; // Map variant ID to its values
-    let productVariantSearchTimeout;
     let autoSkuEnabled = true;
     let autoLabelEnabled = true;
     let lastGeneratedSku = '';
@@ -293,6 +293,23 @@
     let skuExistingImageIdsOnOpen = [];
     let skuImageDragKey = null;
 
+    const TABLE_BODY_ID = 'productVariantTableBody';
+    const TABLE_COLUMN_COUNT = 12;
+
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/ProductVariant/GetProductVariantList',
+        getById: '/Admin/ProductVariant/GetById',
+        create: '/Admin/ProductVariant/Create',
+        update: '/Admin/ProductVariant/Update',
+        delete: '/Admin/ProductVariant/Delete',
+        getImages: '/Admin/ProductVariant/GetImages',
+        getProductList: '/Admin/Product/GetProductList',
+        getVariantList: '/Admin/Variant/GetVariantList',
+        getByVariant: '/Admin/VariantValue/GetByVariant'
+    };
+
+    // 3. Page Initialization
     document.addEventListener('DOMContentLoaded', function() {
         loadProducts();
         loadVariants();
@@ -367,154 +384,22 @@
 
         renderSkuImagePreviews();
 
-        document.getElementById('searchText')?.addEventListener('input', function () {
-            const value = this.value.trim();
-            clearTimeout(productVariantSearchTimeout);
-            productVariantSearchTimeout = setTimeout(function () {
-                if (value.length === 0 || value.length >= 1) {
-                    if ((parseInt(document.getElementById('selectProduct').value, 10) || 0) > 0) {
-                        loadProductVariants(1);
-                    }
-                }
-            }, 500);
-        });
+        document.getElementById('searchText')?.addEventListener('input', handleSearch);
     });
 
-    async function loadProducts() {
-        try {
-            // ProductListInputVIEW enforces PageSize <= 100
-            const maxPageSize = 100;
-            const all = [];
-            let page = 1;
-            let totalCount = null;
-
-            // Fetch pages until we have all rows (for dropdown usage)
-            while (totalCount == null || all.length < totalCount) {
-            const response = await fetch('/Admin/Product/GetProductList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        PageIndex: page,
-                        PageSize: maxPageSize,
-                        SearchText: '',
-                        FilterCategoryIDs: '',
-                        FilterSubCategoryIDs: '',
-                        FilterBrandIDs: '',
-                        SortColumn: 0,
-                        SortMode: 'ASC'
-                    })
-            });
-            if (!response.ok) throw new Error('Failed to fetch products');
-
-                const payload = await response.json();
-                const success = payload.success ?? payload.Success ?? true;
-                if (!success) {
-                    throw new Error(payload.message ?? payload.Message ?? 'Failed to fetch products');
-                }
-
-                const data = payload.data ?? payload.Data ?? payload;
-                const rows = data.tableData ?? data.TableData ?? [];
-                const settings = data.tableSettings ?? data.TableSettings ?? null;
-
-                all.push(...rows);
-                if (settings && (settings.totalCount ?? settings.TotalCount) != null) {
-                    totalCount = Number(settings.totalCount ?? settings.TotalCount) || 0;
-                } else if (rows.length < maxPageSize) {
-                    totalCount = all.length;
-                }
-
-                if (rows.length < maxPageSize) {
-                    break;
-                }
-                page++;
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            if ((parseInt(document.getElementById('selectProduct').value, 10) || 0) > 0) {
+                loadProductVariants(1);
             }
-
-            products = all;
-
-            const selectProduct = document.getElementById('selectProduct');
-            const modalProduct = document.getElementById('modalProduct');
-            
-            selectProduct.innerHTML = '<option value="">-- Select Product --</option>';
-            modalProduct.innerHTML = '<option value="">Select Product</option>';
-            
-            products.forEach(p => {
-                const cancelled = p.cancelled ?? p.Cancelled;
-                const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
-                const pname = p.name ?? p.Name ?? '';
-                if (!cancelled && pid > 0) {
-                    selectProduct.add(new Option(pname, String(pid)));
-                    modalProduct.add(new Option(pname, String(pid)));
-                }
-            });
-        } catch (error) {
-            console.error('Error loading products:', error);
-        }
+        }, 500);
     }
 
-    async function loadVariants() {
-        try {
-            // VariantListInputVIEW enforces PageSize <= 100
-            const response = await fetch('/Admin/Variant/GetVariantList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    PageIndex: 1,
-                    PageSize: 100,
-                    SearchText: '',
-                    FilterVariantIDs: '',
-                    SortColumn: 0,
-                    SortMode: 'ASC'
-                })
-            });
-            if (!response.ok) throw new Error('Failed to fetch variants');
-
-            const payload = await response.json();
-            const success = payload.success ?? payload.Success ?? true;
-            if (!success) {
-                throw new Error(payload.message ?? payload.Message ?? 'Failed to fetch variants');
-            }
-            const data = payload.data ?? payload.Data ?? payload;
-            variants = (data.tableData ?? data.TableData) ?? [];
-            // Load variant values on-demand per selected variant (see fetchVariantValuesByVariantId)
-            variantValues = [];
-            variantValueMap = {};
-
-            // Populate variant dropdowns in modal
-            const variantSelects = document.querySelectorAll('.variant-select');
-            variantSelects.forEach(select => {
-                select.innerHTML = '<option value="">Select Variant</option>';
-                variants.forEach(v => {
-                    const vid = v.variantID ?? v.VariantID ?? v.ID_Variant;
-                    const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
-                    if (!v.Cancelled && (v.isActive ?? v.IsActive ?? true)) {
-                        select.add(new Option(vname, vid));
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error loading variants:', error);
-        }
-    }
-
-    async function fetchVariantValuesByVariantId(variantId) {
-        const vid = Number(variantId) || 0;
-        if (vid <= 0) return [];
-
-        const key = String(vid);
-        if (Array.isArray(variantValueMap[key]) && variantValueMap[key].length > 0) {
-            return variantValueMap[key];
-        }
-
-        const response = await fetch(`/Admin/VariantValue/GetByVariant/${vid}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch variant values');
-        }
-
-        const rows = await response.json();
-        const list = Array.isArray(rows) ? rows : [];
-
-        variantValueMap[key] = list;
-        return list;
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadProductVariants(1);
     }
 
     function onProductChange() {
@@ -527,6 +412,14 @@
         }
     }
 
+    function resetFilters() {
+        document.getElementById('searchText').value = '';
+        document.getElementById('pageSize').value = '10';
+        pageSize = 10;
+        loadProductVariants(1);
+    }
+
+    // 5. Listing API
     async function loadProductVariants(page = 1) {
         if (selectedProductId === 0) {
             showWarning('Validation Error', 'Please select a product first.');
@@ -534,7 +427,6 @@
         }
 
         currentPage = page;
-        pageSize = parseInt(document.getElementById('pageSize')?.value) || 20;
         const searchText = document.getElementById('searchText')?.value || '';
 
         const input = {
@@ -542,161 +434,112 @@
             SearchText: searchText,
             FilterVariantIDs: '',
             FilterVariantValueIDs: '',
-            PageIndex: page,
+            PageIndex: currentPage,
             PageSize: pageSize,
             SortColumn: 0,
             SortMode: 'ASC'
         };
 
+        const listing = window.emptyState;
+        document.getElementById('filterSection').style.display = 'block';
+        document.getElementById('tableSection').style.display = 'block';
+        document.getElementById('paginationSection').style.display = 'block';
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
         try {
-            const response = await fetch('/Admin/ProductVariant/GetProductVariantList', {
+            const response = await fetch(API.getList, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await response.json();
 
-            const data = await response.json();
-            const rows = data.tableData ?? data.TableData ?? [];
-            const settings = data.tableSettings ?? data.TableSettings;
-            displayProductVariants(rows);
-            displayPagination(settings);
-            
-            document.getElementById('filterSection').style.display = 'block';
-            document.getElementById('tableSection').style.display = 'block';
-            document.getElementById('paginationSection').style.display = 'block';
-        } catch (error) {
-            console.error('Error loading product variants:', error);
-            const tbody = document.getElementById('productVariantTableBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="12" class="empty-state">
-                        <i class="ti ti-alert-circle"></i>
-                        <h5>Error loading SKUs</h5>
-                        <p class="text-muted">${escapeHtml(error.message || 'An error occurred while loading SKUs. Please try again.')}</p>
-                    </td>
-                </tr>
-            `;
-            showError('Error', error?.message || 'Error loading SKUs. Please try again.');
-        }
-    }
-
-    function displayProductVariants(variants) {
-        const tbody = document.getElementById('productVariantTableBody');
-        
-        if (!variants || variants.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="12" class="empty-state">
-                        <i class="ti ti-package-off"></i>
-                        <h5>No SKUs found</h5>
-                        <p class="text-muted">No SKUs found for this product. Try selecting a different product.</p>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tbody.innerHTML = variants.map(pv => {
-            const id = pv.idProductVariant ?? pv.ID_ProductVariant;
-            const sku = pv.sku ?? pv.SKU ?? '';
-            const longCombo = pv.combination ?? pv.Combination ?? '';
-            const shortSig = pv.attributeSignature ?? pv.AttributeSignature ?? '';
-            const combo = longCombo || shortSig;
-            const label = pv.variantLabel ?? pv.VariantLabel ?? '';
-            const pname = pv.productName ?? pv.ProductName ?? '';
-            const mrp = Number(pv.mrp ?? pv.MRP ?? 0);
-            const sp = Number(pv.price ?? pv.Price ?? pv.sellingPrice ?? pv.SellingPrice ?? 0);
-            const isDef = pv.isDefault ?? pv.IsDefault;
-            const isAct = pv.isActive ?? pv.IsActive;
-            const totalImages = Number(pv.totalImages ?? pv.TotalImages ?? 0);
-            const created = pv.createdAt ?? pv.CreatedAt;
-            const defaultClass = isDef ? 'badge-active' : 'bg-secondary';
-            const defaultText = isDef ? 'Yes' : 'No';
-            const activeClass = isAct ? 'badge-active' : 'bg-secondary';
-            const activeText = isAct ? 'Yes' : 'No';
-            return `
-                <tr>
-                    <td>${id}</td>
-                    <td>${escapeHtml(sku)}</td>
-                    <td>${escapeHtml(pname || '—')}</td>
-                    <td>${escapeHtml(combo || '—')}</td>
-                    <td>${escapeHtml(label || '—')}</td>
-                    <td>${mrp.toFixed(2)}</td>
-                    <td>${sp.toFixed(2)}</td>
-                    <td><span class="badge ${activeClass}">${activeText}</span></td>
-                    <td><span class="badge ${defaultClass}">${defaultText}</span></td>
-                    <td>${totalImages}</td>
-                    <td>${created ? new Date(created).toLocaleDateString() : '—'}</td>
-                    <td class="text-end">
-                        <button class="btn-action" onclick="openEditModal(${id})" title="Edit">
-                            <i class="ti ti-edit"></i>
-                        </button>
-                        <button class="btn-action" onclick="openDeleteModal(${id})" title="Delete">
-                            <i class="ti ti-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function displayPagination(settings) {
-        if (!settings) return;
-
-        const pageIndex = Number(settings.pageIndex ?? settings.PageIndex ?? 1);
-        const pageSize = Number(settings.pageSize ?? settings.PageSize ?? 20);
-        const totalCount = Number(settings.totalCount ?? settings.TotalCount ?? 0);
-
-        const totalPages = Math.ceil(totalCount / pageSize) || 1;
-        const pagination = document.getElementById('pagination');
-        const paginationInfo = document.getElementById('paginationInfo');
-
-        const start = totalCount === 0 ? 0 : ((pageIndex - 1) * pageSize) + 1;
-        const end = Math.min(pageIndex * pageSize, totalCount);
-        paginationInfo.textContent = `${start} to ${end} of ${totalCount} entries`;
-
-        let paginationHTML = '';
-        
-        // Previous button
-        if (pageIndex <= 1) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadProductVariants(${pageIndex - 1}); return false;">Previous</a>
-            </li>`;
-        }
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
-                if (i === pageIndex) {
-                    paginationHTML += `<li class="page-item active">
-                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
-                    </li>`;
-                } else {
-                    paginationHTML += `<li class="page-item">
-                        <a class="page-link" href="#!" onclick="loadProductVariants(${i}); return false;">${i}</a>
-                    </li>`;
-                }
-            } else if (i === pageIndex - 2 || i === pageIndex + 2) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Product Variant List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
             }
-        }
 
-        // Next button
-        if (pageIndex >= totalPages) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
-        } else {
-            paginationHTML += `<li class="page-item">
-                <a class="page-link" href="#!" onclick="loadProductVariants(${pageIndex + 1}); return false;">Next</a>
-            </li>`;
-        }
+            const rows = result.tableData ?? result.TableData ?? [];
+            const settings = result.tableSettings ?? result.TableSettings;
 
-        pagination.innerHTML = paginationHTML;
+            if (!rows.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+            } else {
+                displayProductVariants(rows);
+            }
+
+            if (settings) {
+                displayPagination(settings);
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Product Variant List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
     }
 
+    // 6. Listing Display
+    function displayProductVariants(productVariants) {
+        const tbody = document.getElementById(TABLE_BODY_ID);
+        tbody.innerHTML = productVariants.map(pv => createProductVariantRow(pv)).join('');
+    }
+
+    // 7. Row Creation
+    function createProductVariantRow(pv) {
+        const id = pv.idProductVariant ?? pv.ID_ProductVariant;
+        const sku = pv.sku ?? pv.SKU ?? '';
+        const longCombo = pv.combination ?? pv.Combination ?? '';
+        const shortSig = pv.attributeSignature ?? pv.AttributeSignature ?? '';
+        const combo = longCombo || shortSig;
+        const label = pv.variantLabel ?? pv.VariantLabel ?? '';
+        const pname = pv.productName ?? pv.ProductName ?? '';
+        const mrp = Number(pv.mrp ?? pv.MRP ?? 0);
+        const sp = Number(pv.price ?? pv.Price ?? pv.sellingPrice ?? pv.SellingPrice ?? 0);
+        const isDef = pv.isDefault ?? pv.IsDefault;
+        const isAct = pv.isActive ?? pv.IsActive;
+        const totalImages = Number(pv.totalImages ?? pv.TotalImages ?? 0);
+        const created = pv.createdAt ?? pv.CreatedAt;
+        const defaultClass = isDef ? 'badge-active' : 'bg-secondary';
+        const defaultText = isDef ? 'Yes' : 'No';
+        const activeClass = isAct ? 'badge-active' : 'bg-secondary';
+        const activeText = isAct ? 'Yes' : 'No';
+        return `
+            <tr>
+                <td>${id}</td>
+                <td>${escapeHtml(sku)}</td>
+                <td>${escapeHtml(pname || '—')}</td>
+                <td>${escapeHtml(combo || '—')}</td>
+                <td>${escapeHtml(label || '—')}</td>
+                <td>${mrp.toFixed(2)}</td>
+                <td>${sp.toFixed(2)}</td>
+                <td><span class="badge ${activeClass}">${activeText}</span></td>
+                <td><span class="badge ${defaultClass}">${defaultText}</span></td>
+                <td>${totalImages}</td>
+                <td>${created ? new Date(created).toLocaleDateString() : '—'}</td>
+                <td class="text-end">
+                    <button class="btn-action" onclick="openEditModal(${id})" title="Edit">
+                        <i class="ti ti-edit"></i>
+                    </button>
+                    <button class="btn-action" onclick="openDeleteModal(${id})" title="Delete">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
+    // 8. Create / Edit
     function openCreateModal() {
         document.getElementById('productVariantModalLabel').textContent = 'Add Product Variant (SKU)';
         document.getElementById('productVariantForm').reset();
@@ -761,7 +604,7 @@
             skuImageItems = [];
             skuExistingImageIdsOnOpen = [];
 
-            const response = await fetch(`/Admin/ProductVariant/GetById/${productVariantID}`);
+            const response = await fetch(`${API.getById}/${productVariantID}`);
             if (!response.ok) throw new Error('Failed to fetch product variant');
 
             const pv = await response.json();
@@ -796,7 +639,7 @@
                 addVariantAttributeRow();
             }
 
-            const imageResponse = await fetch(`/Admin/ProductVariant/GetImages/${productVariantID}`);
+            const imageResponse = await fetch(`${API.getImages}/${productVariantID}`);
             if (imageResponse.ok) {
                 const images = await imageResponse.json();
                 skuImageItems = (Array.isArray(images) ? images : []).map(img => ({
@@ -1140,13 +983,6 @@
         renderSkuImagePreviews();
     }
 
-    function openDeleteModal(productVariantID) {
-        document.getElementById('deleteProductVariantID').value = productVariantID;
-        document.getElementById('deleteReason').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
-    }
-
     /** Returns { variantId, variantValueId }[]; throws Error on duplicate variant or value in form. */
     function collectVariantValuesFromForm() {
         const out = [];
@@ -1171,131 +1007,6 @@
             out.push({ variantId, variantValueId });
         });
         return out;
-    }
-
-    async function syncSkuImages(skuId) {
-        async function postJson(url, payload) {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            let result = null;
-            try {
-                result = await response.json();
-            } catch {
-                result = null;
-            }
-
-            if (!response.ok) {
-                const message =
-                    result?.responseMsg ??
-                    result?.ResponseMsg ??
-                    result?.message ??
-                    result?.Message ??
-                    `Request failed (${response.status})`;
-                throw new Error(message);
-            }
-
-            return result;
-        }
-
-        async function postForm(url, formData) {
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData
-            });
-
-            let result = null;
-            try {
-                result = await response.json();
-            } catch {
-                result = null;
-            }
-
-            if (!response.ok) {
-                const message =
-                    result?.responseMsg ??
-                    result?.ResponseMsg ??
-                    result?.message ??
-                    result?.Message ??
-                    `Request failed (${response.status})`;
-                throw new Error(message);
-            }
-
-            return result;
-        }
-
-        const currentExistingIds = skuImageItems
-            .filter(x => x.isExisting && x.imageId > 0)
-            .map(x => x.imageId);
-
-        const toDelete = skuExistingImageIdsOnOpen.filter(id => !currentExistingIds.includes(id));
-        for (const imageId of toDelete) {
-            await postJson('/Admin/ProductVariant/DeleteImage', { imageId });
-        }
-
-        const newItems = skuImageItems.filter(x => !x.isExisting && x.file);
-        const existingOrder = skuImageItems
-            .filter(x => x.isExisting && x.imageId > 0)
-            .map(x => x.imageId);
-
-        if (newItems.length > 0) {
-            const formData = new FormData();
-            formData.append('SKUId', String(skuId));
-            existingOrder.forEach(id => formData.append('ExistingImageOrder', String(id)));
-
-            newItems.forEach((item) => {
-                formData.append('Files', item.file);
-            });
-
-            const newPrimaryIndex = newItems.findIndex(x => x.isPrimary);
-            if (newPrimaryIndex >= 0) {
-                formData.append('PrimaryIndex', String(newPrimaryIndex));
-            }
-
-            const uploadResponse = await postForm('/Admin/ProductVariant/UploadImages', formData);
-
-            const uploaded = uploadResponse?.images ?? uploadResponse?.Images ?? [];
-            const uploadedList = Array.isArray(uploaded) ? uploaded : [];
-            const knownExisting = new Set(existingOrder);
-            const addedRows = uploadedList
-                .filter(x => !knownExisting.has(x.idProductVariantImage ?? x.ID_ProductVariantImage))
-                .sort((a, b) =>
-                    (a.displayOrder ?? a.DisplayOrder ?? 0) - (b.displayOrder ?? b.DisplayOrder ?? 0));
-
-            let addCursor = 0;
-            skuImageItems = skuImageItems.map(item => {
-                if (item.isExisting) {
-                    return item;
-                }
-                const hit = addedRows[addCursor++];
-                return {
-                    key: `existing_${hit?.idProductVariantImage ?? hit?.ID_ProductVariantImage ?? 0}`,
-                    isExisting: true,
-                    imageId: hit?.idProductVariantImage ?? hit?.ID_ProductVariantImage ?? 0,
-                    file: null,
-                    imageUrl: hit?.imageUrl ?? hit?.ImageUrl ?? '',
-                    previewUrl: hit?.imageUrl ?? hit?.ImageUrl ?? '',
-                    isPrimary: item.isPrimary
-                };
-            });
-        }
-
-        const orderedIds = skuImageItems
-            .filter(x => x.imageId > 0)
-            .map(x => x.imageId);
-        const primary = skuImageItems.find(x => x.isPrimary && x.imageId > 0);
-        if (primary) {
-            await postJson('/Admin/ProductVariant/SetPrimaryImage', {
-                skuId,
-                imageId: primary.imageId,
-                orderedImageIds: orderedIds
-            });
-        }
-
-        skuExistingImageIdsOnOpen = orderedIds.slice();
     }
 
     async function saveProductVariant() {
@@ -1376,7 +1087,7 @@
             formData.append('PrimaryIndex', String(primaryNewIndex));
         }
 
-        const url = productVariantID === 0 ? '/Admin/ProductVariant/Create' : '/Admin/ProductVariant/Update';
+        const url = productVariantID === 0 ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
@@ -1431,6 +1142,14 @@
         }
     }
 
+    // 9. Delete
+    function openDeleteModal(productVariantID) {
+        document.getElementById('deleteProductVariantID').value = productVariantID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
     async function confirmDelete() {
         const productVariantID = parseInt(document.getElementById('deleteProductVariantID').value);
         const reason = document.getElementById('deleteReason').value.trim();
@@ -1441,7 +1160,7 @@
         };
 
         try {
-            const url = '/Admin/ProductVariant/Delete';
+            const url = API.delete;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1482,10 +1201,196 @@
         }
     }
 
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('pageSize').value = '20';
-        loadProductVariants(1);
+    // 10. Page-specific Helper Functions
+    function displayPagination(settings) {
+        if (!settings) return;
+
+        const pageIndex = Number(settings.pageIndex ?? settings.PageIndex ?? 1);
+        const pageSize = Number(settings.pageSize ?? settings.PageSize ?? 10);
+        const totalCount = Number(settings.totalCount ?? settings.TotalCount ?? 0);
+
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
+        const pagination = document.getElementById('pagination');
+        const paginationInfo = document.getElementById('paginationInfo');
+
+        const start = totalCount === 0 ? 0 : ((pageIndex - 1) * pageSize) + 1;
+        const end = Math.min(pageIndex * pageSize, totalCount);
+        paginationInfo.textContent = `${start} to ${end} of ${totalCount} entries`;
+
+        let paginationHTML = '';
+        
+        // Previous button
+        if (pageIndex <= 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Previous</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadProductVariants(${pageIndex - 1}); return false;">Previous</a>
+            </li>`;
+        }
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
+                if (i === pageIndex) {
+                    paginationHTML += `<li class="page-item active">
+                        <span class="page-link">${i}<span class="sr-only">(current)</span></span>
+                    </li>`;
+                } else {
+                    paginationHTML += `<li class="page-item">
+                        <a class="page-link" href="#!" onclick="loadProductVariants(${i}); return false;">${i}</a>
+                    </li>`;
+                }
+            } else if (i === pageIndex - 2 || i === pageIndex + 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        // Next button
+        if (pageIndex >= totalPages) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
+        } else {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link" href="#!" onclick="loadProductVariants(${pageIndex + 1}); return false;">Next</a>
+            </li>`;
+        }
+
+        pagination.innerHTML = paginationHTML;
+    }
+
+    async function loadProducts() {
+        try {
+            // ProductListInputVIEW enforces PageSize <= 100
+            const maxPageSize = 100;
+            const all = [];
+            let page = 1;
+            let totalCount = null;
+
+            // Fetch pages until we have all rows (for dropdown usage)
+            while (totalCount == null || all.length < totalCount) {
+            const response = await fetch(API.getProductList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        PageIndex: page,
+                        PageSize: maxPageSize,
+                        SearchText: '',
+                        FilterCategoryIDs: '',
+                        FilterSubCategoryIDs: '',
+                        FilterBrandIDs: '',
+                        SortColumn: 0,
+                        SortMode: 'ASC'
+                    })
+            });
+            if (!response.ok) throw new Error('Failed to fetch products');
+
+                const payload = await response.json();
+                const success = payload.success ?? payload.Success ?? true;
+                if (!success) {
+                    throw new Error(payload.message ?? payload.Message ?? 'Failed to fetch products');
+                }
+
+                const data = payload.data ?? payload.Data ?? payload;
+                const rows = data.tableData ?? data.TableData ?? [];
+                const settings = data.tableSettings ?? data.TableSettings ?? null;
+
+                all.push(...rows);
+                if (settings && (settings.totalCount ?? settings.TotalCount) != null) {
+                    totalCount = Number(settings.totalCount ?? settings.TotalCount) || 0;
+                } else if (rows.length < maxPageSize) {
+                    totalCount = all.length;
+                }
+
+                if (rows.length < maxPageSize) {
+                    break;
+                }
+                page++;
+            }
+
+            products = all;
+
+            const selectProduct = document.getElementById('selectProduct');
+            const modalProduct = document.getElementById('modalProduct');
+            
+            selectProduct.innerHTML = '<option value="">-- Select Product --</option>';
+            modalProduct.innerHTML = '<option value="">Select Product</option>';
+            
+            products.forEach(p => {
+                const cancelled = p.cancelled ?? p.Cancelled;
+                const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
+                const pname = p.name ?? p.Name ?? '';
+                if (!cancelled && pid > 0) {
+                    selectProduct.add(new Option(pname, String(pid)));
+                    modalProduct.add(new Option(pname, String(pid)));
+                }
+            });
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+
+    async function loadVariants() {
+        try {
+            // VariantListInputVIEW enforces PageSize <= 100
+            const response = await fetch(API.getVariantList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    PageIndex: 1,
+                    PageSize: 100,
+                    SearchText: '',
+                    FilterVariantIDs: '',
+                    SortColumn: 0,
+                    SortMode: 'ASC'
+                })
+            });
+            if (!response.ok) throw new Error('Failed to fetch variants');
+
+            const payload = await response.json();
+            const success = payload.success ?? payload.Success ?? true;
+            if (!success) {
+                throw new Error(payload.message ?? payload.Message ?? 'Failed to fetch variants');
+            }
+            const data = payload.data ?? payload.Data ?? payload;
+            variants = (data.tableData ?? data.TableData) ?? [];
+            // Load variant values on-demand per selected variant (see fetchVariantValuesByVariantId)
+            variantValueMap = {};
+
+            // Populate variant dropdowns in modal
+            const variantSelects = document.querySelectorAll('.variant-select');
+            variantSelects.forEach(select => {
+                select.innerHTML = '<option value="">Select Variant</option>';
+                variants.forEach(v => {
+                    const vid = v.variantID ?? v.VariantID ?? v.ID_Variant;
+                    const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+                    if (!v.Cancelled && (v.isActive ?? v.IsActive ?? true)) {
+                        select.add(new Option(vname, vid));
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error loading variants:', error);
+        }
+    }
+
+    async function fetchVariantValuesByVariantId(variantId) {
+        const vid = Number(variantId) || 0;
+        if (vid <= 0) return [];
+
+        const key = String(vid);
+        if (Array.isArray(variantValueMap[key]) && variantValueMap[key].length > 0) {
+            return variantValueMap[key];
+        }
+
+        const response = await fetch(`${API.getByVariant}/${vid}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch variant values');
+        }
+
+        const rows = await response.json();
+        const list = Array.isArray(rows) ? rows : [];
+
+        variantValueMap[key] = list;
+        return list;
     }
 
     function escapeHtml(text) {

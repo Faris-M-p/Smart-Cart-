@@ -74,7 +74,7 @@
                 <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted small">Show</span>
-                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadVariantValues()">
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
                             <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
@@ -150,9 +150,338 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
-    let paginationInstance;
-    let variantValueSearchTimeout;
+    let pageSize = 10;
+    let paginationInstance = null;
+    let searchTimeout = null;
+
+    const TABLE_BODY_ID = 'variantValueTableBody';
+    const TABLE_COLUMN_COUNT = 4;
+
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/VariantValue/GetList',
+        getById: '/Admin/VariantValue/GetById',
+        create: '/Admin/VariantValue/Create',
+        update: '/Admin/VariantValue/Update',
+        delete: '/Admin/VariantValue/Delete',
+        getVariants: '/Admin/VariantValue/GetVariants'
+    };
+
+    // 3. Page Initialization
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadVariantValues
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadVariantsForDropdowns();
+    });
+
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            if (getSelectedVariantId() > 0) {
+                loadVariantValues(1);
+            }
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadVariantValues(1);
+    }
+
+    function onVariantSelectChange() {
+        loadVariantValues(1);
+    }
+
+    // 5. Listing API
+    async function loadVariantValues(page = 1) {
+        currentPage = page;
+        const fk = getSelectedVariantId();
+        if (fk <= 0) {
+            window.emptyState.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+            if (paginationInstance) {
+                paginationInstance.render({ pageIndex: 1, pageSize: pageSize, totalCount: 0 });
+            }
+            return;
+        }
+
+        const input = {
+            fk_Variant: fk,
+            searchText: document.getElementById('searchText').value || '',
+            filterVariantIDs: '',
+            pageIndex: currentPage,
+            pageSize: pageSize,
+            sortColumn: 1,
+            sortMode: 'ASC'
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Variant Value List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                if (paginationInstance && data?.tableSettings) {
+                    paginationInstance.render(normalizeTableSettings(data.tableSettings));
+                }
+                return;
+            }
+
+            displayVariantValues(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(normalizeTableSettings(data.tableSettings));
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Variant Value List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    // 6. Listing Display
+    function displayVariantValues(rows) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = rows.map(row => createVariantValueRow(row)).join('');
+        initTableTooltips(tableBody);
+    }
+
+    // 7. Row Creation
+    function createVariantValueRow(vv) {
+        const id = vv.variantValueID ?? vv.VariantValueID ?? 0;
+        const nm = vv.name ?? vv.Name ?? '';
+        const desc = vv.description ?? vv.Description ?? '';
+        const ord = vv.displayOrder ?? vv.DisplayOrder ?? 0;
+        return `
+                <tr>
+                    <td class="col-name text-start">${truncatedCellHtml(nm)}</td>
+                    <td class="col-desc text-start">${truncatedCellHtml(desc, 40)}</td>
+                    <td class="text-start">${escapeHtml(String(ord))}</td>
+                    <td class="col-actions text-start">
+                        <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
+                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>`;
+    }
+
+    // 8. Create / Edit
+    function openCreateModal() {
+        const fk = getSelectedVariantId();
+        if (fk <= 0) {
+            if (typeof showWarning === 'function') {
+                showWarning('Variant required', 'Select a variant in the list header before adding a value.');
+            } else {
+                alert('Select a variant first.');
+            }
+            return;
+        }
+        document.getElementById('variantValueModalLabel').textContent = 'Add variant value';
+        document.getElementById('variantValueID').value = '0';
+        document.getElementById('name').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('displayOrder').value = '0';
+        document.getElementById('fkVariantModal').value = String(fk);
+        new bootstrap.Modal(document.getElementById('variantValueModal')).show();
+    }
+
+    async function openEditModal(variantValueID) {
+        try {
+            const response = await fetch(API.getById + '/' + variantValueID);
+            if (!response.ok) throw new Error('Not found');
+            const x = await response.json();
+            document.getElementById('variantValueModalLabel').textContent = 'Edit variant value';
+            document.getElementById('variantValueID').value = String(x.variantValueID ?? x.VariantValueID ?? 0);
+            document.getElementById('fkVariantModal').value = String(x.fk_Variant ?? x.FK_Variant ?? '');
+            document.getElementById('name').value = x.name ?? x.Name ?? '';
+            document.getElementById('description').value = x.description ?? x.Description ?? '';
+            document.getElementById('displayOrder').value = String(x.displayOrder ?? x.DisplayOrder ?? 0);
+            new bootstrap.Modal(document.getElementById('variantValueModal')).show();
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Could not load variant value.');
+            else alert('Could not load variant value.');
+        }
+    }
+
+    async function saveVariantValue() {
+        const variantValueID = parseInt(document.getElementById('variantValueID').value, 10);
+        const fkVariant = parseInt(document.getElementById('fkVariantModal').value, 10);
+        const name = document.getElementById('name').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const displayOrder = parseInt(document.getElementById('displayOrder').value, 10) || 0;
+
+        if (!name) {
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please enter a name.');
+            else alert('Please enter a name.');
+            return;
+        }
+        if (!fkVariant || fkVariant <= 0) {
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a variant.');
+            else alert('Please select a variant.');
+            return;
+        }
+
+        const body = {
+            variantValueID: variantValueID,
+            fk_Variant: fkVariant,
+            name: name,
+            description: description,
+            displayOrder: displayOrder
+        };
+        const url = variantValueID === 0 ? API.create : API.update;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await response.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('variantValueModal')).hide();
+                loadVariantValues(currentPage);
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'Variant value saved.');
+                }
+            } else {
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
+                } else {
+                    alert(result.responseMsg || result.ResponseMsg || 'Save failed.');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Save failed.');
+            else alert('Save failed.');
+        }
+    }
+
+    // 9. Delete
+    function openDeleteModal(id) {
+        document.getElementById('deleteVariantValueID').value = String(id);
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    async function confirmDelete() {
+        const variantValueID = parseInt(document.getElementById('deleteVariantValueID').value, 10);
+        try {
+            const response = await fetch(API.delete, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ variantValueID: variantValueID })
+            });
+            const result = await response.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                loadVariantValues(currentPage);
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'Deleted.');
+                }
+            } else {
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                } else {
+                    alert(result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Delete failed.');
+            else alert('Delete failed.');
+        }
+    }
+
+    // 10. Page-specific Helper Functions
+    async function loadVariantsForDropdowns() {
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+        try {
+            const response = await fetch(API.getVariants);
+            const variants = await response.json();
+            if (!response.ok || variants?.success === false || !Array.isArray(variants)) {
+                listing.handleListingError(
+                    'Variant Dropdown Load',
+                    { url: API.getVariants, method: 'GET', response, result: variants },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const pageSel = document.getElementById('variantSelect');
+            const modalSel = document.getElementById('fkVariantModal');
+            pageSel.innerHTML = '<option value="">— Select variant —</option>';
+            modalSel.innerHTML = '<option value="">Select variant</option>';
+
+            variants.forEach(function (v) {
+                const vid = v.iD_Variant ?? v.ID_Variant ?? v.variantID ?? v.VariantID;
+                const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+                pageSel.add(new Option(vname, String(vid)));
+                modalSel.add(new Option(vname, String(vid)));
+            });
+
+            listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+        } catch (error) {
+            listing.handleListingError(
+                'Variant Dropdown Load',
+                { url: API.getVariants, method: 'GET', error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    function getSelectedVariantId() {
+        const v = document.getElementById('variantSelect').value;
+        const n = parseInt(v, 10);
+        return isNaN(n) || n <= 0 ? 0 : n;
+    }
+
+    function normalizeTableSettings(s) {
+        if (!s) return { pageIndex: 1, pageSize: 10, totalCount: 0 };
+        return {
+            pageIndex: s.pageIndex ?? s.PageIndex ?? 1,
+            pageSize: s.pageSize ?? s.PageSize ?? 10,
+            totalCount: s.totalCount ?? s.TotalCount ?? 0
+        };
+    }
 
     function truncateText(text, limit = 25) {
         if (!text) return '';
@@ -186,299 +515,6 @@
             if (existing) existing.dispose();
             new bootstrap.Tooltip(el);
         });
-    }
-
-    function normalizeTableSettings(s) {
-        if (!s) return { pageIndex: 1, pageSize: 10, totalCount: 0 };
-        return {
-            pageIndex: s.pageIndex ?? s.PageIndex ?? 1,
-            pageSize: s.pageSize ?? s.PageSize ?? 10,
-            totalCount: s.totalCount ?? s.TotalCount ?? 0
-        };
-    }
-
-    function getSelectedVariantId() {
-        const v = document.getElementById('variantSelect').value;
-        const n = parseInt(v, 10);
-        return isNaN(n) || n <= 0 ? 0 : n;
-    }
-
-    function onVariantSelectChange() {
-        loadVariantValues(1);
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        paginationInstance = new Pagination({
-            containerId: 'pagination',
-            infoId: 'paginationInfo',
-            onPageChange: loadVariantValues
-        });
-        loadVariantsForDropdowns();
-
-        document.getElementById('searchText').addEventListener('input', function () {
-            const value = this.value.trim();
-            clearTimeout(variantValueSearchTimeout);
-            variantValueSearchTimeout = setTimeout(function () {
-                if (getSelectedVariantId() > 0) {
-                    loadVariantValues(1);
-                }
-            }, 500);
-        });
-    });
-
-    async function loadVariantsForDropdowns() {
-        try {
-            const response = await fetch('/Admin/VariantValue/GetVariants');
-            if (!response.ok) throw new Error('Failed to load variants');
-            const variants = await response.json();
-
-            const pageSel = document.getElementById('variantSelect');
-            const modalSel = document.getElementById('fkVariantModal');
-            pageSel.innerHTML = '<option value="">— Select variant —</option>';
-            modalSel.innerHTML = '<option value="">Select variant</option>';
-
-            variants.forEach(function (v) {
-                const vid = v.iD_Variant ?? v.ID_Variant ?? v.variantID ?? v.VariantID;
-                const vname = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
-                pageSel.add(new Option(vname, String(vid)));
-                modalSel.add(new Option(vname, String(vid)));
-            });
-
-            emptyState.showNoData('variantValueTableBody', {
-                title: 'Select a variant',
-                message: 'Choose a variant to load and manage its values.',
-                onClear: ''
-            }, 4);
-        } catch (e) {
-            console.error(e);
-            emptyState.showError('variantValueTableBody', 'Could not load variants.', { onRetry: 'loadVariantsForDropdowns()', title: 'Error' }, 4);
-        }
-    }
-
-    async function loadVariantValues(page = 1) {
-        currentPage = page;
-        const fk = getSelectedVariantId();
-        if (fk <= 0) {
-            emptyState.showNoData('variantValueTableBody', {
-                title: 'Select a variant',
-                message: 'Choose a variant to load its values.',
-                onClear: ''
-            }, 4);
-            if (paginationInstance) {
-                paginationInstance.render({ pageIndex: 1, pageSize: parseInt(document.getElementById('pageSize').value, 10) || 10, totalCount: 0 });
-            }
-            return;
-        }
-
-        const input = {
-            fk_Variant: fk,
-            searchText: document.getElementById('searchText').value || '',
-            filterVariantIDs: '',
-            pageIndex: page,
-            pageSize: parseInt(document.getElementById('pageSize').value, 10) || 10,
-            sortColumn: 1,
-            sortMode: 'ASC'
-        };
-
-        try {
-            const response = await fetch('/Admin/VariantValue/GetList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                emptyState.showError(
-                    'variantValueTableBody',
-                    result.errors?.length ? result.errors.join('<br>') : result.message,
-                    { onRetry: 'loadVariantValues()', title: 'Error loading values' },
-                    4
-                );
-                return;
-            }
-
-            const data = result.data;
-            if (!data?.tableData?.length) {
-                emptyState.showNoData('variantValueTableBody', {
-                    title: 'No values found',
-                    message: 'Try another search or add a new value.',
-                    onClear: 'clearVariantValueSearch()'
-                }, 4);
-                if (paginationInstance && data?.tableSettings) {
-                    paginationInstance.render(normalizeTableSettings(data.tableSettings));
-                }
-                return;
-            }
-
-            displayVariantValues(data.tableData);
-            if (paginationInstance && data.tableSettings) {
-                paginationInstance.render(normalizeTableSettings(data.tableSettings));
-            }
-        } catch (e) {
-            console.error(e);
-            emptyState.showError(
-                'variantValueTableBody',
-                'Unable to connect to server.',
-                { onRetry: 'loadVariantValues()', title: 'Server error' },
-                4
-            );
-        }
-    }
-
-    function displayVariantValues(rows) {
-        const tbody = document.getElementById('variantValueTableBody');
-        tbody.innerHTML = rows.map(function (vv) {
-            const id = vv.variantValueID ?? vv.VariantValueID ?? 0;
-            const nm = vv.name ?? vv.Name ?? '';
-            const desc = vv.description ?? vv.Description ?? '';
-            const ord = vv.displayOrder ?? vv.DisplayOrder ?? 0;
-            return `
-                <tr>
-                    <td class="col-name text-start">${truncatedCellHtml(nm)}</td>
-                    <td class="col-desc text-start">${truncatedCellHtml(desc, 40)}</td>
-                    <td class="text-start">${escapeHtml(String(ord))}</td>
-                    <td class="col-actions text-start">
-                        <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
-                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>`;
-        }).join('');
-        initTableTooltips(tbody);
-    }
-
-    function openCreateModal() {
-        const fk = getSelectedVariantId();
-        if (fk <= 0) {
-            if (typeof showWarning === 'function') {
-                showWarning('Variant required', 'Select a variant in the list header before adding a value.');
-            } else {
-                alert('Select a variant first.');
-            }
-            return;
-        }
-        document.getElementById('variantValueModalLabel').textContent = 'Add variant value';
-        document.getElementById('variantValueID').value = '0';
-        document.getElementById('name').value = '';
-        document.getElementById('description').value = '';
-        document.getElementById('displayOrder').value = '0';
-        document.getElementById('fkVariantModal').value = String(fk);
-        new bootstrap.Modal(document.getElementById('variantValueModal')).show();
-    }
-
-    async function openEditModal(variantValueID) {
-        try {
-            const response = await fetch('/Admin/VariantValue/GetById/' + variantValueID);
-            if (!response.ok) throw new Error('Not found');
-            const x = await response.json();
-            document.getElementById('variantValueModalLabel').textContent = 'Edit variant value';
-            document.getElementById('variantValueID').value = String(x.variantValueID ?? x.VariantValueID ?? 0);
-            document.getElementById('fkVariantModal').value = String(x.fk_Variant ?? x.FK_Variant ?? '');
-            document.getElementById('name').value = x.name ?? x.Name ?? '';
-            document.getElementById('description').value = x.description ?? x.Description ?? '';
-            document.getElementById('displayOrder').value = String(x.displayOrder ?? x.DisplayOrder ?? 0);
-            new bootstrap.Modal(document.getElementById('variantValueModal')).show();
-        } catch (e) {
-            console.error(e);
-            if (typeof showError === 'function') showError('Error', 'Could not load variant value.');
-            else alert('Could not load variant value.');
-        }
-    }
-
-    function openDeleteModal(id) {
-        document.getElementById('deleteVariantValueID').value = String(id);
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-
-    async function saveVariantValue() {
-        const variantValueID = parseInt(document.getElementById('variantValueID').value, 10);
-        const fkVariant = parseInt(document.getElementById('fkVariantModal').value, 10);
-        const name = document.getElementById('name').value.trim();
-        const description = document.getElementById('description').value.trim();
-        const displayOrder = parseInt(document.getElementById('displayOrder').value, 10) || 0;
-
-        if (!name) {
-            if (typeof showWarning === 'function') showWarning('Validation', 'Please enter a name.');
-            else alert('Please enter a name.');
-            return;
-        }
-        if (!fkVariant || fkVariant <= 0) {
-            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a variant.');
-            else alert('Please select a variant.');
-            return;
-        }
-
-        const body = {
-            variantValueID: variantValueID,
-            fk_Variant: fkVariant,
-            name: name,
-            description: description,
-            displayOrder: displayOrder
-        };
-        const url = variantValueID === 0 ? '/Admin/VariantValue/Create' : '/Admin/VariantValue/Update';
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const result = await response.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('variantValueModal')).hide();
-                loadVariantValues(currentPage);
-                if (typeof showSuccess === 'function') {
-                    showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'Variant value saved.');
-                }
-            } else {
-                if (typeof showError === 'function') {
-                    showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
-                } else {
-                    alert(result.responseMsg || result.ResponseMsg || 'Save failed.');
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            if (typeof showError === 'function') showError('Error', 'Save failed.');
-            else alert('Save failed.');
-        }
-    }
-
-    async function confirmDelete() {
-        const variantValueID = parseInt(document.getElementById('deleteVariantValueID').value, 10);
-        try {
-            const response = await fetch('/Admin/VariantValue/Delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ variantValueID: variantValueID })
-            });
-            const result = await response.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
-                loadVariantValues(currentPage);
-                if (typeof showSuccess === 'function') {
-                    showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'Deleted.');
-                }
-            } else {
-                if (typeof showError === 'function') {
-                    showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
-                } else {
-                    alert(result.responseMsg || result.ResponseMsg || 'Delete failed.');
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            if (typeof showError === 'function') showError('Error', 'Delete failed.');
-            else alert('Delete failed.');
-        }
-    }
-
-    function clearVariantValueSearch() {
-        document.getElementById('searchText').value = '';
-        loadVariantValues(1);
     }
 
     function escapeHtml(text) {

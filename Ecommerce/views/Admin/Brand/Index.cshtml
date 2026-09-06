@@ -72,7 +72,7 @@
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
-                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadBrands()">
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
                                     <option value="10">10</option>
                                     <option value="25">25</option>
                                     <option value="50">50</option>
@@ -154,11 +154,280 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
-    let paginationInstance;
-    let brandSearchTimeout;
+    let paginationInstance = null;
+    let searchTimeout = null;
 
+    const TABLE_BODY_ID = 'brandTableBody';
+    const TABLE_COLUMN_COUNT = 4;
+
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/Brand/GetBrandList',
+        getById: '/Admin/Brand/GetById',
+        create: '/Admin/Brand/Create',
+        update: '/Admin/Brand/Update',
+        delete: '/Admin/Brand/Delete'
+    };
+
+    // 3. Page Initialization
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadBrands
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadBrands();
+    });
+
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadBrands(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadBrands(1);
+    }
+
+    // 5. Listing API
+    async function loadBrands(page = 1) {
+        currentPage = page;
+
+        const input = {
+            searchText: document.getElementById('searchText').value || '',
+            filterBrandIDs: '',
+            pageIndex: currentPage,
+            pageSize: pageSize,
+            sortColumn: 0,
+            sortMode: ''
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Brand List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                return;
+            }
+
+            displayBrands(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Brand List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    // 6. Listing Display
+    function displayBrands(brands) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = brands.map(brand => createBrandRow(brand)).join('');
+        initTableTooltips(tableBody);
+    }
+
+    // 7. Row Creation
+    function createBrandRow(brand) {
+        const isActive = brand.isActive ?? brand.IsActive ?? true;
+        const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+        const statusText = isActive ? 'Active' : 'Inactive';
+        const nameRaw = brand.brandName || brand.BrandName || '';
+        const descRaw = brand.description || brand.Description || '';
+        const brandID = brand.brandID ?? brand.BrandID;
+
+        return `
+            <tr>
+                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
+                <td class="col-status">
+                    <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
+                </td>
+                <td class="col-actions">
+                    ${brand.cancelled || brand.Cancelled ? '' : `
+                        <div class="table-actions">
+                        <button type="button" class="btn-action" onclick="openEditModal(${brandID})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                            <i class="ti ti-edit"></i>
+                        </button>
+                        <button type="button" class="btn-action" onclick="openDeleteModal(${brandID})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                        </div>
+                    `}
+                </td>
+            </tr>
+        `;
+    }
+
+    // 8. Create / Edit
+    function openCreateModal() {
+        document.getElementById('brandModalLabel').textContent = 'Add Brand';
+        document.getElementById('brandForm').reset();
+        document.getElementById('brandID').value = '0';
+        document.getElementById('brandIsActive').checked = true;
+    }
+
+    async function openEditModal(brandID) {
+        try {
+            const response = await fetch(`${API.getById}/${brandID}`);
+            if (!response.ok) throw new Error('Failed to fetch brand');
+
+            const data = await response.json();
+            const brand = data.tableData?.[0] ?? data.TableData?.[0] ?? data;
+            const bid = brand.brandID ?? brand.BrandID ?? 0;
+            if (!brand || bid <= 0) {
+                throw new Error('Brand not found');
+            }
+
+            document.getElementById('brandModalLabel').textContent = 'Edit Brand';
+            document.getElementById('brandID').value = String(bid);
+            document.getElementById('brandName').value = brand.brandName || brand.BrandName || '';
+            document.getElementById('description').value = brand.description || brand.Description || '';
+            document.getElementById('brandIsActive').checked =
+                (brand.isActive ?? brand.IsActive ?? true) === true;
+
+            const modal = new bootstrap.Modal(document.getElementById('brandModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error loading brand:', error);
+            showError('Error', 'Error loading brand details.');
+        }
+    }
+
+    async function saveBrand() {
+        const brandID = parseInt(document.getElementById('brandID').value);
+        const brandName = document.getElementById('brandName').value.trim();
+        const description = document.getElementById('description').value.trim();
+
+        if (!brandName) {
+            showWarning('Validation Error', 'Please enter brand name.');
+            return;
+        }
+
+        const input = {
+            brandID: brandID,
+            brandName: brandName,
+            description: description,
+            isActive: document.getElementById('brandIsActive').checked
+        };
+
+        const url = brandID === 0 ? API.create : API.update;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) {
+                handleApiError?.('failure', 'Brand Save', { url, method: 'POST', payload: input, response, result: null });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.statusCode || result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('brandModal'));
+                modal.hide();
+                loadBrands(currentPage);
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand saved successfully.');
+            } else {
+                handleApiError?.('failure', 'Brand Save (business)', { url, method: 'POST', payload: input, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving brand.');
+            }
+        } catch (error) {
+            console.error('Error saving brand:', error);
+            handleApiError?.('crash', 'Brand Save', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error saving brand. Please try again.');
+        }
+    }
+
+    // 9. Delete
+    function openDeleteModal(brandID) {
+        document.getElementById('deleteBrandID').value = brandID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
+    async function confirmDelete() {
+        const brandID = parseInt(document.getElementById('deleteBrandID').value);
+        const reason = document.getElementById('deleteReason').value.trim();
+
+        const input = {
+            brandID: brandID,
+            cancelledReason: reason
+        };
+
+        try {
+            const url = API.delete;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) {
+                handleApiError?.('failure', 'Brand Delete', { url, method: 'POST', payload: input, response, result: null });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.statusCode || result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
+                loadBrands(currentPage);
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand deleted successfully.');
+            } else {
+                handleApiError?.('failure', 'Brand Delete (business)', { url, method: 'POST', payload: input, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting brand.');
+            }
+        } catch (error) {
+            console.error('Error deleting brand:', error);
+            handleApiError?.('crash', 'Brand Delete', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error deleting brand. Please try again.');
+        }
+    }
+
+    // 10. Page-specific Helper Functions
     function truncateText(text, limit = 25) {
         if (!text) return '';
         const s = String(text);
@@ -191,276 +460,6 @@
             if (existing) existing.dispose();
             new bootstrap.Tooltip(el);
         });
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        paginationInstance = new Pagination({
-            containerId: "pagination",
-            infoId: "paginationInfo",
-            onPageChange: loadBrands
-        });
-        loadBrands();
-
-        document.getElementById('searchText').addEventListener('input', function () {
-            const value = this.value.trim();
-            clearTimeout(brandSearchTimeout);
-            brandSearchTimeout = setTimeout(function () {
-                if (value.length === 0 || value.length >= 1) {
-                    loadBrands(1);
-                }
-            }, 500);
-        });
-    });
-
-    async function loadBrands(page = 1) {
-        currentPage = page;
-
-        const input = {
-            searchText: document.getElementById('searchText').value || '',
-            filterBrandIDs: '',
-            pageIndex: page,
-            pageSize: parseInt(document.getElementById('pageSize').value) || 10,
-            sortColumn: 0,
-            sortMode: ''
-        };
-
-        try {
-            const response = await fetch('/Admin/Brand/GetBrandList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                emptyState.showError(
-                    'brandTableBody',
-                    result.errors?.length
-                        ? result.errors.join("<br>")
-                        : result.message,
-                    {
-                        onRetry: 'loadBrands()',
-                        title: 'Error loading brands'
-                    },
-                    4
-                );
-                return;
-            }
-
-            const data = result.data;
-
-            if (!data?.tableData?.length) {
-                emptyState.showNoData('brandTableBody', {
-                    title: 'No brands found',
-                    message: 'Try adjusting your search.',
-                    onClear: 'clearSearch()'
-                }, 4);
-                return;
-            }
-
-            displayBrands(data.tableData);
-
-            if (paginationInstance && data.tableSettings) {
-                paginationInstance.render(data.tableSettings);
-            }
-        } catch (error) {
-            console.error(error);
-            emptyState.showError(
-                'brandTableBody',
-                "Unable to connect to server.",
-                {
-                    onRetry: 'loadBrands()',
-                    title: 'Server Error'
-                },
-                4
-            );
-        }
-    }
-
-    function displayBrands(brands) {
-        const tbody = document.getElementById('brandTableBody');
-
-        if (!brands || brands.length === 0) {
-            emptyState.showNoData('brandTableBody', {
-                title: 'No brands found',
-                message: 'We can\'t find any brands matching your search.<br>Try adjusting your search term.',
-                onClear: 'clearSearch()'
-            }, 4);
-            return;
-        }
-
-        tbody.innerHTML = brands.map(brand => {
-            const isActive = brand.isActive ?? brand.IsActive ?? true;
-            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
-            const statusText = isActive ? 'Active' : 'Inactive';
-            const nameRaw = brand.brandName || brand.BrandName || '';
-            const descRaw = brand.description || brand.Description || '';
-
-            return `
-                <tr>
-                    <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
-                    <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
-                    <td class="col-status">
-                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
-                    </td>
-                    <td class="col-actions">
-                        ${brand.cancelled || brand.Cancelled ? '' : `
-                            <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditModal(${brand.brandID ?? brand.BrandID})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
-                                <i class="ti ti-edit"></i>
-                            </button>
-                            <button type="button" class="btn-action" onclick="openDeleteModal(${brand.brandID ?? brand.BrandID})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
-                                <i class="ti ti-trash"></i>
-                            </button>
-                            </div>
-                        `}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-        initTableTooltips(tbody);
-    }
-
-    function openCreateModal() {
-        document.getElementById('brandModalLabel').textContent = 'Add Brand';
-        document.getElementById('brandForm').reset();
-        document.getElementById('brandID').value = '0';
-        document.getElementById('brandIsActive').checked = true;
-    }
-
-    async function openEditModal(brandID) {
-        try {
-            const response = await fetch(`/Admin/Brand/GetById/${brandID}`);
-            if (!response.ok) throw new Error('Failed to fetch brand');
-
-            const data = await response.json();
-            const brand = data.tableData?.[0] ?? data.TableData?.[0] ?? data;
-            const bid = brand.brandID ?? brand.BrandID ?? 0;
-            if (!brand || bid <= 0) {
-                throw new Error('Brand not found');
-            }
-
-            document.getElementById('brandModalLabel').textContent = 'Edit Brand';
-            document.getElementById('brandID').value = String(bid);
-            document.getElementById('brandName').value = brand.brandName || brand.BrandName || '';
-            document.getElementById('description').value = brand.description || brand.Description || '';
-            document.getElementById('brandIsActive').checked =
-                (brand.isActive ?? brand.IsActive ?? true) === true;
-
-            const modal = new bootstrap.Modal(document.getElementById('brandModal'));
-            modal.show();
-        } catch (error) {
-            console.error('Error loading brand:', error);
-            showError('Error', 'Error loading brand details.');
-        }
-    }
-
-    function openDeleteModal(brandID) {
-        document.getElementById('deleteBrandID').value = brandID;
-        document.getElementById('deleteReason').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
-    }
-
-    async function saveBrand() {
-        const brandID = parseInt(document.getElementById('brandID').value);
-        const brandName = document.getElementById('brandName').value.trim();
-        const description = document.getElementById('description').value.trim();
-
-        if (!brandName) {
-            showWarning('Validation Error', 'Please enter brand name.');
-            return;
-        }
-
-        const input = {
-            brandID: brandID,
-            brandName: brandName,
-            description: description,
-            isActive: document.getElementById('brandIsActive').checked
-        };
-
-        const url = brandID === 0 ? '/Admin/Brand/Create' : '/Admin/Brand/Update';
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-
-            if (!response.ok) {
-                handleApiError?.('failure', 'Brand Save', { url, method: 'POST', payload: input, response, result: null });
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-
-            if (result.statusCode || result.StatusCode) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('brandModal'));
-                modal.hide();
-                loadBrands(currentPage);
-                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand saved successfully.');
-            } else {
-                handleApiError?.('failure', 'Brand Save (business)', { url, method: 'POST', payload: input, response, result });
-                showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving brand.');
-            }
-        } catch (error) {
-            console.error('Error saving brand:', error);
-            handleApiError?.('crash', 'Brand Save', { url, method: 'POST', payload: input, error });
-            showError('Error', 'Error saving brand. Please try again.');
-        }
-    }
-
-    async function confirmDelete() {
-        const brandID = parseInt(document.getElementById('deleteBrandID').value);
-        const reason = document.getElementById('deleteReason').value.trim();
-
-        const input = {
-            brandID: brandID,
-            cancelledReason: reason
-        };
-
-        try {
-            const url = '/Admin/Brand/Delete';
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-
-            if (!response.ok) {
-                handleApiError?.('failure', 'Brand Delete', { url, method: 'POST', payload: input, response, result: null });
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-
-            if (result.statusCode || result.StatusCode) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                modal.hide();
-                loadBrands(currentPage);
-                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand deleted successfully.');
-            } else {
-                handleApiError?.('failure', 'Brand Delete (business)', { url, method: 'POST', payload: input, response, result });
-                showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting brand.');
-            }
-        } catch (error) {
-            console.error('Error deleting brand:', error);
-            handleApiError?.('crash', 'Brand Delete', { url, method: 'POST', payload: input, error });
-            showError('Error', 'Error deleting brand. Please try again.');
-        }
-    }
-
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('pageSize').value = '10';
-        loadBrands(1);
-    }
-
-    function clearSearch() {
-        document.getElementById('searchText').value = '';
-        loadBrands(1);
     }
 
     function escapeHtml(text) {

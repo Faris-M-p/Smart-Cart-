@@ -116,36 +116,72 @@ else
 @if (!isBlocked)
 {
 <script>
+    // 1. Page Variables
     const permissionUserRoleId = @roleId;
     const existingPermissionIds = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedPermissionIds));
     let permissionTreeBound = false;
 
+    // 2. API Endpoints
+    const API = {
+        getTree: '/Admin/UserRole/GetPermissionTree',
+        save: '/Admin/UserRole/SavePermissions'
+    };
+
+    // 3. Page Initialization
     document.addEventListener('DOMContentLoaded', function () {
         loadPermissionTree();
     });
 
+    // 5. Listing API
     async function loadPermissionTree() {
         const container = document.getElementById('permissionTree');
+        const listing = window.emptyState;
+        const url = API.getTree;
+        container.dataset.listingLoading = 'true';
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
 
         try {
-            const response = await fetch('/Admin/UserRole/GetPermissionTree');
-            if (!response.ok) throw new Error('Failed to fetch permissions');
-
+            const response = await fetch(url);
             const modules = await response.json();
+
+            if (!response.ok || modules?.success === false) {
+                listing.handleListingError(
+                    'Permission Tree Load',
+                    { url, method: 'GET', response, result: modules },
+                    null,
+                    6,
+                    'permissionTree'
+                );
+                return;
+            }
+
             const tree = Array.isArray(modules) ? modules : [];
             renderPermissionTree(tree);
             bindPermissionTreeEvents();
             setSelectedPermissionIds(existingPermissionIds);
         } catch (error) {
-            console.error(error);
-            container.innerHTML = '<div class="col-12"><div class="text-danger">Unable to load permissions.</div></div>';
+            listing.handleListingError(
+                'Permission Tree Load',
+                { url, method: 'GET', error },
+                null,
+                6,
+                'permissionTree'
+            );
+        } finally {
+            listing.endListingLoadInContainer('permissionTree');
         }
     }
 
     function renderPermissionTree(modules) {
         const container = document.getElementById('permissionTree');
         if (!modules.length) {
-            container.innerHTML = '<div class="col-12"><div class="text-muted">No permissions found.</div></div>';
+            emptyState.showListingEmptyInContainer('permissionTree');
             return;
         }
 
@@ -248,7 +284,7 @@ else
             selectedPermissionIds: selectedPermissionIds
         };
 
-        const url = '/Admin/UserRole/SavePermissions';
+        const url = API.save;
 
         try {
             const response = await fetch(url, {

@@ -103,15 +103,6 @@ class ToastNotification {
             }, 400);
         }
     }
-
-    /**
-     * Dismiss all toast notifications
-     */
-    dismissAll() {
-        this.toasts.forEach(toast => {
-            this.dismiss(toast.id);
-        });
-    }
 }
 
 // Initialize toast system
@@ -130,17 +121,4 @@ function showError(title, message, duration = 7000) {
 
 function showWarning(title, message, duration = 6000) {
     return toastSystem.show('warning', title, message, duration);
-}
-
-function showInfo(title, message, duration = 5000) {
-    return toastSystem.show('info', title, message, duration);
-}
-
-// Legacy function for backward compatibility
-function showNotification(type, title, message, duration = 5000) {
-    return toastSystem.show(type, title, message, duration);
-}
-
-function closeToast(toastId) {
-    toastSystem.dismiss(toastId);
 }

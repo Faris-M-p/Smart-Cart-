@@ -89,7 +89,7 @@
                 <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted small">Show</span>
-                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadProducts()">
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
                             <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
@@ -187,11 +187,300 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
-    let paginationInstance;
-    let productSearchTimeout;
-    let emptyState;
+    let pageSize = 10;
+    let paginationInstance = null;
+    let searchTimeout = null;
 
+    const TABLE_BODY_ID = 'productTableBody';
+    const TABLE_COLUMN_COUNT = 5;
+
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/Product/GetProductList',
+        getById: '/Admin/Product/GetById',
+        create: '/Admin/Product/Create',
+        update: '/Admin/Product/Update',
+        delete: '/Admin/Product/Delete',
+        categories: '/Admin/Product/GetCategories',
+        subCategories: '/Admin/Product/GetSubCategories',
+        brands: '/Admin/Product/GetBrands'
+    };
+
+    // 3. Page Initialization
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadProducts
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        document.getElementById('filterSubCategory').addEventListener('change', function () { loadProducts(1); });
+        document.getElementById('filterBrand').addEventListener('change', function () { loadProducts(1); });
+
+        loadCategories();
+        loadSubCategoriesForFilter();
+        loadBrands();
+        loadProducts();
+    });
+
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadProducts(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadProducts(1);
+    }
+
+    // 5. Listing API
+    async function loadProducts(page = 1) {
+        currentPage = page;
+
+        const input = {
+            searchText: document.getElementById('searchText').value || '',
+            filterCategoryIDs: filterJsonFromSelect('filterCategory'),
+            filterSubCategoryIDs: filterJsonFromSelect('filterSubCategory'),
+            filterBrandIDs: filterJsonFromSelect('filterBrand'),
+            pageIndex: currentPage,
+            pageSize: pageSize,
+            sortColumn: 0,
+            sortMode: ''
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Product List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                if (paginationInstance && data?.tableSettings) {
+                    paginationInstance.render(normalizeTableSettings(data.tableSettings));
+                }
+                return;
+            }
+
+            displayProducts(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(normalizeTableSettings(data.tableSettings));
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Product List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    // 6. Listing Display
+    function displayProducts(products) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = products.map(function (p) {
+            return createProductRow(p);
+        }).join('');
+        initTableTooltips(tableBody);
+    }
+
+    // 7. Row Creation
+    function createProductRow(p) {
+        const id = p.productId ?? p.id_Product ?? p.ID_Product ?? 0;
+        const name = p.name ?? p.Name ?? '';
+        const cat = p.categoryName ?? p.CategoryName ?? '';
+        const brand = p.brandName ?? p.BrandName ?? '';
+        const active = p.isActive ?? p.IsActive ?? false;
+        const cancelled = p.cancelled ?? p.Cancelled ?? false;
+        const badgeClass = active ? 'bg-success' : 'bg-secondary';
+        const statusText = cancelled ? 'Deleted' : (active ? 'Active' : 'Inactive');
+        return `
+            <tr>
+                <td class="col-name text-start">${truncatedCellHtml(name)}</td>
+                <td class="text-start">${truncatedCellHtml(cat, 30)}</td>
+                <td class="text-start">${truncatedCellHtml(brand || '—', 25)}</td>
+                <td class="col-status text-start">
+                    <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip">${escapeHtml(statusText)}</span>
+                </td>
+                <td class="col-actions text-start">
+                    ${cancelled ? '' : `
+                    <div class="table-actions">
+                        <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
+                        <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
+                    </div>`}
+                </td>
+            </tr>`;
+    }
+
+    // 8. Create / Edit
+    function openCreateModal() {
+        document.getElementById('productModalLabel').textContent = 'Add product';
+        document.getElementById('productForm').reset();
+        document.getElementById('productID').value = '0';
+        document.getElementById('fkSubCategory').innerHTML = '<option value="">Select subcategory</option>';
+        document.getElementById('productIsActive').checked = true;
+    }
+
+    async function openEditModal(productID) {
+        try {
+            const response = await fetch(`${API.getById}/${productID}`);
+            if (!response.ok) throw new Error('Not found');
+            const p = await response.json();
+            document.getElementById('productModalLabel').textContent = 'Edit product';
+            document.getElementById('productID').value = String(p.productId ?? p.id_Product ?? p.ID_Product ?? 0);
+            document.getElementById('productName').value = p.name ?? p.Name ?? '';
+            document.getElementById('productSlug').value = p.slug ?? p.Slug ?? '';
+            document.getElementById('description').value = p.description ?? p.Description ?? '';
+            document.getElementById('productIsActive').checked = (p.isActive ?? p.IsActive ?? true) === true;
+            const fkCat = p.fkCategory ?? p.fk_Category ?? p.FK_Category ?? '';
+            document.getElementById('fkCategory').value = String(fkCat);
+            await loadSubCategoriesForProduct();
+            document.getElementById('fkSubCategory').value = String(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
+            const fb = p.fkBrand ?? p.fk_Brand ?? p.FK_Brand;
+            document.getElementById('fkBrand').value = fb != null && fb !== '' ? String(fb) : '';
+            new bootstrap.Modal(document.getElementById('productModal')).show();
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Could not load product.');
+            else alert('Could not load product.');
+        }
+    }
+
+    async function saveProduct() {
+        const productID = parseInt(document.getElementById('productID').value, 10);
+        const name = document.getElementById('productName').value.trim();
+        const slug = document.getElementById('productSlug').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const fkCategoryRaw = document.getElementById('fkCategory').value;
+        const fkSubRaw = document.getElementById('fkSubCategory').value;
+        const fkCategory = parseInt(fkCategoryRaw, 10);
+        const fkSubCategory = parseInt(fkSubRaw, 10);
+        const fkBrandVal = document.getElementById('fkBrand').value;
+        const fkBrand = fkBrandVal ? parseInt(fkBrandVal, 10) : null;
+
+        if (!name) {
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please enter a name.');
+            else alert('Please enter a name.');
+            return;
+        }
+        if (!fkCategoryRaw || isNaN(fkCategory) || fkCategory <= 0) {
+            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a category.');
+            else alert('Please select a category.');
+            return;
+        }
+        if (!fkSubRaw || isNaN(fkSubCategory) || fkSubCategory <= 0 || fkSubRaw === 'undefined') {
+            if (typeof showWarning === 'function') {
+                showWarning('Validation', 'Please select a subcategory again (wait for the list to load after choosing a category).');
+            } else {
+                alert('Please select a subcategory.');
+            }
+            return;
+        }
+
+        const body = {
+            id_Product: productID,
+            fk_Category: fkCategory,
+            fk_SubCategory: fkSubCategory,
+            fk_Brand: fkBrand,
+            name: name,
+            slug: slug,
+            description: description,
+            isActive: document.getElementById('productIsActive').checked
+        };
+
+        const url = productID === 0 ? API.create : API.update;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await response.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+                loadProducts(currentPage);
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'Product saved.');
+                }
+            } else {
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
+                } else {
+                    alert(result.responseMsg || result.ResponseMsg || 'Save failed.');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Save failed.');
+            else alert('Save failed.');
+        }
+    }
+
+    // 9. Delete
+    function openDeleteModal(productID) {
+        document.getElementById('deleteProductID').value = String(productID);
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    async function confirmDelete() {
+        const productID = parseInt(document.getElementById('deleteProductID').value, 10);
+        try {
+            const response = await fetch(API.delete, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_Product: productID })
+            });
+            const result = await response.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                loadProducts(currentPage);
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'Deleted.');
+                }
+            } else {
+                if (typeof showError === 'function') {
+                    showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                } else {
+                    alert(result.responseMsg || result.ResponseMsg || 'Delete failed.');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            if (typeof showError === 'function') showError('Error', 'Delete failed.');
+            else alert('Delete failed.');
+        }
+    }
+
+    // 10. Page-specific Helper Functions
     function truncateText(text, limit = 25) {
         if (!text) return '';
         const s = String(text);
@@ -302,37 +591,9 @@
         selectEl.add(new Option(name, String(id)));
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof EmptyStateHandler === 'function') {
-            emptyState = window.__emptyStateInstance || (window.__emptyStateInstance = new EmptyStateHandler());
-        } else {
-            console.error('EmptyStateHandler is not loaded. Check /Admin/assets/js/common/empty-state.js.');
-        }
-
-        paginationInstance = new Pagination({
-            containerId: 'pagination',
-            infoId: 'paginationInfo',
-            onPageChange: loadProducts
-        });
-        loadCategories();
-        loadSubCategoriesForFilter();
-        loadBrands();
-        loadProducts();
-
-        document.getElementById('searchText').addEventListener('input', function () {
-            clearTimeout(productSearchTimeout);
-            productSearchTimeout = setTimeout(function () {
-                loadProducts(1);
-            }, 500);
-        });
-
-        document.getElementById('filterSubCategory').addEventListener('change', function () { loadProducts(1); });
-        document.getElementById('filterBrand').addEventListener('change', function () { loadProducts(1); });
-    });
-
     async function loadCategories() {
         try {
-            const response = await fetch('/Admin/Product/GetCategories');
+            const response = await fetch(API.categories);
             if (!response.ok) throw new Error('Failed to load categories');
             const categories = await response.json();
 
@@ -358,7 +619,7 @@
 
     async function loadSubCategoriesForFilter() {
         const categoryId = document.getElementById('filterCategory').value;
-        const url = categoryId ? `/Admin/Product/GetSubCategories?categoryId=${categoryId}` : '/Admin/Product/GetSubCategories';
+        const url = categoryId ? `${API.subCategories}?categoryId=${categoryId}` : API.subCategories;
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to load subcategories');
@@ -380,7 +641,7 @@
         sel.innerHTML = '<option value="">Select subcategory</option>';
         if (!categoryId) return;
         try {
-            const response = await fetch(`/Admin/Product/GetSubCategories?categoryId=${categoryId}`);
+            const response = await fetch(`${API.subCategories}?categoryId=${categoryId}`);
             if (!response.ok) throw new Error('Failed to load subcategories');
             const list = await response.json();
             list.forEach(function (sc) {
@@ -394,7 +655,7 @@
 
     async function loadBrands() {
         try {
-            const response = await fetch('/Admin/Product/GetBrands');
+            const response = await fetch(API.brands);
             if (!response.ok) throw new Error('Failed to load brands');
             const brands = await response.json();
             const filterSel = document.getElementById('filterBrand');
@@ -408,239 +669,5 @@
         } catch (e) {
             console.error(e);
         }
-    }
-
-    async function loadProducts(page = 1) {
-        currentPage = page;
-        const input = {
-            searchText: document.getElementById('searchText').value || '',
-            filterCategoryIDs: filterJsonFromSelect('filterCategory'),
-            filterSubCategoryIDs: filterJsonFromSelect('filterSubCategory'),
-            filterBrandIDs: filterJsonFromSelect('filterBrand'),
-            pageIndex: page,
-            pageSize: parseInt(document.getElementById('pageSize').value, 10) || 10,
-            sortColumn: 0,
-            sortMode: ''
-        };
-
-        try {
-            const response = await fetch('/Admin/Product/GetProductList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                emptyState.showError(
-                    'productTableBody',
-                    result.errors?.length ? result.errors.join('<br>') : result.message,
-                    { onRetry: 'loadProducts()', title: 'Error loading products' },
-                    5
-                );
-                return;
-            }
-
-            const data = result.data;
-            if (!data?.tableData?.length) {
-                emptyState.showNoData('productTableBody', {
-                    title: 'No products found',
-                    message: 'Try adjusting search or filters.',
-                    onClear: 'clearProductSearch()'
-                }, 5);
-                if (paginationInstance && data?.tableSettings) {
-                    paginationInstance.render(normalizeTableSettings(data.tableSettings));
-                }
-                return;
-            }
-
-            displayProducts(data.tableData);
-            if (paginationInstance && data.tableSettings) {
-                paginationInstance.render(normalizeTableSettings(data.tableSettings));
-            }
-        } catch (e) {
-            console.error(e);
-            emptyState.showError(
-                'productTableBody',
-                'Unable to connect to server.',
-                { onRetry: 'loadProducts()', title: 'Server error' },
-                5
-            );
-        }
-    }
-
-    function displayProducts(products) {
-        const tbody = document.getElementById('productTableBody');
-        tbody.innerHTML = products.map(function (p) {
-            const id = p.productId ?? p.id_Product ?? p.ID_Product ?? 0;
-            const name = p.name ?? p.Name ?? '';
-            const cat = p.categoryName ?? p.CategoryName ?? '';
-            const brand = p.brandName ?? p.BrandName ?? '';
-            const active = p.isActive ?? p.IsActive ?? false;
-            const cancelled = p.cancelled ?? p.Cancelled ?? false;
-            const badgeClass = active ? 'bg-success' : 'bg-secondary';
-            const statusText = cancelled ? 'Deleted' : (active ? 'Active' : 'Inactive');
-            return `
-                <tr>
-                    <td class="col-name text-start">${truncatedCellHtml(name)}</td>
-                    <td class="text-start">${truncatedCellHtml(cat, 30)}</td>
-                    <td class="text-start">${truncatedCellHtml(brand || '—', 25)}</td>
-                    <td class="col-status text-start">
-                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip">${escapeHtml(statusText)}</span>
-                    </td>
-                    <td class="col-actions text-start">
-                        ${cancelled ? '' : `
-                        <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditModal(${id})" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></button>
-                            <button type="button" class="btn-action" onclick="openDeleteModal(${id})" title="Delete" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
-                        </div>`}
-                    </td>
-                </tr>`;
-        }).join('');
-        initTableTooltips(tbody);
-    }
-
-    function openCreateModal() {
-        document.getElementById('productModalLabel').textContent = 'Add product';
-        document.getElementById('productForm').reset();
-        document.getElementById('productID').value = '0';
-        document.getElementById('fkSubCategory').innerHTML = '<option value="">Select subcategory</option>';
-        document.getElementById('productIsActive').checked = true;
-    }
-
-    async function openEditModal(productID) {
-        try {
-            const response = await fetch('/Admin/Product/GetById/' + productID);
-            if (!response.ok) throw new Error('Not found');
-            const p = await response.json();
-            document.getElementById('productModalLabel').textContent = 'Edit product';
-            document.getElementById('productID').value = String(p.productId ?? p.id_Product ?? p.ID_Product ?? 0);
-            document.getElementById('productName').value = p.name ?? p.Name ?? '';
-            document.getElementById('productSlug').value = p.slug ?? p.Slug ?? '';
-            document.getElementById('description').value = p.description ?? p.Description ?? '';
-            document.getElementById('productIsActive').checked = (p.isActive ?? p.IsActive ?? true) === true;
-            const fkCat = p.fkCategory ?? p.fk_Category ?? p.FK_Category ?? '';
-            document.getElementById('fkCategory').value = String(fkCat);
-            await loadSubCategoriesForProduct();
-            document.getElementById('fkSubCategory').value = String(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
-            const fb = p.fkBrand ?? p.fk_Brand ?? p.FK_Brand;
-            document.getElementById('fkBrand').value = fb != null && fb !== '' ? String(fb) : '';
-            new bootstrap.Modal(document.getElementById('productModal')).show();
-        } catch (e) {
-            console.error(e);
-            if (typeof showError === 'function') showError('Error', 'Could not load product.');
-            else alert('Could not load product.');
-        }
-    }
-
-    function openDeleteModal(productID) {
-        document.getElementById('deleteProductID').value = String(productID);
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-
-    async function saveProduct() {
-        const productID = parseInt(document.getElementById('productID').value, 10);
-        const name = document.getElementById('productName').value.trim();
-        const slug = document.getElementById('productSlug').value.trim();
-        const description = document.getElementById('description').value.trim();
-        const fkCategoryRaw = document.getElementById('fkCategory').value;
-        const fkSubRaw = document.getElementById('fkSubCategory').value;
-        const fkCategory = parseInt(fkCategoryRaw, 10);
-        const fkSubCategory = parseInt(fkSubRaw, 10);
-        const fkBrandVal = document.getElementById('fkBrand').value;
-        const fkBrand = fkBrandVal ? parseInt(fkBrandVal, 10) : null;
-
-        if (!name) {
-            if (typeof showWarning === 'function') showWarning('Validation', 'Please enter a name.');
-            else alert('Please enter a name.');
-            return;
-        }
-        if (!fkCategoryRaw || isNaN(fkCategory) || fkCategory <= 0) {
-            if (typeof showWarning === 'function') showWarning('Validation', 'Please select a category.');
-            else alert('Please select a category.');
-            return;
-        }
-        if (!fkSubRaw || isNaN(fkSubCategory) || fkSubCategory <= 0 || fkSubRaw === 'undefined') {
-            if (typeof showWarning === 'function') {
-                showWarning('Validation', 'Please select a subcategory again (wait for the list to load after choosing a category).');
-            } else {
-                alert('Please select a subcategory.');
-            }
-            return;
-        }
-
-        const body = {
-            id_Product: productID,
-            fk_Category: fkCategory,
-            fk_SubCategory: fkSubCategory,
-            fk_Brand: fkBrand,
-            name: name,
-            slug: slug,
-            description: description,
-            isActive: document.getElementById('productIsActive').checked
-        };
-
-        const url = productID === 0 ? '/Admin/Product/Create' : '/Admin/Product/Update';
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const result = await response.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-                loadProducts(currentPage);
-                if (typeof showSuccess === 'function') {
-                    showSuccess('Saved', result.responseMsg || result.ResponseMsg || 'Product saved.');
-                }
-            } else {
-                if (typeof showError === 'function') {
-                    showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
-                } else {
-                    alert(result.responseMsg || result.ResponseMsg || 'Save failed.');
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            if (typeof showError === 'function') showError('Error', 'Save failed.');
-            else alert('Save failed.');
-        }
-    }
-
-    async function confirmDelete() {
-        const productID = parseInt(document.getElementById('deleteProductID').value, 10);
-        try {
-            const response = await fetch('/Admin/Product/Delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_Product: productID })
-            });
-            const result = await response.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
-                loadProducts(currentPage);
-                if (typeof showSuccess === 'function') {
-                    showSuccess('Deleted', result.responseMsg || result.ResponseMsg || 'Deleted.');
-                }
-            } else {
-                if (typeof showError === 'function') {
-                    showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
-                } else {
-                    alert(result.responseMsg || result.ResponseMsg || 'Delete failed.');
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            if (typeof showError === 'function') showError('Error', 'Delete failed.');
-            else alert('Delete failed.');
-        }
-    }
-
-    function clearProductSearch() {
-        document.getElementById('searchText').value = '';
-        loadProducts(1);
     }
 </script>

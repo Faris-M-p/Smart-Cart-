@@ -71,7 +71,7 @@
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
-                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadVariants()">
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
                                     <option value="10">10</option>
                                     <option value="25">25</option>
                                     <option value="50">50</option>
@@ -207,9 +207,420 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
-    let paginationInstance;
-    let variantSearchTimeout;
+    let pageSize = 10;
+    let paginationInstance = null;
+    let searchTimeout = null;
+
+    const TABLE_BODY_ID = 'variantTableBody';
+    const TABLE_COLUMN_COUNT = 6;
+
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/Variant/GetVariantList',
+        getById: '/Admin/Variant/GetById',
+        create: '/Admin/Variant/Create',
+        update: '/Admin/Variant/Update',
+        delete: '/Admin/Variant/Delete',
+        getValuesByVariant: '/Admin/VariantValue/GetByVariant',
+        getValueById: '/Admin/VariantValue/GetById',
+        createValue: '/Admin/VariantValue/Create',
+        updateValue: '/Admin/VariantValue/Update',
+        deleteValue: '/Admin/VariantValue/Delete'
+    };
+
+    // 3. Page Initialization
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadVariants
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadVariants();
+    });
+
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadVariants(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadVariants(1);
+    }
+
+    // 5. Listing API
+    async function loadVariants(page = 1) {
+        currentPage = page;
+
+        const input = {
+            searchText: document.getElementById('searchText').value || '',
+            filterVariantIDs: '',
+            pageIndex: currentPage,
+            pageSize: pageSize,
+            sortColumn: 0,
+            sortMode: ''
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Variant List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                return;
+            }
+
+            displayVariants(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Variant List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    // 6. Listing Display
+    function displayVariants(variants) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = variants.map(variant => createVariantRow(variant)).join('');
+        initTableTooltips(tableBody);
+    }
+
+    // 7. Row Creation
+    function createVariantRow(v) {
+        const vid = v.variantID ?? v.VariantID ?? 0;
+        const nameRaw = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+        const descRaw = v.description ?? v.Description ?? '';
+        const order = v.displayOrder ?? v.DisplayOrder ?? 0;
+        const isActive = v.isActive ?? v.IsActive ?? true;
+        const cancelled = v.cancelled ?? v.Cancelled ?? false;
+        const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+        const statusText = isActive ? 'Active' : 'Inactive';
+        return `
+                <tr>
+                    <td class="col-name text-start">${truncatedCellHtml(nameRaw)}</td>
+                    <td class="col-desc text-start">${truncatedCellHtml(descRaw)}</td>
+                    <td class="col-order text-start">${escapeHtml(String(order))}</td>
+                    <td class="col-status text-start">
+                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip">${statusText}</span>
+                    </td>
+                    <td class="col-actions text-start">
+                        ${cancelled ? '' : `
+                        <div class="table-actions">
+                            <button type="button" class="btn-action" onclick="openEditVariantModal(${vid})" title="Edit"><i class="ti ti-edit"></i></button>
+                            <button type="button" class="btn-action" onclick="openDeleteVariantModal(${vid})" title="Delete"><i class="ti ti-trash"></i></button>
+                        </div>`}
+                    </td>
+                    <td class="col-expand text-start">
+                        ${cancelled ? '' : `<button type="button" class="btn-action" onclick="toggleValuesPanel(${vid})" title="Values"><i class="ti ti-list"></i></button>`}
+                    </td>
+                </tr>
+                <tr id="vv-panel-${vid}" class="d-none">
+                    <td colspan="6" class="bg-light p-3 border-top-0">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="small text-muted">Values</strong>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="openCreateValueModal(${vid})"><i class="ti ti-plus"></i> Add value</button>
+                        </div>
+                        <div id="vv-inner-${vid}"><span class="text-muted small">Open to load values…</span></div>
+                    </td>
+                </tr>`;
+    }
+
+    // 8. Create / Edit
+    function openCreateVariantModal() {
+        document.getElementById('variantModalLabel').textContent = 'Add Variant';
+        document.getElementById('variantForm').reset();
+        document.getElementById('variantID').value = '0';
+        document.getElementById('displayOrder').value = '0';
+        document.getElementById('variantIsActive').checked = true;
+        document.getElementById('variantDescription').value = '';
+    }
+
+    async function openEditVariantModal(id) {
+        try {
+            const r = await fetch(API.getById + '/' + id);
+            if (!r.ok) throw new Error('not found');
+            const v = await r.json();
+            const vid = v.variantID ?? v.VariantID ?? 0;
+            document.getElementById('variantModalLabel').textContent = 'Edit Variant';
+            document.getElementById('variantID').value = String(vid);
+            document.getElementById('variantName').value = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
+            document.getElementById('variantDescription').value = v.description ?? v.Description ?? '';
+            document.getElementById('displayOrder').value = String(v.displayOrder ?? v.DisplayOrder ?? 0);
+            document.getElementById('variantIsActive').checked = (v.isActive ?? v.IsActive ?? true) === true;
+            new bootstrap.Modal(document.getElementById('variantModal')).show();
+        } catch (e) {
+            showError('Error', 'Could not load variant.');
+        }
+    }
+
+    async function saveVariant() {
+        const variantID = parseInt(document.getElementById('variantID').value, 10);
+        const name = document.getElementById('variantName').value.trim();
+        const description = document.getElementById('variantDescription').value.trim();
+        const displayOrder = parseInt(document.getElementById('displayOrder').value, 10) || 0;
+        if (!name) {
+            showWarning('Validation', 'Please enter variant name.');
+            return;
+        }
+        const input = {
+            variantID: variantID,
+            name: name,
+            description: description,
+            displayOrder: displayOrder,
+            isActive: document.getElementById('variantIsActive').checked
+        };
+        const url = variantID === 0 ? API.create : API.update;
+        try {
+            const r = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+            const result = await r.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('variantModal')).hide();
+                loadVariants(currentPage);
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Saved.');
+            } else {
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
+            }
+        } catch (e) {
+            showError('Error', 'Save failed.');
+        }
+    }
+
+    // 9. Delete
+    function openDeleteVariantModal(id) {
+        document.getElementById('deleteVariantID').value = String(id);
+        document.getElementById('deleteVariantReason').value = '';
+        new bootstrap.Modal(document.getElementById('deleteVariantModal')).show();
+    }
+
+    async function confirmDeleteVariant() {
+        const id = parseInt(document.getElementById('deleteVariantID').value, 10);
+        const input = {
+            variantID: id,
+            cancelledReason: document.getElementById('deleteVariantReason').value.trim()
+        };
+        try {
+            const r = await fetch(API.delete, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+            const result = await r.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteVariantModal')).hide();
+                loadVariants(currentPage);
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Deleted.');
+            } else {
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
+            }
+        } catch (e) {
+            showError('Error', 'Delete failed.');
+        }
+    }
+
+    // 10. Page-specific Helper Functions
+    async function toggleValuesPanel(variantId) {
+        const panel = document.getElementById('vv-panel-' + variantId);
+        if (!panel) return;
+        const opening = panel.classList.contains('d-none');
+        document.querySelectorAll('[id^="vv-panel-"]').forEach(function (el) { el.classList.add('d-none'); });
+        if (opening) {
+            panel.classList.remove('d-none');
+            await loadValuesIntoPanel(variantId);
+        }
+    }
+
+    async function loadValuesIntoPanel(variantId) {
+        const inner = document.getElementById('vv-inner-' + variantId);
+        if (!inner) return;
+        inner.innerHTML = '<span class="text-muted small">Loading…</span>';
+        const url = API.getValuesByVariant + '/' + variantId;
+        try {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error('load failed');
+            const list = await r.json();
+            if (!Array.isArray(list) || !list.length) {
+                inner.innerHTML = '<span class="text-muted small">No values yet.</span>';
+                return;
+            }
+            inner.innerHTML = `
+                <div class="table-container">
+                    <table class="table table-sm align-middle mb-0 admin-master-list-table">
+                        <thead><tr>
+                            <th class="text-start">Name</th>
+                            <th class="text-start">Description</th>
+                            <th class="text-start">Order</th>
+                            <th class="text-start">Actions</th>
+                        </tr></thead>
+                        <tbody>
+                        ${list.map(function (x) {
+                            const id = x.variantValueID ?? x.VariantValueID ?? 0;
+                            const nm = x.name ?? x.Name ?? x.valueName ?? x.ValueName ?? '';
+                            const desc = x.description ?? x.Description ?? '';
+                            const ord = x.displayOrder ?? x.DisplayOrder ?? 0;
+                            return `<tr>
+                                <td class="text-start">${truncatedCellHtml(nm)}</td>
+                                <td class="text-start">${truncatedCellHtml(desc, 40)}</td>
+                                <td class="text-start">${escapeHtml(String(ord))}</td>
+                                <td class="text-start">
+                                    <div class="table-actions">
+                                        <button type="button" class="btn-action" onclick="openEditValueModal(${variantId}, ${id})" title="Edit"><i class="ti ti-edit"></i></button>
+                                        <button type="button" class="btn-action" onclick="openDeleteValueModal(${variantId}, ${id})" title="Delete"><i class="ti ti-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+            initTableTooltips(inner);
+        } catch (e) {
+            console.error(e);
+            handleApiError?.('crash', 'VariantValue Panel Load', { url: url, method: 'GET', payload: { variantId }, error: e });
+            inner.innerHTML = '<span class="text-danger small">Could not load values.</span>';
+        }
+    }
+
+    function openCreateValueModal(variantId) {
+        document.getElementById('variantValueModalLabel').textContent = 'Add value';
+        document.getElementById('vvId').value = '0';
+        document.getElementById('vvFkVariant').value = String(variantId);
+        document.getElementById('vvName').value = '';
+        document.getElementById('vvDescription').value = '';
+        document.getElementById('vvDisplayOrder').value = '0';
+        new bootstrap.Modal(document.getElementById('variantValueModal')).show();
+    }
+
+    async function openEditValueModal(variantId, valueId) {
+        try {
+            const r = await fetch(API.getValueById + '/' + valueId);
+            if (!r.ok) throw new Error('x');
+            const x = await r.json();
+            document.getElementById('variantValueModalLabel').textContent = 'Edit value';
+            document.getElementById('vvId').value = String(x.iD_VariantValue ?? x.ID_VariantValue ?? x.id_VariantValue ?? 0);
+            document.getElementById('vvFkVariant').value = String(x.fk_Variant ?? x.FK_Variant ?? variantId);
+            document.getElementById('vvName').value = x.name ?? x.Name ?? x.valueName ?? x.ValueName ?? '';
+            document.getElementById('vvDescription').value = x.description ?? x.Description ?? '';
+            document.getElementById('vvDisplayOrder').value = String(x.displayOrder ?? x.DisplayOrder ?? 0);
+            new bootstrap.Modal(document.getElementById('variantValueModal')).show();
+        } catch (e) {
+            showError('Error', 'Could not load value.');
+        }
+    }
+
+    async function saveVariantValue() {
+        const id = parseInt(document.getElementById('vvId').value, 10);
+        const fk = parseInt(document.getElementById('vvFkVariant').value, 10);
+        const name = document.getElementById('vvName').value.trim();
+        const description = document.getElementById('vvDescription').value.trim();
+        const ord = parseInt(document.getElementById('vvDisplayOrder').value, 10) || 0;
+        if (!name) {
+            showWarning('Validation', 'Enter value name.');
+            return;
+        }
+        if (!fk) {
+            showWarning('Validation', 'Invalid variant.');
+            return;
+        }
+        const body = id === 0
+            ? { variantValueID: 0, fk_Variant: fk, name: name, description: description, displayOrder: ord }
+            : { variantValueID: id, fk_Variant: fk, name: name, description: description, displayOrder: ord };
+        const url = id === 0 ? API.createValue : API.updateValue;
+        try {
+            const r = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await r.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('variantValueModal')).hide();
+                loadVariants(currentPage);
+                const pid = fk;
+                const p = document.getElementById('vv-panel-' + pid);
+                if (p && !p.classList.contains('d-none')) {
+                    await loadValuesIntoPanel(pid);
+                }
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Saved.');
+            } else {
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
+            }
+        } catch (e) {
+            showError('Error', 'Save failed.');
+        }
+    }
+
+    function openDeleteValueModal(variantId, valueId) {
+        document.getElementById('deleteVvId').value = String(valueId);
+        document.getElementById('deleteVvParentVariantId').value = String(variantId);
+        new bootstrap.Modal(document.getElementById('deleteVariantValueModal')).show();
+    }
+
+    async function confirmDeleteVariantValue() {
+        const id = parseInt(document.getElementById('deleteVvId').value, 10);
+        const parent = parseInt(document.getElementById('deleteVvParentVariantId').value, 10);
+        const input = { variantValueID: id };
+        try {
+            const r = await fetch(API.deleteValue, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+            const result = await r.json();
+            if (result.statusCode || result.StatusCode) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteVariantValueModal')).hide();
+                loadVariants(currentPage);
+                const p = document.getElementById('vv-panel-' + parent);
+                if (p && !p.classList.contains('d-none')) {
+                    await loadValuesIntoPanel(parent);
+                }
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Deleted.');
+            } else {
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
+            }
+        } catch (e) {
+            showError('Error', 'Delete failed.');
+        }
+    }
 
     function truncateText(text, limit = 25) {
         if (!text) return '';
@@ -250,383 +661,5 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        paginationInstance = new Pagination({
-            containerId: "pagination",
-            infoId: "paginationInfo",
-            onPageChange: loadVariants
-        });
-        loadVariants();
-
-        document.getElementById('searchText').addEventListener('input', function () {
-            const value = this.value.trim();
-            clearTimeout(variantSearchTimeout);
-            variantSearchTimeout = setTimeout(function () {
-                loadVariants(1);
-            }, 500);
-        });
-    });
-
-    async function loadVariants(page = 1) {
-        currentPage = page;
-        const input = {
-            searchText: document.getElementById('searchText').value || '',
-            filterVariantIDs: '',
-            pageIndex: page,
-            pageSize: parseInt(document.getElementById('pageSize').value) || 10,
-            sortColumn: 0,
-            sortMode: ''
-        };
-
-        try {
-            const response = await fetch('/Admin/Variant/GetVariantList', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                emptyState.showError(
-                    'variantTableBody',
-                    result.errors?.length ? result.errors.join('<br>') : result.message,
-                    { onRetry: 'loadVariants()', title: 'Error loading variants' },
-                    6
-                );
-                return;
-            }
-
-            const data = result.data;
-            if (!data?.tableData?.length) {
-                emptyState.showNoData('variantTableBody', {
-                    title: 'No variants found',
-                    message: 'Try adjusting your search.',
-                    onClear: 'clearVariantSearch()'
-                }, 6);
-                return;
-            }
-
-            renderVariantRows(data.tableData);
-            if (paginationInstance && data.tableSettings) {
-                paginationInstance.render(data.tableSettings);
-            }
-        } catch (e) {
-            console.error(e);
-            emptyState.showError(
-                'variantTableBody',
-                'Unable to connect to server.',
-                { onRetry: 'loadVariants()', title: 'Server Error' },
-                6
-            );
-        }
-    }
-
-    function renderVariantRows(rows) {
-        const tbody = document.getElementById('variantTableBody');
-        const html = rows.map(function (v) {
-            const vid = v.variantID ?? v.VariantID ?? 0;
-            const nameRaw = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
-            const descRaw = v.description ?? v.Description ?? '';
-            const order = v.displayOrder ?? v.DisplayOrder ?? 0;
-            const isActive = v.isActive ?? v.IsActive ?? true;
-            const cancelled = v.cancelled ?? v.Cancelled ?? false;
-            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
-            const statusText = isActive ? 'Active' : 'Inactive';
-            return `
-                <tr>
-                    <td class="col-name text-start">${truncatedCellHtml(nameRaw)}</td>
-                    <td class="col-desc text-start">${truncatedCellHtml(descRaw)}</td>
-                    <td class="col-order text-start">${escapeHtml(String(order))}</td>
-                    <td class="col-status text-start">
-                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip">${statusText}</span>
-                    </td>
-                    <td class="col-actions text-start">
-                        ${cancelled ? '' : `
-                        <div class="table-actions">
-                            <button type="button" class="btn-action" onclick="openEditVariantModal(${vid})" title="Edit"><i class="ti ti-edit"></i></button>
-                            <button type="button" class="btn-action" onclick="openDeleteVariantModal(${vid})" title="Delete"><i class="ti ti-trash"></i></button>
-                        </div>`}
-                    </td>
-                    <td class="col-expand text-start">
-                        ${cancelled ? '' : `<button type="button" class="btn-action" onclick="toggleValuesPanel(${vid})" title="Values"><i class="ti ti-list"></i></button>`}
-                    </td>
-                </tr>
-                <tr id="vv-panel-${vid}" class="d-none">
-                    <td colspan="6" class="bg-light p-3 border-top-0">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong class="small text-muted">Values</strong>
-                            <button type="button" class="btn btn-sm btn-primary" onclick="openCreateValueModal(${vid})"><i class="ti ti-plus"></i> Add value</button>
-                        </div>
-                        <div id="vv-inner-${vid}"><span class="text-muted small">Open to load values…</span></div>
-                    </td>
-                </tr>`;
-        }).join('');
-        tbody.innerHTML = html;
-        initTableTooltips(tbody);
-    }
-
-    async function toggleValuesPanel(variantId) {
-        const panel = document.getElementById('vv-panel-' + variantId);
-        if (!panel) return;
-        const opening = panel.classList.contains('d-none');
-        document.querySelectorAll('[id^="vv-panel-"]').forEach(function (el) { el.classList.add('d-none'); });
-        if (opening) {
-            panel.classList.remove('d-none');
-            await loadValuesIntoPanel(variantId);
-        }
-    }
-
-    async function loadValuesIntoPanel(variantId) {
-        const inner = document.getElementById('vv-inner-' + variantId);
-        if (!inner) return;
-        inner.innerHTML = '<span class="text-muted small">Loading…</span>';
-        try {
-            const r = await fetch('/Admin/VariantValue/GetByVariant/' + variantId);
-            if (!r.ok) throw new Error('load failed');
-            const list = await r.json();
-            if (!Array.isArray(list) || !list.length) {
-                inner.innerHTML = '<span class="text-muted small">No values yet.</span>';
-                return;
-            }
-            inner.innerHTML = `
-                <div class="table-container">
-                    <table class="table table-sm align-middle mb-0 admin-master-list-table">
-                        <thead><tr>
-                            <th class="text-start">Name</th>
-                            <th class="text-start">Description</th>
-                            <th class="text-start">Order</th>
-                            <th class="text-start">Actions</th>
-                        </tr></thead>
-                        <tbody>
-                        ${list.map(function (x) {
-                            const id = x.variantValueID ?? x.VariantValueID ?? 0;
-                            const nm = x.name ?? x.Name ?? x.valueName ?? x.ValueName ?? '';
-                            const desc = x.description ?? x.Description ?? '';
-                            const ord = x.displayOrder ?? x.DisplayOrder ?? 0;
-                            return `<tr>
-                                <td class="text-start">${truncatedCellHtml(nm)}</td>
-                                <td class="text-start">${truncatedCellHtml(desc, 40)}</td>
-                                <td class="text-start">${escapeHtml(String(ord))}</td>
-                                <td class="text-start">
-                                    <div class="table-actions">
-                                        <button type="button" class="btn-action" onclick="openEditValueModal(${variantId}, ${id})" title="Edit"><i class="ti ti-edit"></i></button>
-                                        <button type="button" class="btn-action" onclick="openDeleteValueModal(${variantId}, ${id})" title="Delete"><i class="ti ti-trash"></i></button>
-                                    </div>
-                                </td>
-                            </tr>`;
-                        }).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
-            initTableTooltips(inner);
-        } catch (e) {
-            console.error(e);
-            handleApiError?.('crash', 'VariantValue Panel Load', { url: '/Admin/VariantValue/GetByVariant/' + variantId, method: 'GET', payload: { variantId }, error: e });
-            inner.innerHTML = '<span class="text-danger small">Could not load values.</span>';
-        }
-    }
-
-    function openCreateVariantModal() {
-        document.getElementById('variantModalLabel').textContent = 'Add Variant';
-        document.getElementById('variantForm').reset();
-        document.getElementById('variantID').value = '0';
-        document.getElementById('displayOrder').value = '0';
-        document.getElementById('variantIsActive').checked = true;
-        document.getElementById('variantDescription').value = '';
-    }
-
-    async function openEditVariantModal(id) {
-        try {
-            const r = await fetch('/Admin/Variant/GetById/' + id);
-            if (!r.ok) throw new Error('not found');
-            const v = await r.json();
-            const vid = v.variantID ?? v.VariantID ?? 0;
-            document.getElementById('variantModalLabel').textContent = 'Edit Variant';
-            document.getElementById('variantID').value = String(vid);
-            document.getElementById('variantName').value = v.name ?? v.Name ?? v.variantName ?? v.VariantName ?? '';
-            document.getElementById('variantDescription').value = v.description ?? v.Description ?? '';
-            document.getElementById('displayOrder').value = String(v.displayOrder ?? v.DisplayOrder ?? 0);
-            document.getElementById('variantIsActive').checked = (v.isActive ?? v.IsActive ?? true) === true;
-            new bootstrap.Modal(document.getElementById('variantModal')).show();
-        } catch (e) {
-            showError('Error', 'Could not load variant.');
-        }
-    }
-
-    async function saveVariant() {
-        const variantID = parseInt(document.getElementById('variantID').value, 10);
-        const name = document.getElementById('variantName').value.trim();
-        const description = document.getElementById('variantDescription').value.trim();
-        const displayOrder = parseInt(document.getElementById('displayOrder').value, 10) || 0;
-        if (!name) {
-            showWarning('Validation', 'Please enter variant name.');
-            return;
-        }
-        const input = {
-            variantID: variantID,
-            name: name,
-            description: description,
-            displayOrder: displayOrder,
-            isActive: document.getElementById('variantIsActive').checked
-        };
-        const url = variantID === 0 ? '/Admin/Variant/Create' : '/Admin/Variant/Update';
-        try {
-            const r = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-            const result = await r.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('variantModal')).hide();
-                loadVariants(currentPage);
-                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Saved.');
-            } else {
-                showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
-            }
-        } catch (e) {
-            showError('Error', 'Save failed.');
-        }
-    }
-
-    function openDeleteVariantModal(id) {
-        document.getElementById('deleteVariantID').value = String(id);
-        document.getElementById('deleteVariantReason').value = '';
-        new bootstrap.Modal(document.getElementById('deleteVariantModal')).show();
-    }
-
-    async function confirmDeleteVariant() {
-        const id = parseInt(document.getElementById('deleteVariantID').value, 10);
-        const input = {
-            variantID: id,
-            cancelledReason: document.getElementById('deleteVariantReason').value.trim()
-        };
-        try {
-            const r = await fetch('/Admin/Variant/Delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-            const result = await r.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('deleteVariantModal')).hide();
-                loadVariants(currentPage);
-                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Deleted.');
-            } else {
-                showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
-            }
-        } catch (e) {
-            showError('Error', 'Delete failed.');
-        }
-    }
-
-    function openCreateValueModal(variantId) {
-        document.getElementById('variantValueModalLabel').textContent = 'Add value';
-        document.getElementById('vvId').value = '0';
-        document.getElementById('vvFkVariant').value = String(variantId);
-        document.getElementById('vvName').value = '';
-        document.getElementById('vvDescription').value = '';
-        document.getElementById('vvDisplayOrder').value = '0';
-        new bootstrap.Modal(document.getElementById('variantValueModal')).show();
-    }
-
-    async function openEditValueModal(variantId, valueId) {
-        try {
-            const r = await fetch('/Admin/VariantValue/GetById/' + valueId);
-            if (!r.ok) throw new Error('x');
-            const x = await r.json();
-            document.getElementById('variantValueModalLabel').textContent = 'Edit value';
-            document.getElementById('vvId').value = String(x.iD_VariantValue ?? x.ID_VariantValue ?? x.id_VariantValue ?? 0);
-            document.getElementById('vvFkVariant').value = String(x.fk_Variant ?? x.FK_Variant ?? variantId);
-            document.getElementById('vvName').value = x.name ?? x.Name ?? x.valueName ?? x.ValueName ?? '';
-            document.getElementById('vvDescription').value = x.description ?? x.Description ?? '';
-            document.getElementById('vvDisplayOrder').value = String(x.displayOrder ?? x.DisplayOrder ?? 0);
-            new bootstrap.Modal(document.getElementById('variantValueModal')).show();
-        } catch (e) {
-            showError('Error', 'Could not load value.');
-        }
-    }
-
-    async function saveVariantValue() {
-        const id = parseInt(document.getElementById('vvId').value, 10);
-        const fk = parseInt(document.getElementById('vvFkVariant').value, 10);
-        const name = document.getElementById('vvName').value.trim();
-        const description = document.getElementById('vvDescription').value.trim();
-        const ord = parseInt(document.getElementById('vvDisplayOrder').value, 10) || 0;
-        if (!name) {
-            showWarning('Validation', 'Enter value name.');
-            return;
-        }
-        if (!fk) {
-            showWarning('Validation', 'Invalid variant.');
-            return;
-        }
-        const body = id === 0
-            ? { variantValueID: 0, fk_Variant: fk, name: name, description: description, displayOrder: ord }
-            : { variantValueID: id, fk_Variant: fk, name: name, description: description, displayOrder: ord };
-        const url = id === 0 ? '/Admin/VariantValue/Create' : '/Admin/VariantValue/Update';
-        try {
-            const r = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const result = await r.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('variantValueModal')).hide();
-                loadVariants(currentPage);
-                const pid = fk;
-                const p = document.getElementById('vv-panel-' + pid);
-                if (p && !p.classList.contains('d-none')) {
-                    await loadValuesIntoPanel(pid);
-                }
-                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Saved.');
-            } else {
-                showError('Error', result.responseMsg || result.ResponseMsg || 'Save failed.');
-            }
-        } catch (e) {
-            showError('Error', 'Save failed.');
-        }
-    }
-
-    function openDeleteValueModal(variantId, valueId) {
-        document.getElementById('deleteVvId').value = String(valueId);
-        document.getElementById('deleteVvParentVariantId').value = String(variantId);
-        new bootstrap.Modal(document.getElementById('deleteVariantValueModal')).show();
-    }
-
-    async function confirmDeleteVariantValue() {
-        const id = parseInt(document.getElementById('deleteVvId').value, 10);
-        const parent = parseInt(document.getElementById('deleteVvParentVariantId').value, 10);
-        const input = { variantValueID: id };
-        try {
-            const r = await fetch('/Admin/VariantValue/Delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-            const result = await r.json();
-            if (result.statusCode || result.StatusCode) {
-                bootstrap.Modal.getInstance(document.getElementById('deleteVariantValueModal')).hide();
-                loadVariants(currentPage);
-                const p = document.getElementById('vv-panel-' + parent);
-                if (p && !p.classList.contains('d-none')) {
-                    await loadValuesIntoPanel(parent);
-                }
-                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Deleted.');
-            } else {
-                showError('Error', result.responseMsg || result.ResponseMsg || 'Delete failed.');
-            }
-        } catch (e) {
-            showError('Error', 'Delete failed.');
-        }
-    }
-
-    function clearVariantSearch() {
-        document.getElementById('searchText').value = '';
-        loadVariants(1);
     }
 </script>

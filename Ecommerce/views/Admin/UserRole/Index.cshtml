@@ -76,7 +76,7 @@
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
-                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="loadUserRoles()">
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
                                     <option value="10">10</option>
                                     <option value="25">25</option>
                                     <option value="50">50</option>
@@ -158,78 +158,67 @@
 </div>
 
 <script>
+    // 1. Page Variables
     let currentPage = 1;
     let pageSize = 10;
-    let paginationInstance;
-    let userRoleSearchTimeout;
+    let paginationInstance = null;
+    let searchTimeout = null;
 
-    function truncateText(text, limit = 25) {
-        if (!text) return '';
-        const s = String(text);
-        return s.length > limit ? s.substring(0, limit) + '...' : s;
-    }
+    const TABLE_BODY_ID = 'userRoleTableBody';
+    const TABLE_COLUMN_COUNT = 5;
 
-    function escapeAttr(text) {
-        if (text == null || text === '') return '';
-        return String(text)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-    }
+    // 2. API Endpoints
+    const API = {
+        getList: '/Admin/UserRole/GetUserRoleList',
+        getById: '/Admin/UserRole/GetById',
+        create: '/Admin/UserRole/Create',
+        update: '/Admin/UserRole/Update',
+        delete: '/Admin/UserRole/Delete'
+    };
 
-    function truncatedCellHtml(fullText, limit = 25) {
-        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
-        if (!full.trim()) return '<span class="text-muted">—</span>';
-        const short = truncateText(full, limit);
-        const display = escapeHtml(short);
-        const tip = escapeAttr(full);
-        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
-    }
-
-    function initTableTooltips(root) {
-        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
-        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-            const existing = bootstrap.Tooltip.getInstance(el);
-            if (existing) existing.dispose();
-            new bootstrap.Tooltip(el);
-        });
-    }
-
+    // 3. Page Initialization
     document.addEventListener('DOMContentLoaded', function () {
         paginationInstance = new Pagination({
-            containerId: "pagination",
-            infoId: "paginationInfo",
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
             onPageChange: loadUserRoles
         });
-        loadUserRoles();
 
-        document.getElementById('searchText').addEventListener('input', function () {
-            const value = this.value.trim();
-            clearTimeout(userRoleSearchTimeout);
-            userRoleSearchTimeout = setTimeout(function () {
-                if (value.length === 0 || value.length >= 1) {
-                    loadUserRoles(1);
-                }
-            }, 500);
-        });
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadUserRoles();
     });
 
+    // 4. Event Handlers
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadUserRoles(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadUserRoles(1);
+    }
+
+    // 5. Listing API
     async function loadUserRoles(page = 1) {
         currentPage = page;
 
         const input = {
             searchText: document.getElementById('searchText').value || '',
             filterUserRoleIDs: '',
-            pageIndex: page,
-            pageSize: parseInt(document.getElementById('pageSize').value) || 10,
+            pageIndex: currentPage,
+            pageSize: pageSize,
             sortColumn: 0,
             sortMode: ''
         };
 
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
         try {
-            const response = await fetch('/Admin/UserRole/GetUserRoleList', {
+            const response = await fetch(API.getList, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(input)
@@ -237,29 +226,20 @@
 
             const result = await response.json();
 
-            if (!result.success) {
-                emptyState.showError(
-                    'userRoleTableBody',
-                    result.errors?.length
-                        ? result.errors.join("<br>")
-                        : result.message,
-                    {
-                        onRetry: 'loadUserRoles()',
-                        title: 'Error loading user roles'
-                    },
-                    5
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'User Role List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
                 );
                 return;
             }
 
-            const data = result.data;
+            const data = result?.data;
 
             if (!data?.tableData?.length) {
-                emptyState.showNoData('userRoleTableBody', {
-                    title: 'No user roles found',
-                    message: 'Try adjusting your search.',
-                    onClear: 'clearSearch()'
-                }, 5);
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
                 return;
             }
 
@@ -268,71 +248,63 @@
             if (paginationInstance && data.tableSettings) {
                 paginationInstance.render(data.tableSettings);
             }
-        }
-        catch (error) {
-            console.error(error);
-            emptyState.showError(
-                'userRoleTableBody',
-                "Unable to connect to server.",
-                {
-                    onRetry: 'loadUserRoles()',
-                    title: 'Server Error'
-                },
-                5
+        } catch (error) {
+            listing.handleListingError(
+                'User Role List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
             );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
         }
     }
 
+    // 6. Listing Display
     function displayUserRoles(roles) {
-        const tbody = document.getElementById('userRoleTableBody');
-
-        if (!roles || roles.length === 0) {
-            emptyState.showNoData('userRoleTableBody', {
-                title: 'No user roles found',
-                message: 'We can\'t find any user roles matching your search.<br>Try adjusting your search term.',
-                onClear: 'clearSearch()'
-            }, 5);
-            return;
-        }
-
-        tbody.innerHTML = roles.map(role => {
-            const isActive = role.isActive ?? role.IsActive ?? true;
-            const isSystem = role.isSystemRole ?? role.IsSystemRole ?? false;
-            const badgeClass = isActive ? 'bg-success' : 'bg-danger';
-            const statusText = isActive ? 'Active' : 'Inactive';
-            const nameRaw = role.roleName || role.RoleName || '';
-            const descRaw = role.description || role.Description || '';
-            const roleId = role.userRoleID ?? role.UserRoleID;
-            const cancelled = role.cancelled ?? role.Cancelled ?? false;
-            const actions = cancelled ? '' : (isSystem
-                ? '<span class="badge bg-secondary" title="Protected" data-bs-toggle="tooltip" data-bs-placement="top">Protected</span>'
-                : `<div class="table-actions">
-                    <button type="button" class="btn-action" onclick="openEditModal(${roleId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
-                        <i class="ti ti-edit"></i>
-                    </button>
-                    <a class="btn-action" href="/admin/user-roles/${roleId}/permissions" title="Permissions" data-bs-toggle="tooltip" data-bs-placement="top">
-                        <i class="ti ti-key"></i>
-                    </a>
-                    <button type="button" class="btn-action" onclick="openDeleteModal(${roleId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
-                        <i class="ti ti-trash"></i>
-                    </button>
-                   </div>`);
-
-            return `
-                <tr>
-                    <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
-                    <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
-                    <td class="col-status">
-                        <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
-                    </td>
-                    <td>${isSystem ? 'Yes' : 'No'}</td>
-                    <td class="col-actions">${actions}</td>
-                </tr>
-            `;
-        }).join('');
-        initTableTooltips(tbody);
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = roles.map(role => createUserRoleRow(role)).join('');
+        initTableTooltips(tableBody);
     }
 
+    // 7. Row Creation
+    function createUserRoleRow(role) {
+        const isActive = role.isActive ?? role.IsActive ?? true;
+        const isSystem = role.isSystemRole ?? role.IsSystemRole ?? false;
+        const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+        const statusText = isActive ? 'Active' : 'Inactive';
+        const nameRaw = role.roleName || role.RoleName || '';
+        const descRaw = role.description || role.Description || '';
+        const roleId = role.userRoleID ?? role.UserRoleID;
+        const cancelled = role.cancelled ?? role.Cancelled ?? false;
+        const actions = cancelled ? '' : (isSystem
+            ? '<span class="badge bg-secondary" title="Protected" data-bs-toggle="tooltip" data-bs-placement="top">Protected</span>'
+            : `<div class="table-actions">
+                <button type="button" class="btn-action" onclick="openEditModal(${roleId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                    <i class="ti ti-edit"></i>
+                </button>
+                <a class="btn-action" href="/admin/user-roles/${roleId}/permissions" title="Permissions" data-bs-toggle="tooltip" data-bs-placement="top">
+                    <i class="ti ti-key"></i>
+                </a>
+                <button type="button" class="btn-action" onclick="openDeleteModal(${roleId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                    <i class="ti ti-trash"></i>
+                </button>
+               </div>`);
+
+        return `
+            <tr>
+                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
+                <td class="col-status">
+                    <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
+                </td>
+                <td>${isSystem ? 'Yes' : 'No'}</td>
+                <td class="col-actions">${actions}</td>
+            </tr>
+        `;
+    }
+
+    // 8. Create / Edit
     function openCreateModal() {
         document.getElementById('userRoleModalLabel').textContent = 'Add User Role';
         document.getElementById('userRoleForm').reset();
@@ -342,7 +314,7 @@
 
     async function openEditModal(userRoleID) {
         try {
-            const response = await fetch(`/Admin/UserRole/GetById/${userRoleID}`);
+            const response = await fetch(`${API.getById}/${userRoleID}`);
             if (!response.ok) throw new Error('Failed to fetch user role');
 
             const data = await response.json();
@@ -372,13 +344,6 @@
         }
     }
 
-    function openDeleteModal(userRoleID) {
-        document.getElementById('deleteUserRoleID').value = userRoleID;
-        document.getElementById('deleteReason').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
-    }
-
     async function saveUserRole() {
         const userRoleID = parseInt(document.getElementById('userRoleID').value);
         const roleName = document.getElementById('roleName').value.trim();
@@ -397,7 +362,7 @@
         };
 
         const isCreate = userRoleID === 0;
-        const url = isCreate ? '/Admin/UserRole/Create' : '/Admin/UserRole/Update';
+        const url = isCreate ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
@@ -438,6 +403,14 @@
         }
     }
 
+    // 9. Delete
+    function openDeleteModal(userRoleID) {
+        document.getElementById('deleteUserRoleID').value = userRoleID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
     async function confirmDelete() {
         const userRoleID = parseInt(document.getElementById('deleteUserRoleID').value);
         const reason = document.getElementById('deleteReason').value.trim();
@@ -448,7 +421,7 @@
         };
 
         try {
-            const url = '/Admin/UserRole/Delete';
+            const url = API.delete;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -480,15 +453,39 @@
         }
     }
 
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('pageSize').value = '10';
-        loadUserRoles(1);
+    // 10. Page-specific Helper Functions
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
     }
 
-    function clearSearch() {
-        document.getElementById('searchText').value = '';
-        loadUserRoles(1);
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const short = truncateText(full, limit);
+        const display = escapeHtml(short);
+        const tip = escapeAttr(full);
+        return `<span class="cell-truncate" title="${tip}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
     }
 
     function escapeHtml(text) {
