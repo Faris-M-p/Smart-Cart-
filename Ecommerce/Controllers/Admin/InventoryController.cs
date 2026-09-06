@@ -1,3 +1,4 @@
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using Microsoft.AspNetCore.Mvc;
 using static Ecommerce.Models.Admin.InventoryModel;
@@ -17,6 +18,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Stock.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Inventory/Index.cshtml");
@@ -24,6 +26,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetStockList")]
+        [RequirePermission("Stock.View")]
         public async Task<IActionResult> GetStockList([FromBody] StockListInputVIEW view)
         {
             try
@@ -57,6 +60,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("AdjustStock")]
+        [RequirePermission("Stock.Adjust")]
         public async Task<IActionResult> AdjustStock([FromBody] AdjustStockInputVIEW view)
         {
             try

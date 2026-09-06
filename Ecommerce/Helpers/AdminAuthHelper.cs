@@ -13,6 +13,7 @@ namespace Ecommerce.Helpers.AdminAuth
         public const string InactiveAccountMessage = "This account is inactive.";
         public const string InvalidRoleMessage = "This account is not assigned a valid role.";
         public const string UnauthorizedMessage = "Unauthorized.";
+        public const string ForbiddenMessage = "You do not have permission to perform this action.";
         public const string LoginSuccessMessage = "Login successful.";
 
         public static string NormalizeUserName(string? userName) =>

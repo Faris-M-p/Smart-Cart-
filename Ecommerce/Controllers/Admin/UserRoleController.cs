@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.UserRoleModel;
 using static Ecommerce.Models.CommonModel;
@@ -17,6 +18,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("UserRoles.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/UserRole/Index.cshtml");
@@ -24,6 +26,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetUserRoleList")]
+        [RequirePermission("UserRoles.View")]
         public async Task<IActionResult> GetUserRoleList(
             [FromBody] UserRoleListInputVIEW viewInput)
         {
@@ -72,6 +75,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("UserRoles.Create")]
         public async Task<IActionResult> Create([FromBody] UserRoleUpdateInputVIEW viewInput)
         {
             try
@@ -106,6 +110,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("UserRoles.Edit")]
         public async Task<IActionResult> Update([FromBody] UserRoleUpdateInputVIEW viewInput)
         {
             try
@@ -140,6 +145,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("UserRoles.Delete")]
         public async Task<IActionResult> Delete([FromBody] UserRoleDeleteInputVIEW viewInput)
         {
             try
@@ -171,6 +177,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("UserRoles.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -190,6 +197,7 @@ namespace Ecommerce.Controllers.Admin
         }
 
         [HttpGet("/admin/user-roles/{id:int}/permissions")]
+        [RequirePermission("UserRoles.Edit")]
         public async Task<IActionResult> PermissionMapping(int id)
         {
             try
@@ -220,6 +228,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("SavePermissions")]
+        [RequirePermission("UserRoles.Edit")]
         public async Task<IActionResult> SavePermissions([FromBody] UserRolePermissionSaveInputVIEW viewInput)
         {
             try
@@ -250,6 +259,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetPermissionTree")]
+        [RequirePermission("UserRoles.Edit")]
         public async Task<IActionResult> GetPermissionTree()
         {
             try

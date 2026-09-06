@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.SubCategoryModel;
 using static Ecommerce.Models.Admin.CategoryModel;
@@ -20,6 +21,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("SubCategories.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/SubCategory/Index.cshtml");
@@ -27,6 +29,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetSubCategoryList")]
+        [RequirePermission("SubCategories.View")]
         public async Task<IActionResult> GetSubCategoryList([FromBody] SubCategoryListInputVIEW viewInput)
         {
             try
@@ -63,6 +66,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("SubCategories.Create")]
         public async Task<IActionResult> Create([FromBody] SubCategoryUpdateInputVIEW viewInput)
         {
             try
@@ -99,6 +103,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("SubCategories.Edit")]
         public async Task<IActionResult> Update([FromBody] SubCategoryUpdateInputVIEW viewInput)
         {
             try
@@ -135,6 +140,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("SubCategories.Delete")]
         public async Task<IActionResult> Delete([FromBody] SubCategoryDeleteInputVIEW viewInput)
         {
             try
@@ -167,6 +173,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("SubCategories.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -187,6 +194,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetCategories")]
+        [RequirePermission("SubCategories.View")]
         public async Task<IActionResult> GetCategories()
         {
             try

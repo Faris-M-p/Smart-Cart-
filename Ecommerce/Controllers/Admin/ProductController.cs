@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.ProductModel;
@@ -31,6 +32,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Products.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Product/Index.cshtml");
@@ -38,6 +40,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetProductList")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> GetProductList([FromBody] ProductListInputVIEW viewInput)
         {
             try
@@ -86,6 +89,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Products.Create")]
         public async Task<IActionResult> Create([FromBody] ProductUpdateInputVIEW viewInput)
         {
             try
@@ -133,6 +137,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Products.Edit")]
         public async Task<IActionResult> Update([FromBody] ProductUpdateInputVIEW viewInput)
         {
             try
@@ -180,6 +185,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Products.Delete")]
         public async Task<IActionResult> Delete([FromBody] ProductDeleteInputVIEW viewInput)
         {
             try
@@ -210,6 +216,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -231,6 +238,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetCategories")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> GetCategories()
         {
             try
@@ -256,6 +264,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetSubCategories")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> GetSubCategories(int? categoryId = null)
         {
             try
@@ -282,6 +291,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetBrands")]
+        [RequirePermission("Products.View")]
         public async Task<IActionResult> GetBrands()
         {
             try

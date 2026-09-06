@@ -2,6 +2,7 @@ using Ecommerce.DataAccess;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Entities;
 using Ecommerce.Helpers.Common;
+using Ecommerce.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -39,6 +40,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("ProductVariants.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/ProductVariant/Index.cshtml");
@@ -47,6 +49,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpPost]
         [Route("GetProductVariantList")]
         [Route("GetList")]
+        [RequirePermission("ProductVariants.View")]
         public async Task<IActionResult> GetProductVariantList([FromBody] ProductVariantListInputVIEW viewInput)
         {
             if (!ModelState.IsValid)
@@ -76,6 +79,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("ProductVariants.View")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _productVariantInterface.GetProductVariantByIdAsync(id);
@@ -91,6 +95,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpPost]
         [Route("Create")]
         [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequirePermission("ProductVariants.Create")]
         public async Task<IActionResult> Create([FromForm] ProductVariantUpdateInputVIEW viewInput)
         {
             if (!ModelState.IsValid)
@@ -182,6 +187,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpPost]
         [Route("Update")]
         [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequirePermission("ProductVariants.Edit")]
         public async Task<IActionResult> Update([FromForm] ProductVariantUpdateInputVIEW viewInput)
         {
             if (!ModelState.IsValid)
@@ -272,6 +278,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("ProductVariants.Delete")]
         public async Task<IActionResult> Delete([FromBody] ProductVariantDeleteInputVIEW viewInput)
         {
             if (!ModelState.IsValid)
@@ -295,6 +302,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetImages/{skuId}")]
+        [RequirePermission("ProductVariants.View")]
         public async Task<IActionResult> GetImages(int skuId)
         {
             if (skuId <= 0)
@@ -310,6 +318,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpPost]
         [Route("UploadImages")]
         [RequestSizeLimit(20 * 1024 * 1024)]
+        [RequirePermission("ProductVariants.Edit")]
         public async Task<IActionResult> UploadImages([FromForm] ProductVariantImageUploadInput input)
         {
             var pathContext = await GetImagePathContextAsync(input.SKUId);
@@ -425,6 +434,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("DeleteImage")]
+        [RequirePermission("ProductVariants.Edit")]
         public async Task<IActionResult> DeleteImage([FromBody] ProductVariantImageDeleteInput input)
         {
             if (input == null || input.ImageId <= 0)
@@ -467,6 +477,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("SetPrimaryImage")]
+        [RequirePermission("ProductVariants.Edit")]
         public async Task<IActionResult> SetPrimaryImage([FromBody] ProductVariantImageSetPrimaryInput input)
         {
             if (input == null || input.SKUId <= 0 || input.ImageId <= 0)

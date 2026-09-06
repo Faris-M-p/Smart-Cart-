@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.SupplierModel;
 using static Ecommerce.Models.CommonModel;
@@ -24,6 +25,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Suppliers.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Supplier/Index.cshtml");
@@ -31,6 +33,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetSupplierList")]
+        [RequirePermission("Suppliers.View")]
         public async Task<IActionResult> GetSupplierList([FromBody] SupplierListInputVIEW viewInput)
         {
             try
@@ -77,6 +80,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Suppliers.Create")]
         public async Task<IActionResult> Create([FromBody] SupplierUpdateInputVIEW viewInput)
         {
             try
@@ -119,6 +123,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Suppliers.Edit")]
         public async Task<IActionResult> Update([FromBody] SupplierUpdateInputVIEW viewInput)
         {
             try
@@ -161,6 +166,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Suppliers.Delete")]
         public async Task<IActionResult> Delete([FromBody] SupplierDeleteInputVIEW viewInput)
         {
             try
@@ -192,6 +198,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Suppliers.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -213,6 +220,7 @@ namespace Ecommerce.Controllers.Admin
         /// <summary>Proxy to CountryStateCity API (India states). Requires <c>CountryStateCity:ApiKey</c>.</summary>
         [HttpGet]
         [Route("Location/IndiaStates")]
+        [RequirePermission("Suppliers.View")]
         public async Task<IActionResult> GetIndiaStates(CancellationToken cancellationToken)
         {
             var apiKey = _configuration["CountryStateCity:ApiKey"] ?? string.Empty;
@@ -238,6 +246,7 @@ namespace Ecommerce.Controllers.Admin
         /// <summary>Proxy to CountryStateCity API (cities in an Indian state). District dropdown uses this list; city narrows to the selected district name.</summary>
         [HttpGet]
         [Route("Location/IndiaCities/{stateIso}")]
+        [RequirePermission("Suppliers.View")]
         public async Task<IActionResult> GetIndiaCitiesForState(string stateIso, CancellationToken cancellationToken)
         {
             var apiKey = _configuration["CountryStateCity:ApiKey"] ?? string.Empty;

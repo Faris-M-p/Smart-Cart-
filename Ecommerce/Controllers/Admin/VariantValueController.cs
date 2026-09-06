@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.VariantValueModel;
@@ -22,6 +23,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("VariantValues.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/VariantValue/Index.cshtml");
@@ -30,6 +32,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpPost]
         [Route("GetList")]
         [Route("GetVariantValueList")]
+        [RequirePermission("VariantValues.View")]
         public async Task<IActionResult> GetList([FromBody] VariantValueListInputVIEW viewInput)
         {
             try
@@ -77,6 +80,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetByVariant/{variantId}")]
+        [RequirePermission("VariantValues.View")]
         public async Task<IActionResult> GetByVariant(int variantId)
         {
             try
@@ -92,6 +96,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("VariantValues.Create")]
         public async Task<IActionResult> Create([FromBody] VariantValueUpdateInputVIEW viewInput)
         {
             try
@@ -125,6 +130,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("VariantValues.Edit")]
         public async Task<IActionResult> Update([FromBody] VariantValueUpdateInputVIEW viewInput)
         {
             try
@@ -158,6 +164,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("VariantValues.Delete")]
         public async Task<IActionResult> Delete([FromBody] VariantValueDeleteInputVIEW viewInput)
         {
             try
@@ -188,6 +195,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("VariantValues.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -209,6 +217,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetVariants")]
+        [RequirePermission("VariantValues.View")]
         public async Task<IActionResult> GetVariants()
         {
             try

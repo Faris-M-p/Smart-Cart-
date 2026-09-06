@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.VariantModel;
 using static Ecommerce.Models.CommonModel;
@@ -17,6 +18,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Variants.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Variant/Index.cshtml");
@@ -24,6 +26,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetVariantList")]
+        [RequirePermission("Variants.View")]
         public async Task<IActionResult> GetVariantList([FromBody] VariantListInputVIEW viewInput)
         {
             try
@@ -70,6 +73,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Variants.Create")]
         public async Task<IActionResult> Create([FromBody] VariantUpdateInputVIEW viewInput)
         {
             try
@@ -104,6 +108,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Variants.Edit")]
         public async Task<IActionResult> Update([FromBody] VariantUpdateInputVIEW viewInput)
         {
             try
@@ -138,6 +143,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Variants.Delete")]
         public async Task<IActionResult> Delete([FromBody] VariantDeleteInputVIEW viewInput)
         {
             try
@@ -169,6 +175,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Variants.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try

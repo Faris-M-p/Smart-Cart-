@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.CategoryModel;
 using static Ecommerce.Models.CommonModel;
@@ -17,6 +18,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Categories.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Category/Index.cshtml");
@@ -24,6 +26,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetCategoryList")]
+        [RequirePermission("Categories.View")]
         public async Task<IActionResult> GetCategoryList(
             [FromBody] CategoryListInputVIEW viewInput)
         {
@@ -85,6 +88,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Categories.Create")]
         public async Task<IActionResult> Create([FromBody] CategoryUpdateInputVIEW viewInput)
         {
             try
@@ -120,6 +124,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Categories.Edit")]
         public async Task<IActionResult> Update([FromBody] CategoryUpdateInputVIEW viewInput)
         {
             try
@@ -155,6 +160,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Categories.Delete")]
         public async Task<IActionResult> Delete([FromBody] CategoryDeleteInputVIEW viewInput)
         {
             try
@@ -187,6 +193,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Categories.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try

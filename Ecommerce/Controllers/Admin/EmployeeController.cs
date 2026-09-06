@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.EmployeeModel;
 using static Ecommerce.Models.CommonModel;
@@ -18,6 +19,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpGet("/admin/employees")]
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Employees.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Employee/Index.cshtml");
@@ -25,6 +27,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetEmployeeList")]
+        [RequirePermission("Employees.View")]
         public async Task<IActionResult> GetEmployeeList([FromBody] EmployeeListInputVIEW viewInput)
         {
             try
@@ -69,6 +72,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Employees.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -89,6 +93,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetActiveUserRoles")]
+        [RequirePermission("Employees.View")]
         public async Task<IActionResult> GetActiveUserRoles()
         {
             try
@@ -104,6 +109,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Employees.Create")]
         public async Task<IActionResult> Create([FromBody] EmployeeUpdateInputVIEW viewInput)
         {
             try
@@ -128,6 +134,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Employees.Edit")]
         public async Task<IActionResult> Update([FromBody] EmployeeUpdateInputVIEW viewInput)
         {
             try
@@ -152,6 +159,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Employees.Deactivate")]
         public async Task<IActionResult> Delete([FromBody] EmployeeDeleteInputVIEW viewInput)
         {
             try

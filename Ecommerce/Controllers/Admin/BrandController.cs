@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.BrandModel;
 using static Ecommerce.Models.CommonModel;
@@ -17,6 +18,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Brands.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Brand/Index.cshtml");
@@ -24,6 +26,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetBrandList")]
+        [RequirePermission("Brands.View")]
         public async Task<IActionResult> GetBrandList([FromBody] BrandListInputVIEW viewInput)
         {
             try
@@ -70,6 +73,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Brands.Create")]
         public async Task<IActionResult> Create([FromBody] BrandUpdateInputVIEW viewInput)
         {
             try
@@ -104,6 +108,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Brands.Edit")]
         public async Task<IActionResult> Update([FromBody] BrandUpdateInputVIEW viewInput)
         {
             try
@@ -138,6 +143,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Brands.Delete")]
         public async Task<IActionResult> Delete([FromBody] BrandDeleteInputVIEW viewInput)
         {
             try
@@ -169,6 +175,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Brands.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Ecommerce.Filters;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Controllers.Admin
 {
@@ -8,6 +9,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpGet("/admin/dashboard")]
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Dashboard.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Dashboard/Index.cshtml");

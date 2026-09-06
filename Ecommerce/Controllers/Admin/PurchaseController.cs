@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Filters;
 using Ecommerce.Interface.Admin;
 using Ecommerce.Models.Enums;
 using static Ecommerce.Models.Admin.PurchaseModel;
@@ -33,6 +34,7 @@ namespace Ecommerce.Controllers.Admin
 
         [Route("")]
         [Route("Index")]
+        [RequirePermission("Purchases.View")]
         public IActionResult Index()
         {
             return View("~/Views/Admin/Purchase/Index.cshtml");
@@ -40,6 +42,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("GetPurchaseList")]
+        [RequirePermission("Purchases.View")]
         public async Task<IActionResult> GetPurchaseList([FromBody] PurchaseListInputVIEW viewInput)
         {
             try
@@ -77,6 +80,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetById/{id}")]
+        [RequirePermission("Purchases.View")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -98,6 +102,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetSuppliers")]
+        [RequirePermission("Purchases.View")]
         public async Task<IActionResult> GetSuppliers()
         {
             try
@@ -126,6 +131,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetProducts")]
+        [RequirePermission("Purchases.View")]
         public async Task<IActionResult> GetProducts()
         {
             try
@@ -153,6 +159,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpGet]
         [Route("GetProductVariants/{productId}")]
+        [RequirePermission("Purchases.View")]
         public async Task<IActionResult> GetProductVariants(int productId)
         {
             try
@@ -180,6 +187,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequirePermission("Purchases.Create")]
         public async Task<IActionResult> Create([FromBody] PurchaseUpdateInputVIEW viewInput)
         {
             try
@@ -233,6 +241,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequirePermission("Purchases.Edit")]
         public async Task<IActionResult> Update([FromBody] PurchaseUpdateInputVIEW viewInput)
         {
             try
@@ -286,6 +295,7 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Delete")]
+        [RequirePermission("Purchases.Delete")]
         public async Task<IActionResult> Delete([FromBody] PurchaseDeleteInputVIEW viewInput)
         {
             try
