@@ -49,13 +49,13 @@ namespace Ecommerce.Helpers.Purchases
             if (normalized.FromDate.HasValue)
             {
                 var from = normalized.FromDate.Value.Date;
-                query = query.Where(p => p.PurchaseDate.Date >= from);
+                query = query.Where(p => p.PurchaseDate >= from);
             }
 
             if (normalized.ToDate.HasValue)
             {
                 var to = normalized.ToDate.Value.Date;
-                query = query.Where(p => p.PurchaseDate.Date <= to);
+                query = query.Where(p => p.PurchaseDate <= to);
             }
 
             if (normalized.FilterSupplierIds.Count > 0)
@@ -66,15 +66,14 @@ namespace Ecommerce.Helpers.Purchases
             if (normalized.SearchLower != null)
             {
                 var s = normalized.SearchLower;
-                query = query.Where(p =>
-                    (p.GRNNumber ?? string.Empty).ToLower().Contains(s) ||
-                    (p.InvoiceNumber ?? string.Empty).ToLower().Contains(s));
+                query = query.Where(p => (p.InvoiceNumber ?? string.Empty).ToLower().Contains(s));
             }
 
-            if (!string.IsNullOrWhiteSpace(normalized.PaymentStatus))
+            // PaymentStatus is not a Purchase table column; listed rows default to Pending.
+            if (!string.IsNullOrWhiteSpace(normalized.PaymentStatus)
+                && !string.Equals(normalized.PaymentStatus.Trim(), "Pending", StringComparison.OrdinalIgnoreCase))
             {
-                var ps = normalized.PaymentStatus.Trim();
-                query = query.Where(p => (p.PaymentStatus ?? "Pending") == ps);
+                query = query.Where(p => false);
             }
 
             return query;

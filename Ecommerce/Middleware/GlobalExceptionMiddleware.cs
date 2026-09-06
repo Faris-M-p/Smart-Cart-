@@ -60,7 +60,7 @@ public class GlobalExceptionMiddleware
             response = new
             {
                 success = false,
-                message = "An unexpected error occurred.",
+                message = "Something went wrong. Please try again later.",
                 traceId = context.TraceIdentifier
             };
         }

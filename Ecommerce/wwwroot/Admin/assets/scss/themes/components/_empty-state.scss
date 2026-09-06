@@ -413,7 +413,7 @@
 
 /* Compact version for table rows */
 .empty-state-compact {
-    padding: 2.5rem 2rem;
+    padding: 1.25rem 1rem;
     background: transparent;
     border-radius: 0;
     box-shadow: none;
@@ -575,7 +575,7 @@
 
 /* Table cell styling for empty states */
 td.p-0 {
-    padding: 2rem 0 !important;
+    padding: 1rem 0 !important;
     text-align: center !important;
     vertical-align: middle !important;
 }
@@ -601,7 +601,7 @@ table tbody tr td {
 
 table tbody tr td.p-0 {
     text-align: center !important;
-    padding: 2rem 0 !important;
+    padding: 1rem 0 !important;
 }
 
 table tbody tr td .empty-state-compact {

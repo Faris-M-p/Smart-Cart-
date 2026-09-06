@@ -15,11 +15,14 @@ namespace Ecommerce.Models.Entities
         public DateTime PurchaseDate { get; set; }
 
         [MaxLength(100)]
-        public string? GRNNumber { get; set; }
-
-        [MaxLength(100)]
         public string? InvoiceNumber { get; set; }
 
+        /// <summary>Display-only. The Purchase table has no GRNNumber column.</summary>
+        [NotMapped]
+        public string? GRNNumber { get; set; }
+
+        /// <summary>Display-only. The Purchase table has no PaymentStatus column.</summary>
+        [NotMapped]
         [MaxLength(30)]
         public string? PaymentStatus { get; set; }
 

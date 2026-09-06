@@ -1,17 +1,16 @@
 /* Empty State Component - Direct CSS (No SCSS compilation needed) */
 
 .empty-state {
-    background: white;
+    background: transparent;
     padding: 3rem 2rem;
-    border-radius: 1rem;
-   /* box-shadow: 0 2px 8px rgba(0,0,0,0.05);*/
+    border-radius: 0;
+    box-shadow: none;
     text-align: center;
-    transition: all 0.3s ease;
 }
 
 .empty-state:hover {
-   /* box-shadow: 0 8px 24px rgba(0,0,0,0.1);*/
-    transform: translateY(-4px);
+    box-shadow: none;
+    transform: none;
 }
 
 /* Icons Container */
@@ -391,10 +390,10 @@
 
 /* Compact version for table rows */
 .empty-state-compact {
-    padding: 2.5rem 2rem;
-    background: white;
-    border-radius: 1rem;
-  /*  box-shadow: 0 2px 8px rgba(0,0,0,0.05);*/
+    padding: 1.25rem 1rem;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     margin: 0 auto !important;
     max-width: 450px;
     width: auto;
@@ -546,9 +545,17 @@
 
 /* Table cell styling for empty states */
 td.p-0 {
-    padding: 2rem 0 !important;
+    padding: 1rem 0 !important;
     text-align: center !important;
     vertical-align: middle !important;
+    background-color: transparent !important;
+}
+
+.table-hover > tbody > tr:has(.empty-state) > *,
+.table-hover > tbody > tr:has(.empty-state):hover > * {
+    --bs-table-bg-state: transparent;
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 td.p-0 .empty-state-compact {
@@ -570,7 +577,7 @@ table tbody tr td {
 
 table tbody tr td.p-0 {
     text-align: center !important;
-    padding: 2rem 0 !important;
+    padding: 1rem 0 !important;
 }
 
 table tbody tr td .empty-state-compact {

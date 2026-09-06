@@ -321,13 +321,16 @@
     /**
      * Show generic listing empty state (no action buttons).
      */
-    showListingEmpty(tbodyId, colspan = 6) {
+    showListingEmpty(tbodyId, colspan = 6, message) {
         const tbody = document.getElementById(tbodyId);
         if (tbody) {
             delete tbody.dataset.listingLoading;
         }
+        const title = (message != null && String(message).trim())
+            ? String(message).trim()
+            : 'No Data Available';
         this.showInTable(tbodyId, 'no-data', {
-            title: 'No Data Available',
+            title: title,
             message: '',
             buttons: []
         }, colspan);

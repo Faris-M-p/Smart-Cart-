@@ -2,6 +2,12 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
+<style>
+    .sku-section-hidden {
+        display: none !important;
+    }
+</style>
+
 <!-- [ breadcrumb ] start -->
 <div class="page-header">
     <div class="page-block">
@@ -51,7 +57,7 @@
                         </div>
 
                         <!-- Filter and Search Bar -->
-                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap" id="filterSection" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap sku-section-hidden" id="filterSection">
                             <!-- Filter Button -->
                             <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
                                 <i class="ti ti-filter"></i> Filter
@@ -88,10 +94,10 @@
                         </div>
 
                         <!-- Product Variant Table -->
-                        <div class="table-container" id="tableSection" style="display: none;">
+                        <div class="table-container" id="tableSection">
                             <div class="table-scroll-wrapper">
                                 <table class="table table-hover align-middle mb-0" id="productVariantTable">
-                                    <thead>
+                                    <thead style="display: none;">
                                         <tr>
                                             <th class="text-muted">ID</th>
                                             <th class="text-muted">SKU</th>
@@ -107,21 +113,13 @@
                                             <th class="text-muted text-end">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="productVariantTableBody">
-                                        <tr>
-                                            <td colspan="12" class="text-center py-5">
-                                                <div class="spinner-border text-primary" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                                    <tbody id="productVariantTableBody"></tbody>
                                 </table>
                             </div>
                         </div>
 
                         <!-- Pagination Section -->
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper" id="paginationSection" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper sku-section-hidden" id="paginationSection">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-muted small">Show</span>
                                 <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
@@ -295,6 +293,7 @@
 
     const TABLE_BODY_ID = 'productVariantTableBody';
     const TABLE_COLUMN_COUNT = 12;
+    const SELECT_PRODUCT_MESSAGE = 'Please select a product to view SKUs.';
 
     // 2. API Endpoints
     const API = {
@@ -385,6 +384,7 @@
         renderSkuImagePreviews();
 
         document.getElementById('searchText')?.addEventListener('input', handleSearch);
+        showSelectProductState();
     });
 
     // 4. Event Handlers
@@ -399,16 +399,39 @@
 
     function handlePageSizeChange() {
         pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        if (selectedProductId === 0) {
+            return;
+        }
         loadProductVariants(1);
+    }
+
+    function setSkuListingChromeVisible(visible) {
+        document.getElementById('filterSection').classList.toggle('sku-section-hidden', !visible);
+        document.getElementById('paginationSection').classList.toggle('sku-section-hidden', !visible);
+    }
+
+    function setSkuTableHeadVisible(visible) {
+        const thead = document.querySelector('#productVariantTable thead');
+        if (thead) {
+            thead.style.display = visible ? '' : 'none';
+        }
+    }
+
+    function showSelectProductState() {
+        setSkuListingChromeVisible(false);
+        setSkuTableHeadVisible(false);
+        window.emptyState.showListingEmpty(
+            TABLE_BODY_ID,
+            TABLE_COLUMN_COUNT,
+            SELECT_PRODUCT_MESSAGE
+        );
     }
 
     function onProductChange() {
         selectedProductId = parseInt(document.getElementById('selectProduct').value) || 0;
         document.getElementById('btnLoadVariants').disabled = selectedProductId === 0;
         if (selectedProductId === 0) {
-            document.getElementById('filterSection').style.display = 'none';
-            document.getElementById('tableSection').style.display = 'none';
-            document.getElementById('paginationSection').style.display = 'none';
+            showSelectProductState();
         }
     }
 
@@ -441,9 +464,8 @@
         };
 
         const listing = window.emptyState;
-        document.getElementById('filterSection').style.display = 'block';
-        document.getElementById('tableSection').style.display = 'block';
-        document.getElementById('paginationSection').style.display = 'block';
+        setSkuListingChromeVisible(true);
+        setSkuTableHeadVisible(false);
         listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
 
         try {
@@ -469,8 +491,10 @@
             const settings = result.tableSettings ?? result.TableSettings;
 
             if (!rows.length) {
+                setSkuTableHeadVisible(false);
                 listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
             } else {
+                setSkuTableHeadVisible(true);
                 displayProductVariants(rows);
             }
 
