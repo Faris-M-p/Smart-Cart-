@@ -4,7 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Ecommerce.Models.Entities
 {
     /// <summary>
-    /// Maps to [dbo].[AdminUsers] (see Database/01_Tables/AdminUsers.sql).
+    /// Admin employee account. Maps to [dbo].[AdminUsers].
+    /// Permissions are inherited through <see cref="FK_UserRole"/>, not stored on this row.
     /// </summary>
     [Table("AdminUsers")]
     public class AdminUserEntity

@@ -1,0 +1,537 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Employee Management</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="javascript: void(0)">Administration</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Employees</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5>Employee List</h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#employeeModal" onclick="openCreateModal()">
+                        <i class="ti ti-plus"></i> Add New Employee
+                    </button>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                    <div class="flex-grow-1 mx-3 search-input">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="ti ti-search"></i>
+                            </span>
+                            <input type="text" id="searchText" class="form-control" placeholder="Search employees...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="table align-middle mb-0 admin-master-list-table" id="employeeTable">
+                            <thead>
+                                <tr>
+                                    <th class="col-name">Name</th>
+                                    <th>Username</th>
+                                    <th>User Role</th>
+                                    <th class="col-status">Status</th>
+                                    <th>Created Date</th>
+                                    <th class="col-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Show</span>
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="text-muted small">per page</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="paginationInfo" class="text-muted small"></span>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employeeModalLabel">Add Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <input type="hidden" id="employeeID" value="0">
+                    <div class="mb-3">
+                        <label for="employeeName" class="form-label">Employee Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="employeeName" maxlength="150" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userName" class="form-label">Username <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="userName" maxlength="50" required>
+                    </div>
+                    <div class="mb-3" id="passwordGroup">
+                        <label for="password" class="form-label" id="passwordLabel">Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password" maxlength="100" autocomplete="new-password">
+                    </div>
+                    <div class="mb-3" id="confirmPasswordGroup">
+                        <label for="confirmPassword" class="form-label" id="confirmPasswordLabel">Confirm Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="confirmPassword" maxlength="100" autocomplete="new-password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fkUserRole" class="form-label">User Role <span class="text-danger">*</span></label>
+                        <select class="form-select" id="fkUserRole" required>
+                            <option value="">Select User Role</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="employeeIsActive" checked>
+                        <label class="form-check-label" for="employeeIsActive">Status (active)</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEmployee()">Save Employee</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove this employee?</p>
+                <div class="mb-3">
+                    <label for="deleteReason" class="form-label">Reason for deletion</label>
+                    <textarea class="form-control" id="deleteReason" rows="3" placeholder="Optional"></textarea>
+                </div>
+                <input type="hidden" id="deleteEmployeeID" value="0">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 10;
+    let paginationInstance = null;
+    let searchTimeout = null;
+    let userRolesLoaded = false;
+
+    const TABLE_BODY_ID = 'employeeTableBody';
+    const TABLE_COLUMN_COUNT = 6;
+
+    const API = {
+        getList: '/Admin/Employee/GetEmployeeList',
+        getById: '/Admin/Employee/GetById',
+        getRoles: '/Admin/Employee/GetActiveUserRoles',
+        create: '/Admin/Employee/Create',
+        update: '/Admin/Employee/Update',
+        delete: '/Admin/Employee/Delete'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadEmployees
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadUserRoles();
+        loadEmployees();
+    });
+
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadEmployees(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadEmployees(1);
+    }
+
+    async function loadEmployees(page = 1) {
+        currentPage = page;
+        const input = {
+            searchText: document.getElementById('searchText').value || '',
+            pageIndex: currentPage,
+            pageSize: pageSize,
+            sortColumn: 0,
+            sortMode: ''
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Employee List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                return;
+            }
+
+            displayEmployees(data.tableData);
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Employee List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    function displayEmployees(employees) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = employees.map(employee => createEmployeeRow(employee)).join('');
+        initTableTooltips(tableBody);
+    }
+
+    function createEmployeeRow(employee) {
+        const isActive = employee.isActive ?? employee.IsActive ?? true;
+        const isProtected = employee.isProtected ?? employee.IsProtected ?? false;
+        const nameRaw = employee.employeeName || employee.EmployeeName || '';
+        const userName = employee.userName || employee.UserName || '';
+        const roleName = employee.userRoleName || employee.UserRoleName || '';
+        const employeeId = employee.employeeID ?? employee.EmployeeID;
+        const createdAt = employee.createdAt || employee.CreatedAt || '';
+        const statusText = isActive ? 'Active' : 'Inactive';
+        const badgeClass = isActive ? 'bg-success' : 'bg-danger';
+        const createdText = formatDate(createdAt);
+        const actions = isProtected
+            ? '<span class="badge bg-secondary" title="Protected" data-bs-toggle="tooltip" data-bs-placement="top">Protected</span>'
+            : `<div class="table-actions">
+                <button type="button" class="btn-action" onclick="openEditModal(${employeeId})" title="Edit" data-bs-toggle="tooltip" data-bs-placement="top">
+                    <i class="ti ti-edit"></i>
+                </button>
+                <button type="button" class="btn-action" onclick="openDeleteModal(${employeeId})" title="Delete" data-bs-toggle="tooltip" data-bs-placement="top">
+                    <i class="ti ti-trash"></i>
+                </button>
+               </div>`;
+
+        return `
+            <tr>
+                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td>${escapeHtml(userName)}</td>
+                <td>${escapeHtml(roleName)}</td>
+                <td class="col-status">
+                    <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
+                </td>
+                <td>${escapeHtml(createdText)}</td>
+                <td class="col-actions">${actions}</td>
+            </tr>
+        `;
+    }
+
+    async function loadUserRoles() {
+        try {
+            const response = await fetch(API.getRoles);
+            const roles = await response.json();
+            const select = document.getElementById('fkUserRole');
+            const rows = Array.isArray(roles) ? roles : [];
+            select.innerHTML = '<option value="">Select User Role</option>' + rows.map(role => {
+                const id = role.userRoleID ?? role.UserRoleID;
+                const name = role.roleName || role.RoleName || '';
+                return `<option value="${id}">${escapeHtml(name)}</option>`;
+            }).join('');
+            userRolesLoaded = true;
+        } catch (error) {
+            console.error('Error loading user roles:', error);
+        }
+    }
+
+    function setPasswordMode(isCreate) {
+        document.getElementById('password').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('passwordLabel').innerHTML = isCreate
+            ? 'Password <span class="text-danger">*</span>'
+            : 'New Password';
+        document.getElementById('confirmPasswordLabel').innerHTML = isCreate
+            ? 'Confirm Password <span class="text-danger">*</span>'
+            : 'Confirm New Password';
+    }
+
+    function openCreateModal() {
+        document.getElementById('employeeModalLabel').textContent = 'Add Employee';
+        document.getElementById('employeeForm').reset();
+        document.getElementById('employeeID').value = '0';
+        document.getElementById('employeeIsActive').checked = true;
+        setPasswordMode(true);
+        if (!userRolesLoaded) {
+            loadUserRoles();
+        }
+    }
+
+    async function openEditModal(employeeID) {
+        try {
+            const response = await fetch(`${API.getById}/${employeeID}`);
+            if (!response.ok) throw new Error('Failed to fetch employee');
+
+            const employee = await response.json();
+            const id = employee.employeeID ?? employee.EmployeeID ?? 0;
+            if (!id) {
+                throw new Error('Employee not found');
+            }
+
+            if (employee.isProtected ?? employee.IsProtected) {
+                showWarning('Protected', 'The system administrator cannot be modified.');
+                return;
+            }
+
+            document.getElementById('employeeModalLabel').textContent = 'Edit Employee';
+            document.getElementById('employeeID').value = String(id);
+            document.getElementById('employeeName').value = employee.employeeName || employee.EmployeeName || '';
+            document.getElementById('userName').value = employee.userName || employee.UserName || '';
+            document.getElementById('fkUserRole').value = String(employee.fk_UserRole ?? employee.FK_UserRole ?? '');
+            document.getElementById('employeeIsActive').checked = (employee.isActive ?? employee.IsActive ?? true) === true;
+            setPasswordMode(false);
+
+            const modal = new bootstrap.Modal(document.getElementById('employeeModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error loading employee:', error);
+            showError('Error', 'Error loading employee details.');
+        }
+    }
+
+    async function saveEmployee() {
+        const employeeID = parseInt(document.getElementById('employeeID').value);
+        const employeeName = document.getElementById('employeeName').value.trim();
+        const userName = document.getElementById('userName').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const fkUserRole = parseInt(document.getElementById('fkUserRole').value);
+        const isCreate = employeeID === 0;
+
+        if (!employeeName) {
+            showWarning('Validation Error', 'Please enter employee name.');
+            return;
+        }
+        if (!userName) {
+            showWarning('Validation Error', 'Please enter username.');
+            return;
+        }
+        if (!fkUserRole) {
+            showWarning('Validation Error', 'Please select a user role.');
+            return;
+        }
+        if (isCreate && !password) {
+            showWarning('Validation Error', 'Please enter password.');
+            return;
+        }
+        if (password && password !== confirmPassword) {
+            showWarning('Validation Error', isCreate
+                ? 'Password and confirm password do not match.'
+                : 'New password and confirm password do not match.');
+            return;
+        }
+
+        const input = {
+            employeeID: employeeID,
+            employeeName: employeeName,
+            userName: userName,
+            password: password,
+            confirmPassword: confirmPassword,
+            fk_UserRole: fkUserRole,
+            isActive: document.getElementById('employeeIsActive').checked
+        };
+
+        const url = isCreate ? API.create : API.update;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) {
+                handleApiError?.('failure', 'Employee Save', { url, method: 'POST', payload: { ...input, password: '***', confirmPassword: '***' }, response, result: null });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.statusCode || result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('employeeModal'));
+                modal.hide();
+                loadEmployees(isCreate ? 1 : currentPage);
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Employee saved successfully.');
+            } else {
+                handleApiError?.('failure', 'Employee Save (business)', { url, method: 'POST', payload: { ...input, password: '***', confirmPassword: '***' }, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving employee.');
+            }
+        } catch (error) {
+            console.error('Error saving employee:', error);
+            handleApiError?.('crash', 'Employee Save', { url, method: 'POST', payload: { ...input, password: '***', confirmPassword: '***' }, error });
+            showError('Error', 'Error saving employee. Please try again.');
+        }
+    }
+
+    function openDeleteModal(employeeID) {
+        document.getElementById('deleteEmployeeID').value = employeeID;
+        document.getElementById('deleteReason').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
+    async function confirmDelete() {
+        const employeeID = parseInt(document.getElementById('deleteEmployeeID').value);
+        const input = {
+            employeeID: employeeID,
+            cancelledReason: document.getElementById('deleteReason').value.trim()
+        };
+
+        try {
+            const url = API.delete;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            if (!response.ok) {
+                handleApiError?.('failure', 'Employee Delete', { url, method: 'POST', payload: input, response, result: null });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.statusCode || result.StatusCode) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
+                loadEmployees(currentPage);
+                showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Employee deleted successfully.');
+            } else {
+                handleApiError?.('failure', 'Employee Delete (business)', { url, method: 'POST', payload: input, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || 'Error deleting employee.');
+            }
+        } catch (error) {
+            console.error('Error deleting employee:', error);
+            handleApiError?.('crash', 'Employee Delete', { url, method: 'POST', payload: input, error });
+            showError('Error', 'Error deleting employee. Please try again.');
+        }
+    }
+
+    function formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleDateString();
+    }
+
+    function truncateText(text, limit = 25) {
+        if (!text) return '';
+        const s = String(text);
+        return s.length > limit ? s.substring(0, limit) + '...' : s;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function truncatedCellHtml(fullText, limit = 25) {
+        const full = (fullText == null || fullText === undefined) ? '' : String(fullText);
+        if (!full.trim()) return '<span class="text-muted">—</span>';
+        const display = escapeHtml(truncateText(full, limit));
+        return `<span class="cell-truncate" title="${escapeAttr(full)}" data-bs-toggle="tooltip" data-bs-placement="top">${display}</span>`;
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>

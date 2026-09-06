@@ -6,6 +6,8 @@ using Ecommerce.Interface.Admin;
 using Ecommerce.Middleware;
 using Ecommerce.Repository.Admin;
 using Ecommerce.Services.Admin;
+using Ecommerce.Models.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,6 +88,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IPurchaseInterface, PurchaseRepository>();
         services.AddTransient<IInventoryInterface, InventoryRepository>();
         services.AddTransient<IUserRoleInterface, UserRoleRepository>();
+        services.AddTransient<IEmployeeInterface, EmployeeRepository>();
+        services.AddSingleton<IPasswordHasher<AdminUserEntity>, PasswordHasher<AdminUserEntity>>();
         services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();
         services.AddTransient<ProductVariantImageService>();
         

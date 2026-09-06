@@ -120,6 +120,11 @@ GO
 :r .\02_Procedures\01_Admin\09_Permissions\Patch.sql
 GO
 
+PRINT 'Admin / Employees';
+GO
+:r .\02_Procedures\01_Admin\10_Employees\Patch.sql
+GO
+
 PRINT 'Users / Shop';
 GO
 :r .\02_Procedures\02_Users\01_Shop\Patch.sql

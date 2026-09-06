@@ -78,6 +78,8 @@ GO
 GO
 :r .\02_Procedures\01_Admin\09_Permissions\Patch.sql
 GO
+:r .\02_Procedures\01_Admin\10_Employees\Patch.sql
+GO
 :r .\02_Procedures\02_Users\01_Shop\Patch.sql
 GO
 :r .\02_Procedures\03_Common\01_Stock\Patch.sql
