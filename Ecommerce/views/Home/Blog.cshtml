@@ -1,0 +1,45 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Blog";
+}
+
+<link rel="stylesheet" href="/css/content-pages.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Blog</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Blog</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="content-page">
+    <div class="container">
+        <p class="content-lead">Dummy SmartCart notes. These posts are static copy so the Blog menu has something to open. They are not stored in the database and there is no blog API yet.</p>
+
+        <div class="blog-list">
+            <article class="blog-card" id="fresh-picks">
+                <p class="content-meta">12 Aug 2026 · Groceries</p>
+                <h3>How SmartCart dummy stock stays honest</h3>
+                <p>On product details, SmartCart only shows combinations that exist as SKUs. If a colour is sold out, that option is faded and marked out of stock. Price and images follow the selected variant, not a generic product row.</p>
+                <p>That is the whole idea of this store: the cart should remember the exact pack you picked, not just the product name. These blog lines are filler until a real content module exists.</p>
+            </article>
+            <article class="blog-card" id="weekly-list">
+                <p class="content-meta">28 Aug 2026 · Shopping tips</p>
+                <h3>A dummy weekly list for a SmartCart basket</h3>
+                <p>Start in Shop, filter by category or brand, then open details to lock the SKU. A typical dummy basket might be milk and rice from grocery, a household cleaner, and one electronics accessory if the variant is in stock.</p>
+                <p>Search, price range, and infinite scroll are already live on Shop. This article only exists so the Blog page feels finished.</p>
+            </article>
+            <article class="blog-card" id="delivery-window">
+                <p class="content-meta">4 Sep 2026 · Delivery</p>
+                <h3>Dummy delivery windows in Kochi</h3>
+                <p>SmartCart placeholder delivery: same-day slots from 8:00 AM to 10:00 PM inside Kochi city limits. Address on file: 12 Market Road, Ernakulam. Support line +91 98765 43210. Email hello@smartcart.local.</p>
+                <p>Checkout and payment are not wired. Treat this as storefront copy so Contact and About can repeat the same dummy details.</p>
+            </article>
+        </div>
+    </div>
+</section>

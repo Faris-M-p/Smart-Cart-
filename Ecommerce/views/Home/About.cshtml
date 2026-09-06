@@ -1,0 +1,43 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "About Us";
+}
+
+<link rel="stylesheet" href="/css/content-pages.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">About Us</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">About Us</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="content-page">
+    <div class="container">
+        <p class="content-lead">SmartCart is a dummy neighbourhood store built to shop the way a real cart should work: pick a product, choose the exact SKU, see live stock, then add it when we wire checkout.</p>
+        <p>This About page is placeholder copy for the storefront. The catalog, filters, prices, and variants on Shop are the real SmartCart data. Everything here is written so the header, footer, and contact details feel like one store instead of leftover template text.</p>
+
+        <div class="content-grid">
+            <article class="content-card">
+                <h3>What we sell</h3>
+                <p>Groceries, household staples, and everyday electronics. Each listing can have colours, storage sizes, or pack options, and only real SKU combinations are shown.</p>
+            </article>
+            <article class="content-card">
+                <h3>How shopping works</h3>
+                <p>Browse Shop, open a product, pick a variant, and check whether that SKU is in stock. Cart, checkout, and payment come next; they are not live on this dummy page.</p>
+            </article>
+            <article class="content-card">
+                <h3>Dummy store facts</h3>
+                <p>SmartCart HQ: 12 Market Road, Kochi, Kerala 682001. Support: hello@smartcart.local. Phone: +91 98765 43210. Hours: 8:00 AM – 10:00 PM.</p>
+            </article>
+        </div>
+
+        <p>We wrote these pages so About, Blog, and Contact match the same SmartCart story: a local cart for daily shopping, not a fashion demo. When you are ready, the next real feature is the cart for the SKU you selected on product details.</p>
+        <a class="content-cta" asp-controller="Shop" asp-action="Index">Browse the shop</a>
+    </div>
+</section>

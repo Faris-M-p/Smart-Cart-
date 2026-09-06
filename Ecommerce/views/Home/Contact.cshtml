@@ -1,0 +1,69 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Contact";
+}
+
+<link rel="stylesheet" href="/css/content-pages.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Contact</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Contact</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="content-page">
+    <div class="container">
+        <p class="content-lead">Dummy SmartCart contact details. The form does not send email or save a ticket. It only shows a success note so the page feels complete.</p>
+
+        <div class="contact-layout">
+            <aside class="contact-card">
+                <h3>Store desk</h3>
+                <ul class="contact-list">
+                    <li>
+                        <strong>Address</strong>
+                        SmartCart, 12 Market Road, Ernakulam, Kochi, Kerala 682001
+                    </li>
+                    <li>
+                        <strong>Email</strong>
+                        <a href="mailto:hello@smartcart.local">hello@smartcart.local</a>
+                    </li>
+                    <li>
+                        <strong>Phone</strong>
+                        <a href="tel:+919876543210">+91 98765 43210</a>
+                    </li>
+                    <li>
+                        <strong>Hours</strong>
+                        Daily, 8:00 AM – 10:00 PM
+                    </li>
+                    <li>
+                        <strong>Orders</strong>
+                        Cart and checkout are not live yet. Use Shop to browse products and SKUs.
+                    </li>
+                </ul>
+            </aside>
+
+            <div class="contact-card">
+                <h3>Send a dummy message</h3>
+                <p class="contact-note">Nothing is stored. Rebuild and open Contact to try the note below.</p>
+                <p id="smartcart-contact-success" class="contact-success">Thanks. This is dummy copy only — SmartCart is not sending messages yet.</p>
+                <form id="smartcart-contact-form" class="contact-form" action="#" method="post">
+                    <label for="contact-name">Name</label>
+                    <input id="contact-name" name="name" type="text" placeholder="Your name" required>
+                    <label for="contact-email">Email</label>
+                    <input id="contact-email" name="email" type="email" placeholder="you@example.com" required>
+                    <label for="contact-message">Message</label>
+                    <textarea id="contact-message" name="message" placeholder="Ask about a SmartCart product or SKU" required></textarea>
+                    <button type="submit">Send message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="/js/contact-page.js"></script>
