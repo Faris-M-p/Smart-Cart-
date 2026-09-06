@@ -1,0 +1,16 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Product details";
+    var slug = ViewBag.Slug as string;
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/shop-listing.css">
+
+<section class="shop-page shop-details">
+    <div class="container">
+        <h1>Product details coming soon</h1>
+        <p>@(string.IsNullOrWhiteSpace(slug) ? "This product page is not available yet." : $"“{slug}” will open here in the next phase.")</p>
+        <p><a href="/Shop">Back to shop</a></p>
+    </div>
+</section>

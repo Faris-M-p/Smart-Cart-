@@ -10,24 +10,73 @@ namespace Ecommerce.Helpers.Shop
         string? SearchLower,
         IReadOnlyList<int> SubCategoryIds,
         IReadOnlyList<int> BrandIds,
+        decimal? PriceFrom,
+        decimal? PriceTo,
         int PageIndex,
         int PageSize,
         int SortColumn,
         string SortMode);
 
+    public sealed class ShopProductListItem
+    {
+        public int ProductId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public int SubCategoryId { get; set; }
+        public int BrandId { get; set; }
+        public string BrandName { get; set; } = string.Empty;
+        public decimal? MinPrice { get; set; }
+        public DateTime? CreatedAt { get; set; }
+    }
+
     public static class ShopHelper
     {
+        public const int DefaultPageSize = 10;
+        public const int MaxPageSize = 50;
+
+        public static List<int> ParseShopIds(string? value)
+        {
+            var fromJson = StringHelper.ParseFilterIds(value);
+            if (fromJson.Count > 0)
+            {
+                return fromJson;
+            }
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return new List<int>();
+            }
+
+            return value
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+        }
+
         public static NormalizedShopListInput NormalizeInput(InputProduct input)
         {
             var pageIndex = Math.Max(1, input.PageIndex);
-            var pageSize = Math.Max(1, input.PageSize);
+            var pageSize = input.PageSize <= 0 ? DefaultPageSize : Math.Min(MaxPageSize, input.PageSize);
             var raw = input.SearchName?.Trim() ?? string.Empty;
             string? searchLower = raw.Length >= 1 ? raw.ToLowerInvariant() : null;
 
+            decimal? priceFrom = input.PriceFrom.HasValue && input.PriceFrom.Value > 0 ? input.PriceFrom : null;
+            decimal? priceTo = input.PriceTo.HasValue && input.PriceTo.Value > 0 ? input.PriceTo : null;
+            if (priceFrom.HasValue && priceTo.HasValue && priceFrom.Value > priceTo.Value)
+            {
+                (priceFrom, priceTo) = (priceTo, priceFrom);
+            }
+
             return new NormalizedShopListInput(
                 searchLower,
-                StringHelper.ParseFilterIds(input.SubCategoryIds),
-                StringHelper.ParseFilterIds(input.BrandIds),
+                ParseShopIds(input.SubCategoryIds),
+                ParseShopIds(input.BrandIds),
+                priceFrom,
+                priceTo,
                 pageIndex,
                 pageSize,
                 input.SortColumn,
@@ -43,7 +92,7 @@ namespace Ecommerce.Helpers.Shop
             if (n.SearchLower != null)
             {
                 var s = n.SearchLower;
-                query = query.Where(p => p.Name.ToLower().Contains(s));
+                query = query.Where(p => p.Name.ToLower().Contains(s) || p.Slug.ToLower().Contains(s));
             }
 
             if (n.SubCategoryIds.Count > 0)
@@ -59,8 +108,27 @@ namespace Ecommerce.Helpers.Shop
             return query;
         }
 
-        public static IQueryable<ProductEntity> ApplySorting(
-            IQueryable<ProductEntity> query,
+        public static IQueryable<ShopProductListItem> ApplyPriceFilter(
+            IQueryable<ShopProductListItem> query,
+            NormalizedShopListInput n)
+        {
+            if (n.PriceFrom.HasValue)
+            {
+                var from = n.PriceFrom.Value;
+                query = query.Where(x => x.MinPrice != null && x.MinPrice >= from);
+            }
+
+            if (n.PriceTo.HasValue)
+            {
+                var to = n.PriceTo.Value;
+                query = query.Where(x => x.MinPrice != null && x.MinPrice <= to);
+            }
+
+            return query;
+        }
+
+        public static IQueryable<ShopProductListItem> ApplySorting(
+            IQueryable<ShopProductListItem> query,
             int sortColumn,
             string sortMode)
         {
@@ -68,9 +136,7 @@ namespace Ecommerce.Helpers.Shop
 
             if (!Enum.IsDefined(typeof(ShopProductSortColumn), sortColumn))
             {
-                return desc
-                    ? query.OrderByDescending(p => p.ID_Product)
-                    : query.OrderBy(p => p.ID_Product);
+                return query.OrderByDescending(p => p.ProductId);
             }
 
             var column = (ShopProductSortColumn)sortColumn;
@@ -83,17 +149,21 @@ namespace Ecommerce.Helpers.Shop
                         : query.OrderBy(p => p.Name);
                 case ShopProductSortColumn.Price:
                     return desc
-                        ? query.OrderByDescending(p => p.Name)
-                        : query.OrderBy(p => p.Name);
+                        ? query.OrderByDescending(p => p.MinPrice ?? 0).ThenByDescending(p => p.ProductId)
+                        : query.OrderBy(p => p.MinPrice ?? 0).ThenBy(p => p.ProductId);
                 case ShopProductSortColumn.SubCategoryId:
                     return desc
-                        ? query.OrderByDescending(p => p.FK_SubCategory)
-                        : query.OrderBy(p => p.FK_SubCategory);
+                        ? query.OrderByDescending(p => p.SubCategoryId)
+                        : query.OrderBy(p => p.SubCategoryId);
+                case ShopProductSortColumn.CreatedAt:
+                    return desc
+                        ? query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.ProductId)
+                        : query.OrderBy(p => p.CreatedAt).ThenBy(p => p.ProductId);
                 case ShopProductSortColumn.ProductId:
                 default:
                     return desc
-                        ? query.OrderByDescending(p => p.ID_Product)
-                        : query.OrderBy(p => p.ID_Product);
+                        ? query.OrderByDescending(p => p.ProductId)
+                        : query.OrderBy(p => p.ProductId);
             }
         }
 
@@ -115,7 +185,9 @@ namespace Ecommerce.Helpers.Shop
         public static TableOutput<Product> EmptyTableOutput(InputProduct? input)
         {
             var pi = Math.Max(1, input?.PageIndex ?? 1);
-            var ps = Math.Max(1, input?.PageSize ?? 10);
+            var ps = input?.PageSize > 0
+                ? Math.Min(MaxPageSize, input.PageSize)
+                : DefaultPageSize;
             return new TableOutput<Product>
             {
                 TableData = new List<Product>(),

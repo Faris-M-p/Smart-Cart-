@@ -6,22 +6,28 @@ namespace Ecommerce.Controllers
 {
     public class ShopController : Controller
     {
-
         private readonly ShopInterface _shopInterface;
 
         public ShopController(ShopInterface shopInterface)
         {
-
             _shopInterface = shopInterface;
         }
+
         public IActionResult Index()
         {
-            return View(); // No need for .cshtml extension
+            ViewBag.Title = "Shop";
+            return View();
         }
 
+        [HttpGet("Shop/Details/{slug?}")]
+        public IActionResult Details(string? slug)
+        {
+            ViewBag.Title = "Product details";
+            ViewBag.Slug = slug;
+            return View();
+        }
 
         [HttpPost("Shop/GetProducts")]
-
         public async Task<IActionResult> GetProductList([FromBody] InputProduct input)
         {
             if (!ModelState.IsValid)
@@ -29,31 +35,15 @@ namespace Ecommerce.Controllers
                 return BadRequest("Model validation error");
             }
 
-            // Get the connection string or database name if required (same as in the Lead example)
-
-
-
-            // Prepare the parameter object
-            var outputData = await _shopInterface.GetProductListAsync(new InputProduct
-            {
-                PageIndex = input.PageIndex,
-                PageSize = input.PageSize,
-                SearchName = input.SearchName,
-                SortColumn = input.SortColumn,
-                SortMode = input.SortMode,
-                CategoryIds = input.CategoryIds,
-                SubCategoryIds = input.SubCategoryIds,
-                BrandIds = input.BrandIds,
-                Ratings = input.Ratings,
-                Gender = input.Gender,
-                PriceFrom = input.PriceFrom,
-                PriceTo = input.PriceTo,
-                Status = input.Status
-            });
-
+            var outputData = await _shopInterface.GetProductListAsync(input ?? new InputProduct());
             return Ok(outputData);
         }
 
+        [HttpGet("Shop/GetFilters")]
+        public async Task<IActionResult> GetFilters()
+        {
+            var lookups = await _shopInterface.GetFilterLookupsAsync();
+            return Ok(lookups);
+        }
     }
-
 }

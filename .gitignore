@@ -1,6 +1,7 @@
 # Build outputs
 bin/
 obj/
+.tmp-shop-build/
 
 # VS files
 .vs/

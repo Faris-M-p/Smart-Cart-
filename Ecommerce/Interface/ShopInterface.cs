@@ -5,7 +5,8 @@ namespace Ecommerce.Interface
 {
     public interface ShopInterface
     {
+        Task<CommonModel.TableOutput<Product>> GetProductListAsync(InputProduct input);
 
-        Task<CommonModel.TableOutput<Product>> GetProductListAsync( InputProduct input);
+        Task<ShopFilterLookups> GetFilterLookupsAsync();
     }
 }
