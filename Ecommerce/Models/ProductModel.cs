@@ -56,6 +56,40 @@ namespace Ecommerce.Models
             public List<ShopFilterOption> Brands { get; set; } = new();
         }
 
+        public class ShopVariantAttribute
+        {
+            public int VariantId { get; set; }
+            public string VariantName { get; set; } = string.Empty;
+            public int VariantValueId { get; set; }
+            public string VariantValueName { get; set; } = string.Empty;
+        }
+
+        public class ShopAttributeValue
+        {
+            public int VariantValueId { get; set; }
+            public string Name { get; set; } = string.Empty;
+        }
+
+        public class ShopAttributeGroup
+        {
+            public int VariantId { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public List<ShopAttributeValue> Values { get; set; } = new();
+        }
+
+        public class ShopSkuOption
+        {
+            public int ProductVariantId { get; set; }
+            public string SKU { get; set; } = string.Empty;
+            public string Label { get; set; } = string.Empty;
+            public decimal Price { get; set; }
+            public decimal MRP { get; set; }
+            public bool InStock { get; set; }
+            public bool IsDefault { get; set; }
+            public List<string> ImageUrls { get; set; } = new();
+            public List<ShopVariantAttribute> Attributes { get; set; } = new();
+        }
+
         public class ShopProductDetails
         {
             public int ProductId { get; set; }
@@ -70,9 +104,13 @@ namespace Ecommerce.Models
             public string BrandName { get; set; } = string.Empty;
             public string ImageUrl { get; set; } = string.Empty;
             public List<string> ImageUrls { get; set; } = new();
+            public List<string> ProductImageUrls { get; set; } = new();
             public decimal Price { get; set; }
             public decimal MRP { get; set; }
             public bool InStock { get; set; }
+            public int SelectedVariantId { get; set; }
+            public List<ShopSkuOption> Skus { get; set; } = new();
+            public List<ShopAttributeGroup> AttributeGroups { get; set; } = new();
         }
     }
 }

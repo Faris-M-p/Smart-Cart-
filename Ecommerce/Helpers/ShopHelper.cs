@@ -1,6 +1,4 @@
 using Ecommerce.Helpers.Common;
-using Ecommerce.Models.Entities;
-using Ecommerce.Models.Enums;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.ProductModel;
 
@@ -16,20 +14,6 @@ namespace Ecommerce.Helpers.Shop
         int PageSize,
         int SortColumn,
         string SortMode);
-
-    public sealed class ShopProductListItem
-    {
-        public int ProductId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Slug { get; set; } = string.Empty;
-        public int CategoryId { get; set; }
-        public string CategoryName { get; set; } = string.Empty;
-        public int SubCategoryId { get; set; }
-        public int BrandId { get; set; }
-        public string BrandName { get; set; } = string.Empty;
-        public decimal? MinPrice { get; set; }
-        public DateTime? CreatedAt { get; set; }
-    }
 
     public static class ShopHelper
     {
@@ -81,105 +65,6 @@ namespace Ecommerce.Helpers.Shop
                 pageSize,
                 input.SortColumn,
                 input.SortMode?.Trim() ?? "ASC");
-        }
-
-        public static IQueryable<ProductEntity> ApplyFilters(
-            IQueryable<ProductEntity> query,
-            NormalizedShopListInput n)
-        {
-            query = query.Where(p => p.Cancelled != true && p.IsActive);
-
-            if (n.SearchLower != null)
-            {
-                var s = n.SearchLower;
-                query = query.Where(p => p.Name.ToLower().Contains(s) || p.Slug.ToLower().Contains(s));
-            }
-
-            if (n.SubCategoryIds.Count > 0)
-            {
-                query = query.Where(p => n.SubCategoryIds.Contains(p.FK_SubCategory));
-            }
-
-            if (n.BrandIds.Count > 0)
-            {
-                query = query.Where(p => p.FK_Brand != null && n.BrandIds.Contains(p.FK_Brand.Value));
-            }
-
-            return query;
-        }
-
-        public static IQueryable<ShopProductListItem> ApplyPriceFilter(
-            IQueryable<ShopProductListItem> query,
-            NormalizedShopListInput n)
-        {
-            if (n.PriceFrom.HasValue)
-            {
-                var from = n.PriceFrom.Value;
-                query = query.Where(x => x.MinPrice != null && x.MinPrice >= from);
-            }
-
-            if (n.PriceTo.HasValue)
-            {
-                var to = n.PriceTo.Value;
-                query = query.Where(x => x.MinPrice != null && x.MinPrice <= to);
-            }
-
-            return query;
-        }
-
-        public static IQueryable<ShopProductListItem> ApplySorting(
-            IQueryable<ShopProductListItem> query,
-            int sortColumn,
-            string sortMode)
-        {
-            var desc = string.Equals(sortMode, "DESC", StringComparison.OrdinalIgnoreCase);
-
-            if (!Enum.IsDefined(typeof(ShopProductSortColumn), sortColumn))
-            {
-                return query.OrderByDescending(p => p.ProductId);
-            }
-
-            var column = (ShopProductSortColumn)sortColumn;
-
-            switch (column)
-            {
-                case ShopProductSortColumn.Name:
-                    return desc
-                        ? query.OrderByDescending(p => p.Name)
-                        : query.OrderBy(p => p.Name);
-                case ShopProductSortColumn.Price:
-                    return desc
-                        ? query.OrderByDescending(p => p.MinPrice ?? 0).ThenByDescending(p => p.ProductId)
-                        : query.OrderBy(p => p.MinPrice ?? 0).ThenBy(p => p.ProductId);
-                case ShopProductSortColumn.SubCategoryId:
-                    return desc
-                        ? query.OrderByDescending(p => p.SubCategoryId)
-                        : query.OrderBy(p => p.SubCategoryId);
-                case ShopProductSortColumn.CreatedAt:
-                    return desc
-                        ? query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.ProductId)
-                        : query.OrderBy(p => p.CreatedAt).ThenBy(p => p.ProductId);
-                case ShopProductSortColumn.ProductId:
-                default:
-                    return desc
-                        ? query.OrderByDescending(p => p.ProductId)
-                        : query.OrderBy(p => p.ProductId);
-            }
-        }
-
-        public static List<int> ParseRatingFilters(string? ratings)
-        {
-            if (string.IsNullOrWhiteSpace(ratings))
-            {
-                return new List<int>();
-            }
-
-            return ratings.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(s => int.TryParse(s, out var v) ? v : (int?)null)
-                .Where(v => v.HasValue)
-                .Select(v => v!.Value)
-                .Distinct()
-                .ToList();
         }
 
         public static TableOutput<Product> EmptyTableOutput(InputProduct? input)

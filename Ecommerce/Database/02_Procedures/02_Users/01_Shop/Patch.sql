@@ -9,4 +9,6 @@
    ============================================================================= */
 
 :r .\02_Procedures\02_Users\01_Shop\GetProducts.sql
+:r .\02_Procedures\02_Users\01_Shop\GetProductDetails.sql
+:r .\02_Procedures\02_Users\01_Shop\GetShopFilters.sql
 :r .\02_Procedures\02_Users\01_Shop\GetProductDetailsById.sql
