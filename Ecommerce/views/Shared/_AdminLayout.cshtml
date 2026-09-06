@@ -13,23 +13,23 @@
   <meta name="author" content="CodedThemes">
 
   <!-- [Favicon] icon -->
-  <link rel="icon" href="../Admin/assets/images/favicon.svg" type="image/x-icon"> <!-- [Google Font] Family -->
+  <link rel="icon" href="/Admin/assets/images/favicon.svg" type="image/x-icon"> <!-- [Google Font] Family -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
 <!-- [Tabler Icons] https://tablericons.com -->
-<link rel="stylesheet" href="../Admin/assets/fonts/tabler-icons.min.css" >
+<link rel="stylesheet" href="/Admin/assets/fonts/tabler-icons.min.css" >
 <!-- [Feather Icons] https://feathericons.com -->
-<link rel="stylesheet" href="../Admin/assets/fonts/feather.css" >
+<link rel="stylesheet" href="/Admin/assets/fonts/feather.css" >
 <!-- [Font Awesome Icons] https://fontawesome.com/icons -->
-<link rel="stylesheet" href="../Admin/assets/fonts/fontawesome.css" >
+<link rel="stylesheet" href="/Admin/assets/fonts/fontawesome.css" >
 <!-- [Material Icons] https://fonts.google.com/icons -->
-<link rel="stylesheet" href="../Admin/assets/fonts/material.css" >
+<link rel="stylesheet" href="/Admin/assets/fonts/material.css" >
 <!-- [Bootstrap Icons] https://icons.getbootstrap.com/ -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <!-- [Template CSS Files] -->
-<link rel="stylesheet" href="../Admin/assets/css/style.css" id="main-style-link" >
-<link rel="stylesheet" href="../Admin/assets/css/style-preset.css" >
+<link rel="stylesheet" href="/Admin/assets/css/style.css" id="main-style-link" >
+<link rel="stylesheet" href="/Admin/assets/css/style-preset.css" >
 <!-- [Empty State CSS] -->
-<link rel="stylesheet" href="../Admin/assets/css/empty-state.css?v=listing-empty-1" >
+<link rel="stylesheet" href="/Admin/assets/css/empty-state.css?v=listing-empty-1" >
 
 </head>
 <!-- [Head] end -->
@@ -47,7 +47,7 @@
 <nav class="pc-sidebar">
   <div class="navbar-wrapper">
     <div class="m-header">
-      <a href="../Admin/dashboard/index.html" class="b-brand text-primary">
+      <a href="/Admin/Dashboard" class="b-brand text-primary">
         <!-- ========   Change your logo from here   ============ -->
         <img src="/Admin/assets/images/logo-dark.svg" class="img-fluid logo-lg" alt="logo">
       </a>
@@ -61,131 +61,77 @@
           </a>
         </li>
 
-        <li class="pc-item pc-caption">
-          <label>Master Data</label>
-          <i class="ti ti-database"></i>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Category" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-folder"></i></span>
-            <span class="pc-mtext">Category</span>
+        <li class="pc-item pc-hasmenu">
+          <a href="#!" class="pc-link">
+            <span class="pc-micon"><i class="ti ti-layout-grid"></i></span>
+            <span class="pc-mtext">Catalog</span>
+            <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
           </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/SubCategory" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-list"></i></span>
-            <span class="pc-mtext">SubCategory</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Product" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-package"></i></span>
-            <span class="pc-mtext">Product</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Brand" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-brand-apple"></i></span>
-            <span class="pc-mtext">Brand</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Supplier" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-truck"></i></span>
-            <span class="pc-mtext">Supplier</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Variant" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-adjustments"></i></span>
-            <span class="pc-mtext">Variant</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/VariantValue" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-adjustments-horizontal"></i></span>
-            <span class="pc-mtext">Variant Value</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/ProductVariant" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-box"></i></span>
-            <span class="pc-mtext">Product Variant (SKU)</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Purchase" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-shopping-cart"></i></span>
-            <span class="pc-mtext">Purchases</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/Inventory" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-box"></i></span>
-            <span class="pc-mtext">Inventory (Stock)</span>
-          </a>
+          <ul class="pc-submenu">
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Category">Categories</a>
+            </li>
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/SubCategory">Sub Categories</a>
+            </li>
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Brand">Brands</a>
+            </li>
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Product">Products</a>
+            </li>
+            <li class="pc-item pc-hasmenu">
+              <a href="#!" class="pc-link">
+                Variants
+                <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
+              </a>
+              <ul class="pc-submenu">
+                <li class="pc-item">
+                  <a class="pc-link" href="/Admin/Variant">Variants</a>
+                </li>
+                <li class="pc-item">
+                  <a class="pc-link" href="/Admin/VariantValue">Variant Values</a>
+                </li>
+              </ul>
+            </li>
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/ProductVariant">Product Variants / SKU</a>
+            </li>
+          </ul>
         </li>
 
-        <li class="pc-item pc-caption">
-          <label>UI Components</label>
-          <i class="ti ti-dashboard"></i>
-        </li>
-        <li class="pc-item">
-          <a href="../elements/bc_typography.html" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-typography"></i></span>
-            <span class="pc-mtext">Typography</span>
+        <li class="pc-item pc-hasmenu">
+          <a href="#!" class="pc-link">
+            <span class="pc-micon"><i class="ti ti-building-warehouse"></i></span>
+            <span class="pc-mtext">Purchase &amp; Inventory</span>
+            <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
           </a>
-        </li>
-        <li class="pc-item">
-          <a href="../elements/bc_color.html" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-color-swatch"></i></span>
-            <span class="pc-mtext">Color</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="../elements/icon-tabler.html" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-plant-2"></i></span>
-            <span class="pc-mtext">Icons</span>
-          </a>
+          <ul class="pc-submenu">
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Supplier">Suppliers</a>
+            </li>
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Purchase">Purchases</a>
+            </li>
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Inventory">Inventory</a>
+            </li>
+          </ul>
         </li>
 
-        <li class="pc-item pc-caption">
-          <label>Pages</label>
-          <i class="ti ti-news"></i>
-        </li>
-        <li class="pc-item">
-          <a href="../pages/login.html" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-lock"></i></span>
-            <span class="pc-mtext">Login</span>
-          </a>
-        </li>
-        <li class="pc-item">
-          <a href="../pages/register.html" class="pc-link">
-            <span class="pc-micon"><i class="ti ti-user-plus"></i></span>
-            <span class="pc-mtext">Register</span>
-          </a>
-        </li>
-
-        <li class="pc-item pc-caption">
-          <label>Administration</label>
-          <i class="ti ti-settings"></i>
-        </li>
-        <li class="pc-item">
-          <a href="/Admin/UserRole" class="pc-link">
+        <li class="pc-item pc-hasmenu">
+          <a href="#!" class="pc-link">
             <span class="pc-micon"><i class="ti ti-shield"></i></span>
-            <span class="pc-mtext">User Roles</span>
+            <span class="pc-mtext">Administration</span>
+            <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
           </a>
+          <ul class="pc-submenu">
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/UserRole" data-menu-prefixes="/Admin/UserRole,/admin/user-roles">User Roles</a>
+            </li>
+          </ul>
         </li>
       </ul>
-      <div class="card text-center">
-        <div class="card-body">
-          <img src="../Admin/assets/images/img-navbar-card.png" alt="images" class="img-fluid mb-2">
-          <h5>Upgrade To Pro</h5>
-          <p>To get more features and components</p>
-          <a href="https://codedthemes.com/item/berry-bootstrap-5-admin-template/" target="_blank"
-          class="btn btn-success">Buy Now</a>
-        </div>
-      </div>
     </div>
   </div>
 </nav>
@@ -258,7 +204,7 @@
             <a class="list-group-item list-group-item-action">
               <div class="d-flex">
                 <div class="flex-shrink-0">
-                  <img src="../Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar">
+                  <img src="/Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar">
                 </div>
                 <div class="flex-grow-1 ms-1">
                   <span class="float-end text-muted">3:00 AM</span>
@@ -270,7 +216,7 @@
             <a class="list-group-item list-group-item-action">
               <div class="d-flex">
                 <div class="flex-shrink-0">
-                  <img src="../Admin/assets/images/user/avatar-1.jpg" alt="user-image" class="user-avtar">
+                  <img src="/Admin/assets/images/user/avatar-1.jpg" alt="user-image" class="user-avtar">
                 </div>
                 <div class="flex-grow-1 ms-1">
                   <span class="float-end text-muted">6:00 PM</span>
@@ -282,7 +228,7 @@
             <a class="list-group-item list-group-item-action">
               <div class="d-flex">
                 <div class="flex-shrink-0">
-                  <img src="../Admin/assets/images/user/avatar-3.jpg" alt="user-image" class="user-avtar">
+                  <img src="/Admin/assets/images/user/avatar-3.jpg" alt="user-image" class="user-avtar">
                 </div>
                 <div class="flex-grow-1 ms-1">
                   <span class="float-end text-muted">2:45 PM</span>
@@ -294,7 +240,7 @@
             <a class="list-group-item list-group-item-action">
               <div class="d-flex">
                 <div class="flex-shrink-0">
-                  <img src="../Admin/assets/images/user/avatar-4.jpg" alt="user-image" class="user-avtar">
+                  <img src="/Admin/assets/images/user/avatar-4.jpg" alt="user-image" class="user-avtar">
                 </div>
                 <div class="flex-grow-1 ms-1">
                   <span class="float-end text-muted">9:10 PM</span>
@@ -321,14 +267,14 @@
         data-bs-auto-close="outside"
         aria-expanded="false"
       >
-        <img src="../Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar">
+        <img src="/Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar">
         <span>Stebin Ben</span>
       </a>
       <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown">
         <div class="dropdown-header">
           <div class="d-flex mb-1">
             <div class="flex-shrink-0">
-              <img src="../Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar wid-35">
+              <img src="/Admin/assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar wid-35">
             </div>
             <div class="flex-grow-1 ms-3">
               <h6 class="mb-1">Stebin Ben</h6>
@@ -443,24 +389,50 @@
         </div>
         <div class="col-auto my-1">
           <ul class="list-inline footer-link mb-0">
-            <li class="list-inline-item"><a href="../index.html">Home</a></li>
+            <li class="list-inline-item"><a href="/Admin/Dashboard">Home</a></li>
           </ul>
         </div>
       </div>
     </div>
   </footer>
-d
   <!-- [Page Specific JS] start -->
-  <script src="../Admin/assets/js/plugins/apexcharts.min.js"></script>
-  <script src="../Admin/assets/js/pages/dashboard-default.js"></script>
+  <script src="/Admin/assets/js/plugins/apexcharts.min.js"></script>
+  <script src="/Admin/assets/js/pages/dashboard-default.js"></script>
   <!-- [Page Specific JS] end -->
   <!-- Required Js -->
-  <script src="../Admin/assets/js/plugins/popper.min.js"></script>
-  <script src="../Admin/assets/js/plugins/simplebar.min.js"></script>
-  <script src="../Admin/assets/js/plugins/bootstrap.min.js"></script>
-  <script src="../Admin/assets/js/fonts/custom-font.js"></script>
-  <script src="../Admin/assets/js/pcoded.js"></script>
-  <script src="../Admin/assets/js/plugins/feather.min.js"></script>
+  <script src="/Admin/assets/js/plugins/popper.min.js"></script>
+  <script src="/Admin/assets/js/plugins/simplebar.min.js"></script>
+  <script src="/Admin/assets/js/plugins/bootstrap.min.js"></script>
+  <script src="/Admin/assets/js/fonts/custom-font.js"></script>
+  <script src="/Admin/assets/js/pcoded.js"></script>
+  <script>
+    (function () {
+      var path = (window.location.pathname || '').replace(/\/+$/, '') || '/';
+      document.querySelectorAll('.pc-sidebar .pc-navbar a.pc-link[href^="/Admin"]').forEach(function (link) {
+        var href = (link.getAttribute('href') || '').replace(/\/+$/, '');
+        if (!href) return;
+        var prefixes = (link.getAttribute('data-menu-prefixes') || href)
+          .split(',')
+          .map(function (value) { return value.trim().replace(/\/+$/, ''); })
+          .filter(Boolean);
+        var matched = prefixes.some(function (prefix) {
+          return path === prefix || path.indexOf(prefix + '/') === 0;
+        });
+        if (matched) {
+          var item = link.parentNode;
+          item.classList.add('active');
+          var parentHas = item.closest('.pc-hasmenu');
+          while (parentHas) {
+            parentHas.classList.add('pc-trigger', 'active');
+            var submenu = parentHas.querySelector(':scope > .pc-submenu');
+            if (submenu) submenu.style.display = 'block';
+            parentHas = parentHas.parentElement ? parentHas.parentElement.closest('.pc-hasmenu') : null;
+          }
+        }
+      });
+    })();
+  </script>
+  <script src="/Admin/assets/js/plugins/feather.min.js"></script>
   <!-- Common Toast JS -->
     <script src="/Admin/assets/js/common/toast.js"></script>
     <script src="/Admin/assets/js/common/api-debug.js"></script>

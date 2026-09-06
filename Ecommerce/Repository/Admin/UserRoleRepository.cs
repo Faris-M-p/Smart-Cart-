@@ -112,7 +112,7 @@ namespace Ecommerce.Repository.Admin
             }
         }
 
-        public async Task<List<ModulePermissionNode>> GetPermissionTreeAsync()
+        public async Task<List<PermissionGroupNode>> GetPermissionTreeAsync()
         {
             var rows = await (
                 from m in _dbContext.Modules.AsNoTracking()
@@ -132,7 +132,7 @@ namespace Ecommerce.Repository.Admin
                 }
             ).ToListAsync();
 
-            return rows
+            var modules = rows
                 .GroupBy(x => new { x.ID_Module, x.ModuleName, x.DisplayName, x.ModuleDisplayOrder })
                 .OrderBy(g => g.Key.ModuleDisplayOrder)
                 .Select(g => new ModulePermissionNode
@@ -152,6 +152,8 @@ namespace Ecommerce.Repository.Admin
                         .ToList()
                 })
                 .ToList();
+
+            return UserRoleHelper.BuildPermissionGroups(modules);
         }
 
         public async Task<CommonResponse> CreateUserRoleAsync(UserRoleUpdateInput input)

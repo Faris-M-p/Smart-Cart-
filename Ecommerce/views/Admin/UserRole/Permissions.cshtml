@@ -19,16 +19,91 @@
         margin-bottom: 1rem;
     }
 
-    .permission-module-card {
-        height: 100%;
+    .permission-mapping-search {
+        max-width: 320px;
+        min-width: 220px;
     }
 
-    .permission-module-card .card-body {
-        padding: 1rem 1.15rem;
+    .permission-tree {
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
     }
 
-    .permission-module-card .form-check {
-        margin-bottom: 0.35rem;
+    .permission-tree-node.search-hidden {
+        display: none;
+    }
+
+    .permission-tree-node.is-collapsed > .permission-tree-children {
+        display: none;
+    }
+
+    .permission-tree-row {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-height: 2rem;
+    }
+
+    .permission-tree-toggle {
+        width: 1.35rem;
+        height: 1.35rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .permission-tree-toggle i {
+        font-size: 1rem;
+    }
+
+    .permission-tree-toggle.is-leaf {
+        visibility: hidden;
+    }
+
+    .permission-tree-children {
+        margin-left: 1.15rem;
+        padding-left: 0.9rem;
+        border-left: 1px solid #e9ecef;
+    }
+
+    .permission-tree-group > .permission-tree-row {
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+    }
+
+    .permission-tree-feature > .permission-tree-row {
+        font-weight: 500;
+    }
+
+    .permission-tree-leaf > .permission-tree-row {
+        font-weight: 400;
+    }
+
+    .permission-tree-row .form-check {
+        margin-bottom: 0;
+        min-height: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .permission-tree-row .form-check-input {
+        margin-top: 0;
+    }
+
+    .permission-mapping-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #edf1f5;
     }
 
     .permission-mapping-error {
@@ -94,18 +169,22 @@ else
                             <input class="form-check-input" type="checkbox" id="selectAllPermissions">
                             <label class="form-check-label fw-semibold" for="selectAllPermissions">Select All Permissions</label>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="/Admin/UserRole" class="btn btn-secondary">Cancel</a>
-                            <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
+                        <div class="input-group permission-mapping-search">
+                            <span class="input-group-text"><i class="ti ti-search"></i></span>
+                            <input type="search" id="permissionSearch" class="form-control" placeholder="Search permissions...">
                         </div>
                     </div>
                     <div class="invalid-feedback d-block permission-mapping-error" id="permissionTreeError"></div>
-                    <div id="permissionTree" class="row g-3">
-                        <div class="col-12 text-center py-5">
+                    <div id="permissionTree">
+                        <div class="text-center py-5">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
+                    </div>
+                    <div class="permission-mapping-actions">
+                        <a href="/Admin/UserRole" class="btn btn-secondary">Cancel</a>
+                        <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
                     </div>
                 </div>
             </div>
@@ -116,30 +195,26 @@ else
 @if (!isBlocked)
 {
 <script>
-    // 1. Page Variables
     const permissionUserRoleId = @roleId;
     const existingPermissionIds = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedPermissionIds));
     let permissionTreeBound = false;
 
-    // 2. API Endpoints
     const API = {
         getTree: '/Admin/UserRole/GetPermissionTree',
         save: '/Admin/UserRole/SavePermissions'
     };
 
-    // 3. Page Initialization
     document.addEventListener('DOMContentLoaded', function () {
         loadPermissionTree();
     });
 
-    // 5. Listing API
     async function loadPermissionTree() {
         const container = document.getElementById('permissionTree');
         const listing = window.emptyState;
         const url = API.getTree;
         container.dataset.listingLoading = 'true';
         container.innerHTML = `
-            <div class="col-12 text-center py-5">
+            <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
@@ -178,79 +253,173 @@ else
         }
     }
 
-    function renderPermissionTree(modules) {
+    function renderPermissionTree(groups) {
         const container = document.getElementById('permissionTree');
-        if (!modules.length) {
+        if (!groups.length) {
             emptyState.showListingEmptyInContainer('permissionTree');
             return;
         }
 
-        container.innerHTML = modules.map(module => {
-            const moduleId = module.moduleID ?? module.ModuleID;
-            const moduleName = module.displayName || module.DisplayName || module.moduleName || module.ModuleName || '';
-            const permissions = module.permissions || module.Permissions || [];
-            const items = permissions.map(p => {
-                const permissionId = p.permissionID ?? p.PermissionID;
-                const permissionName = p.permissionName || p.PermissionName || '';
-                return `
+        container.innerHTML = `<div class="permission-tree">${groups.map(renderGroup).join('')}</div>`;
+    }
+
+    function renderGroup(group) {
+        const groupKey = group.groupKey || group.GroupKey || '';
+        const groupName = group.groupName || group.GroupName || '';
+        const features = group.features || group.Features || [];
+        const featureHtml = features.map(feature => renderFeature(feature, groupKey)).join('');
+
+        return `
+            <div class="permission-tree-node permission-tree-group" data-tree-node="group" data-group-key="${escapeAttr(groupKey)}" data-search-text="${escapeAttr(groupName.toLowerCase())}">
+                <div class="permission-tree-row">
+                    <button type="button" class="permission-tree-toggle" data-toggle-node aria-label="Collapse ${escapeAttr(groupName)}">
+                        <i class="ti ti-chevron-down"></i>
+                    </button>
+                    <div class="form-check">
+                        <input class="form-check-input group-check" type="checkbox" id="group_${escapeAttr(groupKey)}" data-group-key="${escapeAttr(groupKey)}">
+                        <label class="form-check-label" for="group_${escapeAttr(groupKey)}">${escapeHtml(groupName)}</label>
+                    </div>
+                </div>
+                <div class="permission-tree-children">
+                    ${featureHtml}
+                </div>
+            </div>`;
+    }
+
+    function renderFeature(feature, groupKey) {
+        const moduleId = feature.moduleID ?? feature.ModuleID;
+        const moduleName = feature.displayName || feature.DisplayName || feature.moduleName || feature.ModuleName || '';
+        const permissions = feature.permissions || feature.Permissions || [];
+        const leaves = permissions.map(permission => renderLeaf(permission, moduleId, groupKey)).join('');
+
+        return `
+            <div class="permission-tree-node permission-tree-feature" data-tree-node="feature" data-group-key="${escapeAttr(groupKey)}" data-module-id="${moduleId}" data-search-text="${escapeAttr(moduleName.toLowerCase())}">
+                <div class="permission-tree-row">
+                    <button type="button" class="permission-tree-toggle" data-toggle-node aria-label="Collapse ${escapeAttr(moduleName)}">
+                        <i class="ti ti-chevron-down"></i>
+                    </button>
+                    <div class="form-check">
+                        <input class="form-check-input feature-check" type="checkbox" id="feature_${moduleId}" data-module-id="${moduleId}" data-group-key="${escapeAttr(groupKey)}">
+                        <label class="form-check-label" for="feature_${moduleId}">${escapeHtml(moduleName)}</label>
+                    </div>
+                </div>
+                <div class="permission-tree-children">
+                    ${leaves}
+                </div>
+            </div>`;
+    }
+
+    function renderLeaf(permission, moduleId, groupKey) {
+        const permissionId = permission.permissionID ?? permission.PermissionID;
+        const permissionName = permission.permissionName || permission.PermissionName || '';
+
+        return `
+            <div class="permission-tree-node permission-tree-leaf" data-tree-node="leaf" data-group-key="${escapeAttr(groupKey)}" data-module-id="${moduleId}" data-search-text="${escapeAttr(permissionName.toLowerCase())}">
+                <div class="permission-tree-row">
+                    <button type="button" class="permission-tree-toggle is-leaf" tabindex="-1" aria-hidden="true"></button>
                     <div class="form-check">
                         <input class="form-check-input permission-check" type="checkbox"
                                id="perm_${permissionId}" value="${permissionId}"
-                               data-module-id="${moduleId}">
+                               data-module-id="${moduleId}" data-group-key="${escapeAttr(groupKey)}">
                         <label class="form-check-label" for="perm_${permissionId}">${escapeHtml(permissionName)}</label>
-                    </div>`;
-            }).join('');
-
-            return `
-                <div class="col-12 col-md-6 col-xl-4">
-                    <div class="card permission-module-card border">
-                        <div class="card-body">
-                            <div class="form-check fw-semibold mb-2">
-                                <input class="form-check-input module-check" type="checkbox" id="module_${moduleId}" data-module-id="${moduleId}">
-                                <label class="form-check-label" for="module_${moduleId}">${escapeHtml(moduleName)}</label>
-                            </div>
-                            ${items}
-                        </div>
                     </div>
-                </div>`;
-        }).join('');
+                </div>
+            </div>`;
     }
 
     function bindPermissionTreeEvents() {
         const selectAll = document.getElementById('selectAllPermissions');
+        const search = document.getElementById('permissionSearch');
+
         if (!permissionTreeBound) {
             permissionTreeBound = true;
             selectAll.addEventListener('change', function () {
                 document.querySelectorAll('.permission-check').forEach(cb => { cb.checked = this.checked; });
-                syncModuleAndSelectAll();
+                syncTreeChecks();
+            });
+            search.addEventListener('input', function () {
+                filterPermissionTree(this.value);
             });
         }
 
-        document.querySelectorAll('.module-check').forEach(moduleCb => {
-            moduleCb.addEventListener('change', function () {
+        document.querySelectorAll('[data-toggle-node]').forEach(button => {
+            button.addEventListener('click', function () {
+                const node = this.closest('[data-tree-node]');
+                if (!node || node.dataset.treeNode === 'leaf') return;
+                const collapsed = node.classList.toggle('is-collapsed');
+                const icon = this.querySelector('i');
+                if (icon) {
+                    icon.className = collapsed ? 'ti ti-chevron-right' : 'ti ti-chevron-down';
+                }
+            });
+        });
+
+        document.querySelectorAll('.group-check').forEach(groupCb => {
+            groupCb.addEventListener('change', function () {
+                document.querySelectorAll(`.permission-check[data-group-key="${this.dataset.groupKey}"]`)
+                    .forEach(cb => { cb.checked = this.checked; });
+                syncTreeChecks();
+            });
+        });
+
+        document.querySelectorAll('.feature-check').forEach(featureCb => {
+            featureCb.addEventListener('change', function () {
                 document.querySelectorAll(`.permission-check[data-module-id="${this.dataset.moduleId}"]`)
                     .forEach(cb => { cb.checked = this.checked; });
-                syncModuleAndSelectAll();
+                syncTreeChecks();
             });
         });
 
         document.querySelectorAll('.permission-check').forEach(cb => {
-            cb.addEventListener('change', syncModuleAndSelectAll);
+            cb.addEventListener('change', syncTreeChecks);
         });
     }
 
-    function syncModuleAndSelectAll() {
+    function syncTreeChecks() {
         const allPerms = document.querySelectorAll('.permission-check');
         const checkedPerms = document.querySelectorAll('.permission-check:checked');
         const selectAll = document.getElementById('selectAllPermissions');
         selectAll.checked = allPerms.length > 0 && checkedPerms.length === allPerms.length;
         selectAll.indeterminate = checkedPerms.length > 0 && checkedPerms.length < allPerms.length;
 
-        document.querySelectorAll('.module-check').forEach(moduleCb => {
-            const modulePerms = document.querySelectorAll(`.permission-check[data-module-id="${moduleCb.dataset.moduleId}"]`);
-            const moduleChecked = document.querySelectorAll(`.permission-check[data-module-id="${moduleCb.dataset.moduleId}"]:checked`);
-            moduleCb.checked = modulePerms.length > 0 && moduleChecked.length === modulePerms.length;
-            moduleCb.indeterminate = moduleChecked.length > 0 && moduleChecked.length < modulePerms.length;
+        document.querySelectorAll('.feature-check').forEach(featureCb => {
+            const featurePerms = document.querySelectorAll(`.permission-check[data-module-id="${featureCb.dataset.moduleId}"]`);
+            const featureChecked = document.querySelectorAll(`.permission-check[data-module-id="${featureCb.dataset.moduleId}"]:checked`);
+            featureCb.checked = featurePerms.length > 0 && featureChecked.length === featurePerms.length;
+            featureCb.indeterminate = featureChecked.length > 0 && featureChecked.length < featurePerms.length;
+        });
+
+        document.querySelectorAll('.group-check').forEach(groupCb => {
+            const groupPerms = document.querySelectorAll(`.permission-check[data-group-key="${groupCb.dataset.groupKey}"]`);
+            const groupChecked = document.querySelectorAll(`.permission-check[data-group-key="${groupCb.dataset.groupKey}"]:checked`);
+            groupCb.checked = groupPerms.length > 0 && groupChecked.length === groupPerms.length;
+            groupCb.indeterminate = groupChecked.length > 0 && groupChecked.length < groupPerms.length;
+        });
+    }
+
+    function filterPermissionTree(query) {
+        const q = (query || '').trim().toLowerCase();
+        const nodes = document.querySelectorAll('[data-tree-node]');
+
+        if (!q) {
+            nodes.forEach(node => node.classList.remove('search-hidden'));
+            return;
+        }
+
+        nodes.forEach(node => {
+            node.dataset.selfMatch = (node.dataset.searchText || '').includes(q) ? '1' : '0';
+        });
+
+        nodes.forEach(node => {
+            const selfMatch = node.dataset.selfMatch === '1';
+            const childMatch = !!node.querySelector('[data-tree-node][data-self-match="1"]');
+            const visible = selfMatch || childMatch;
+            node.classList.toggle('search-hidden', !visible);
+            if (visible && node.dataset.treeNode !== 'leaf') {
+                node.classList.remove('is-collapsed');
+                const icon = node.querySelector(':scope > .permission-tree-row [data-toggle-node] i');
+                if (icon) icon.className = 'ti ti-chevron-down';
+            }
         });
     }
 
@@ -259,7 +428,7 @@ else
         document.querySelectorAll('.permission-check').forEach(cb => {
             cb.checked = selected.has(Number(cb.value));
         });
-        syncModuleAndSelectAll();
+        syncTreeChecks();
     }
 
     function getSelectedPermissionIds() {
@@ -281,7 +450,9 @@ else
 
         const input = {
             id_UserRole: permissionUserRoleId,
-            selectedPermissionIds: selectedPermissionIds
+            FK_UserRole: permissionUserRoleId,
+            selectedPermissionIds: selectedPermissionIds,
+            PermissionIds: selectedPermissionIds
         };
 
         const url = API.save;
@@ -319,6 +490,16 @@ else
         const div = document.createElement('div');
         div.textContent = String(text);
         return div.innerHTML;
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 </script>
 }

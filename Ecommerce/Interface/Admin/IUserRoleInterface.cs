@@ -7,7 +7,7 @@ namespace Ecommerce.Interface.Admin
     {
         Task<UserRole?> GetUserRoleByIdAsync(int id);
         Task<TableOutput<UserRole>> GetUserRoleListAsync(UserRoleListInput input);
-        Task<List<ModulePermissionNode>> GetPermissionTreeAsync();
+        Task<List<PermissionGroupNode>> GetPermissionTreeAsync();
         Task<CommonResponse> CreateUserRoleAsync(UserRoleUpdateInput input);
         Task<CommonResponse> UpdateUserRoleAsync(UserRoleUpdateInput input);
         Task<CommonResponse> SaveUserRolePermissionsAsync(UserRolePermissionSaveInput input);

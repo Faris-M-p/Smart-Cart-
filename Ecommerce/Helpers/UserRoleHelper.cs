@@ -120,6 +120,63 @@ namespace Ecommerce.Helpers.UserRoles
             }
         }
 
+        private static readonly (string Key, string Name, string[] Modules)[] PermissionUiGroups =
+        {
+            ("dashboard", "Dashboard", new[] { "Dashboard" }),
+            ("catalog", "Catalog", new[] { "Categories", "SubCategories", "Brands", "Products", "Variants", "VariantValues", "ProductVariants" }),
+            ("purchase", "Purchase & Inventory", new[] { "Suppliers", "Purchases", "Stock" }),
+            ("sales", "Sales", new[] { "Orders", "Billing" }),
+            ("customers", "Customers", new[] { "Customers", "Ratings" }),
+            ("administration", "Administration", new[] { "Employees", "UserRoles" })
+        };
+
+        public static List<PermissionGroupNode> BuildPermissionGroups(IReadOnlyList<ModulePermissionNode> modules)
+        {
+            var remaining = modules.ToList();
+            var groups = new List<PermissionGroupNode>();
+
+            foreach (var spec in PermissionUiGroups)
+            {
+                var features = new List<ModulePermissionNode>();
+                foreach (var moduleName in spec.Modules)
+                {
+                    var feature = remaining.FirstOrDefault(m =>
+                        string.Equals(m.ModuleName, moduleName, StringComparison.OrdinalIgnoreCase));
+                    if (feature == null)
+                    {
+                        continue;
+                    }
+
+                    features.Add(feature);
+                    remaining.Remove(feature);
+                }
+
+                if (features.Count == 0)
+                {
+                    continue;
+                }
+
+                groups.Add(new PermissionGroupNode
+                {
+                    GroupKey = spec.Key,
+                    GroupName = spec.Name,
+                    Features = features
+                });
+            }
+
+            if (remaining.Count > 0)
+            {
+                groups.Add(new PermissionGroupNode
+                {
+                    GroupKey = "other",
+                    GroupName = "Other",
+                    Features = remaining
+                });
+            }
+
+            return groups;
+        }
+
         public static TableOutput<UserRole> EmptyTableOutput(UserRoleListInput? input)
         {
             var pageIndex = Math.Max(1, input?.PageIndex ?? 1);

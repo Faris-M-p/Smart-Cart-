@@ -58,10 +58,24 @@ namespace Ecommerce.Models.Admin
             [JsonPropertyName("id_UserRole")]
             public int UserRoleID { get; set; }
 
+            [JsonPropertyName("FK_UserRole")]
+            public int FK_UserRole
+            {
+                get => UserRoleID;
+                set { if (value > 0) UserRoleID = value; }
+            }
+
             [Display(Name = "Selected Permissions")]
             [NotEmptyList(ErrorMessage = "At least one permission must be selected.")]
             [JsonPropertyName("selectedPermissionIds")]
             public List<int> SelectedPermissionIds { get; set; } = new();
+
+            [JsonPropertyName("PermissionIds")]
+            public List<int>? PermissionIds
+            {
+                get => SelectedPermissionIds;
+                set { if (value != null && value.Count > 0) SelectedPermissionIds = value; }
+            }
         }
 
         public class UserRoleDeleteInputVIEW
@@ -182,6 +196,13 @@ namespace Ecommerce.Models.Admin
             public string ModuleName { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
             public List<PermissionNode> Permissions { get; set; } = new();
+        }
+
+        public class PermissionGroupNode
+        {
+            public string GroupKey { get; set; } = string.Empty;
+            public string GroupName { get; set; } = string.Empty;
+            public List<ModulePermissionNode> Features { get; set; } = new();
         }
     }
 }
