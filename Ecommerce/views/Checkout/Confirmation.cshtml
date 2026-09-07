@@ -1,0 +1,51 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Order placed";
+    var orderId = ViewBag.OrderId ?? 0;
+}
+
+<link rel="stylesheet" href="/css/shop-bag.css">
+<link rel="stylesheet" href="/css/content-pages.css">
+<link rel="stylesheet" href="/css/shop-checkout.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Order placed</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Confirmation</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="shop-bag-page shop-checkout-page" data-order-id="@orderId">
+    <div class="container">
+        <p id="confirm-status" class="shop-bag-flash" hidden></p>
+        <div id="confirm-missing" class="shop-bag-empty" hidden>
+            <h2>Order not found.</h2>
+            <p>This confirmation is only available for your own orders.</p>
+            <a class="shop-bag-cta" href="/Shop">Browse the Shop</a>
+        </div>
+
+        <div id="confirm-content" class="shop-checkout-layout" hidden>
+            <div class="contact-card">
+                <p class="shop-checkout-ok">Thank you. Your order is placed.</p>
+                <h3 id="confirm-number">Order</h3>
+                <p id="confirm-meta" class="shop-bag-note"></p>
+                <p id="confirm-pay" class="shop-bag-note"></p>
+                <div id="confirm-address" class="shop-checkout-address"></div>
+            </div>
+            <aside class="contact-card shop-checkout-summary">
+                <h3>Items</h3>
+                <div id="confirm-items" class="shop-checkout-items"></div>
+                <p class="shop-checkout-total">Total <strong id="confirm-total">₹0</strong></p>
+                <a id="confirm-order-link" class="shop-bag-cta" href="/Orders">View this order</a>
+                <a class="shop-bag-view" href="/Orders">My orders</a>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<script src="/js/shop-checkout.js"></script>

@@ -1,0 +1,125 @@
+.shop-orders-list {
+    display: grid;
+    gap: 14px;
+}
+
+.shop-orders-list[hidden] {
+    display: none;
+}
+
+.shop-orders-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 14px;
+    background: #fff;
+}
+
+.shop-orders-card__link {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+    min-width: 0;
+}
+
+.shop-orders-card__link:hover h3 {
+    color: #ff4545;
+}
+
+.shop-orders-card img,
+.shop-orders-fallback {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #f4f4f4;
+}
+
+.shop-orders-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 11px;
+}
+
+.shop-orders-card h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+}
+
+.shop-orders-card p {
+    margin: 0 0 8px;
+    color: #777;
+    font-size: 13px;
+}
+
+.shop-orders-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #f3f3f3;
+    color: #555;
+}
+
+.shop-orders-badge.is-placed {
+    background: #e8f5ee;
+    color: #2d6a4f;
+}
+
+.shop-orders-badge.is-progress {
+    background: #fff4e5;
+    color: #9a6700;
+}
+
+.shop-orders-badge.is-delivered {
+    background: #e8f1fb;
+    color: #1d4e89;
+}
+
+.shop-orders-badge.is-cancelled {
+    background: #fdeeee;
+    color: #c0392b;
+}
+
+.shop-orders-cancelled-note {
+    color: #c0392b;
+    font-weight: 600;
+    margin: 0 0 12px;
+}
+
+.shop-orders-cancelled-note[hidden] {
+    display: none;
+}
+
+.shop-orders-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+@media (max-width: 800px) {
+    .shop-orders-card,
+    .shop-orders-card__link {
+        grid-template-columns: 64px minmax(0, 1fr);
+    }
+
+    .shop-orders-card__link strong,
+    .shop-orders-card .shop-bag-remove {
+        grid-column: 1 / -1;
+    }
+
+    .shop-orders-card .shop-bag-remove {
+        justify-self: start;
+    }
+}

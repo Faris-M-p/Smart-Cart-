@@ -169,6 +169,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<CartInterface, CartRepository>();
         services.AddTransient<WishlistInterface, WishlistRepository>();
         services.AddTransient<UserAuthInterface, UserAuthRepository>();
+        services.AddTransient<OrderInterface, OrderRepository>();
         services.AddSingleton<UserJwtTokenService>();
         services.AddSingleton<IPasswordHasher<StorefrontUser>, PasswordHasher<StorefrontUser>>();
         

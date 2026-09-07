@@ -1,0 +1,56 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Order details";
+    var orderId = ViewBag.OrderId ?? 0;
+}
+
+<link rel="stylesheet" href="/css/shop-bag.css">
+<link rel="stylesheet" href="/css/content-pages.css">
+<link rel="stylesheet" href="/css/shop-checkout.css">
+<link rel="stylesheet" href="/css/shop-orders.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Order details</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Orders" asp-action="Index">Orders</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Details</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="shop-bag-page shop-orders-page shop-checkout-page" data-order-id="@orderId">
+    <div class="container">
+        <p id="order-status" class="shop-bag-flash" hidden></p>
+        <div id="order-missing" class="shop-bag-empty" hidden>
+            <h2>Order not found.</h2>
+            <p>This order is only available in your account.</p>
+            <a class="shop-bag-cta" href="/Orders">Back to My Orders</a>
+        </div>
+
+        <div id="order-content" class="shop-checkout-layout" hidden>
+            <div class="contact-card">
+                <p id="order-cancelled-note" class="shop-orders-cancelled-note" hidden></p>
+                <h3 id="order-number">Order</h3>
+                <p id="order-meta" class="shop-bag-note"></p>
+                <p id="order-pay" class="shop-bag-note"></p>
+                <div id="order-address" class="shop-checkout-address"></div>
+                <div class="shop-orders-detail-actions">
+                    <button type="button" id="order-cancel" class="shop-bag-remove" hidden>Cancel order</button>
+                    <a class="shop-bag-view" href="/Orders">Back to My Orders</a>
+                </div>
+            </div>
+            <aside class="contact-card shop-checkout-summary">
+                <h3>Items</h3>
+                <div id="order-items" class="shop-checkout-items"></div>
+                <p class="shop-checkout-total">Total <strong id="order-total">₹0</strong></p>
+                <a class="shop-bag-cta" href="/Shop">Continue shopping</a>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<script src="/js/shop-orders.js"></script>

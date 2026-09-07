@@ -1,0 +1,89 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Checkout";
+}
+
+<link rel="stylesheet" href="/css/shop-bag.css">
+<link rel="stylesheet" href="/css/content-pages.css">
+<link rel="stylesheet" href="/css/shop-checkout.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">Checkout</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Cart" asp-action="Index">Cart</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Checkout</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="shop-bag-page shop-checkout-page">
+    <div class="container">
+        <p id="checkout-status" class="shop-bag-flash" hidden></p>
+        <div id="checkout-empty" class="shop-bag-empty" hidden>
+            <h2>Nothing to checkout.</h2>
+            <p>Add a product to cart or use Buy Now from a product page.</p>
+            <a class="shop-bag-cta" href="/Shop">Browse the Shop</a>
+        </div>
+
+        <div id="checkout-content" class="shop-checkout-layout" hidden>
+            <form id="checkout-form" class="contact-card shop-checkout-form">
+                <p id="checkout-source" class="shop-bag-note"></p>
+
+                <h3>Delivery address</h3>
+                <div class="contact-form">
+                    <label for="checkout-name">Full name</label>
+                    <input id="checkout-name" name="receiverName" type="text" autocomplete="name" required>
+
+                    <label for="checkout-phone">Mobile number</label>
+                    <input id="checkout-phone" name="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" required>
+
+                    <label for="checkout-address">Address</label>
+                    <textarea id="checkout-address" name="addressLine" required></textarea>
+
+                    <div class="shop-checkout-row">
+                        <div>
+                            <label for="checkout-city">City</label>
+                            <input id="checkout-city" name="city" type="text" required>
+                        </div>
+                        <div>
+                            <label for="checkout-pincode">Pincode</label>
+                            <input id="checkout-pincode" name="pincode" type="text" inputmode="numeric" maxlength="6" required>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Payment</h3>
+                <div class="shop-checkout-payments">
+                    <label class="shop-checkout-pay is-selected">
+                        <input type="radio" name="paymentMethod" value="COD" checked>
+                        <span>
+                            <strong>Cash on Delivery</strong>
+                            <small>Pay when the order arrives. Available now.</small>
+                        </span>
+                    </label>
+                    <label class="shop-checkout-pay is-disabled">
+                        <input type="radio" name="paymentMethod" value="UPI" disabled>
+                        <span>
+                            <strong>UPI</strong>
+                            <small>Coming soon for this area.</small>
+                        </span>
+                    </label>
+                </div>
+            </form>
+
+            <aside class="contact-card shop-checkout-summary">
+                <h3>Order summary</h3>
+                <div id="checkout-items" class="shop-checkout-items"></div>
+                <p class="shop-checkout-total">Total <strong id="checkout-total">₹0</strong></p>
+                <button id="checkout-place" class="shop-bag-cta shop-checkout-place" type="submit" form="checkout-form">Place order</button>
+                <a class="shop-bag-view" href="/Cart">Back to cart</a>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<script src="/js/shop-checkout.js"></script>

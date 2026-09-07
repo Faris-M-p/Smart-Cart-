@@ -34,3 +34,15 @@ GO
 GO
 PRINT N'Users_AddFullName patch successfully completed.';
 GO
+:r .\01_Tables\Orders_AddCheckoutFields.sql
+GO
+PRINT N'Orders_AddCheckoutFields patch successfully completed.';
+GO
+:r .\01_Tables\OrderItems.sql
+GO
+PRINT N'OrderItems patch successfully completed.';
+GO
+:r .\01_Tables\OrderItems_AlignKeys.sql
+GO
+PRINT N'OrderItems_AlignKeys patch successfully completed.';
+GO

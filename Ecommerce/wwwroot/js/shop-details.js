@@ -498,12 +498,12 @@
 
     function bindActions() {
         if (buyNow) {
-            buyNow.addEventListener("click", async function () {
-                try {
-                    await addSelectedSku(true);
-                } catch (error) {
-                    showActionNote("Could not add to cart.", "", true);
+            buyNow.addEventListener("click", function () {
+                if (!state.selectedSku || !(state.selectedSku.inStock || state.selectedSku.InStock)) {
+                    showActionNote("This variant is out of stock.", "", true);
+                    return;
                 }
+                window.location.href = "/Checkout?buyNow=1&variantId=" + encodeURIComponent(skuId(state.selectedSku)) + "&qty=1";
             });
         }
         if (addCart) {

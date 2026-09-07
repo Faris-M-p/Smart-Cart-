@@ -110,6 +110,12 @@
                                         <span class="header__account--btn__text">Logout</span>
                                     </a>
                                 </li>
+                                <li class="header__account--items">
+                                    <a class="header__account--btn" asp-controller="Orders" asp-action="Index">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M80 176l176-88 176 88-176 88-176-88z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><path d="M80 176v160l176 88 176-88V176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><path d="M256 264v160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>
+                                        <span class="header__account--btn__text">Orders</span>
+                                    </a>
+                                </li>
                                 <li class="header__account--items d-none d-lg-block">
                                     <a class="header__account--btn" asp-controller="Wishlist" asp-action="Index">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="28.51" height="23.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
@@ -182,6 +188,12 @@
                                     <a class="header__account--btn" href="#">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M304 336v40a40 40 0 01-40 40H104a40 40 0 01-40-40V136a40 40 0 0140-40h152a40 40 0 0140 40v40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><polyline points="368 336 448 256 368 176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><line x1="176" y1="256" x2="432" y2="256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>
                                         <span class="visually-hidden">Logout</span>
+                                    </a>
+                                </li>
+                                <li class="header__account--items header__account2--items">
+                                    <a class="header__account--btn" asp-controller="Orders" asp-action="Index">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M80 176l176-88 176 88-176 88-176-88z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><path d="M80 176v160l176 88 176-88V176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><path d="M256 264v160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>
+                                        <span class="visually-hidden">Orders</span>
                                     </a>
                                 </li>
                                 <li class="header__account--items header__account2--items d-none d-lg-block">
@@ -260,6 +272,9 @@
                             </li>
                             <li class="offcanvas__menu_li">
                             <a class="offcanvas__menu_item" asp-controller="Shop" asp-action="Index">Shop</a>
+                            </li>
+                            <li class="offcanvas__menu_li">
+                                <a class="offcanvas__menu_item" asp-controller="Orders" asp-action="Index">My Orders</a>
                             </li>
                             <li class="offcanvas__menu_li">
                                 <a class="offcanvas__menu_item" asp-controller="Home" asp-action="Blog">Blog</a>
@@ -446,7 +461,7 @@
                 </div>
                 <div class="minicart__button d-flex justify-content-center">
                     <a class="primary__btn minicart__button--link" asp-controller="Cart" asp-action="Index">View cart</a>
-                    <a class="primary__btn minicart__button--link" href="checkout.html">Checkout</a>
+                    <a class="primary__btn minicart__button--link" asp-controller="Checkout" asp-action="Index">Checkout</a>
                 </div>
             </div>
             <!-- End offCanvas minicart -->
@@ -582,6 +597,7 @@
                             </h2>
                             <ul class="footer__widget--menu footer__widget--inner">
                                 <li class="footer__widget--menu__list"><a class="footer__widget--menu__text" asp-controller="Account" asp-action="Login">My Account</a></li>
+                                <li class="footer__widget--menu__list"><a class="footer__widget--menu__text" asp-controller="Orders" asp-action="Index">My Orders</a></li>
                                 <li class="footer__widget--menu__list"><a class="footer__widget--menu__text" asp-controller="Wishlist" asp-action="Index">Wishlist</a></li>
                                 <li class="footer__widget--menu__list"><a class="footer__widget--menu__text" asp-controller="Account" asp-action="Login">Login</a></li>
                                 <li class="footer__widget--menu__list"><a class="footer__widget--menu__text" href="privacy-policy.html">Privacy Policy</a></li>

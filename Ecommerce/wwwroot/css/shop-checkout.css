@@ -1,0 +1,131 @@
+.shop-checkout-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.shop-checkout-form h3,
+.shop-checkout-summary h3 {
+    margin: 20px 0 12px;
+}
+
+.shop-checkout-form h3:first-child,
+.shop-checkout-summary h3:first-child {
+    margin-top: 0;
+}
+
+.shop-checkout-row {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 12px;
+}
+
+.shop-checkout-payments {
+    display: grid;
+    gap: 10px;
+}
+
+.shop-checkout-pay {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.shop-checkout-pay.is-selected {
+    border-color: #ff4545;
+    background: #fff5f5;
+}
+
+.shop-checkout-pay.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #fafafa;
+}
+
+.shop-checkout-pay small {
+    display: block;
+    color: #666;
+    margin-top: 4px;
+}
+
+.shop-checkout-items {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.shop-checkout-line {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.shop-checkout-line img,
+.shop-checkout-fallback {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #f4f4f4;
+}
+
+.shop-checkout-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 11px;
+}
+
+.shop-checkout-line h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+}
+
+.shop-checkout-line p {
+    margin: 0;
+    color: #777;
+    font-size: 13px;
+}
+
+.shop-checkout-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    margin: 0 0 16px;
+}
+
+.shop-checkout-place {
+    width: 100%;
+    text-align: center;
+    border: 0;
+    margin-bottom: 12px;
+}
+
+.shop-checkout-summary .shop-bag-view {
+    display: block;
+    text-align: center;
+}
+
+.shop-checkout-ok {
+    color: #2d6a4f;
+    font-weight: 600;
+}
+
+.shop-checkout-address {
+    color: #444;
+    line-height: 1.6;
+}
+
+@media (max-width: 800px) {
+    .shop-checkout-layout,
+    .shop-checkout-row {
+        grid-template-columns: 1fr;
+    }
+}

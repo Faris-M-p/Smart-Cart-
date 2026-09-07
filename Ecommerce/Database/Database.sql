@@ -190,6 +190,13 @@ GO
 PRINT N'Users / Auth patch module successfully completed.';
 GO
 
+PRINT N'--- Users / Orders ---';
+GO
+:r .\02_Procedures\02_Users\05_Orders\Patch.sql
+GO
+PRINT N'Users / Orders patch module successfully completed.';
+GO
+
 PRINT N'--- Common / Stock ---';
 GO
 :r .\02_Procedures\03_Common\01_Stock\Patch.sql

@@ -1,0 +1,40 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "My Orders";
+}
+
+<link rel="stylesheet" href="/css/shop-bag.css">
+<link rel="stylesheet" href="/css/shop-orders.css">
+
+<section class="breadcrumb__section breadcrumb__bg">
+    <div class="container">
+        <div class="breadcrumb__content text-center">
+            <h1 class="breadcrumb__content--title text-white mb-25">My Orders</h1>
+            <ul class="breadcrumb__content--menu d-flex justify-content-center">
+                <li class="breadcrumb__content--menu__items"><a class="text-white" asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb__content--menu__items"><span class="text-white">Orders</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="shop-bag-page shop-orders-page">
+    <div class="container">
+        <p id="orders-status" class="shop-bag-flash" hidden></p>
+        <div id="orders-empty" class="shop-bag-empty" hidden>
+            <div class="shop-bag-empty-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 512 512">
+                    <path d="M80 176l176-88 176 88-176 88-176-88z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                    <path d="M80 176v160l176 88 176-88V176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                    <path d="M256 264v160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                </svg>
+            </div>
+            <h2>No orders yet.</h2>
+            <p>When you place an order, it will show up here.</p>
+            <a class="shop-bag-cta" href="/Shop">Browse the Shop</a>
+        </div>
+        <div id="orders-list" class="shop-orders-list" hidden></div>
+    </div>
+</section>
+
+<script src="/js/shop-orders.js"></script>
