@@ -26,30 +26,19 @@
     }
 
     async function refreshAccount() {
-        var loginLinks = document.querySelectorAll("[data-account-login]");
-        var registerLinks = document.querySelectorAll("[data-account-register]");
-        var userLabels = document.querySelectorAll("[data-account-name]");
-        var logoutButtons = document.querySelectorAll("[data-account-logout]");
+        var loginItems = document.querySelectorAll("[data-account-login]");
+        var logoutItems = document.querySelectorAll("[data-account-logout]");
 
         try {
             var response = await fetch("/Account/Me");
             if (!response.ok) {
                 throw new Error("guest");
             }
-            var session = await response.json();
-            var name = session.name || session.Name || "Account";
-            loginLinks.forEach(function (node) { node.hidden = true; });
-            registerLinks.forEach(function (node) { node.hidden = true; });
-            userLabels.forEach(function (node) {
-                node.hidden = false;
-                node.textContent = name;
-            });
-            logoutButtons.forEach(function (node) { node.hidden = false; });
+            loginItems.forEach(function (node) { node.hidden = true; });
+            logoutItems.forEach(function (node) { node.hidden = false; });
         } catch (error) {
-            loginLinks.forEach(function (node) { node.hidden = false; });
-            registerLinks.forEach(function (node) { node.hidden = false; });
-            userLabels.forEach(function (node) { node.hidden = true; });
-            logoutButtons.forEach(function (node) { node.hidden = true; });
+            loginItems.forEach(function (node) { node.hidden = false; });
+            logoutItems.forEach(function (node) { node.hidden = true; });
         }
     }
 
@@ -62,6 +51,40 @@
         await fetch("/Account/Logout", { method: "POST" });
         window.location.href = "/Account/Login";
     });
+
+    window.smartCartFlash = function (el, options) {
+        if (!el) {
+            return;
+        }
+
+        var settings = options || {};
+        var message = settings.message || "";
+        var html = settings.html || "";
+        var persist = !!settings.persist;
+        var duration = Number(settings.duration || 3200);
+
+        if (el._smartCartFlashTimer) {
+            window.clearTimeout(el._smartCartFlashTimer);
+            el._smartCartFlashTimer = 0;
+        }
+
+        el.textContent = "";
+        if (message) {
+            el.appendChild(document.createTextNode(message));
+        }
+        if (html) {
+            el.insertAdjacentHTML("beforeend", html);
+        }
+        el.hidden = !message && !html;
+
+        if (!persist && !el.hidden) {
+            el._smartCartFlashTimer = window.setTimeout(function () {
+                el.hidden = true;
+                el.textContent = "";
+                el._smartCartFlashTimer = 0;
+            }, duration);
+        }
+    };
 
     window.refreshSmartCartBag = async function () {
         try {

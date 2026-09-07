@@ -31,7 +31,7 @@
                 <input id="login-password" name="password" type="password" required>
                 <button type="submit">Login</button>
             </form>
-            <p class="contact-note">New here? <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@returnUrl">Create an account</a></p>
+            <p class="contact-note auth-switch">New here? <a class="auth-link" href="@Url.Action("Register", "Account", new { returnUrl })">Create an account</a></p>
         </div>
     </div>
 </section>

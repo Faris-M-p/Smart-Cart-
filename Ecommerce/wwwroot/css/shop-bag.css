@@ -12,15 +12,71 @@
     margin: 0 0 20px;
 }
 
+.shop-bag-flash {
+    margin: 0 0 16px;
+    color: #2d6a4f;
+    font-weight: 500;
+}
+
+.shop-bag-flash[hidden] {
+    display: none;
+}
+
 .shop-bag-empty {
-    padding: 28px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 320px;
+    padding: 48px 20px;
     color: #666;
+    border: 1px dashed #e6e6e6;
+    border-radius: 12px;
+    background: #fafafa;
+}
+
+.shop-bag-empty[hidden] {
+    display: none;
+}
+
+.shop-bag-empty-icon {
+    width: 88px;
+    height: 88px;
+    margin-bottom: 16px;
+    border-radius: 50%;
+    background: #fff5f5;
+    color: #ff4545;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shop-bag-empty-icon svg {
+    width: 40px;
+    height: 40px;
+}
+
+.shop-bag-empty h2 {
+    margin: 0 0 8px;
+    color: #222;
+    font-size: 24px;
+}
+
+.shop-bag-empty p {
+    margin: 0 0 20px;
+    max-width: 360px;
 }
 
 .shop-cart-list {
     display: grid;
     gap: 14px;
     margin-bottom: 24px;
+}
+
+.shop-cart-list[hidden],
+.shop-wishlist-grid[hidden] {
+    display: none;
 }
 
 .shop-cart-line {
@@ -34,6 +90,13 @@
     background: #fff;
 }
 
+.shop-bag-media {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.shop-cart-line .shop-bag-media,
 .shop-cart-line img,
 .shop-cart-fallback {
     width: 88px;
@@ -41,6 +104,21 @@
     object-fit: cover;
     border-radius: 8px;
     background: #f4f4f4;
+}
+
+.shop-bag-view {
+    display: inline-block;
+    margin-top: 8px;
+    color: #222;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.shop-cart-line h3 a:hover,
+.shop-wishlist-card h3 a:hover,
+.shop-bag-view:hover {
+    color: #ff4545;
 }
 
 .shop-cart-fallback {
@@ -57,6 +135,7 @@
 }
 
 .shop-cart-line h3 a {
+    color: inherit;
     text-decoration: none;
 }
 
@@ -117,9 +196,17 @@
 }
 
 .shop-bag-remove {
-    background: transparent;
+    background: #fff;
     color: #c0392b;
-    padding: 0;
+    border: 1px solid #f0b6b6;
+    padding: 8px 14px;
+    min-height: 36px;
+    font: inherit;
+    font-weight: 600;
+}
+
+.shop-bag-remove:hover {
+    background: #fff5f5;
 }
 
 .shop-cart-summary {
@@ -135,6 +222,12 @@
     font-size: 20px;
 }
 
+.shop-bag-summary-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .shop-bag-cta {
     display: inline-block;
     background: #ff4545;
@@ -142,6 +235,7 @@
     padding: 10px 16px;
     text-decoration: none;
     font-weight: 600;
+    border-radius: 6px;
 }
 
 .shop-wishlist-grid {
@@ -157,14 +251,34 @@
     background: #fff;
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
-.shop-wishlist-card img,
-.shop-wishlist-fallback {
+.shop-wishlist-link {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    color: inherit;
+    text-decoration: none;
+}
+
+.shop-wishlist-media {
+    display: block;
+    position: relative;
     width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
+    aspect-ratio: 1 / 1;
     background: #f4f4f4;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.shop-wishlist-media img,
+.shop-wishlist-fallback {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .shop-wishlist-fallback {
@@ -172,19 +286,35 @@
     align-items: center;
     justify-content: center;
     color: #999;
+    font-size: 13px;
+    background: #f4f4f4;
 }
 
 .shop-wishlist-card .shop-wishlist-body {
-    padding: 12px 14px 16px;
+    padding: 12px 14px 8px;
+    flex: 1;
 }
 
 .shop-wishlist-card h3 {
     margin: 0 0 8px;
     font-size: 16px;
+    min-height: 2.4em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.shop-wishlist-card h3 a {
-    text-decoration: none;
+.shop-wishlist-link:hover h3 {
+    color: #ff4545;
+}
+
+.shop-wishlist-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 14px 16px;
 }
 
 .header__account--btn {

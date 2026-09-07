@@ -5,6 +5,7 @@
     const loaderEl = document.getElementById("shop-loader");
     const endEl = document.getElementById("shop-end");
     const emptyEl = document.getElementById("shop-empty");
+    const actionNote = document.getElementById("shop-action-note");
     const sentinel = document.getElementById("shop-scroll-sentinel");
     const searchInput = document.getElementById("shop-search");
     const categorySelect = document.getElementById("shop-category");
@@ -313,6 +314,15 @@
                 state.wishIds.add(id);
             } else {
                 state.wishIds.delete(id);
+            }
+            var card = button.closest("article");
+            var name = card && card.querySelector("h3")
+                ? card.querySelector("h3").textContent.trim()
+                : "Item";
+            if (window.smartCartFlash) {
+                window.smartCartFlash(actionNote, {
+                    message: name + (added ? " added to wishlist." : " removed from wishlist.")
+                });
             }
             if (window.refreshSmartCartBag) {
                 window.refreshSmartCartBag();

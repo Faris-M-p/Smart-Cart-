@@ -98,15 +98,17 @@
                         </div>
                         <div class="header__account header__sticky--none">
                             <ul class="d-flex">
-                                <li class="header__account--items">
-                                    <a class="header__account--btn" asp-controller="Account" asp-action="Login" data-account-login>
+                                <li class="header__account--items" data-account-login>
+                                    <a class="header__account--btn" asp-controller="Account" asp-action="Login">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M344 144c-3.92 52.87-44 96-88 96s-84.15-43.12-88-96c-4-55 35-96 88-96s92 42 88 96z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><path d="M256 304c-87 0-175.3 48-191.64 138.6C62.39 453.52 68.57 464 80 464h352c11.44 0 17.62-10.48 15.65-21.4C431.3 352 343 304 256 304z" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
                                         <span class="header__account--btn__text">Login</span>
                                     </a>
-                                    <a class="header__account--btn" asp-controller="Account" asp-action="Register" data-account-register>
-                                        <span class="header__account--btn__text">Register</span>
+                                </li>
+                                <li class="header__account--items" data-account-logout hidden>
+                                    <a class="header__account--btn" href="#">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M304 336v40a40 40 0 01-40 40H104a40 40 0 01-40-40V136a40 40 0 0140-40h152a40 40 0 0140 40v40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><polyline points="368 336 448 256 368 176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><line x1="176" y1="256" x2="432" y2="256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>
+                                        <span class="header__account--btn__text">Logout</span>
                                     </a>
-                                    <span class="header__account--btn__text" data-account-name hidden></span>
-                                    <button class="header__account--btn" type="button" data-account-logout hidden>Logout</button>
                                 </li>
                                 <li class="header__account--items d-none d-lg-block">
                                     <a class="header__account--btn" asp-controller="Wishlist" asp-action="Index">
@@ -170,11 +172,17 @@
                                         <span class="visually-hidden">Search</span>
                                     </a>
                                 </li>
-                                <li class="header__account--items header__account2--items">
-                                    <a class="header__account--btn" asp-controller="Account" asp-action="Login" data-account-login>Login</a>
-                                    <a class="header__account--btn" asp-controller="Account" asp-action="Register" data-account-register>Register</a>
-                                    <span class="header__account--btn__text" data-account-name hidden></span>
-                                    <button class="header__account--btn" type="button" data-account-logout hidden>Logout</button>
+                                <li class="header__account--items header__account2--items" data-account-login>
+                                    <a class="header__account--btn" asp-controller="Account" asp-action="Login">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M344 144c-3.92 52.87-44 96-88 96s-84.15-43.12-88-96c-4-55 35-96 88-96s92 42 88 96z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><path d="M256 304c-87 0-175.3 48-191.64 138.6C62.39 453.52 68.57 464 80 464h352c11.44 0 17.62-10.48 15.65-21.4C431.3 352 343 304 256 304z" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
+                                        <span class="visually-hidden">Login</span>
+                                    </a>
+                                </li>
+                                <li class="header__account--items header__account2--items" data-account-logout hidden>
+                                    <a class="header__account--btn" href="#">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="26.51" height="23.443" viewBox="0 0 512 512"><path d="M304 336v40a40 40 0 01-40 40H104a40 40 0 01-40-40V136a40 40 0 0140-40h152a40 40 0 0140 40v40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><polyline points="368 336 448 256 368 176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><line x1="176" y1="256" x2="432" y2="256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>
+                                        <span class="visually-hidden">Logout</span>
+                                    </a>
                                 </li>
                                 <li class="header__account--items header__account2--items d-none d-lg-block">
                                     <a class="header__account--btn" asp-controller="Wishlist" asp-action="Index">
@@ -264,7 +272,13 @@
                                 <span class="offcanvas__account--items__icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20.51" height="19.443" viewBox="0 0 512 512"><path d="M344 144c-3.92 52.87-44 96-88 96s-84.15-43.12-88-96c-4-55 35-96 88-96s92 42 88 96z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><path d="M256 304c-87 0-175.3 48-191.64 138.6C62.39 453.52 68.57 464 80 464h352c11.44 0 17.62-10.48 15.65-21.4C431.3 352 343 304 256 304z" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
                                 </span>
-                                <span class="offcanvas__account--items__label">Login / Register</span>
+                                <span class="offcanvas__account--items__label">Login</span>
+                            </a>
+                            <a class="offcanvas__account--items__btn d-flex align-items-center" href="#" data-account-logout hidden>
+                                <span class="offcanvas__account--items__icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20.51" height="19.443" viewBox="0 0 512 512"><path d="M304 336v40a40 40 0 01-40 40H104a40 40 0 01-40-40V136a40 40 0 0140-40h152a40 40 0 0140 40v40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><polyline points="368 336 448 256 368 176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><line x1="176" y1="256" x2="432" y2="256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>
+                                </span>
+                                <span class="offcanvas__account--items__label">Logout</span>
                             </a>
                         </div>
                         <div class="language__currency">

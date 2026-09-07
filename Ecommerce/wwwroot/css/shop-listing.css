@@ -277,6 +277,11 @@
     color: #666;
 }
 
+#shop-action-note {
+    text-align: left;
+    padding: 0 0 12px;
+}
+
 .shop-status[hidden] {
     display: none;
 }

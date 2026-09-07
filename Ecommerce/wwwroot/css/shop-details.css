@@ -178,9 +178,29 @@
     cursor: not-allowed;
 }
 
+.shop-details-btn.is-in-cart {
+    background: #ff4545;
+}
+
 .shop-details-action-note {
     margin: 12px 0 0;
-    color: #666;
+    color: #2d6a4f;
+    font-weight: 500;
+    min-height: 1.4em;
+}
+
+.shop-details-action-note[hidden] {
+    display: none;
+}
+
+.shop-details-action-note a {
+    color: #ff4545;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.shop-details-action-note a:hover {
+    text-decoration: underline;
 }
 
 .shop-reviews {

@@ -46,7 +46,8 @@
 
     const state = {
         product: null,
-        selectedSku: null
+        selectedSku: null,
+        cartVariantIds: new Set()
     };
 
     function escapeHtml(value) {
@@ -65,12 +66,67 @@
         return "★★★★★".slice(0, rating) + "☆☆☆☆☆".slice(rating);
     }
 
-    function showActionNote(message) {
+    function requestedVariantId() {
+        return Number(new URLSearchParams(window.location.search).get("variant") || 0);
+    }
+
+    function showActionNote(message, extraHtml, persist) {
+        if (window.smartCartFlash) {
+            window.smartCartFlash(actionNote, {
+                message: message || "",
+                html: extraHtml || "",
+                persist: !!persist
+            });
+            return;
+        }
         if (!actionNote) {
             return;
         }
-        actionNote.textContent = message;
-        actionNote.hidden = false;
+        actionNote.textContent = "";
+        if (message) {
+            actionNote.appendChild(document.createTextNode(message));
+        }
+        if (extraHtml) {
+            actionNote.insertAdjacentHTML("beforeend", extraHtml);
+        }
+        actionNote.hidden = !message && !extraHtml;
+    }
+
+    function productName() {
+        return state.product && (state.product.name || state.product.Name) || "Item";
+    }
+
+    function variantInCart() {
+        var id = state.selectedSku && skuId(state.selectedSku);
+        return !!(id && state.cartVariantIds.has(Number(id)));
+    }
+
+    function syncCartButton() {
+        if (!addCart) {
+            return;
+        }
+        var inCart = variantInCart();
+        var inStock = !!(state.selectedSku && (state.selectedSku.inStock || state.selectedSku.InStock));
+        addCart.textContent = inCart ? "Go to Cart" : "Add to Cart";
+        addCart.disabled = !state.selectedSku || (!inCart && !inStock);
+        addCart.classList.toggle("is-in-cart", inCart);
+    }
+
+    async function loadCartVariants() {
+        try {
+            var response = await fetch("/Cart/Get");
+            if (!response.ok) {
+                return;
+            }
+            var page = await response.json();
+            var items = (page && (page.items || page.Items)) || [];
+            state.cartVariantIds = new Set(items.map(function (item) {
+                return Number(item.productVariantId || item.ProductVariantId);
+            }).filter(Boolean));
+        } catch (error) {
+            state.cartVariantIds = new Set();
+        }
+        syncCartButton();
     }
 
     function readList(product) {
@@ -232,7 +288,7 @@
         }
 
         if (buyNow) buyNow.disabled = !sku || !inStock;
-        if (addCart) addCart.disabled = !sku || !inStock;
+        syncCartButton();
 
         renderGallery(currentImages(), name);
         if (renderOptions) {
@@ -330,7 +386,7 @@
         var subcategory = product.subCategoryName || product.SubCategoryName || "";
         var brand = product.brandName || product.BrandName || "";
         var description = product.description || product.Description || "";
-        var selectedId = product.selectedVariantId || product.SelectedVariantId || 0;
+        var selectedId = requestedVariantId() || product.selectedVariantId || product.SelectedVariantId || 0;
 
         document.getElementById("details-crumb-name").textContent = name;
         document.getElementById("details-name").textContent = name;
@@ -344,6 +400,7 @@
         if (statusEl) statusEl.hidden = true;
         if (contentEl) contentEl.hidden = false;
         loadWishState();
+        loadCartVariants();
     }
 
     function selectedLabel() {
@@ -388,7 +445,7 @@
 
     async function addSelectedSku(redirectToCart) {
         if (!state.selectedSku || !(state.selectedSku.inStock || state.selectedSku.InStock)) {
-            showActionNote("This variant is out of stock.");
+            showActionNote("This variant is out of stock.", "", true);
             return false;
         }
 
@@ -401,9 +458,12 @@
         }
 
         if (!(result.statusCode || result.StatusCode)) {
-            showActionNote(result.responseMsg || result.ResponseMsg || "Could not add to cart.");
+            showActionNote(result.responseMsg || result.ResponseMsg || "Could not add to cart.", "", true);
             return false;
         }
+
+        state.cartVariantIds.add(Number(skuId(state.selectedSku)));
+        syncCartButton();
 
         if (window.refreshSmartCartBag) {
             window.refreshSmartCartBag();
@@ -442,16 +502,20 @@
                 try {
                     await addSelectedSku(true);
                 } catch (error) {
-                    showActionNote("Could not add to cart. Apply the cart SQL scripts and try again.");
+                    showActionNote("Could not add to cart.", "", true);
                 }
             });
         }
         if (addCart) {
             addCart.addEventListener("click", async function () {
+                if (variantInCart()) {
+                    window.location.href = "/Cart";
+                    return;
+                }
                 try {
                     await addSelectedSku(false);
                 } catch (error) {
-                    showActionNote("Could not add to cart. Apply the cart SQL scripts and try again.");
+                    showActionNote("Could not add to cart.", "", true);
                 }
             });
         }
@@ -467,17 +531,17 @@
                         return;
                     }
                     if (!(result.statusCode || result.StatusCode)) {
-                        showActionNote(result.responseMsg || result.ResponseMsg || "Could not update wishlist.");
+                        showActionNote(result.responseMsg || result.ResponseMsg || "Could not update wishlist.", "", true);
                         return;
                     }
                     var added = Number(result.responseCode || result.ResponseCode) > 0;
                     setWishState(added);
-                    showActionNote(result.responseMsg || result.ResponseMsg || (added ? "Added to wishlist." : "Removed from wishlist."));
+                    showActionNote(productName() + (added ? " added to wishlist." : " removed from wishlist."));
                     if (window.refreshSmartCartBag) {
                         window.refreshSmartCartBag();
                     }
                 } catch (error) {
-                    showActionNote("Could not update wishlist. Apply the wishlist SQL scripts and try again.");
+                    showActionNote("Could not update wishlist.", "", true);
                 }
             });
         }

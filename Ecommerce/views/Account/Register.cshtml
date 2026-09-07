@@ -33,7 +33,7 @@
                 <input id="register-password" name="password" type="password" required minlength="6">
                 <button type="submit">Create account</button>
             </form>
-            <p class="contact-note">Already have an account? <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl">Login</a></p>
+            <p class="contact-note auth-switch">Already have an account? <a class="auth-link" href="@Url.Action("Login", "Account", new { returnUrl })">Login</a></p>
         </div>
     </div>
 </section>

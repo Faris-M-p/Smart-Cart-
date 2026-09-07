@@ -19,9 +19,18 @@
 
 <section class="shop-bag-page">
     <div class="container">
-        <p class="shop-bag-note">Saved with the heart on product details. Up to 10 products. Login is not required yet.</p>
-        <p id="wishlist-status" class="shop-status" hidden></p>
-        <p id="wishlist-empty" class="shop-bag-empty" hidden>Your wishlist is empty. <a href="/Shop">Find something to save</a></p>
+        <p id="wishlist-guide" class="shop-bag-note" hidden>Saved with the heart on Shop or product details. Open a product to pick a SKU and add it to cart. Up to 10 products.</p>
+        <p id="wishlist-status" class="shop-bag-flash" hidden></p>
+        <div id="wishlist-empty" class="shop-bag-empty" hidden>
+            <div class="shop-bag-empty-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 512 512">
+                    <path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path>
+                </svg>
+            </div>
+            <h2>Your wishlist is empty.</h2>
+            <p>Save products you like, then open them to add a SKU to cart.</p>
+            <a class="shop-bag-cta" href="/Shop">Browse the Shop</a>
+        </div>
         <div id="wishlist-grid" class="shop-wishlist-grid"></div>
     </div>
 </section>
