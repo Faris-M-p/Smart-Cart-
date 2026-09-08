@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Filters;
+using Ecommerce.Helpers.Common;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.SubCategoryModel;
 using static Ecommerce.Models.Admin.CategoryModel;
@@ -12,11 +13,19 @@ namespace Ecommerce.Controllers.Admin
     {
         private readonly ISubCategoryInterface _subCategoryInterface;
         private readonly ICategoryInterface _categoryInterface;
+        private readonly CommonImageService _commonImageService;
+        private readonly IWebHostEnvironment _environment;
 
-        public SubCategoryController(ISubCategoryInterface subCategoryInterface, ICategoryInterface categoryInterface)
+        public SubCategoryController(
+            ISubCategoryInterface subCategoryInterface,
+            ICategoryInterface categoryInterface,
+            CommonImageService commonImageService,
+            IWebHostEnvironment environment)
         {
             _subCategoryInterface = subCategoryInterface;
             _categoryInterface = categoryInterface;
+            _commonImageService = commonImageService;
+            _environment = environment;
         }
 
         [Route("")]
@@ -66,8 +75,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("SubCategories.Create")]
-        public async Task<IActionResult> Create([FromBody] SubCategoryUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Create([FromForm] SubCategoryUpdateInputVIEW viewInput)
         {
             try
             {
@@ -80,19 +90,38 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
+                if (viewInput.SubCategoryImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.SubCategoryImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
+                }
+
                 var input = new SubCategoryUpdateInput
                 {
-                    UserAction = 1, // 1 = Add
+                    UserAction = 1,
                     SubCategoryID = viewInput.SubCategoryID,
                     SubCategoryName = viewInput.SubCategoryName,
                     FK_Category = viewInput.FK_Category,
                     Description = viewInput.Description,
                     IsActive = viewInput.IsActive ?? true,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _subCategoryInterface.CreateSubCategoryAsync(input);
+                if (result.StatusCode && (viewInput.SubCategoryImage != null || viewInput.RemoveImage))
+                {
+                    var subCategoryId = (int)result.ResponseCode;
+                    var imageUrl = await _commonImageService.SaveSingleImageAsync(
+                        viewInput.SubCategoryImage,
+                        _environment.WebRootPath,
+                        "subcategories",
+                        subCategoryId);
+                    await _subCategoryInterface.SetImageUrlAsync(subCategoryId, imageUrl);
+                }
+
                 return Ok(result);
             }
             catch
@@ -103,8 +132,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("SubCategories.Edit")]
-        public async Task<IActionResult> Update([FromBody] SubCategoryUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Update([FromForm] SubCategoryUpdateInputVIEW viewInput)
         {
             try
             {
@@ -117,19 +147,37 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
+                if (viewInput.SubCategoryImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.SubCategoryImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
+                }
+
                 var input = new SubCategoryUpdateInput
                 {
-                    UserAction = 2, // 2 = Edit
+                    UserAction = 2,
                     SubCategoryID = viewInput.SubCategoryID,
                     SubCategoryName = viewInput.SubCategoryName,
                     FK_Category = viewInput.FK_Category,
                     Description = viewInput.Description,
                     IsActive = viewInput.IsActive ?? true,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _subCategoryInterface.UpdateSubCategoryAsync(input);
+                if (result.StatusCode && (viewInput.SubCategoryImage != null || viewInput.RemoveImage))
+                {
+                    var imageUrl = await _commonImageService.SaveSingleImageAsync(
+                        viewInput.SubCategoryImage,
+                        _environment.WebRootPath,
+                        "subcategories",
+                        viewInput.SubCategoryID);
+                    await _subCategoryInterface.SetImageUrlAsync(viewInput.SubCategoryID, imageUrl);
+                }
+
                 return Ok(result);
             }
             catch

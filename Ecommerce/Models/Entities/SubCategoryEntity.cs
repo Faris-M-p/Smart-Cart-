@@ -26,6 +26,9 @@ namespace Ecommerce.Models.Entities
 
         public bool IsActive { get; set; } = true;
 
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
+
         public bool? Cancelled { get; set; }
 
         public DateTime? CancelledOn { get; set; }

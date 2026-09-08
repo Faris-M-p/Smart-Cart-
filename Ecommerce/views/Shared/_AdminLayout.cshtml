@@ -30,7 +30,40 @@
 <link rel="stylesheet" href="/Admin/assets/css/style-preset.css" >
 <!-- [Empty State CSS] -->
 <link rel="stylesheet" href="/Admin/assets/css/empty-state.css?v=listing-empty-1" >
-<style>.js-permission-hidden { display: none !important; }</style>
+<link rel="stylesheet" href="/Admin/assets/css/admin-list-media.css?v=list-media-1" >
+<style>
+  .js-permission-hidden { display: none !important; }
+  .pc-sidebar .pc-submenu .pc-link {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+  .pc-sidebar .pc-submenu .pc-micon {
+    flex-shrink: 0;
+    margin-right: 10px;
+    height: 20px;
+    width: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pc-sidebar .pc-submenu .pc-micon i {
+    font-size: 16px;
+  }
+  .pc-sidebar .pc-submenu .pc-mtext {
+    min-width: 0;
+  }
+  .pc-sidebar .pc-submenu .pc-arrow {
+    float: none;
+    margin-left: auto;
+  }
+  .pc-sidebar .pc-navbar > .pc-item .pc-submenu .pc-link {
+    padding-left: 42px;
+  }
+  .pc-sidebar .pc-navbar > .pc-item .pc-submenu .pc-submenu .pc-link {
+    padding-left: 62px;
+  }
+</style>
 <script src="/Admin/assets/js/common/admin-auth.js"></script>
 <script src="/Admin/assets/js/common/admin-permissions.js"></script>
 <script>
@@ -77,33 +110,64 @@
           </a>
           <ul class="pc-submenu">
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Category" data-permission="Categories.View">Categories</a>
+              <a class="pc-link" href="/Admin/Category" data-permission="Categories.View">
+                <span class="pc-micon"><i class="ti ti-folders"></i></span>
+                <span class="pc-mtext">Categories</span>
+              </a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/SubCategory" data-permission="SubCategories.View">Sub Categories</a>
+              <a class="pc-link" href="/Admin/SubCategory" data-permission="SubCategories.View">
+                <span class="pc-micon"><i class="ti ti-sitemap"></i></span>
+                <span class="pc-mtext">Sub Categories</span>
+              </a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Brand" data-permission="Brands.View">Brands</a>
-            </li>
-            <li class="pc-item">
-              <a class="pc-link" href="/Admin/Product" data-permission="Products.View">Products</a>
+              <a class="pc-link" href="/Admin/Brand" data-permission="Brands.View">
+                <span class="pc-micon"><i class="ti ti-tag"></i></span>
+                <span class="pc-mtext">Brands</span>
+              </a>
             </li>
             <li class="pc-item pc-hasmenu">
               <a href="#!" class="pc-link">
-                Variants
+                <span class="pc-micon"><i class="ti ti-package"></i></span>
+                <span class="pc-mtext">Products</span>
                 <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
               </a>
               <ul class="pc-submenu">
                 <li class="pc-item">
-                  <a class="pc-link" href="/Admin/Variant" data-permission="Variants.View">Variants</a>
+                  <a class="pc-link" href="/Admin/Product" data-permission="Products.View">
+                    <span class="pc-micon"><i class="ti ti-box"></i></span>
+                    <span class="pc-mtext">Products</span>
+                  </a>
                 </li>
                 <li class="pc-item">
-                  <a class="pc-link" href="/Admin/VariantValue" data-permission="VariantValues.View">Variant Values</a>
+                  <a class="pc-link" href="/Admin/ProductVariant" data-permission="ProductVariants.View">
+                    <span class="pc-micon"><i class="ti ti-barcode"></i></span>
+                    <span class="pc-mtext">SKU</span>
+                  </a>
                 </li>
               </ul>
             </li>
-            <li class="pc-item">
-              <a class="pc-link" href="/Admin/ProductVariant" data-permission="ProductVariants.View">Product Variants / SKU</a>
+            <li class="pc-item pc-hasmenu">
+              <a href="#!" class="pc-link">
+                <span class="pc-micon"><i class="ti ti-palette"></i></span>
+                <span class="pc-mtext">Variants</span>
+                <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
+              </a>
+              <ul class="pc-submenu">
+                <li class="pc-item">
+                  <a class="pc-link" href="/Admin/Variant" data-permission="Variants.View">
+                    <span class="pc-micon"><i class="ti ti-adjustments-horizontal"></i></span>
+                    <span class="pc-mtext">Variants</span>
+                  </a>
+                </li>
+                <li class="pc-item">
+                  <a class="pc-link" href="/Admin/VariantValue" data-permission="VariantValues.View">
+                    <span class="pc-micon"><i class="ti ti-color-swatch"></i></span>
+                    <span class="pc-mtext">Variant Values</span>
+                  </a>
+                </li>
+              </ul>
             </li>
           </ul>
         </li>
@@ -116,13 +180,22 @@
           </a>
           <ul class="pc-submenu">
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Supplier" data-permission="Suppliers.View">Suppliers</a>
+              <a class="pc-link" href="/Admin/Supplier" data-permission="Suppliers.View">
+                <span class="pc-micon"><i class="ti ti-truck"></i></span>
+                <span class="pc-mtext">Suppliers</span>
+              </a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Purchase" data-permission="Purchases.View">Purchases</a>
+              <a class="pc-link" href="/Admin/Purchase" data-permission="Purchases.View">
+                <span class="pc-micon"><i class="ti ti-file-invoice"></i></span>
+                <span class="pc-mtext">Purchases</span>
+              </a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/Inventory" data-permission="Stock.View">Inventory</a>
+              <a class="pc-link" href="/Admin/Inventory" data-permission="Stock.View">
+                <span class="pc-micon"><i class="ti ti-stack-2"></i></span>
+                <span class="pc-mtext">Inventory</span>
+              </a>
             </li>
           </ul>
         </li>
@@ -135,10 +208,16 @@
           </a>
           <ul class="pc-submenu">
             <li class="pc-item">
-              <a class="pc-link" href="/admin/employees" data-menu-prefixes="/admin/employees,/Admin/Employee" data-permission="Employees.View">Employees</a>
+              <a class="pc-link" href="/admin/employees" data-menu-prefixes="/admin/employees,/Admin/Employee" data-permission="Employees.View">
+                <span class="pc-micon"><i class="ti ti-users"></i></span>
+                <span class="pc-mtext">Employees</span>
+              </a>
             </li>
             <li class="pc-item">
-              <a class="pc-link" href="/Admin/UserRole" data-menu-prefixes="/Admin/UserRole,/admin/user-roles" data-permission="UserRoles.View">User Roles</a>
+              <a class="pc-link" href="/Admin/UserRole" data-menu-prefixes="/Admin/UserRole,/admin/user-roles" data-permission="UserRoles.View">
+                <span class="pc-micon"><i class="ti ti-key"></i></span>
+                <span class="pc-mtext">User Roles</span>
+              </a>
             </li>
           </ul>
         </li>

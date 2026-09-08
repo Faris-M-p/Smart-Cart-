@@ -46,3 +46,18 @@ GO
 GO
 PRINT N'OrderItems_AlignKeys patch successfully completed.';
 GO
+:r .\01_Tables\Categories.sql
+GO
+PRINT N'Categories patch successfully completed.';
+GO
+:r .\01_Tables\SubCategories.sql
+GO
+PRINT N'SubCategories patch successfully completed.';
+GO
+:r .\01_Tables\Brands.sql
+GO
+PRINT N'Brands patch successfully completed.';
+GO
+
+
+

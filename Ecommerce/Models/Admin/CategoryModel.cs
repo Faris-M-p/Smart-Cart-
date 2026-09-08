@@ -48,6 +48,10 @@ namespace Ecommerce.Models.Admin
 
             [Display(Name = "Active")]
             public bool? IsActive { get; set; }
+
+            public IFormFile? CategoryImage { get; set; }
+
+            public bool RemoveImage { get; set; }
         }
 
         public class CategoryDeleteInputVIEW
@@ -130,6 +134,9 @@ namespace Ecommerce.Models.Admin
 
             [Display(Name = "Is Active")]
             public bool IsActive { get; set; }
+
+            [Display(Name = "Image Url")]
+            public string? ImageUrl { get; set; }
 
             [Display(Name = "Cancelled")]
             public bool Cancelled { get; set; }

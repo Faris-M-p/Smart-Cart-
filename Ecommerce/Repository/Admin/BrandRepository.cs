@@ -51,6 +51,7 @@ namespace Ecommerce.Repository.Admin
                         BrandName = b.BrandName,
                         Description = b.Description,
                         IsActive = b.IsActive,
+                        ImageUrl = b.ImageUrl,
                         Cancelled = b.Cancelled,
                         CancelledOn = b.CancelledOn,
                         CancelledReason = b.CancelledReason
@@ -90,6 +91,7 @@ namespace Ecommerce.Repository.Admin
                     BrandName = b.BrandName,
                     Description = b.Description,
                     IsActive = b.IsActive,
+                    ImageUrl = b.ImageUrl,
                     Cancelled = b.Cancelled,
                     CancelledOn = b.CancelledOn,
                     CancelledReason = b.CancelledReason
@@ -233,6 +235,21 @@ namespace Ecommerce.Repository.Admin
             {
                 throw;
             }
+        }
+
+        public async Task<CommonResponse> SetImageUrlAsync(int brandId, string? imageUrl)
+        {
+            var entity = await _dbContext.Brands
+                .FirstOrDefaultAsync(b => b.ID_Brand == brandId);
+
+            if (entity == null || entity.Cancelled)
+            {
+                return Fail("Brand not found.");
+            }
+
+            entity.ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+            await _dbContext.SaveChangesAsync();
+            return Ok(entity.ID_Brand, "Brand image updated successfully.");
         }
 
         private async Task<bool> BrandNameExistsForActiveAsync(string trimmedName, int excludeBrandId)

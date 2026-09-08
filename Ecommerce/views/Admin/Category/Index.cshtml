@@ -120,6 +120,18 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="categoryImagePlaceholder" class="list-entity-initials list-entity-initials-lg">—</div>
+                            <img id="categoryImagePreview" src="" alt="Category preview" class="list-entity-thumb list-entity-thumb-lg d-none">
+                            <div>
+                                <input type="file" class="form-control" id="categoryImage" accept=".jpg,.jpeg,.png,.webp">
+                                <div class="form-text">Allowed: jpg, jpeg, png, webp. Max 2MB.</div>
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-none" id="btnRemoveCategoryImage" onclick="clearCategoryImage()">Remove image</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="categoryIsActive" checked>
                         <label class="form-check-label" for="categoryIsActive">Status (active)</label>
@@ -186,8 +198,71 @@
         });
 
         document.getElementById('searchText').addEventListener('input', handleSearch);
+        document.getElementById('categoryImage').addEventListener('change', previewCategoryImage);
+        document.getElementById('categoryName').addEventListener('input', refreshCategoryPlaceholder);
         loadCategories();
     });
+
+    let removeCategoryImage = false;
+
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function renderListThumb(imageUrl, name) {
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(name))}</span>`;
+        return `<div class="list-entity-cell">${media}<span class="list-entity-name" title="${escapeAttr(name)}">${escapeHtml(name)}</span></div>`;
+    }
+
+    function resetCategoryImage() {
+        removeCategoryImage = false;
+        document.getElementById('categoryImage').value = '';
+        setCategoryImagePreview('');
+    }
+
+    function setCategoryImagePreview(url) {
+        const preview = document.getElementById('categoryImagePreview');
+        const placeholder = document.getElementById('categoryImagePlaceholder');
+        const removeBtn = document.getElementById('btnRemoveCategoryImage');
+        if (url) {
+            preview.src = url;
+            preview.classList.remove('d-none');
+            placeholder.classList.add('d-none');
+            removeBtn.classList.remove('d-none');
+            return;
+        }
+        preview.src = '';
+        preview.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+        placeholder.textContent = nameInitials(document.getElementById('categoryName').value);
+        removeBtn.classList.add('d-none');
+    }
+
+    function previewCategoryImage() {
+        const file = document.getElementById('categoryImage').files?.[0];
+        if (!file) {
+            return;
+        }
+        removeCategoryImage = false;
+        setCategoryImagePreview(URL.createObjectURL(file));
+        document.getElementById('btnRemoveCategoryImage').classList.remove('d-none');
+    }
+
+    function clearCategoryImage() {
+        document.getElementById('categoryImage').value = '';
+        removeCategoryImage = true;
+        setCategoryImagePreview('');
+    }
+
+    function refreshCategoryPlaceholder() {
+        if (document.getElementById('categoryImagePreview').classList.contains('d-none')) {
+            document.getElementById('categoryImagePlaceholder').textContent =
+                nameInitials(document.getElementById('categoryName').value);
+        }
+    }
 
     // 4. Event Handlers
     function handleSearch() {
@@ -279,7 +354,7 @@
 
         return `
             <tr>
-                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td class="col-name">${renderListThumb(category.imageUrl || category.ImageUrl || '', nameRaw)}</td>
                 <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
                 <td class="col-status">
                     <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
@@ -306,6 +381,7 @@
         document.getElementById('categoryForm').reset();
         document.getElementById('categoryID').value = '0';
         document.getElementById('categoryIsActive').checked = true;
+        resetCategoryImage();
     }
 
     async function openEditModal(categoryID) {
@@ -326,6 +402,8 @@
             document.getElementById('description').value = category.description || category.Description || '';
             document.getElementById('categoryIsActive').checked =
                 (category.isActive ?? category.IsActive ?? true) === true;
+            resetCategoryImage();
+            setCategoryImagePreview(category.imageUrl || category.ImageUrl || '');
             
             const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
             modal.show();
@@ -345,26 +423,27 @@
             return;
         }
 
-        const input = {
-            categoryID: categoryID,
-            categoryName: categoryName,
-            description: description,
-            isActive: document.getElementById('categoryIsActive').checked
-        };
+        const formData = new FormData();
+        formData.append('CategoryID', String(categoryID));
+        formData.append('CategoryName', categoryName);
+        formData.append('Description', description);
+        formData.append('IsActive', document.getElementById('categoryIsActive').checked ? 'true' : 'false');
+        formData.append('RemoveImage', removeCategoryImage ? 'true' : 'false');
+        const imageFile = document.getElementById('categoryImage').files?.[0];
+        if (imageFile) {
+            formData.append('CategoryImage', imageFile);
+        }
 
         const url = categoryID === 0 ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(input)
+                body: formData
             });
 
             if (!response.ok) {
-                handleApiError?.('failure', 'Category Save', { url, method: 'POST', payload: input, response, result: null });
+                handleApiError?.('failure', 'Category Save', { url, method: 'POST', payload: { categoryID, categoryName }, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -376,12 +455,12 @@
                 loadCategories(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Category saved successfully.');
             } else {
-                handleApiError?.('failure', 'Category Save (business)', { url, method: 'POST', payload: input, response, result });
+                handleApiError?.('failure', 'Category Save (business)', { url, method: 'POST', payload: { categoryID, categoryName }, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving category.');
             }
         } catch (error) {
             console.error('Error saving category:', error);
-            handleApiError?.('crash', 'Category Save', { url, method: 'POST', payload: input, error });
+            handleApiError?.('crash', 'Category Save', { url, method: 'POST', payload: { categoryID, categoryName }, error });
             showError('Error', 'Error saving category. Please try again.');
         }
     }

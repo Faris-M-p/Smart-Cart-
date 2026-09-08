@@ -126,6 +126,18 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="subCategoryImagePlaceholder" class="list-entity-initials list-entity-initials-lg">—</div>
+                            <img id="subCategoryImagePreview" src="" alt="Subcategory preview" class="list-entity-thumb list-entity-thumb-lg d-none">
+                            <div>
+                                <input type="file" class="form-control" id="subCategoryImage" accept=".jpg,.jpeg,.png,.webp">
+                                <div class="form-text">Allowed: jpg, jpeg, png, webp. Max 2MB.</div>
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-none" id="btnRemoveSubCategoryImage" onclick="clearSubCategoryImage()">Remove image</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="subCategoryIsActive" checked>
                         <label class="form-check-label" for="subCategoryIsActive">Status (active)</label>
@@ -191,9 +203,72 @@
             loadCategories();
         });
 
+        document.getElementById('subCategoryImage').addEventListener('change', previewSubCategoryImage);
+        document.getElementById('subCategoryName').addEventListener('input', refreshSubCategoryPlaceholder);
         loadCategories();
         loadSubCategories();
     });
+
+    let removeSubCategoryImage = false;
+
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function renderListThumb(imageUrl, name) {
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(name))}</span>`;
+        return `<div class="list-entity-cell">${media}<span class="list-entity-name" title="${escapeAttr(name)}">${escapeHtml(name)}</span></div>`;
+    }
+
+    function resetSubCategoryImage() {
+        removeSubCategoryImage = false;
+        document.getElementById('subCategoryImage').value = '';
+        setSubCategoryImagePreview('');
+    }
+
+    function setSubCategoryImagePreview(url) {
+        const preview = document.getElementById('subCategoryImagePreview');
+        const placeholder = document.getElementById('subCategoryImagePlaceholder');
+        const removeBtn = document.getElementById('btnRemoveSubCategoryImage');
+        if (url) {
+            preview.src = url;
+            preview.classList.remove('d-none');
+            placeholder.classList.add('d-none');
+            removeBtn.classList.remove('d-none');
+            return;
+        }
+        preview.src = '';
+        preview.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+        placeholder.textContent = nameInitials(document.getElementById('subCategoryName').value);
+        removeBtn.classList.add('d-none');
+    }
+
+    function previewSubCategoryImage() {
+        const file = document.getElementById('subCategoryImage').files?.[0];
+        if (!file) {
+            return;
+        }
+        removeSubCategoryImage = false;
+        setSubCategoryImagePreview(URL.createObjectURL(file));
+        document.getElementById('btnRemoveSubCategoryImage').classList.remove('d-none');
+    }
+
+    function clearSubCategoryImage() {
+        document.getElementById('subCategoryImage').value = '';
+        removeSubCategoryImage = true;
+        setSubCategoryImagePreview('');
+    }
+
+    function refreshSubCategoryPlaceholder() {
+        if (document.getElementById('subCategoryImagePreview').classList.contains('d-none')) {
+            document.getElementById('subCategoryImagePlaceholder').textContent =
+                nameInitials(document.getElementById('subCategoryName').value);
+        }
+    }
 
     // 4. Event Handlers
     function handlePageSizeChange() {
@@ -289,7 +364,7 @@
 
         return `
             <tr>
-                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td class="col-name">${renderListThumb(subCat.imageUrl || subCat.ImageUrl || '', nameRaw)}</td>
                 <td class="col-category">${truncatedCellHtml(catRaw)}</td>
                 <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
                 <td class="col-status">
@@ -318,6 +393,7 @@
         document.getElementById('subCategoryID').value = '0';
         document.getElementById('fkCategory').value = '';
         document.getElementById('subCategoryIsActive').checked = true;
+        resetSubCategoryImage();
     }
 
     async function openEditModal(subCategoryID) {
@@ -336,6 +412,8 @@
             document.getElementById('description').value = subCategory.description || subCategory.Description || '';
             document.getElementById('subCategoryIsActive').checked =
                 (subCategory.isActive ?? subCategory.IsActive ?? true) === true;
+            resetSubCategoryImage();
+            setSubCategoryImagePreview(subCategory.imageUrl || subCategory.ImageUrl || '');
 
             const modal = new bootstrap.Modal(document.getElementById('subCategoryModal'));
             modal.show();
@@ -361,23 +439,24 @@
             return;
         }
 
-        const input = {
-            SubCategoryID: subCategoryID,
-            SubCategoryName: subCategoryName,
-            FK_Category: fkCategory,
-            Description: description,
-            IsActive: document.getElementById('subCategoryIsActive').checked
-        };
+        const formData = new FormData();
+        formData.append('SubCategoryID', String(subCategoryID));
+        formData.append('SubCategoryName', subCategoryName);
+        formData.append('FK_Category', String(fkCategory));
+        formData.append('Description', description);
+        formData.append('IsActive', document.getElementById('subCategoryIsActive').checked ? 'true' : 'false');
+        formData.append('RemoveImage', removeSubCategoryImage ? 'true' : 'false');
+        const imageFile = document.getElementById('subCategoryImage').files?.[0];
+        if (imageFile) {
+            formData.append('SubCategoryImage', imageFile);
+        }
 
         const url = subCategoryID === 0 ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(input)
+                body: formData
             });
 
             let result = {};

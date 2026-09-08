@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Filters;
+using Ecommerce.Helpers.Common;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.BrandModel;
 using static Ecommerce.Models.CommonModel;
@@ -10,10 +11,17 @@ namespace Ecommerce.Controllers.Admin
     public class BrandController : Controller
     {
         private readonly IBrandInterface _brandInterface;
+        private readonly CommonImageService _commonImageService;
+        private readonly IWebHostEnvironment _environment;
 
-        public BrandController(IBrandInterface brandInterface)
+        public BrandController(
+            IBrandInterface brandInterface,
+            CommonImageService commonImageService,
+            IWebHostEnvironment environment)
         {
             _brandInterface = brandInterface;
+            _commonImageService = commonImageService;
+            _environment = environment;
         }
 
         [Route("")]
@@ -73,8 +81,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("Brands.Create")]
-        public async Task<IActionResult> Create([FromBody] BrandUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Create([FromForm] BrandUpdateInputVIEW viewInput)
         {
             try
             {
@@ -85,6 +94,15 @@ namespace Ecommerce.Controllers.Admin
                         .Select(e => e.ErrorMessage)
                         .ToList();
                     return BadRequest(new { message = "Validation failed.", errors });
+                }
+
+                if (viewInput.BrandImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.BrandImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
                 }
 
                 var input = new BrandUpdateInput
@@ -98,6 +116,17 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _brandInterface.CreateBrandAsync(input);
+                if (result.StatusCode && (viewInput.BrandImage != null || viewInput.RemoveImage))
+                {
+                    var brandId = (int)result.ResponseCode;
+                    var imageUrl = await _commonImageService.SaveSingleImageAsync(
+                        viewInput.BrandImage,
+                        _environment.WebRootPath,
+                        "brands",
+                        brandId);
+                    await _brandInterface.SetImageUrlAsync(brandId, imageUrl);
+                }
+
                 return Ok(result);
             }
             catch
@@ -108,8 +137,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("Brands.Edit")]
-        public async Task<IActionResult> Update([FromBody] BrandUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Update([FromForm] BrandUpdateInputVIEW viewInput)
         {
             try
             {
@@ -120,6 +150,15 @@ namespace Ecommerce.Controllers.Admin
                         .Select(e => e.ErrorMessage)
                         .ToList();
                     return BadRequest(new { message = "Validation failed.", errors });
+                }
+
+                if (viewInput.BrandImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.BrandImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
                 }
 
                 var input = new BrandUpdateInput
@@ -133,6 +172,16 @@ namespace Ecommerce.Controllers.Admin
                 };
 
                 var result = await _brandInterface.UpdateBrandAsync(input);
+                if (result.StatusCode && (viewInput.BrandImage != null || viewInput.RemoveImage))
+                {
+                    var imageUrl = await _commonImageService.SaveSingleImageAsync(
+                        viewInput.BrandImage,
+                        _environment.WebRootPath,
+                        "brands",
+                        viewInput.BrandID);
+                    await _brandInterface.SetImageUrlAsync(viewInput.BrandID, imageUrl);
+                }
+
                 return Ok(result);
             }
             catch

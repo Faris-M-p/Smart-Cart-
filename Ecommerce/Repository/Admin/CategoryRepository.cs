@@ -29,6 +29,7 @@ namespace Ecommerce.Repository.Admin
                     CategoryID = c.ID_Category,
                     CategoryName = c.Name,
                     IsActive = c.IsActive,
+                    ImageUrl = c.ImageUrl,
                     Cancelled = c.Cancelled
                 })
                 .ToListAsync();
@@ -50,6 +51,7 @@ namespace Ecommerce.Repository.Admin
                     CategoryName = c.Name,
                     Description = c.Description,
                     IsActive = c.IsActive,
+                    ImageUrl = c.ImageUrl,
                     Cancelled = c.Cancelled,
                     CancelledOn = c.CancelledOn,
                     CancelledReason = c.CancelledReason
@@ -91,6 +93,7 @@ namespace Ecommerce.Repository.Admin
                         CategoryName = c.Name,
                         Description = c.Description,
                         IsActive = c.IsActive,
+                        ImageUrl = c.ImageUrl,
                         Cancelled = c.Cancelled,
                         CancelledOn = c.CancelledOn,
                         CancelledReason = c.CancelledReason
@@ -250,6 +253,21 @@ namespace Ecommerce.Repository.Admin
             {
                 throw;
             }
+        }
+
+        public async Task<CommonResponse> SetImageUrlAsync(int categoryId, string? imageUrl)
+        {
+            var entity = await _dbContext.Categories
+                .FirstOrDefaultAsync(c => c.ID_Category == categoryId);
+
+            if (entity == null || entity.Cancelled)
+            {
+                return Fail("Category not found.");
+            }
+
+            entity.ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+            await _dbContext.SaveChangesAsync();
+            return Ok(entity.ID_Category, "Category image updated successfully.");
         }
 
         private async Task<bool> CategoryNameExistsForActiveAsync(string trimmedName, int excludeCategoryId)

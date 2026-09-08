@@ -38,6 +38,7 @@ namespace Ecommerce.Repository.Admin
                     CategoryName = c != null ? c.Name : string.Empty,
                     Description = s.Description,
                     IsActive = s.IsActive,
+                    ImageUrl = s.ImageUrl,
                     Cancelled = s.Cancelled ?? false,
                     CancelledOn = s.CancelledOn,
                     CancelledReason = s.CancelledReason
@@ -84,6 +85,7 @@ namespace Ecommerce.Repository.Admin
                         CategoryName = x.c != null ? x.c.Name : string.Empty,
                         Description = x.s.Description,
                         IsActive = x.s.IsActive,
+                        ImageUrl = x.s.ImageUrl,
                         Cancelled = x.s.Cancelled ?? false,
                         CancelledOn = x.s.CancelledOn,
                         CancelledReason = x.s.CancelledReason
@@ -253,6 +255,21 @@ namespace Ecommerce.Repository.Admin
             {
                 throw;
             }
+        }
+
+        public async Task<CommonResponse> SetImageUrlAsync(int subCategoryId, string? imageUrl)
+        {
+            var entity = await _dbContext.SubCategories
+                .FirstOrDefaultAsync(s => s.ID_SubCategory == subCategoryId);
+
+            if (entity == null || entity.Cancelled == true)
+            {
+                return Fail("SubCategory not found.");
+            }
+
+            entity.ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+            await _dbContext.SaveChangesAsync();
+            return Ok(entity.ID_SubCategory, "SubCategory image updated successfully.");
         }
 
         private Task<bool> CategoryExistsActiveAsync(int categoryId) =>

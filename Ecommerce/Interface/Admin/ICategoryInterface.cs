@@ -11,5 +11,7 @@ namespace Ecommerce.Interface.Admin
         Task<CommonResponse> CreateCategoryAsync(CategoryUpdateInput input);
         Task<CommonResponse> UpdateCategoryAsync(CategoryUpdateInput input);
         Task<CommonResponse> DeleteCategoryAsync(CategoryDeleteInput input);
+
+        Task<CommonResponse> SetImageUrlAsync(int categoryId, string? imageUrl);
     }
 }

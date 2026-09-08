@@ -22572,7 +22572,7 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
   border-radius: 0.375rem;
 }
 .searchable-select .choices__list--dropdown .choices__list {
-  max-height: 420px;
+  max-height: 200px;
 }
 .searchable-select .choices__list--dropdown .choices__item {
   white-space: nowrap;

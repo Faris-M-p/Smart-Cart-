@@ -115,6 +115,18 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="brandImagePlaceholder" class="list-entity-initials list-entity-initials-lg">—</div>
+                            <img id="brandImagePreview" src="" alt="Brand preview" class="list-entity-thumb list-entity-thumb-lg d-none">
+                            <div>
+                                <input type="file" class="form-control" id="brandImage" accept=".jpg,.jpeg,.png,.webp">
+                                <div class="form-text">Allowed: jpg, jpeg, png, webp. Max 2MB.</div>
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-none" id="btnRemoveBrandImage" onclick="clearBrandImage()">Remove image</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="brandIsActive" checked>
                         <label class="form-check-label" for="brandIsActive">Status (active)</label>
@@ -181,8 +193,71 @@
         });
 
         document.getElementById('searchText').addEventListener('input', handleSearch);
+        document.getElementById('brandImage').addEventListener('change', previewBrandImage);
+        document.getElementById('brandName').addEventListener('input', refreshBrandPlaceholder);
         loadBrands();
     });
+
+    let removeBrandImage = false;
+
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function renderListThumb(imageUrl, name) {
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(name))}</span>`;
+        return `<div class="list-entity-cell">${media}<span class="list-entity-name" title="${escapeAttr(name)}">${escapeHtml(name)}</span></div>`;
+    }
+
+    function resetBrandImage() {
+        removeBrandImage = false;
+        document.getElementById('brandImage').value = '';
+        setBrandImagePreview('');
+    }
+
+    function setBrandImagePreview(url) {
+        const preview = document.getElementById('brandImagePreview');
+        const placeholder = document.getElementById('brandImagePlaceholder');
+        const removeBtn = document.getElementById('btnRemoveBrandImage');
+        if (url) {
+            preview.src = url;
+            preview.classList.remove('d-none');
+            placeholder.classList.add('d-none');
+            removeBtn.classList.remove('d-none');
+            return;
+        }
+        preview.src = '';
+        preview.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+        placeholder.textContent = nameInitials(document.getElementById('brandName').value);
+        removeBtn.classList.add('d-none');
+    }
+
+    function previewBrandImage() {
+        const file = document.getElementById('brandImage').files?.[0];
+        if (!file) {
+            return;
+        }
+        removeBrandImage = false;
+        setBrandImagePreview(URL.createObjectURL(file));
+        document.getElementById('btnRemoveBrandImage').classList.remove('d-none');
+    }
+
+    function clearBrandImage() {
+        document.getElementById('brandImage').value = '';
+        removeBrandImage = true;
+        setBrandImagePreview('');
+    }
+
+    function refreshBrandPlaceholder() {
+        if (document.getElementById('brandImagePreview').classList.contains('d-none')) {
+            document.getElementById('brandImagePlaceholder').textContent =
+                nameInitials(document.getElementById('brandName').value);
+        }
+    }
 
     // 4. Event Handlers
     function handleSearch() {
@@ -274,7 +349,7 @@
 
         return `
             <tr>
-                <td class="col-name">${truncatedCellHtml(nameRaw)}</td>
+                <td class="col-name">${renderListThumb(brand.imageUrl || brand.ImageUrl || '', nameRaw)}</td>
                 <td class="col-desc">${truncatedCellHtml(descRaw)}</td>
                 <td class="col-status">
                     <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip" data-bs-placement="top">${statusText}</span>
@@ -301,6 +376,7 @@
         document.getElementById('brandForm').reset();
         document.getElementById('brandID').value = '0';
         document.getElementById('brandIsActive').checked = true;
+        resetBrandImage();
     }
 
     async function openEditModal(brandID) {
@@ -321,6 +397,8 @@
             document.getElementById('description').value = brand.description || brand.Description || '';
             document.getElementById('brandIsActive').checked =
                 (brand.isActive ?? brand.IsActive ?? true) === true;
+            resetBrandImage();
+            setBrandImagePreview(brand.imageUrl || brand.ImageUrl || '');
 
             const modal = new bootstrap.Modal(document.getElementById('brandModal'));
             modal.show();
@@ -340,24 +418,27 @@
             return;
         }
 
-        const input = {
-            brandID: brandID,
-            brandName: brandName,
-            description: description,
-            isActive: document.getElementById('brandIsActive').checked
-        };
+        const formData = new FormData();
+        formData.append('BrandID', String(brandID));
+        formData.append('BrandName', brandName);
+        formData.append('Description', description);
+        formData.append('IsActive', document.getElementById('brandIsActive').checked ? 'true' : 'false');
+        formData.append('RemoveImage', removeBrandImage ? 'true' : 'false');
+        const imageFile = document.getElementById('brandImage').files?.[0];
+        if (imageFile) {
+            formData.append('BrandImage', imageFile);
+        }
 
         const url = brandID === 0 ? API.create : API.update;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
+                body: formData
             });
 
             if (!response.ok) {
-                handleApiError?.('failure', 'Brand Save', { url, method: 'POST', payload: input, response, result: null });
+                handleApiError?.('failure', 'Brand Save', { url, method: 'POST', payload: { brandID, brandName }, response, result: null });
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -369,12 +450,12 @@
                 loadBrands(currentPage);
                 showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Brand saved successfully.');
             } else {
-                handleApiError?.('failure', 'Brand Save (business)', { url, method: 'POST', payload: input, response, result });
+                handleApiError?.('failure', 'Brand Save (business)', { url, method: 'POST', payload: { brandID, brandName }, response, result });
                 showError('Error', result.responseMsg || result.ResponseMsg || 'Error saving brand.');
             }
         } catch (error) {
             console.error('Error saving brand:', error);
-            handleApiError?.('crash', 'Brand Save', { url, method: 'POST', payload: input, error });
+            handleApiError?.('crash', 'Brand Save', { url, method: 'POST', payload: { brandID, brandName }, error });
             showError('Error', 'Error saving brand. Please try again.');
         }
     }

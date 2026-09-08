@@ -10,5 +10,7 @@ namespace Ecommerce.Interface.Admin
         Task<CommonResponse> CreateBrandAsync(BrandUpdateInput input);
         Task<CommonResponse> UpdateBrandAsync(BrandUpdateInput input);
         Task<CommonResponse> DeleteBrandAsync(BrandDeleteInput input);
+
+        Task<CommonResponse> SetImageUrlAsync(int brandId, string? imageUrl);
     }
 }

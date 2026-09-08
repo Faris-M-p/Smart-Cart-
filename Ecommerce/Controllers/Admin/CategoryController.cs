@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Filters;
+using Ecommerce.Helpers.Common;
 using Ecommerce.Interface.Admin;
 using static Ecommerce.Models.Admin.CategoryModel;
 using static Ecommerce.Models.CommonModel;
@@ -10,10 +11,17 @@ namespace Ecommerce.Controllers.Admin
     public class CategoryController : Controller
     {
         private readonly ICategoryInterface _categoryInterface;
+        private readonly CommonImageService _commonImageService;
+        private readonly IWebHostEnvironment _environment;
 
-        public CategoryController(ICategoryInterface categoryInterface)
+        public CategoryController(
+            ICategoryInterface categoryInterface,
+            CommonImageService commonImageService,
+            IWebHostEnvironment environment)
         {
             _categoryInterface = categoryInterface;
+            _commonImageService = commonImageService;
+            _environment = environment;
         }
 
         [Route("")]
@@ -88,8 +96,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Create")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("Categories.Create")]
-        public async Task<IActionResult> Create([FromBody] CategoryUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Create([FromForm] CategoryUpdateInputVIEW viewInput)
         {
             try
             {
@@ -102,18 +111,37 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
+                if (viewInput.CategoryImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.CategoryImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
+                }
+
                 var input = new CategoryUpdateInput
                 {
-                    UserAction = 1, // 1 = Add
+                    UserAction = 1,
                     CategoryID = viewInput.CategoryID,
                     CategoryName = viewInput.CategoryName,
                     Description = viewInput.Description,
                     IsActive = viewInput.IsActive ?? true,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _categoryInterface.CreateCategoryAsync(input);
+                if (result.StatusCode && (viewInput.CategoryImage != null || viewInput.RemoveImage))
+                {
+                    var categoryId = (int)result.ResponseCode;
+                    var imageUrl = await _commonImageService.SaveSingleImageAsync(
+                        viewInput.CategoryImage,
+                        _environment.WebRootPath,
+                        "categories",
+                        categoryId);
+                    await _categoryInterface.SetImageUrlAsync(categoryId, imageUrl);
+                }
+
                 return Ok(result);
             }
             catch
@@ -124,8 +152,9 @@ namespace Ecommerce.Controllers.Admin
 
         [HttpPost]
         [Route("Update")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         [RequirePermission("Categories.Edit")]
-        public async Task<IActionResult> Update([FromBody] CategoryUpdateInputVIEW viewInput)
+        public async Task<IActionResult> Update([FromForm] CategoryUpdateInputVIEW viewInput)
         {
             try
             {
@@ -138,18 +167,36 @@ namespace Ecommerce.Controllers.Admin
                     return BadRequest(new { message = "Validation failed.", errors });
                 }
 
-                // Map VIEW model to Procedure Input model
+                if (viewInput.CategoryImage != null)
+                {
+                    var imageError = _commonImageService.ValidateImageFile(viewInput.CategoryImage);
+                    if (!string.IsNullOrWhiteSpace(imageError))
+                    {
+                        return BadRequest(new { message = imageError });
+                    }
+                }
+
                 var input = new CategoryUpdateInput
                 {
-                    UserAction = 2, // 2 = Edit
+                    UserAction = 2,
                     CategoryID = viewInput.CategoryID,
                     CategoryName = viewInput.CategoryName,
                     Description = viewInput.Description,
                     IsActive = viewInput.IsActive ?? true,
-                    EnterBy = 1 // TODO: Get from session/auth
+                    EnterBy = 1
                 };
 
                 var result = await _categoryInterface.UpdateCategoryAsync(input);
+                if (result.StatusCode && (viewInput.CategoryImage != null || viewInput.RemoveImage))
+                {
+                    var imageUrl = await _commonImageService.SaveSingleImageAsync(
+                        viewInput.CategoryImage,
+                        _environment.WebRootPath,
+                        "categories",
+                        viewInput.CategoryID);
+                    await _categoryInterface.SetImageUrlAsync(viewInput.CategoryID, imageUrl);
+                }
+
                 return Ok(result);
             }
             catch
@@ -211,8 +258,5 @@ namespace Ecommerce.Controllers.Admin
                 throw;
             }
         }
-       
-
-
     }
 }

@@ -209,6 +209,24 @@ namespace Ecommerce.Helpers.Common
         public string BuildEmployeeImageUrl(int employeeId, string fileName) =>
             $"/uploads/employees/{employeeId}/{fileName}";
 
+        public string GetCategoryUploadRoot(string webRootPath, int categoryId) =>
+            Path.Combine(webRootPath, "uploads", "categories", categoryId.ToString());
+
+        public string BuildCategoryImageUrl(int categoryId, string fileName) =>
+            $"/uploads/categories/{categoryId}/{fileName}";
+
+        public string GetSubCategoryUploadRoot(string webRootPath, int subCategoryId) =>
+            Path.Combine(webRootPath, "uploads", "subcategories", subCategoryId.ToString());
+
+        public string BuildSubCategoryImageUrl(int subCategoryId, string fileName) =>
+            $"/uploads/subcategories/{subCategoryId}/{fileName}";
+
+        public string GetBrandUploadRoot(string webRootPath, int brandId) =>
+            Path.Combine(webRootPath, "uploads", "brands", brandId.ToString());
+
+        public string BuildBrandImageUrl(int brandId, string fileName) =>
+            $"/uploads/brands/{brandId}/{fileName}";
+
         public async Task<string> SaveFileAsync(IFormFile file, string folderPath)
         {
             Directory.CreateDirectory(folderPath);
@@ -225,13 +243,45 @@ namespace Ecommerce.Helpers.Common
 
         public async Task<string> SaveEmployeeProfileAsync(IFormFile file, string folderPath)
         {
-            Directory.CreateDirectory(folderPath);
+            ClearFolder(folderPath);
+            return await SaveFileAsync(file, folderPath);
+        }
+
+        public async Task<string?> SaveSingleImageAsync(
+            IFormFile? file,
+            string webRootPath,
+            string folder,
+            int entityId)
+        {
+            var folderPath = GetEntityUploadRoot(webRootPath, folder, entityId);
+            ClearFolder(folderPath);
+
+            if (file == null)
+            {
+                return null;
+            }
+
+            var fileName = await SaveFileAsync(file, folderPath);
+            return BuildEntityImageUrl(folder, entityId, fileName);
+        }
+
+        public string GetEntityUploadRoot(string webRootPath, string folder, int entityId) =>
+            Path.Combine(webRootPath, "uploads", NormalizePathSegment(folder), entityId.ToString());
+
+        public string BuildEntityImageUrl(string folder, int entityId, string fileName) =>
+            $"/uploads/{NormalizePathSegment(folder)}/{entityId}/{fileName}";
+
+        private void ClearFolder(string folderPath)
+        {
+            if (!Directory.Exists(folderPath))
+            {
+                return;
+            }
+
             foreach (var existing in Directory.GetFiles(folderPath))
             {
                 TryDeleteFile(existing);
             }
-
-            return await SaveFileAsync(file, folderPath);
         }
 
         public string ToAbsolutePath(string webRootPath, string publicUrl)
