@@ -134,6 +134,13 @@ GO
 PRINT N'Admin / Auth patch module successfully completed.';
 GO
 
+PRINT N'--- Admin / Orders ---';
+GO
+:r .\02_Procedures\01_Admin\12_Orders\Patch.sql
+GO
+PRINT N'Admin / Orders patch module successfully completed.';
+GO
+
 PRINT N'--- Users / Shop ---';
 GO
 :r .\02_Procedures\02_Users\01_Shop\Patch.sql

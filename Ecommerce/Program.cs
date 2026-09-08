@@ -187,6 +187,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IUserRoleInterface, UserRoleRepository>();
         services.AddTransient<IEmployeeInterface, EmployeeRepository>();
         services.AddTransient<IAdminAuthInterface, AdminAuthRepository>();
+        services.AddTransient<IAdminOrderInterface, AdminOrderRepository>();
         services.AddSingleton<AdminJwtTokenService>();
         services.AddSingleton<IPasswordHasher<AdminUserEntity>, PasswordHasher<AdminUserEntity>>();
         services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();

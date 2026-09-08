@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="/Admin/assets/css/style-preset.css" >
 <!-- [Empty State CSS] -->
 <link rel="stylesheet" href="/Admin/assets/css/empty-state.css?v=listing-empty-1" >
-<link rel="stylesheet" href="/Admin/assets/css/admin-list-media.css?v=list-media-2" >
+<link rel="stylesheet" href="/Admin/assets/css/admin-list-media.css?v=list-media-4" >
 <style>
   .js-permission-hidden { display: none !important; }
   .pc-sidebar .pc-submenu .pc-link {
@@ -195,6 +195,22 @@
               <a class="pc-link" href="/Admin/Inventory" data-permission="Stock.View">
                 <span class="pc-micon"><i class="ti ti-stack-2"></i></span>
                 <span class="pc-mtext">Inventory</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="pc-item pc-hasmenu">
+          <a href="#!" class="pc-link">
+            <span class="pc-micon"><i class="ti ti-shopping-cart"></i></span>
+            <span class="pc-mtext">Orders</span>
+            <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
+          </a>
+          <ul class="pc-submenu">
+            <li class="pc-item">
+              <a class="pc-link" href="/Admin/Order" data-permission="Orders.View">
+                <span class="pc-micon"><i class="ti ti-list-details"></i></span>
+                <span class="pc-mtext">Orders</span>
               </a>
             </li>
           </ul>

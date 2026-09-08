@@ -1,0 +1,370 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var orderId = ViewBag.OrderId ?? 0;
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Order Details</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/Order">Orders</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Details</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<div class="row" data-permission-module="Orders" id="orderDetailRoot" data-order-id="@orderId">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <a href="/Admin/Order" class="btn btn-outline-secondary btn-sm">
+                <i class="ti ti-arrow-left"></i> Back to orders
+            </a>
+            <div class="d-flex gap-2" id="orderDetailActions"></div>
+        </div>
+        <div id="orderDetailBody">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelOrderModalLabel">Cancel Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Cancel this order and restore stock?</p>
+                <div class="mb-3">
+                    <label for="cancelReason" class="form-label">Reason</label>
+                    <textarea class="form-control" id="cancelReason" rows="3" maxlength="255" placeholder="Optional"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" data-action="Cancel" onclick="confirmCancelOrder()">Cancel Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ORDER_ID = parseInt(document.getElementById('orderDetailRoot').dataset.orderId, 10) || 0;
+    const API = {
+        getById: '/Admin/Order/GetById',
+        confirm: '/Admin/Order/Confirm',
+        updateStatus: '/Admin/Order/UpdateStatus',
+        deliver: '/Admin/Order/Deliver',
+        cancel: '/Admin/Order/Cancel'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadOrder();
+    });
+
+    async function loadOrder() {
+        const body = document.getElementById('orderDetailBody');
+        const actions = document.getElementById('orderDetailActions');
+        actions.innerHTML = '';
+
+        if (ORDER_ID <= 0) {
+            body.innerHTML = emptyCard('Order not found.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API.getById}/${ORDER_ID}`);
+            if (response.status === 404) {
+                body.innerHTML = emptyCard('Order not found.');
+                return;
+            }
+            if (!response.ok) {
+                throw new Error('Failed to load order');
+            }
+
+            const data = await response.json();
+            const order = data.order || data.Order;
+            const items = data.items || data.Items || [];
+            if (!order) {
+                body.innerHTML = emptyCard('Order not found.');
+                return;
+            }
+
+            renderActions(order);
+            body.innerHTML = renderDetail(order, items);
+        } catch (error) {
+            console.error(error);
+            body.innerHTML = emptyCard('Error loading order details.');
+        }
+    }
+
+    function renderActions(order) {
+        const canConfirm = order.canConfirm ?? order.CanConfirm;
+        const canUpdateStatus = order.canUpdateStatus ?? order.CanUpdateStatus;
+        const canDeliver = order.canDeliver ?? order.CanDeliver;
+        const canCancel = order.canCancel ?? order.CanCancel;
+        const actions = [];
+
+        if (canConfirm) {
+            actions.push(`<button type="button" class="btn btn-primary btn-sm" data-action="Edit" onclick="confirmOrder()"><i class="ti ti-check"></i> Confirm</button>`);
+        }
+        if (canUpdateStatus) {
+            actions.push(`
+                <select class="form-select form-select-sm admin-order-status-select" data-action="Edit" onchange="updateOrderStatus(this.value)">
+                    <option value="Confirmed" selected>Confirmed</option>
+                    <option value="Shipped">Shipped</option>
+                </select>`);
+        }
+        if (canDeliver) {
+            actions.push(`<button type="button" class="btn btn-success btn-sm" data-action="Edit" onclick="deliverOrder()"><i class="ti ti-truck-delivery"></i> Deliver</button>`);
+        }
+        if (canCancel) {
+            actions.push(`<button type="button" class="btn btn-outline-danger btn-sm" data-action="Cancel" onclick="openCancelModal()"><i class="ti ti-x"></i> Cancel</button>`);
+        }
+
+        document.getElementById('orderDetailActions').innerHTML = actions.join('');
+    }
+
+    function renderDetail(order, items) {
+        const number = order.orderNumber || order.OrderNumber || '';
+        const status = order.orderStatus || order.OrderStatus || '';
+        const paymentMethod = order.paymentMethod || order.PaymentMethod || 'COD';
+        const paymentStatus = order.paymentStatus || order.PaymentStatus || '';
+        const shippingStatus = order.shippingStatus || order.ShippingStatus || '';
+        const customerName = order.customerName || order.CustomerName || '';
+        const customerEmail = order.customerEmail || order.CustomerEmail || '';
+        const receiver = order.receiverName || order.ReceiverName || '';
+        const phone = order.phone || order.Phone || '';
+        const address = order.addressLine || order.AddressLine || order.shippingAddress || order.ShippingAddress || '';
+        const city = order.city || order.City || '';
+        const pincode = order.pincode || order.Pincode || '';
+        const cancelled = order.cancelled ?? order.Cancelled;
+        const cancelledReason = order.cancelledReason || order.CancelledReason || '';
+        const cancelledOn = order.cancelledOn || order.CancelledOn;
+        const lineRows = items.length
+            ? items.map(renderItemRow).join('')
+            : `<tr><td colspan="4" class="text-center text-muted py-4">No items</td></tr>`;
+
+        return `
+            <div class="row g-3">
+                <div class="col-lg-8">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h5 class="mb-1">${escapeHtml(number)}</h5>
+                                <div class="text-muted small">${escapeHtml(formatDate(order.orderDate || order.OrderDate))}</div>
+                            </div>
+                            ${statusBadge(status)}
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0 admin-order-items">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>SKU</th>
+                                            <th class="text-end">Qty</th>
+                                            <th class="text-end">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${lineRows}</tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="3" class="text-end">Total</th>
+                                            <th class="text-end">${escapeHtml(formatMoney(order.totalAmount ?? order.TotalAmount))}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header"><h5 class="mb-0">Customer</h5></div>
+                        <div class="card-body">
+                            <div class="admin-order-meta">
+                                <div><span class="text-muted">Name</span><strong>${escapeHtml(customerName || '—')}</strong></div>
+                                <div><span class="text-muted">Email</span><strong>${escapeHtml(customerEmail || '—')}</strong></div>
+                                <div><span class="text-muted">Phone</span><strong>${escapeHtml(phone || '—')}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header"><h5 class="mb-0">Delivery address</h5></div>
+                        <div class="card-body">
+                            <div class="admin-order-meta">
+                                <div><span class="text-muted">Receiver</span><strong>${escapeHtml(receiver || '—')}</strong></div>
+                                <div><span class="text-muted">Address</span><strong>${escapeHtml(address || '—')}</strong></div>
+                                <div><span class="text-muted">City</span><strong>${escapeHtml([city, pincode].filter(Boolean).join(' - ') || '—')}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header"><h5 class="mb-0">Payment &amp; shipping</h5></div>
+                        <div class="card-body">
+                            <div class="admin-order-meta">
+                                <div><span class="text-muted">Method</span><strong>${escapeHtml(paymentMethod)}</strong></div>
+                                <div><span class="text-muted">Payment</span><strong>${escapeHtml(paymentStatus)}</strong></div>
+                                <div><span class="text-muted">Shipping</span><strong>${escapeHtml(shippingStatus)}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                    ${cancelled ? `
+                    <div class="card mb-3 border-danger">
+                        <div class="card-header"><h5 class="mb-0 text-danger">Cancelled</h5></div>
+                        <div class="card-body">
+                            <div class="admin-order-meta">
+                                <div><span class="text-muted">On</span><strong>${escapeHtml(formatDate(cancelledOn))}</strong></div>
+                                <div><span class="text-muted">Reason</span><strong>${escapeHtml(cancelledReason || '—')}</strong></div>
+                            </div>
+                        </div>
+                    </div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderItemRow(item) {
+        const name = item.name || item.Name || '';
+        const label = item.label || item.Label || '';
+        const sku = item.sku || item.SKU || '';
+        const imageUrl = item.imageUrl || item.ImageUrl || '';
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(name))}</span>`;
+        const title = label ? `${name} · ${label}` : name;
+
+        return `
+            <tr>
+                <td>
+                    <div class="list-entity-cell">
+                        ${media}
+                        <div class="list-entity-text">
+                            <span class="list-entity-name" title="${escapeAttr(title)}">${escapeHtml(title)}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${escapeHtml(sku || '—')}</td>
+                <td class="text-end">${escapeHtml(String(item.quantity ?? item.Quantity ?? 0))}</td>
+                <td class="text-end">${escapeHtml(formatMoney(item.lineTotal ?? item.LineTotal ?? item.price ?? item.Price))}</td>
+            </tr>
+        `;
+    }
+
+    function emptyCard(message) {
+        return `<div class="card"><div class="card-body text-center py-5 text-muted">${escapeHtml(message)}</div></div>`;
+    }
+
+    function statusBadge(status) {
+        const key = String(status || '').toLowerCase();
+        let cls = 'bg-secondary';
+        if (key === 'placed' || key === 'pending') cls = 'bg-warning text-dark';
+        else if (key === 'confirmed') cls = 'bg-primary';
+        else if (key === 'shipped') cls = 'bg-info';
+        else if (key === 'delivered') cls = 'bg-success';
+        else if (key === 'cancelled') cls = 'bg-danger';
+        return `<span class="badge ${cls}">${escapeHtml(status || '—')}</span>`;
+    }
+
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function formatMoney(value) {
+        const amount = Number(value || 0);
+        return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function confirmOrder() {
+        await postOrderAction(API.confirm, { orderId: ORDER_ID }, 'Order confirmed.');
+    }
+
+    async function updateOrderStatus(orderStatus) {
+        if (orderStatus !== 'Shipped') {
+            loadOrder();
+            return;
+        }
+
+        await postOrderAction(API.updateStatus, { orderId: ORDER_ID, orderStatus }, 'Order status updated to Shipped.');
+    }
+
+    async function deliverOrder() {
+        await postOrderAction(API.deliver, { orderId: ORDER_ID }, 'Order delivered. COD collected.');
+    }
+
+    function openCancelModal() {
+        document.getElementById('cancelReason').value = '';
+        new bootstrap.Modal(document.getElementById('cancelOrderModal')).show();
+    }
+
+    async function confirmCancelOrder() {
+        const reason = document.getElementById('cancelReason').value.trim();
+        const ok = await postOrderAction(API.cancel, { orderId: ORDER_ID, reason }, 'Order cancelled.');
+        if (ok) {
+            bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal'))?.hide();
+        }
+    }
+
+    async function postOrderAction(url, payload, successMessage) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok || !(result.statusCode || result.StatusCode)) {
+                showError('Error', result.responseMsg || result.ResponseMsg || result.message || 'Action failed.');
+                return false;
+            }
+            showSuccess('Success', result.responseMsg || result.ResponseMsg || successMessage);
+            loadOrder();
+            return true;
+        } catch (error) {
+            showError('Error', 'Something went wrong. Please try again.');
+            return false;
+        }
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>

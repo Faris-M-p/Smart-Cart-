@@ -115,3 +115,66 @@
 .searchable-select .choices__list--dropdown .choices__list {
   max-height: 240px;
 }
+
+.list-entity-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list-entity-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #6c757d;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+#orderTable.admin-master-list-table th.col-name,
+#orderTable.admin-master-list-table td.col-name {
+  width: 24%;
+}
+
+#orderTable.admin-master-list-table th.col-customer,
+#orderTable.admin-master-list-table td.col-customer {
+  width: 16%;
+}
+
+#orderTable.admin-master-list-table th.col-date,
+#orderTable.admin-master-list-table td.col-date {
+  width: 14%;
+}
+
+#orderTable.admin-master-list-table th.col-amount,
+#orderTable.admin-master-list-table td.col-amount {
+  width: 12%;
+}
+
+#orderTable.admin-master-list-table th.col-payment,
+#orderTable.admin-master-list-table td.col-payment {
+  width: 12%;
+}
+
+.admin-order-meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.admin-order-meta > div:last-child {
+  margin-bottom: 0;
+}
+
+.admin-order-items .list-entity-name {
+  white-space: normal;
+}
+
+.admin-order-status-select {
+  min-width: 120px;
+  width: auto;
+  display: inline-block;
+}

@@ -21,6 +21,7 @@
     { test: /^\/admin\/variant(\/|$)/i, permission: 'Variants.View' },
     { test: /^\/admin\/supplier(\/|$)/i, permission: 'Suppliers.View' },
     { test: /^\/admin\/purchase(\/|$)/i, permission: 'Purchases.View' },
+    { test: /^\/admin\/order(\/|$)/i, permission: 'Orders.View' },
     { test: /^\/admin\/inventory(\/|$)/i, permission: 'Stock.View' },
     { test: /^\/admin\/employees(\/|$)/i, permission: 'Employees.View' },
     { test: /^\/admin\/employee(\/|$)/i, permission: 'Employees.View' },
@@ -40,6 +41,7 @@
     { path: '/Admin/ProductVariant', permission: 'ProductVariants.View' },
     { path: '/Admin/Supplier', permission: 'Suppliers.View' },
     { path: '/Admin/Purchase', permission: 'Purchases.View' },
+    { path: '/Admin/Order', permission: 'Orders.View' },
     { path: '/Admin/Inventory', permission: 'Stock.View' },
     { path: '/admin/employees', permission: 'Employees.View' },
     { path: '/Admin/UserRole', permission: 'UserRoles.View' }

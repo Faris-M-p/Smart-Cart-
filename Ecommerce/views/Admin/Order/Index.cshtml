@@ -1,0 +1,469 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Order Management</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="javascript: void(0)">Orders</a></li>
+                    <li class="breadcrumb-item" aria-current="page">List</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<!-- [ Main Content ] start -->
+        <div class="row" data-permission-module="Orders">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5>Order List</h5>
+                        </div>
+                    </div>
+                    <div class="card-body pt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                                <i class="ti ti-filter"></i> Filter
+                            </button>
+
+                            <div class="flex-grow-1 mx-3 search-input">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="ti ti-search"></i>
+                                    </span>
+                                    <input type="text" id="searchText" class="form-control" placeholder="Search order number, name, phone, email...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse mb-3" id="filterCollapse">
+                            <div class="card-body px-0 pt-0">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">Status</label>
+                                        <select id="filterStatus" class="form-select">
+                                            <option value="">All</option>
+                                            <option value="Placed">Placed</option>
+                                            <option value="Confirmed">Confirmed</option>
+                                            <option value="Shipped">Shipped</option>
+                                            <option value="Delivered">Delivered</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">From Date</label>
+                                        <input type="date" id="fromDate" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">To Date</label>
+                                        <input type="date" id="toDate" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small text-muted mb-1">&nbsp;</label>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="loadOrders(1)">
+                                                <i class="ti ti-check"></i> Apply
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                                                <i class="ti ti-refresh"></i> Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table align-middle mb-0 admin-master-list-table" id="orderTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-name">Order</th>
+                                            <th class="col-customer">Customer</th>
+                                            <th class="col-date">Date</th>
+                                            <th class="col-amount">Amount</th>
+                                            <th class="col-payment">Payment</th>
+                                            <th class="col-status">Status</th>
+                                            <th class="col-actions">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderTableBody">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top pagination-wrapper">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Show</span>
+                                <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span class="text-muted small">per page</span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3">
+                                <span id="paginationInfo" class="text-muted small"></span>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination pagination-sm mb-0" id="pagination">
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<!-- [ Main Content ] end -->
+
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelOrderModalLabel">Cancel Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Cancel this order and restore stock?</p>
+                <div class="mb-3">
+                    <label for="cancelReason" class="form-label">Reason</label>
+                    <textarea class="form-control" id="cancelReason" rows="3" maxlength="255" placeholder="Optional"></textarea>
+                </div>
+                <input type="hidden" id="cancelOrderId" value="0">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" data-action="Cancel" onclick="confirmCancelOrder()">Cancel Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 10;
+    let paginationInstance = null;
+    let searchTimeout = null;
+
+    const TABLE_BODY_ID = 'orderTableBody';
+    const TABLE_COLUMN_COUNT = 7;
+
+    const API = {
+        getList: '/Admin/Order/GetOrderList',
+        confirm: '/Admin/Order/Confirm',
+        updateStatus: '/Admin/Order/UpdateStatus',
+        deliver: '/Admin/Order/Deliver',
+        cancel: '/Admin/Order/Cancel'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadOrders
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadOrders();
+    });
+
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadOrders(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadOrders(1);
+    }
+
+    function resetFilters() {
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+        document.getElementById('searchText').value = '';
+        loadOrders(1);
+    }
+
+    function dateOrNull(value) {
+        return value ? value : null;
+    }
+
+    async function loadOrders(page = 1) {
+        currentPage = page;
+
+        const input = {
+            searchText: document.getElementById('searchText').value || '',
+            orderStatus: document.getElementById('filterStatus').value || '',
+            fromDate: dateOrNull(document.getElementById('fromDate').value),
+            toDate: dateOrNull(document.getElementById('toDate').value),
+            pageIndex: currentPage,
+            pageSize: pageSize
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Order List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                return;
+            }
+
+            displayOrders(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Order List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    function displayOrders(orders) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = orders.map(order => createOrderRow(order)).join('');
+        initTableTooltips(tableBody);
+    }
+
+    function createOrderRow(order) {
+        const orderId = order.orderId ?? order.OrderId;
+        const orderNumber = order.orderNumber || order.OrderNumber || '';
+        const productName = order.firstProductName || order.FirstProductName || '';
+        const itemCount = order.itemCount ?? order.ItemCount ?? 0;
+        const imageUrl = order.firstImageUrl || order.FirstImageUrl || '';
+        const customerName = order.customerName || order.CustomerName || order.receiverName || order.ReceiverName || '';
+        const phone = order.phone || order.Phone || '';
+        const city = order.city || order.City || '';
+        const status = order.orderStatus || order.OrderStatus || '';
+        const paymentMethod = order.paymentMethod || order.PaymentMethod || 'COD';
+        const paymentStatus = order.paymentStatus || order.PaymentStatus || '';
+        const canConfirm = order.canConfirm ?? order.CanConfirm;
+        const canUpdateStatus = order.canUpdateStatus ?? order.CanUpdateStatus;
+        const canDeliver = order.canDeliver ?? order.CanDeliver;
+        const canCancel = order.canCancel ?? order.CanCancel;
+        const subtitle = itemCount > 1
+            ? `${productName} · ${itemCount} items`
+            : productName;
+
+        return `
+            <tr>
+                <td class="col-name">${renderOrderThumb(imageUrl, orderNumber, subtitle)}</td>
+                <td class="col-customer">
+                    <div class="list-entity-text">
+                        <span class="list-entity-name" title="${escapeAttr(customerName)}">${escapeHtml(customerName || '—')}</span>
+                        <span class="list-entity-sub">${escapeHtml(phone)}${city ? ' · ' + escapeHtml(city) : ''}</span>
+                    </div>
+                </td>
+                <td class="col-date">${escapeHtml(formatDate(order.orderDate || order.OrderDate))}</td>
+                <td class="col-amount">${escapeHtml(formatMoney(order.totalAmount ?? order.TotalAmount))}</td>
+                <td class="col-payment">
+                    <div class="list-entity-text">
+                        <span class="list-entity-name">${escapeHtml(paymentMethod)}</span>
+                        <span class="list-entity-sub">${escapeHtml(paymentStatus)}</span>
+                    </div>
+                </td>
+                <td class="col-status">${renderStatusCell(orderId, status, canUpdateStatus)}</td>
+                <td class="col-actions">
+                    <div class="table-actions">
+                        <a href="/Admin/Order/Details/${orderId}" class="btn-action" title="View" data-bs-toggle="tooltip" data-bs-placement="top">
+                            <i class="ti ti-eye"></i>
+                        </a>
+                        ${canConfirm ? `
+                            <button type="button" class="btn-action" data-action="Edit" onclick="confirmOrder(${orderId})" title="Confirm" data-bs-toggle="tooltip" data-bs-placement="top">
+                                <i class="ti ti-check"></i>
+                            </button>` : ''}
+                        ${canDeliver ? `
+                            <button type="button" class="btn-action" data-action="Edit" onclick="deliverOrder(${orderId})" title="Deliver" data-bs-toggle="tooltip" data-bs-placement="top">
+                                <i class="ti ti-truck-delivery"></i>
+                            </button>` : ''}
+                        ${canCancel ? `
+                            <button type="button" class="btn-action" data-action="Cancel" onclick="openCancelModal(${orderId})" title="Cancel" data-bs-toggle="tooltip" data-bs-placement="top">
+                                <i class="ti ti-x"></i>
+                            </button>` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    function renderOrderThumb(imageUrl, title, subtitle) {
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(title))}</span>`;
+        return `<div class="list-entity-cell">${media}<div class="list-entity-text"><span class="list-entity-name" title="${escapeAttr(title)}">${escapeHtml(title)}</span><span class="list-entity-sub" title="${escapeAttr(subtitle)}">${escapeHtml(subtitle || '—')}</span></div></div>`;
+    }
+
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function statusBadge(status) {
+        const key = String(status || '').toLowerCase();
+        let cls = 'bg-secondary';
+        if (key === 'placed' || key === 'pending') cls = 'bg-warning text-dark';
+        else if (key === 'confirmed') cls = 'bg-primary';
+        else if (key === 'shipped') cls = 'bg-info';
+        else if (key === 'delivered') cls = 'bg-success';
+        else if (key === 'cancelled') cls = 'bg-danger';
+        return `<span class="badge ${cls}">${escapeHtml(status || '—')}</span>`;
+    }
+
+    function renderStatusCell(orderId, status, canUpdateStatus) {
+        if (!canUpdateStatus) {
+            return statusBadge(status);
+        }
+
+        return `
+            <select class="form-select form-select-sm admin-order-status-select" data-action="Edit" onchange="updateOrderStatus(${orderId}, this.value)">
+                <option value="Confirmed" selected>Confirmed</option>
+                <option value="Shipped">Shipped</option>
+            </select>`;
+    }
+
+    function formatMoney(value) {
+        const amount = Number(value || 0);
+        return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function confirmOrder(orderId) {
+        await postOrderAction(API.confirm, { orderId }, 'Order Confirm', 'Order confirmed.');
+    }
+
+    async function updateOrderStatus(orderId, orderStatus) {
+        if (orderStatus !== 'Shipped') {
+            loadOrders(currentPage);
+            return;
+        }
+
+        const ok = await postOrderAction(API.updateStatus, { orderId, orderStatus }, 'Order Status', 'Order status updated to Shipped.');
+        if (!ok) {
+            loadOrders(currentPage);
+        }
+    }
+
+    async function deliverOrder(orderId) {
+        await postOrderAction(API.deliver, { orderId }, 'Order Deliver', 'Order delivered. COD collected.');
+    }
+
+    function openCancelModal(orderId) {
+        document.getElementById('cancelOrderId').value = String(orderId);
+        document.getElementById('cancelReason').value = '';
+        new bootstrap.Modal(document.getElementById('cancelOrderModal')).show();
+    }
+
+    async function confirmCancelOrder() {
+        const orderId = parseInt(document.getElementById('cancelOrderId').value, 10);
+        const reason = document.getElementById('cancelReason').value.trim();
+        const ok = await postOrderAction(API.cancel, { orderId, reason }, 'Order Cancel', 'Order cancelled.');
+        if (ok) {
+            bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal'))?.hide();
+        }
+    }
+
+    async function postOrderAction(url, payload, logTitle, successMessage) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok || !(result.statusCode || result.StatusCode)) {
+                handleApiError?.('failure', logTitle, { url, method: 'POST', payload, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || result.message || 'Action failed.');
+                return false;
+            }
+            showSuccess('Success', result.responseMsg || result.ResponseMsg || successMessage);
+            loadOrders(currentPage);
+            return true;
+        } catch (error) {
+            handleApiError?.('crash', logTitle, { url, method: 'POST', payload, error });
+            showError('Error', 'Something went wrong. Please try again.');
+            return false;
+        }
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>

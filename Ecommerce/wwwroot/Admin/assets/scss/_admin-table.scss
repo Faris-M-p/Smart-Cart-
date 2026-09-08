@@ -117,6 +117,33 @@
   }
 }
 
+#orderTable.admin-master-list-table {
+  th,
+  td {
+    &.col-name {
+      width: 24%;
+    }
+
+    &.col-customer,
+    &.col-date {
+      width: 14%;
+    }
+
+    &.col-amount,
+    &.col-payment {
+      width: 12%;
+    }
+
+    &.col-status {
+      width: 10%;
+    }
+
+    &.col-actions {
+      width: 14%;
+    }
+  }
+}
+
 #userRoleTable.admin-master-list-table {
   th,
   td {
