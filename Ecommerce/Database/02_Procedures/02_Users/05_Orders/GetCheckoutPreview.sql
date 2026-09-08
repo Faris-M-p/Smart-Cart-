@@ -62,8 +62,10 @@ BEGIN
             CAST(CASE
                 WHEN ISNULL(P.Cancelled, 0) = 0
                  AND P.IsActive = 1
+                 AND ISNULL(P.SellOnline, 0) = 1
                  AND ISNULL(PV.Cancelled, 0) = 0
                  AND PV.IsActive = 1
+                 AND ISNULL(PV.SellOnline, 0) = 1
                  AND ISNULL(ST.Qty, 0) >= @Quantity
                 THEN 1 ELSE 0
             END AS BIT),
@@ -114,9 +116,11 @@ BEGIN
             CAST(CASE
                 WHEN ISNULL(P.Cancelled, 0) = 0
                  AND P.IsActive = 1
+                 AND ISNULL(P.SellOnline, 0) = 1
                  AND PV.ID_ProductVariant IS NOT NULL
                  AND ISNULL(PV.Cancelled, 0) = 0
                  AND PV.IsActive = 1
+                 AND ISNULL(PV.SellOnline, 0) = 1
                  AND ISNULL(ST.Qty, 0) >= CI.Quantity
                 THEN 1 ELSE 0
             END AS BIT),

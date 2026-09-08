@@ -164,6 +164,20 @@
                             <i class="ti ti-plus"></i> Add value
                         </button>
                     </div>
+                    <div class="mb-3 d-flex flex-wrap align-items-center gap-3">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="IsActive" checked>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="sellOnline" name="SellOnline">
+                            <label class="form-check-label" for="sellOnline">Sell online</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="isDefault" name="IsDefault">
+                            <label class="form-check-label" for="isDefault">Is Default SKU</label>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Product Images</label>
                         <div id="imageDropZone" class="border rounded p-3 text-center bg-light" style="cursor: pointer;">
@@ -179,20 +193,6 @@
                         </div>
                         <div class="form-text mt-1">Maximum 5 images. Allowed: jpg, jpeg, png, webp. Max 2MB each.</div>
                         <div id="skuImagePreviewList" class="row g-2 mt-2"></div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="isActive" name="IsActive" checked>
-                            <label class="form-check-label" for="isActive">Active</label>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="isDefault" name="IsDefault">
-                            <label class="form-check-label" for="isDefault">
-                                Is Default SKU
-                            </label>
-                        </div>
                     </div>
                 </form>
             </div>
@@ -469,12 +469,15 @@
         const sp = Number(pv.price ?? pv.Price ?? pv.sellingPrice ?? pv.SellingPrice ?? 0);
         const isDef = pv.isDefault ?? pv.IsDefault;
         const isAct = pv.isActive ?? pv.IsActive;
+        const sellOnline = pv.sellOnline ?? pv.SellOnline;
         const totalImages = Number(pv.totalImages ?? pv.TotalImages ?? 0);
         const created = pv.createdAt ?? pv.CreatedAt;
         const defaultClass = isDef ? 'badge-active' : 'bg-secondary';
         const defaultText = isDef ? 'Yes' : 'No';
         const activeClass = isAct ? 'badge-active' : 'bg-secondary';
         const activeText = isAct ? 'Yes' : 'No';
+        const onlineClass = sellOnline ? 'badge-active' : 'bg-secondary';
+        const onlineText = sellOnline ? 'Yes' : 'No';
         return `
             <tr>
                 <td>${id}</td>
@@ -484,7 +487,10 @@
                 <td>${escapeHtml(label || '—')}</td>
                 <td>${mrp.toFixed(2)}</td>
                 <td>${sp.toFixed(2)}</td>
-                <td><span class="badge ${activeClass}">${activeText}</span></td>
+                <td>
+                    <span class="badge ${activeClass}">${activeText}</span>
+                    <span class="badge ${onlineClass} ms-1">${onlineText === 'Yes' ? 'Online' : 'Offline'}</span>
+                </td>
                 <td><span class="badge ${defaultClass}">${defaultText}</span></td>
                 <td>${totalImages}</td>
                 <td>${created ? new Date(created).toLocaleDateString() : '—'}</td>
@@ -512,6 +518,7 @@
         document.getElementById('variantLabel').value = '';
         document.getElementById('variantLabelPreview').textContent = '';
         document.getElementById('isActive').checked = true;
+        document.getElementById('sellOnline').checked = false;
         document.getElementById('isDefault').checked = false;
         autoSkuEnabled = true;
         autoLabelEnabled = true;
@@ -578,6 +585,7 @@
             document.getElementById('sellingPrice').value = String(pv.sellingPrice ?? pv.SellingPrice ?? '');
             document.getElementById('variantLabel').value = pv.variantLabel ?? pv.VariantLabel ?? '';
             document.getElementById('isActive').checked = pv.isActive ?? pv.IsActive ?? true;
+            document.getElementById('sellOnline').checked = pv.sellOnline ?? pv.SellOnline ?? false;
             document.getElementById('isDefault').checked = pv.isDefault ?? pv.IsDefault ?? false;
             
             const container = document.getElementById('variantAttributesContainer');
@@ -980,6 +988,7 @@
         const mrp = parseFloat(document.getElementById('mrp').value) || 0;
         const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
         const isActive = document.getElementById('isActive').checked;
+        const sellOnline = document.getElementById('sellOnline').checked;
         const isDefault = document.getElementById('isDefault').checked;
 
         if (!fkProduct || fkProduct <= 0) {
@@ -1035,6 +1044,7 @@
         formData.append('SellingPrice', String(sellingPrice));
         formData.append('VariantLabel', variantLabel || '');
         formData.append('IsActive', String(isActive));
+        formData.append('SellOnline', String(sellOnline));
         formData.append('IsDefault', String(isDefault));
         formData.append('VariantValuesJson', JSON.stringify(variantValues));
 

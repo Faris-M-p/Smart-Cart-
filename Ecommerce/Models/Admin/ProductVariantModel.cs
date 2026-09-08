@@ -74,6 +74,8 @@ namespace Ecommerce.Models.Admin
 
             public bool IsActive { get; set; } = true;
 
+            public bool SellOnline { get; set; }
+
             public bool IsDefault { get; set; }
 
             public List<VariantValueRowVIEW> VariantValues { get; set; } = new();
@@ -154,6 +156,7 @@ namespace Ecommerce.Models.Admin
             public decimal MRP { get; set; }
             public decimal SellingPrice { get; set; }
             public bool IsActive { get; set; } = true;
+            public bool SellOnline { get; set; }
             public bool IsDefault { get; set; }
             public List<ProductVariantValueRowInput> VariantValues { get; set; } = new();
             public int EnterBy { get; set; } = 1;
@@ -200,6 +203,9 @@ namespace Ecommerce.Models.Admin
             [JsonPropertyName("isActive")]
             public bool IsActive { get; set; }
 
+            [JsonPropertyName("sellOnline")]
+            public bool SellOnline { get; set; }
+
             [JsonPropertyName("isDefault")]
             public bool IsDefault { get; set; }
 
@@ -238,6 +244,9 @@ namespace Ecommerce.Models.Admin
 
             [JsonPropertyName("isActive")]
             public bool IsActive { get; set; }
+
+            [JsonPropertyName("sellOnline")]
+            public bool SellOnline { get; set; }
 
             [JsonPropertyName("isDefault")]
             public bool IsDefault { get; set; }

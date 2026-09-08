@@ -48,8 +48,10 @@ BEGIN
     WHERE PV.ID_ProductVariant = @ProductVariantId
       AND ISNULL(PV.Cancelled, 0) = 0
       AND PV.IsActive = 1
+      AND ISNULL(PV.SellOnline, 0) = 1
       AND ISNULL(P.Cancelled, 0) = 0
-      AND P.IsActive = 1;
+      AND P.IsActive = 1
+      AND ISNULL(P.SellOnline, 0) = 1;
 
     IF @ProductId IS NULL
     BEGIN

@@ -43,6 +43,8 @@ namespace Ecommerce.Models.Entities
 
         public bool IsActive { get; set; } = true;
 
+        public bool SellOnline { get; set; }
+
         public DateTime? CreatedAt { get; set; }
 
         public bool Cancelled { get; set; }

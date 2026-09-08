@@ -137,6 +137,7 @@ namespace Ecommerce.Controllers.Admin
                     FK_SubCategory = viewInput.FK_SubCategory,
                     FK_Brand = viewInput.FK_Brand,
                     IsActive = viewInput.IsActive,
+                    SellOnline = viewInput.SellOnline,
                     EnterBy = 1
                 };
 
@@ -195,6 +196,7 @@ namespace Ecommerce.Controllers.Admin
                     FK_SubCategory = viewInput.FK_SubCategory,
                     FK_Brand = viewInput.FK_Brand,
                     IsActive = viewInput.IsActive,
+                    SellOnline = viewInput.SellOnline,
                     EnterBy = 1
                 };
 

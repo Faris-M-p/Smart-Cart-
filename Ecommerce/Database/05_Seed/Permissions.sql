@@ -107,3 +107,28 @@ WHERE NOT EXISTS (
     WHERE p.PermissionCode = s.PermissionCode
 );
 GO
+
+-- Online sell is per product/SKU. Remove leftover store-wide Settings.
+IF OBJECT_ID(N'[dbo].[UserRolePermissions]', N'U') IS NOT NULL
+   AND OBJECT_ID(N'[dbo].[Permissions]', N'U') IS NOT NULL
+BEGIN
+    DELETE urp
+    FROM [dbo].[UserRolePermissions] AS urp
+    INNER JOIN [dbo].[Permissions] AS p ON p.ID_Permission = urp.FK_Permission
+    WHERE p.PermissionCode IN (N'Settings.View', N'Settings.Edit');
+END
+GO
+
+IF OBJECT_ID(N'[dbo].[Permissions]', N'U') IS NOT NULL
+BEGIN
+    DELETE FROM [dbo].[Permissions]
+    WHERE PermissionCode IN (N'Settings.View', N'Settings.Edit');
+END
+GO
+
+IF OBJECT_ID(N'[dbo].[Modules]', N'U') IS NOT NULL
+BEGIN
+    DELETE FROM [dbo].[Modules]
+    WHERE ModuleName = N'Settings';
+END
+GO

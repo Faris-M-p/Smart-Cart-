@@ -152,6 +152,7 @@ namespace Ecommerce.Helpers.ProductVariants
                 MRP = input.MRP < 0 ? 0 : input.MRP,
                 SellingPrice = input.SellingPrice,
                 IsActive = input.IsActive,
+                SellOnline = input.SellOnline,
                 IsDefault = input.IsDefault,
                 VariantValues = rows,
                 EnterBy = input.EnterBy

@@ -22,7 +22,8 @@ namespace Ecommerce.Helpers.Products
         string? Description,
         int FK_SubCategory,
         int? FK_Brand,
-        bool IsActive);
+        bool IsActive,
+        bool SellOnline);
 
     public static class ProductHelper
     {
@@ -79,7 +80,7 @@ namespace Ecommerce.Helpers.Products
             var slugRaw = (input.Slug ?? string.Empty).Trim();
             string? slugOverride = slugRaw.Length > 0 ? slugRaw : null;
             var description = StringHelper.NormalizeOptionalString(input.Description);
-            return new NormalizedProductWriteInput(name, slugOverride, description, input.FK_SubCategory, input.FK_Brand, input.IsActive);
+            return new NormalizedProductWriteInput(name, slugOverride, description, input.FK_SubCategory, input.FK_Brand, input.IsActive, input.SellOnline);
         }
 
         public static IQueryable<ProductEntity> ApplyFilters(

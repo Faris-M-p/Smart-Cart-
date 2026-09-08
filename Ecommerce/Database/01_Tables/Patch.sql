@@ -58,6 +58,26 @@ GO
 GO
 PRINT N'Brands patch successfully completed.';
 GO
+:r .\01_Tables\Products.sql
+GO
+PRINT N'Products patch successfully completed.';
+GO
+:r .\01_Tables\ProductVariants.sql
+GO
+PRINT N'ProductVariants patch successfully completed.';
+GO
+
+IF OBJECT_ID(N'[dbo].[GetStoreSettings]', N'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[GetStoreSettings];
+GO
+IF OBJECT_ID(N'[dbo].[UpdateStoreSettings]', N'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[UpdateStoreSettings];
+GO
+IF OBJECT_ID(N'[dbo].[StoreSettings]', N'U') IS NOT NULL
+    DROP TABLE [dbo].[StoreSettings];
+GO
+PRINT N'StoreSettings removal completed.';
+GO
 
 
 

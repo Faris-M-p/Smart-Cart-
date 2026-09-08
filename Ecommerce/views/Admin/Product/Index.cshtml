@@ -185,6 +185,10 @@
                         <input class="form-check-input" type="checkbox" id="productIsActive" checked>
                         <label class="form-check-label" for="productIsActive">Active</label>
                     </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="productSellOnline">
+                        <label class="form-check-label" for="productSellOnline">Sell online</label>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -355,9 +359,12 @@
         const cat = p.categoryName ?? p.CategoryName ?? '';
         const brand = p.brandName ?? p.BrandName ?? '';
         const active = p.isActive ?? p.IsActive ?? false;
+        const sellOnline = p.sellOnline ?? p.SellOnline ?? false;
         const cancelled = p.cancelled ?? p.Cancelled ?? false;
         const badgeClass = active ? 'bg-success' : 'bg-secondary';
         const statusText = cancelled ? 'Deleted' : (active ? 'Active' : 'Inactive');
+        const onlineClass = sellOnline ? 'bg-info' : 'bg-secondary';
+        const onlineText = sellOnline ? 'Online' : 'Offline';
         return `
             <tr>
                 <td class="col-name text-start">${renderListThumb(imageUrl, name)}</td>
@@ -365,6 +372,7 @@
                 <td class="text-start">${truncatedCellHtml(brand || '—', 25)}</td>
                 <td class="col-status text-start">
                     <span class="badge ${badgeClass}" title="${escapeAttr(statusText)}" data-bs-toggle="tooltip">${escapeHtml(statusText)}</span>
+                    <span class="badge ${onlineClass} ms-1" title="${escapeAttr(onlineText)}" data-bs-toggle="tooltip">${escapeHtml(onlineText)}</span>
                 </td>
                 <td class="col-actions text-start">
                     ${cancelled ? '' : `
@@ -388,6 +396,7 @@
         });
         adminSelect.setValue(document.getElementById('fkBrand'), '');
         document.getElementById('productIsActive').checked = true;
+        document.getElementById('productSellOnline').checked = false;
         resetProductMedia();
     }
 
@@ -402,6 +411,7 @@
             document.getElementById('productSlug').value = p.slug ?? p.Slug ?? '';
             document.getElementById('description').value = p.description ?? p.Description ?? '';
             document.getElementById('productIsActive').checked = (p.isActive ?? p.IsActive ?? true) === true;
+            document.getElementById('productSellOnline').checked = (p.sellOnline ?? p.SellOnline ?? false) === true;
             const fkCat = p.fkCategory ?? p.fk_Category ?? p.FK_Category ?? '';
             adminSelect.setValue(document.getElementById('fkCategory'), fkCat);
             await loadSubCategoriesForProduct(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
@@ -469,6 +479,7 @@
         formData.append('Slug', slug);
         formData.append('Description', description);
         formData.append('IsActive', document.getElementById('productIsActive').checked ? 'true' : 'false');
+        formData.append('SellOnline', document.getElementById('productSellOnline').checked ? 'true' : 'false');
         currentExistingIds.forEach(id => formData.append('ExistingMediaOrder', String(id)));
         removedMediaIds.forEach(id => formData.append('RemovedMediaIds', String(id)));
         newItems.forEach(item => formData.append('Files', item.file));

@@ -122,6 +122,7 @@ namespace Ecommerce.Controllers.Admin
                 MRP = viewInput.MRP,
                 SellingPrice = viewInput.SellingPrice,
                 IsActive = viewInput.IsActive,
+                SellOnline = viewInput.SellOnline,
                 IsDefault = viewInput.IsDefault,
                 VariantValues = variantRows
                     .Where(v => v.VariantId > 0 && v.VariantValueId > 0)
@@ -214,6 +215,7 @@ namespace Ecommerce.Controllers.Admin
                 MRP = viewInput.MRP,
                 SellingPrice = viewInput.SellingPrice,
                 IsActive = viewInput.IsActive,
+                SellOnline = viewInput.SellOnline,
                 IsDefault = viewInput.IsDefault,
                 VariantValues = variantRows
                     .Where(v => v.VariantId > 0 && v.VariantValueId > 0)

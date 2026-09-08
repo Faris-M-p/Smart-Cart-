@@ -272,3 +272,8 @@
         grid-template-columns: 1fr;
     }
 }
+
+html.is-online-purchase-off .js-online-purchase,
+body.is-online-purchase-off .js-online-purchase {
+    display: none !important;
+}

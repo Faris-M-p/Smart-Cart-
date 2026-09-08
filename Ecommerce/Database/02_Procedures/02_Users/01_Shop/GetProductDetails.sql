@@ -17,6 +17,7 @@ BEGIN
         FROM Products AS P WITH (NOLOCK)
         WHERE ISNULL(P.Cancelled, 0) = 0
           AND P.IsActive = 1
+          AND ISNULL(P.SellOnline, 0) = 1
           AND (P.ID_Product = TRY_CAST(@Slug AS INT) OR P.Slug = @Slug);
     END
     ELSE
@@ -25,6 +26,7 @@ BEGIN
         FROM Products AS P WITH (NOLOCK)
         WHERE ISNULL(P.Cancelled, 0) = 0
           AND P.IsActive = 1
+          AND ISNULL(P.SellOnline, 0) = 1
           AND P.Slug = @Slug;
     END;
 
@@ -72,6 +74,7 @@ BEGIN
     WHERE PV.FK_Product = @ProductId
       AND ISNULL(PV.Cancelled, 0) = 0
       AND PV.IsActive = 1
+      AND ISNULL(PV.SellOnline, 0) = 1
     ORDER BY PV.IsDefault DESC, PV.SellingPrice ASC, PV.ID_ProductVariant ASC;
 
     SELECT
@@ -87,6 +90,7 @@ BEGIN
     WHERE PV.FK_Product = @ProductId
       AND ISNULL(PV.Cancelled, 0) = 0
       AND PV.IsActive = 1
+      AND ISNULL(PV.SellOnline, 0) = 1
     ORDER BY V.DisplayOrder, V.Name, VV.DisplayOrder, VV.Name;
 
     SELECT
@@ -97,6 +101,7 @@ BEGIN
     WHERE PV.FK_Product = @ProductId
       AND ISNULL(PV.Cancelled, 0) = 0
       AND PV.IsActive = 1
+      AND ISNULL(PV.SellOnline, 0) = 1
       AND SM.MediaType = N'Image'
       AND SM.MediaUrl IS NOT NULL
       AND SM.MediaUrl <> N''

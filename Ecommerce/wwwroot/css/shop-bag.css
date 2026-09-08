@@ -390,3 +390,8 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+html.is-online-purchase-off .js-online-purchase,
+body.is-online-purchase-off .js-online-purchase {
+    display: none !important;
+}

@@ -70,6 +70,9 @@ namespace Ecommerce.Models.Admin
             [Display(Name = "Active")]
             public bool IsActive { get; set; } = true;
 
+            [Display(Name = "Sell Online")]
+            public bool SellOnline { get; set; }
+
             public List<IFormFile> Files { get; set; } = new();
             public List<int> ExistingMediaOrder { get; set; } = new();
             public List<int> RemovedMediaIds { get; set; } = new();
@@ -123,6 +126,7 @@ namespace Ecommerce.Models.Admin
             public int FK_SubCategory { get; set; }
             public int? FK_Brand { get; set; }
             public bool IsActive { get; set; } = true;
+            public bool SellOnline { get; set; }
             public int EnterBy { get; set; } = 1;
         }
 
@@ -156,6 +160,7 @@ namespace Ecommerce.Models.Admin
             public string? Description { get; set; }
             public string? ImageUrl { get; set; }
             public bool IsActive { get; set; }
+            public bool SellOnline { get; set; }
             public bool Cancelled { get; set; }
             public List<ProductMediaDto> Media { get; set; } = new();
         }

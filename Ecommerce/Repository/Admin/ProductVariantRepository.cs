@@ -80,6 +80,7 @@ namespace Ecommerce.Repository.Admin
                         pv.MRP,
                         pv.SellingPrice,
                         pv.IsActive,
+                        pv.SellOnline,
                         pv.IsDefault,
                         pv.Cancelled,
                         pv.CreatedAt,
@@ -115,6 +116,7 @@ namespace Ecommerce.Repository.Admin
                         Price = pv.SellingPrice,
                         ProductName = productName,
                         IsActive = pv.IsActive,
+                        SellOnline = pv.SellOnline,
                         IsDefault = pv.IsDefault,
                         Cancelled = pv.Cancelled,
                         CreatedAt = pv.CreatedAt,
@@ -194,6 +196,7 @@ namespace Ecommerce.Repository.Admin
                     MRP = row.MRP,
                     SellingPrice = row.SellingPrice,
                     IsActive = row.IsActive,
+                    SellOnline = row.SellOnline,
                     IsDefault = row.IsDefault,
                     CreatedAt = row.CreatedAt,
                     Attributes = attributes,
@@ -306,6 +309,7 @@ namespace Ecommerce.Repository.Admin
                     MRP = normalized.MRP,
                     SellingPrice = normalized.SellingPrice,
                     IsActive = normalized.IsActive,
+                    SellOnline = normalized.SellOnline,
                     IsDefault = normalized.IsDefault,
                     CreatedAt = DateTime.Now,
                     Cancelled = false
@@ -440,6 +444,7 @@ namespace Ecommerce.Repository.Admin
                 entity.MRP = normalized.MRP;
                 entity.SellingPrice = normalized.SellingPrice;
                 entity.IsActive = normalized.IsActive;
+                entity.SellOnline = normalized.SellOnline;
                 entity.IsDefault = normalized.IsDefault;
 
                 var existingAttrs = await _dbContext.ProductVariantAttributes

@@ -80,6 +80,7 @@ BEGIN
         FROM ProductVariants AS PV WITH (NOLOCK)
         WHERE ISNULL(PV.Cancelled, 0) = 0
           AND PV.IsActive = 1
+          AND ISNULL(PV.SellOnline, 0) = 1
         GROUP BY PV.FK_Product
     ),
     CheapestSku AS (
@@ -94,6 +95,7 @@ BEGIN
         FROM ProductVariants AS PV WITH (NOLOCK)
         WHERE ISNULL(PV.Cancelled, 0) = 0
           AND PV.IsActive = 1
+          AND ISNULL(PV.SellOnline, 0) = 1
     ),
     StockByProduct AS (
         SELECT
@@ -105,6 +107,7 @@ BEGIN
            AND ISNULL(S.Cancelled, 0) = 0
         WHERE ISNULL(PV.Cancelled, 0) = 0
           AND PV.IsActive = 1
+          AND ISNULL(PV.SellOnline, 0) = 1
         GROUP BY PV.FK_Product
     ),
     ProductImage AS (
@@ -133,6 +136,7 @@ BEGIN
             ON SM.FK_ProductSKU = PV.ID_ProductVariant
         WHERE ISNULL(PV.Cancelled, 0) = 0
           AND PV.IsActive = 1
+          AND ISNULL(PV.SellOnline, 0) = 1
           AND SM.MediaType = N'Image'
           AND SM.MediaUrl IS NOT NULL
           AND SM.MediaUrl <> N''
@@ -165,6 +169,7 @@ BEGIN
         LEFT JOIN SkuImage AS SI ON SI.FK_Product = P.ID_Product AND SI.rn = 1
         WHERE ISNULL(P.Cancelled, 0) = 0
           AND P.IsActive = 1
+          AND ISNULL(P.SellOnline, 0) = 1
           AND (
                 @SearchName IS NULL
                 OR P.Name LIKE N'%' + @SearchName + N'%'

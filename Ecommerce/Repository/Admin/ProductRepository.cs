@@ -97,6 +97,7 @@ namespace Ecommerce.Repository.Admin
                             select pvi.ImageUrl
                         ).FirstOrDefault(),
                         IsActive = p.IsActive,
+                        SellOnline = p.SellOnline,
                         Cancelled = p.Cancelled
                     }).ToListAsync();
 
@@ -159,6 +160,7 @@ namespace Ecommerce.Repository.Admin
                         select pvi.ImageUrl
                     ).FirstOrDefault(),
                     IsActive = p.IsActive,
+                    SellOnline = p.SellOnline,
                     Cancelled = p.Cancelled
                 }).FirstOrDefaultAsync();
 
@@ -221,6 +223,7 @@ namespace Ecommerce.Repository.Admin
                     Slug = slug,
                     Description = n.Description,
                     IsActive = n.IsActive,
+                    SellOnline = n.SellOnline,
                     CreatedAt = DateTime.Now,
                     ModifiedAt = null,
                     Cancelled = false,
@@ -290,6 +293,7 @@ namespace Ecommerce.Repository.Admin
                 entity.FK_SubCategory = n.FK_SubCategory;
                 entity.FK_Brand = n.FK_Brand;
                 entity.IsActive = n.IsActive;
+                entity.SellOnline = n.SellOnline;
                 entity.ModifiedAt = DateTime.Now;
 
                 await _dbContext.SaveChangesAsync();
