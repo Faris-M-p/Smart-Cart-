@@ -83,7 +83,13 @@ namespace Ecommerce.Repository.Admin
                         pv.IsDefault,
                         pv.Cancelled,
                         pv.CreatedAt,
-                        TotalImages = _dbContext.ProductVariantImages.Count(i => i.FK_ProductVariant == pv.ID_ProductVariant)
+                        TotalImages = _dbContext.ProductVariantImages.Count(i => i.FK_ProductVariant == pv.ID_ProductVariant),
+                        ImageUrl = (
+                            from i in _dbContext.ProductVariantImages
+                            where i.FK_ProductVariant == pv.ID_ProductVariant
+                            orderby i.IsPrimary descending, i.DisplayOrder, i.ID_ProductVariantImage
+                            select i.ImageUrl
+                        ).FirstOrDefault()
                     })
                     .ToListAsync();
 
@@ -112,7 +118,8 @@ namespace Ecommerce.Repository.Admin
                         IsDefault = pv.IsDefault,
                         Cancelled = pv.Cancelled,
                         CreatedAt = pv.CreatedAt,
-                        TotalImages = pv.TotalImages
+                        TotalImages = pv.TotalImages,
+                        ImageUrl = pv.ImageUrl
                     };
                 }).ToList();
 

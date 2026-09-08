@@ -117,9 +117,11 @@
                     </div>
                     <div class="mb-3">
                         <label for="fkCategory" class="form-label">Category <span class="text-danger">*</span></label>
-                        <select class="form-select" id="fkCategory" name="FK_Category" required>
-                            <option value="">Select Category</option>
-                        </select>
+                        <div class="searchable-select">
+                            <select class="form-select" id="fkCategory" name="FK_Category" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
                         <div class="invalid-feedback"></div>
                     </div>
                     <div class="mb-3">
@@ -177,6 +179,7 @@
 </div>
 
 <script src="/Admin/assets/js/plugins/choices.min.js"></script>
+<script src="/Admin/assets/js/common/searchable-select.js?v=select-media-1"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
@@ -280,7 +283,7 @@
     async function loadSubCategories(page = 1) {
         currentPage = page;
 
-        const filterCategoryID = document.getElementById('filterCategory').value || '';
+        const filterCategoryID = adminSelect.getValue(document.getElementById('filterCategory')) || '';
 
         let filterCategoryIDs = '';
         if (filterCategoryID) {
@@ -391,7 +394,7 @@
         document.getElementById('subCategoryModalLabel').textContent = 'Add SubCategory';
         document.getElementById('subCategoryForm').reset();
         document.getElementById('subCategoryID').value = '0';
-        document.getElementById('fkCategory').value = '';
+        adminSelect.setValue(document.getElementById('fkCategory'), '');
         document.getElementById('subCategoryIsActive').checked = true;
         resetSubCategoryImage();
     }
@@ -407,7 +410,8 @@
             document.getElementById('subCategoryModalLabel').textContent = 'Edit SubCategory';
             document.getElementById('subCategoryID').value = String(sid);
             document.getElementById('subCategoryName').value = subCategory.subCategoryName || subCategory.SubCategoryName || '';
-            document.getElementById('fkCategory').value = String(
+            adminSelect.setValue(
+                document.getElementById('fkCategory'),
                 subCategory.FK_Category ?? subCategory.fkCategory ?? subCategory.fK_Category ?? '');
             document.getElementById('description').value = subCategory.description || subCategory.Description || '';
             document.getElementById('subCategoryIsActive').checked =
@@ -426,7 +430,7 @@
     async function saveSubCategory() {
         const subCategoryID = parseInt(document.getElementById('subCategoryID').value);
         const subCategoryName = document.getElementById('subCategoryName').value.trim();
-        const fkCategory = parseInt(document.getElementById('fkCategory').value);
+        const fkCategory = parseInt(adminSelect.getValue(document.getElementById('fkCategory')), 10);
         const description = document.getElementById('description').value.trim();
 
         if (!subCategoryName) {
@@ -609,35 +613,27 @@
                 categoryMap[cid] = cname;
             });
 
-            const filterDropdown = document.getElementById('filterCategory');
-            const formDropdown = document.getElementById('fkCategory');
+            const items = categories
+                .map(function (cat) {
+                    const cid = cat.categoryID ?? cat.CategoryID;
+                    const cname = cat.categoryName ?? cat.CategoryName ?? '';
+                    if (!cid || !cname) return null;
+                    return {
+                        value: String(cid),
+                        label: cname,
+                        imageUrl: cat.imageUrl ?? cat.ImageUrl ?? ''
+                    };
+                })
+                .filter(Boolean);
 
-            formDropdown.innerHTML = '<option value="">Select Category</option>';
-
-            if (!filterDropdown.choicesInstance) {
-                filterDropdown.innerHTML = '<option value="">All Categories</option>';
-            }
-
-            categories.forEach(cat => {
-                const cid = cat.categoryID ?? cat.CategoryID;
-                const cname = cat.categoryName ?? cat.CategoryName ?? '';
-                if (!cid) return;
-                formDropdown.add(new Option(cname, String(cid)));
-                if (!filterDropdown.choicesInstance) {
-                    filterDropdown.add(new Option(cname, String(cid)));
-                }
+            adminSelect.fill(document.getElementById('filterCategory'), items, {
+                placeholder: 'All Categories',
+                searchPlaceholder: 'Search categories...'
             });
-
-            if (typeof Choices !== 'undefined' && !filterDropdown.choicesInstance) {
-                filterDropdown.choicesInstance = new Choices(filterDropdown, {
-                    searchEnabled: true,
-                    searchPlaceholderValue: 'Search categories...',
-                    itemSelectText: '',
-                    shouldSort: false,
-                    allowHTML: false,
-                    position: 'bottom'
-                });
-            }
+            adminSelect.fill(document.getElementById('fkCategory'), items, {
+                placeholder: 'Select Category',
+                searchPlaceholder: 'Search categories...'
+            });
         } catch (error) {
             console.error('Error loading categories:', error);
         }

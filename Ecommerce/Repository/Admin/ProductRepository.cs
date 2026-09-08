@@ -86,17 +86,14 @@ namespace Ecommerce.Repository.Admin
                         Description = p.Description,
                         ImageUrl = (
                             from pm in _dbContext.ProductMedia.AsNoTracking()
-                            where pm.FK_Product == p.ID_Product && pm.IsPrimary
-                            orderby pm.DisplayOrder, pm.ID_ProductMedia
+                            where pm.FK_Product == p.ID_Product && pm.MediaType == "Image"
+                            orderby pm.IsPrimary descending, pm.DisplayOrder, pm.ID_ProductMedia
                             select pm.MediaUrl
                         ).FirstOrDefault() ?? (
                             from pv in _dbContext.ProductVariants.AsNoTracking()
                             join pvi in _dbContext.ProductVariantImages.AsNoTracking() on pv.ID_ProductVariant equals pvi.FK_ProductVariant
-                            where pv.FK_Product == p.ID_Product &&
-                                  !pv.Cancelled &&
-                                  pv.IsDefault &&
-                                  pvi.IsPrimary
-                            orderby pvi.DisplayOrder, pvi.ID_ProductVariantImage
+                            where pv.FK_Product == p.ID_Product && !pv.Cancelled
+                            orderby pv.IsDefault descending, pvi.IsPrimary descending, pvi.DisplayOrder, pvi.ID_ProductVariantImage
                             select pvi.ImageUrl
                         ).FirstOrDefault(),
                         IsActive = p.IsActive,
@@ -151,17 +148,14 @@ namespace Ecommerce.Repository.Admin
                     Description = p.Description,
                     ImageUrl = (
                         from pm in _dbContext.ProductMedia.AsNoTracking()
-                        where pm.FK_Product == p.ID_Product && pm.IsPrimary
-                        orderby pm.DisplayOrder, pm.ID_ProductMedia
+                        where pm.FK_Product == p.ID_Product && pm.MediaType == "Image"
+                        orderby pm.IsPrimary descending, pm.DisplayOrder, pm.ID_ProductMedia
                         select pm.MediaUrl
                     ).FirstOrDefault() ?? (
                         from pv in _dbContext.ProductVariants.AsNoTracking()
                         join pvi in _dbContext.ProductVariantImages.AsNoTracking() on pv.ID_ProductVariant equals pvi.FK_ProductVariant
-                        where pv.FK_Product == p.ID_Product &&
-                              !pv.Cancelled &&
-                              pv.IsDefault &&
-                              pvi.IsPrimary
-                        orderby pvi.DisplayOrder, pvi.ID_ProductVariantImage
+                        where pv.FK_Product == p.ID_Product && !pv.Cancelled
+                        orderby pv.IsDefault descending, pvi.IsPrimary descending, pvi.DisplayOrder, pvi.ID_ProductVariantImage
                         select pvi.ImageUrl
                     ).FirstOrDefault(),
                     IsActive = p.IsActive,

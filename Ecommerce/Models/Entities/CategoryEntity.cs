@@ -20,7 +20,7 @@ namespace Ecommerce.Models.Entities
 
         public bool IsActive { get; set; }
 
-        [MaxLength(500)]
+        [MaxLength(1000)]
         public string? ImageUrl { get; set; }
 
         public bool Cancelled { get; set; }

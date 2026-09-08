@@ -233,10 +233,12 @@
     }
 
     .choices__list--dropdown .choices__list {
-        max-height: 200px;
+        max-height: 240px;
     }
 
     .choices__list--dropdown .choices__item {
+        display: flex;
+        align-items: center;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

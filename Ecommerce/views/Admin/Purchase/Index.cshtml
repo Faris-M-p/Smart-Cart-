@@ -271,6 +271,8 @@
     </div>
 </div>
 
+<script src="/Admin/assets/js/plugins/choices.min.js"></script>
+<script src="/Admin/assets/js/common/searchable-select.js?v=select-media-1"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
@@ -672,15 +674,19 @@
         row.className = 'purchase-detail-row';
         row.innerHTML = `
             <td>
-                <select class="form-select product-select" onchange="onProductChange(this)" required>
-                    <option value="">Select Product</option>
-                </select>
+                <div class="searchable-select">
+                    <select class="form-select product-select" onchange="onProductChange(this)" required>
+                        <option value="">Select Product</option>
+                    </select>
+                </div>
                 <input type="hidden" class="purchase-detail-id" value="${purchaseDetailId}">
             </td>
             <td>
-                <select class="form-select product-variant-select" required>
-                    <option value="">Select SKU</option>
-                </select>
+                <div class="searchable-select">
+                    <select class="form-select product-variant-select" required>
+                        <option value="">Select SKU</option>
+                    </select>
+                </div>
             </td>
             <td>
                 <input type="number" class="form-control quantity-input" min="1" value="${quantity || ''}" required>
@@ -705,26 +711,32 @@
         const productSelect = row.querySelector('.product-select');
         const variantSelect = row.querySelector('.product-variant-select');
         
-        // Populate products (supports both camelCase + PascalCase)
-        products.forEach(p => {
-            const cancelled = p.cancelled ?? p.Cancelled;
-            const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
-            const pname = p.name ?? p.Name ?? '';
-            if (!cancelled && pid > 0) {
-                const option = new Option(pname, String(pid));
-                if (productId != null && Number(pid) === Number(productId)) {
-                    option.selected = true;
-                }
-                productSelect.add(option);
-            }
+        const productItems = products
+            .map(function (p) {
+                const cancelled = p.cancelled ?? p.Cancelled;
+                const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
+                const pname = p.name ?? p.Name ?? '';
+                if (cancelled || !(pid > 0) || !pname) return null;
+                return {
+                    value: String(pid),
+                    label: pname,
+                    imageUrl: p.imageUrl ?? p.ImageUrl ?? ''
+                };
+            })
+            .filter(Boolean);
+
+        adminSelect.fill(productSelect, productItems, {
+            placeholder: 'Select Product',
+            searchPlaceholder: 'Search products...',
+            selected: productId || ''
         });
-        
-        // If product is selected, load variants
+
         if (productId) {
-            loadProductVariants(productId, variantSelect).then(() => {
-                if (productVariantId) {
-                    variantSelect.value = productVariantId;
-                }
+            loadProductVariants(productId, variantSelect, productVariantId);
+        } else {
+            adminSelect.fill(variantSelect, [], {
+                placeholder: 'Select SKU',
+                searchPlaceholder: 'Search SKUs...'
             });
         }
     }
@@ -732,7 +744,7 @@
     async function onProductChange(select) {
         const row = select.closest('.purchase-detail-row');
         const variantSelect = row.querySelector('.product-variant-select');
-        const productId = parseInt(select.value);
+        const productId = parseInt(adminSelect.getValue(select), 10);
         await loadProductVariants(productId, variantSelect);
     }
 
@@ -774,7 +786,7 @@
             const expiryDateInput = row.querySelector('.expiry-date-input');
             const purchaseDetailId = parseInt(row.querySelector('.purchase-detail-id').value) || 0;
             
-            const productVariantId = parseInt(variantSelect.value);
+            const productVariantId = parseInt(adminSelect.getValue(variantSelect), 10);
             const quantity = parseInt(quantityInput.value);
             const purchasePrice = parseFloat(purchasePriceInput.value);
             const mrp = mrpInput.value ? parseFloat(mrpInput.value) : null;
@@ -1004,9 +1016,12 @@
         }
     }
 
-    async function loadProductVariants(productId, selectElement) {
+    async function loadProductVariants(productId, selectElement, selectedId) {
         if (!productId || productId <= 0) {
-            selectElement.innerHTML = '<option value="">Select SKU</option>';
+            adminSelect.fill(selectElement, [], {
+                placeholder: 'Select SKU',
+                searchPlaceholder: 'Search SKUs...'
+            });
             return;
         }
 
@@ -1017,17 +1032,30 @@
                 productVariants[productId] = await response.json();
             }
 
-            const variants = productVariants[productId];
-            selectElement.innerHTML = '<option value="">Select SKU</option>';
-            variants.forEach(v => {
-                const vid = v.idProductVariant ?? v.ID_ProductVariant;
-                const label = v.attributeSignature ?? v.AttributeSignature ?? v.sku ?? v.SKU ?? `SKU #${vid}`;
-                const option = new Option(label, vid);
-                selectElement.add(option);
+            const items = (productVariants[productId] || [])
+                .map(function (v) {
+                    const vid = v.idProductVariant ?? v.ID_ProductVariant;
+                    const label = v.attributeSignature ?? v.AttributeSignature ?? v.sku ?? v.SKU ?? `SKU #${vid}`;
+                    if (!vid) return null;
+                    return {
+                        value: String(vid),
+                        label: label,
+                        imageUrl: v.imageUrl ?? v.ImageUrl ?? ''
+                    };
+                })
+                .filter(Boolean);
+
+            adminSelect.fill(selectElement, items, {
+                placeholder: 'Select SKU',
+                searchPlaceholder: 'Search SKUs...',
+                selected: selectedId || ''
             });
         } catch (error) {
             console.error('Error loading product variants:', error);
-            selectElement.innerHTML = '<option value="">Error loading SKUs</option>';
+            adminSelect.fill(selectElement, [], {
+                placeholder: 'Error loading SKUs',
+                searchPlaceholder: 'Search SKUs...'
+            });
         }
     }
 

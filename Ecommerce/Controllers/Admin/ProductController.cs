@@ -446,7 +446,7 @@ namespace Ecommerce.Controllers.Admin
 
                 var rows = data
                     .Where(b => !b.Cancelled && b.IsActive)
-                    .Select(b => new { ID_Brand = b.BrandID, Name = b.BrandName })
+                    .Select(b => new { ID_Brand = b.BrandID, Name = b.BrandName, ImageUrl = b.ImageUrl })
                     .ToList();
                 return Ok(rows);
             }

@@ -138,22 +138,28 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="fkCategory" class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="fkCategory" required onchange="loadSubCategoriesForProduct()">
-                                <option value="">Select category</option>
-                            </select>
+                            <div class="searchable-select">
+                                <select class="form-select" id="fkCategory" required onchange="loadSubCategoriesForProduct()">
+                                    <option value="">Select category</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="fkSubCategory" class="form-label">Subcategory <span class="text-danger">*</span></label>
-                            <select class="form-select" id="fkSubCategory" required>
-                                <option value="">Select subcategory</option>
-                            </select>
+                            <div class="searchable-select">
+                                <select class="form-select" id="fkSubCategory" required>
+                                    <option value="">Select subcategory</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="fkBrand" class="form-label">Brand</label>
-                        <select class="form-select" id="fkBrand">
-                            <option value="">Optional</option>
-                        </select>
+                        <div class="searchable-select">
+                            <select class="form-select" id="fkBrand">
+                                <option value="">Optional</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
@@ -209,6 +215,7 @@
 </div>
 
 <script src="/Admin/assets/js/plugins/choices.min.js"></script>
+<script src="/Admin/assets/js/common/searchable-select.js?v=select-media-1"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
@@ -344,6 +351,7 @@
     function createProductRow(p) {
         const id = p.productId ?? p.id_Product ?? p.ID_Product ?? 0;
         const name = p.name ?? p.Name ?? '';
+        const imageUrl = p.imageUrl ?? p.ImageUrl ?? '';
         const cat = p.categoryName ?? p.CategoryName ?? '';
         const brand = p.brandName ?? p.BrandName ?? '';
         const active = p.isActive ?? p.IsActive ?? false;
@@ -352,7 +360,7 @@
         const statusText = cancelled ? 'Deleted' : (active ? 'Active' : 'Inactive');
         return `
             <tr>
-                <td class="col-name text-start">${truncatedCellHtml(name)}</td>
+                <td class="col-name text-start">${renderListThumb(imageUrl, name)}</td>
                 <td class="text-start">${truncatedCellHtml(cat, 30)}</td>
                 <td class="text-start">${truncatedCellHtml(brand || '—', 25)}</td>
                 <td class="col-status text-start">
@@ -373,7 +381,12 @@
         document.getElementById('productModalLabel').textContent = 'Add product';
         document.getElementById('productForm').reset();
         document.getElementById('productID').value = '0';
-        document.getElementById('fkSubCategory').innerHTML = '<option value="">Select subcategory</option>';
+        adminSelect.setValue(document.getElementById('fkCategory'), '');
+        adminSelect.fill(document.getElementById('fkSubCategory'), [], {
+            placeholder: 'Select subcategory',
+            searchPlaceholder: 'Search subcategories...'
+        });
+        adminSelect.setValue(document.getElementById('fkBrand'), '');
         document.getElementById('productIsActive').checked = true;
         resetProductMedia();
     }
@@ -390,11 +403,10 @@
             document.getElementById('description').value = p.description ?? p.Description ?? '';
             document.getElementById('productIsActive').checked = (p.isActive ?? p.IsActive ?? true) === true;
             const fkCat = p.fkCategory ?? p.fk_Category ?? p.FK_Category ?? '';
-            document.getElementById('fkCategory').value = String(fkCat);
-            await loadSubCategoriesForProduct();
-            document.getElementById('fkSubCategory').value = String(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
+            adminSelect.setValue(document.getElementById('fkCategory'), fkCat);
+            await loadSubCategoriesForProduct(p.fkSubCategory ?? p.fk_SubCategory ?? p.FK_SubCategory ?? '');
             const fb = p.fkBrand ?? p.fk_Brand ?? p.FK_Brand;
-            document.getElementById('fkBrand').value = fb != null && fb !== '' ? String(fb) : '';
+            adminSelect.setValue(document.getElementById('fkBrand'), fb != null && fb !== '' ? fb : '');
             await loadProductMediaForEdit(p.media ?? p.Media ?? [], productID);
             new bootstrap.Modal(document.getElementById('productModal')).show();
         } catch (e) {
@@ -409,11 +421,11 @@
         const name = document.getElementById('productName').value.trim();
         const slug = document.getElementById('productSlug').value.trim();
         const description = document.getElementById('description').value.trim();
-        const fkCategoryRaw = document.getElementById('fkCategory').value;
-        const fkSubRaw = document.getElementById('fkSubCategory').value;
+        const fkCategoryRaw = adminSelect.getValue(document.getElementById('fkCategory'));
+        const fkSubRaw = adminSelect.getValue(document.getElementById('fkSubCategory'));
         const fkCategory = parseInt(fkCategoryRaw, 10);
         const fkSubCategory = parseInt(fkSubRaw, 10);
-        const fkBrandVal = document.getElementById('fkBrand').value;
+        const fkBrandVal = adminSelect.getValue(document.getElementById('fkBrand'));
         const fkBrand = fkBrandVal ? parseInt(fkBrandVal, 10) : null;
 
         if (!name) {
@@ -530,6 +542,18 @@
     }
 
     // 10. Page-specific Helper Functions
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function renderListThumb(imageUrl, name) {
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(name))}</span>`;
+        return `<div class="list-entity-cell">${media}<span class="list-entity-name" title="${escapeAttr(name)}">${escapeHtml(name)}</span></div>`;
+    }
+
     function truncateText(text, limit = 25) {
         if (!text) return '';
         const s = String(text);
@@ -581,7 +605,7 @@
     }
 
     function filterJsonFromSelect(selectId) {
-        const v = document.getElementById(selectId).value;
+        const v = adminSelect.getValue(document.getElementById(selectId));
         if (!v) return '';
         const n = parseInt(v, 10);
         if (isNaN(n) || n <= 0) return '';
@@ -618,44 +642,37 @@
         return !isNaN(n) && n > 0 ? n : 0;
     }
 
-    function addSubCategoryOption(selectEl, sc) {
-        const id = pickSubCategoryId(sc);
-        const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
-        if (!name) return;
-        if (id <= 0) return;
-        selectEl.add(new Option(name, String(id)));
-    }
-
-    function addCategoryOption(selectEl, cat) {
+    function mapCategoryChoice(cat) {
         const id = pickCategoryId(cat);
         const name = cat.categoryName ?? cat.CategoryName ?? cat.name ?? cat.Name ?? '';
-        if (!name || id <= 0) return;
-        selectEl.add(new Option(name, String(id)));
+        if (!name || id <= 0) return null;
+        return {
+            value: String(id),
+            label: name,
+            imageUrl: cat.imageUrl ?? cat.ImageUrl ?? ''
+        };
     }
 
-    function enableSearchableSelect(selectEl, searchPlaceholder) {
-        if (!selectEl || typeof Choices === 'undefined') {
-            return;
-        }
-        if (selectEl.choicesInstance) {
-            selectEl.choicesInstance.destroy();
-            selectEl.choicesInstance = null;
-        }
-        selectEl.choicesInstance = new Choices(selectEl, {
-            searchEnabled: true,
-            searchPlaceholderValue: searchPlaceholder,
-            itemSelectText: '',
-            shouldSort: false,
-            allowHTML: false,
-            position: 'bottom'
-        });
+    function mapSubCategoryChoice(sc) {
+        const id = pickSubCategoryId(sc);
+        const name = sc.subCategoryName ?? sc.SubCategoryName ?? sc.name ?? sc.Name ?? '';
+        if (!name || id <= 0) return null;
+        return {
+            value: String(id),
+            label: name,
+            imageUrl: sc.imageUrl ?? sc.ImageUrl ?? ''
+        };
     }
 
-    function addBrandOption(selectEl, b) {
+    function mapBrandChoice(b) {
         const id = pickBrandId(b);
         const name = b.name ?? b.Name ?? b.brandName ?? b.BrandName ?? '';
-        if (!name || id <= 0) return;
-        selectEl.add(new Option(name, String(id)));
+        if (!name || id <= 0) return null;
+        return {
+            value: String(id),
+            label: name,
+            imageUrl: b.imageUrl ?? b.ImageUrl ?? ''
+        };
     }
 
     async function loadCategories() {
@@ -663,18 +680,19 @@
             const response = await fetch(API.categories);
             if (!response.ok) throw new Error('Failed to load categories');
             const categories = await response.json();
+            const items = categories
+                .filter(function (cat) { return !(cat.cancelled || cat.Cancelled); })
+                .map(mapCategoryChoice)
+                .filter(Boolean);
 
-            const filterSel = document.getElementById('filterCategory');
-            const formSel = document.getElementById('fkCategory');
-            filterSel.innerHTML = '<option value="">All</option>';
-            formSel.innerHTML = '<option value="">Select category</option>';
-
-            categories.forEach(function (cat) {
-                if (cat.cancelled || cat.Cancelled) return;
-                addCategoryOption(filterSel, cat);
-                addCategoryOption(formSel, cat);
+            adminSelect.fill(document.getElementById('filterCategory'), items, {
+                placeholder: 'All',
+                searchPlaceholder: 'Search categories...'
             });
-            enableSearchableSelect(filterSel, 'Search categories...');
+            adminSelect.fill(document.getElementById('fkCategory'), items, {
+                placeholder: 'Select category',
+                searchPlaceholder: 'Search categories...'
+            });
         } catch (e) {
             console.error(e);
         }
@@ -686,40 +704,49 @@
     }
 
     async function loadSubCategoriesForFilter() {
-        const categoryId = document.getElementById('filterCategory').value;
+        const categoryId = adminSelect.getValue(document.getElementById('filterCategory'));
         const url = categoryId ? `${API.subCategories}?categoryId=${categoryId}` : API.subCategories;
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to load subcategories');
             const list = await response.json();
-            const sel = document.getElementById('filterSubCategory');
-            if (sel.choicesInstance) {
-                sel.choicesInstance.destroy();
-                sel.choicesInstance = null;
-            }
-            sel.innerHTML = '<option value="">All</option>';
-            list.forEach(function (sc) {
-                if (sc.cancelled || sc.Cancelled) return;
-                addSubCategoryOption(sel, sc);
+            const items = list
+                .filter(function (sc) { return !(sc.cancelled || sc.Cancelled); })
+                .map(mapSubCategoryChoice)
+                .filter(Boolean);
+
+            adminSelect.fill(document.getElementById('filterSubCategory'), items, {
+                placeholder: 'All',
+                searchPlaceholder: 'Search subcategories...'
             });
-            enableSearchableSelect(sel, 'Search subcategories...');
         } catch (e) {
             console.error(e);
         }
     }
 
-    async function loadSubCategoriesForProduct() {
-        const categoryId = document.getElementById('fkCategory').value;
+    async function loadSubCategoriesForProduct(selectedId) {
+        const categoryId = adminSelect.getValue(document.getElementById('fkCategory'));
         const sel = document.getElementById('fkSubCategory');
-        sel.innerHTML = '<option value="">Select subcategory</option>';
-        if (!categoryId) return;
+        if (!categoryId) {
+            adminSelect.fill(sel, [], {
+                placeholder: 'Select subcategory',
+                searchPlaceholder: 'Search subcategories...'
+            });
+            return;
+        }
         try {
             const response = await fetch(`${API.subCategories}?categoryId=${categoryId}`);
             if (!response.ok) throw new Error('Failed to load subcategories');
             const list = await response.json();
-            list.forEach(function (sc) {
-                if (sc.cancelled || sc.Cancelled) return;
-                addSubCategoryOption(sel, sc);
+            const items = list
+                .filter(function (sc) { return !(sc.cancelled || sc.Cancelled); })
+                .map(mapSubCategoryChoice)
+                .filter(Boolean);
+
+            adminSelect.fill(sel, items, {
+                placeholder: 'Select subcategory',
+                searchPlaceholder: 'Search subcategories...',
+                selected: selectedId || ''
             });
         } catch (e) {
             console.error(e);
@@ -731,15 +758,16 @@
             const response = await fetch(API.brands);
             if (!response.ok) throw new Error('Failed to load brands');
             const brands = await response.json();
-            const filterSel = document.getElementById('filterBrand');
-            const formSel = document.getElementById('fkBrand');
-            filterSel.innerHTML = '<option value="">All</option>';
-            formSel.innerHTML = '<option value="">Optional</option>';
-            brands.forEach(function (b) {
-                addBrandOption(filterSel, b);
-                addBrandOption(formSel, b);
+            const items = brands.map(mapBrandChoice).filter(Boolean);
+
+            adminSelect.fill(document.getElementById('filterBrand'), items, {
+                placeholder: 'All',
+                searchPlaceholder: 'Search brands...'
             });
-            enableSearchableSelect(filterSel, 'Search brands...');
+            adminSelect.fill(document.getElementById('fkBrand'), items, {
+                placeholder: 'Optional',
+                searchPlaceholder: 'Search brands...'
+            });
         } catch (e) {
             console.error(e);
         }

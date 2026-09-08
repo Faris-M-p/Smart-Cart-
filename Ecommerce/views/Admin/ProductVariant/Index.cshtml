@@ -48,7 +48,7 @@
                         <!-- Product Variant Table -->
                         <div class="table-container" id="tableSection">
                             <div class="table-scroll-wrapper">
-                                <table class="table table-hover align-middle mb-0" id="productVariantTable">
+                                <table class="table table-hover align-middle mb-0 admin-master-list-table" id="productVariantTable">
                                     <thead style="display: none;">
                                         <tr>
                                             <th class="text-muted">ID</th>
@@ -111,9 +111,11 @@
                     <input type="hidden" id="productVariantID" name="ID_ProductVariant" value="0">
                     <div class="mb-3">
                         <label for="modalProduct" class="form-label">Product <span class="text-danger">*</span></label>
-                        <select class="form-select" id="modalProduct" name="FK_Product" required>
-                            <option value="">Select Product</option>
-                        </select>
+                        <div class="searchable-select">
+                            <select class="form-select" id="modalProduct" name="FK_Product" required>
+                                <option value="">Select Product</option>
+                            </select>
+                        </div>
                         <div class="invalid-feedback"></div>
                     </div>
                     <div class="mb-3">
@@ -227,6 +229,7 @@
 </div>
 
 <script src="/Admin/assets/js/plugins/choices.min.js"></script>
+<script src="/Admin/assets/js/common/searchable-select.js?v=select-media-1"></script>
 <script>
     // 1. Page Variables
     let currentPage = 1;
@@ -368,7 +371,7 @@
     }
 
     function onProductChange() {
-        selectedProductId = parseInt(document.getElementById('selectProduct').value, 10) || 0;
+        selectedProductId = parseInt(adminSelect.getValue(document.getElementById('selectProduct')), 10) || 0;
         if (selectedProductId === 0) {
             showSelectProductState();
             return;
@@ -456,6 +459,7 @@
     function createProductVariantRow(pv) {
         const id = pv.idProductVariant ?? pv.ID_ProductVariant;
         const sku = pv.sku ?? pv.SKU ?? '';
+        const imageUrl = pv.imageUrl ?? pv.ImageUrl ?? '';
         const longCombo = pv.combination ?? pv.Combination ?? '';
         const shortSig = pv.attributeSignature ?? pv.AttributeSignature ?? '';
         const combo = longCombo || shortSig;
@@ -474,7 +478,7 @@
         return `
             <tr>
                 <td>${id}</td>
-                <td>${escapeHtml(sku)}</td>
+                <td class="col-name">${renderListThumb(imageUrl, sku)}</td>
                 <td>${escapeHtml(pname || '—')}</td>
                 <td>${escapeHtml(combo || '—')}</td>
                 <td>${escapeHtml(label || '—')}</td>
@@ -501,7 +505,7 @@
         document.getElementById('productVariantModalLabel').textContent = 'Add Product Variant (SKU)';
         document.getElementById('productVariantForm').reset();
         document.getElementById('productVariantID').value = '0';
-        document.getElementById('modalProduct').value = selectedProductId || '';
+        adminSelect.setValue(document.getElementById('modalProduct'), selectedProductId || '');
         document.getElementById('sku').value = '';
         document.getElementById('mrp').value = '0';
         document.getElementById('sellingPrice').value = '';
@@ -568,7 +572,7 @@
             
             document.getElementById('productVariantModalLabel').textContent = 'Edit Product Variant (SKU)';
             document.getElementById('productVariantID').value = pv.idProductVariant ?? pv.ID_ProductVariant;
-            document.getElementById('modalProduct').value = pv.fkProduct ?? pv.FK_Product;
+            adminSelect.setValue(document.getElementById('modalProduct'), pv.fkProduct ?? pv.FK_Product);
             document.getElementById('sku').value = pv.sku ?? pv.SKU ?? '';
             document.getElementById('mrp').value = String(pv.mrp ?? pv.MRP ?? 0);
             document.getElementById('sellingPrice').value = String(pv.sellingPrice ?? pv.SellingPrice ?? '');
@@ -968,7 +972,7 @@
 
     async function saveProductVariant() {
         const productVariantID = parseInt(document.getElementById('productVariantID').value, 10);
-        const fkProduct = parseInt(document.getElementById('modalProduct').value, 10);
+        const fkProduct = parseInt(adminSelect.getValue(document.getElementById('modalProduct')), 10);
         const labelInput = document.getElementById('variantLabel');
         const skuInput = document.getElementById('sku');
         let variantLabel = (labelInput.value || '').trim();
@@ -1265,35 +1269,28 @@
 
             products = all;
 
-            const selectProduct = document.getElementById('selectProduct');
-            const modalProduct = document.getElementById('modalProduct');
+            const items = products
+                .map(function (p) {
+                    const cancelled = p.cancelled ?? p.Cancelled;
+                    const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
+                    const pname = p.name ?? p.Name ?? '';
+                    if (cancelled || !(pid > 0) || !pname) return null;
+                    return {
+                        value: String(pid),
+                        label: pname,
+                        imageUrl: p.imageUrl ?? p.ImageUrl ?? ''
+                    };
+                })
+                .filter(Boolean);
 
-            selectProduct.innerHTML = '<option value="">-- Select Product --</option>';
-            modalProduct.innerHTML = '<option value="">Select Product</option>';
-
-            products.forEach(p => {
-                const cancelled = p.cancelled ?? p.Cancelled;
-                const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
-                const pname = p.name ?? p.Name ?? '';
-                if (!cancelled && pid > 0) {
-                    selectProduct.add(new Option(pname, String(pid)));
-                    modalProduct.add(new Option(pname, String(pid)));
-                }
+            adminSelect.fill(document.getElementById('selectProduct'), items, {
+                placeholder: '-- Select Product --',
+                searchPlaceholder: 'Search products...'
             });
-
-            if (typeof Choices !== 'undefined') {
-                if (selectProduct.choicesInstance) {
-                    selectProduct.choicesInstance.destroy();
-                }
-                selectProduct.choicesInstance = new Choices(selectProduct, {
-                    searchEnabled: true,
-                    searchPlaceholderValue: 'Search products...',
-                    itemSelectText: '',
-                    shouldSort: false,
-                    allowHTML: false,
-                    position: 'bottom'
-                });
-            }
+            adminSelect.fill(document.getElementById('modalProduct'), items, {
+                placeholder: 'Select Product',
+                searchPlaceholder: 'Search products...'
+            });
         } catch (error) {
             console.error('Error loading products:', error);
         }
@@ -1362,6 +1359,28 @@
 
         variantValueMap[key] = list;
         return list;
+    }
+
+    function nameInitials(name) {
+        const text = String(name || '').trim();
+        return text ? text.substring(0, 2) : '—';
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function renderListThumb(imageUrl, name) {
+        const media = imageUrl
+            ? `<img src="${escapeAttr(imageUrl)}" alt="" class="list-entity-thumb">`
+            : `<span class="list-entity-initials">${escapeHtml(nameInitials(name))}</span>`;
+        return `<div class="list-entity-cell">${media}<span class="list-entity-name" title="${escapeAttr(name)}">${escapeHtml(name)}</span></div>`;
     }
 
     function escapeHtml(text) {

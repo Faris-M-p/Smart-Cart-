@@ -211,6 +211,9 @@ namespace Ecommerce.Models.Admin
 
             [JsonPropertyName("totalImages")]
             public int TotalImages { get; set; }
+
+            [JsonPropertyName("imageUrl")]
+            public string? ImageUrl { get; set; }
         }
 
         public class ProductVariantDetail
