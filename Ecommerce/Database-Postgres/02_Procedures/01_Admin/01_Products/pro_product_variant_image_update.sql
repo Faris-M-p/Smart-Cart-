@@ -1,0 +1,153 @@
+/**********************************************************************
+Stored Procedure : pro_product_variant_image_update
+Created By       : Muhammed Faris
+Created On       : 10/12/2025
+Source           : ProProductVariantImageUpdate (SQL Server)
+Target table     : sku_media (canonical SKU media; supersedes product_variant_images)
+
+p_user_action:
+  1 = Add, 2 = Update, 3 = Delete (hard), 4 = Set as Default (is_primary)
+**********************************************************************/
+CREATE OR REPLACE PROCEDURE pro_product_variant_image_update(
+    IN p_user_action INT,
+    IN p_id_product_variant_image INT DEFAULT 0,
+    IN p_fk_product_variant INT DEFAULT 0,
+    IN p_image_url TEXT DEFAULT NULL,
+    IN p_enter_by INT DEFAULT NULL,
+    IN p_cancelled_reason TEXT DEFAULT NULL,
+    INOUT p_result REFCURSOR DEFAULT 'p_result'
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_now TIMESTAMP := NOW();
+    v_id INT := COALESCE(p_id_product_variant_image, 0);
+    v_sku INT;
+    v_display_order INT;
+BEGIN
+    -------------------------------------------------------------------
+    -- VALIDATION: SKU must exist
+    -------------------------------------------------------------------
+    IF (p_user_action = 1) THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM product_variants
+            WHERE id_product_variant = p_fk_product_variant
+              AND COALESCE(cancelled, FALSE) = FALSE
+        ) THEN
+            OPEN p_result FOR
+                SELECT -1 AS response_code, 'Invalid FK_ProductVariant.' AS response_msg, FALSE AS status_code;
+            RETURN;
+        END IF;
+    END IF;
+
+    IF (p_user_action IN (2, 3, 4)) THEN
+        IF NOT EXISTS (SELECT 1 FROM sku_media WHERE id_sku_media = v_id) THEN
+            OPEN p_result FOR
+                SELECT -1 AS response_code,
+                       'Invalid ProductVariantImage ID.' AS response_msg,
+                       FALSE AS status_code;
+            RETURN;
+        END IF;
+    END IF;
+
+    -------------------------------------------------------------------
+    -- INSERT (ADD NEW IMAGE)
+    -------------------------------------------------------------------
+    IF (p_user_action = 1) THEN
+        IF (COALESCE(p_image_url, '') = '') THEN
+            OPEN p_result FOR
+                SELECT -1 AS response_code, 'ImageURL cannot be empty.' AS response_msg, FALSE AS status_code;
+            RETURN;
+        END IF;
+
+        SELECT COALESCE(MAX(display_order), -1) + 1
+        INTO v_display_order
+        FROM sku_media
+        WHERE fk_product_sku = p_fk_product_variant;
+
+        INSERT INTO sku_media (
+            fk_product_sku, media_type, media_url, display_order, is_primary, created_at, updated_at
+        )
+        VALUES (
+            p_fk_product_variant, 'Image', p_image_url, v_display_order, FALSE, v_now, NULL
+        )
+        RETURNING id_sku_media INTO v_id;
+
+        OPEN p_result FOR
+            SELECT v_id AS response_code,
+                   'Variant image added successfully.' AS response_msg,
+                   TRUE AS status_code;
+        RETURN;
+    END IF;
+
+    -------------------------------------------------------------------
+    -- UPDATE EXISTING IMAGE
+    -------------------------------------------------------------------
+    IF (p_user_action = 2) THEN
+        IF (COALESCE(p_image_url, '') = '') THEN
+            OPEN p_result FOR
+                SELECT -1 AS response_code,
+                       'ImageURL cannot be empty for update.' AS response_msg,
+                       FALSE AS status_code;
+            RETURN;
+        END IF;
+
+        UPDATE sku_media
+        SET media_url = p_image_url,
+            updated_at = v_now
+        WHERE id_sku_media = v_id;
+
+        OPEN p_result FOR
+            SELECT v_id AS response_code,
+                   'Variant image updated successfully.' AS response_msg,
+                   TRUE AS status_code;
+        RETURN;
+    END IF;
+
+    -------------------------------------------------------------------
+    -- DELETE IMAGE (hard delete — sku_media has no cancelled columns)
+    -------------------------------------------------------------------
+    IF (p_user_action = 3) THEN
+        DELETE FROM sku_media WHERE id_sku_media = v_id;
+
+        OPEN p_result FOR
+            SELECT v_id AS response_code,
+                   'Variant image deleted successfully.' AS response_msg,
+                   TRUE AS status_code;
+        RETURN;
+    END IF;
+
+    -------------------------------------------------------------------
+    -- SET DEFAULT IMAGE (is_primary)
+    -------------------------------------------------------------------
+    IF (p_user_action = 4) THEN
+        SELECT fk_product_sku INTO v_sku
+        FROM sku_media
+        WHERE id_sku_media = v_id;
+
+        UPDATE sku_media
+        SET is_primary = FALSE,
+            updated_at = v_now
+        WHERE fk_product_sku = v_sku;
+
+        UPDATE sku_media
+        SET is_primary = TRUE,
+            updated_at = v_now
+        WHERE id_sku_media = v_id;
+
+        OPEN p_result FOR
+            SELECT v_id AS response_code,
+                   'Variant default image updated successfully.' AS response_msg,
+                   TRUE AS status_code;
+        RETURN;
+    END IF;
+
+    OPEN p_result FOR
+        SELECT -1 AS response_code, 'Invalid UserAction.' AS response_msg, FALSE AS status_code;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        OPEN p_result FOR
+            SELECT -1 AS response_code, SQLERRM AS response_msg, FALSE AS status_code;
+END;
+$$;

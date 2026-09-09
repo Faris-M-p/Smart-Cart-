@@ -1,0 +1,102 @@
+/**********************************************************************
+Created By  :  Muhammed Faris
+Created On  : 07/12/2025
+Purpose     : To Insert / Update SubCategory Master with Validation
+------------------------------------------------------------------------*/
+CREATE OR REPLACE PROCEDURE pro_sub_category_update(
+    IN p_user_action INT,                  -- 1 = Add, 2 = Edit
+    IN p_sub_category_id INT DEFAULT 0,
+    IN p_sub_category_name TEXT,
+    IN p_fk_category INT,
+    IN p_description TEXT DEFAULT '',
+    IN p_enter_by INT,
+    INOUT p_result REFCURSOR DEFAULT 'p_result'
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_sub_category_id INT := COALESCE(p_sub_category_id, 0);
+    v_is_duplicate INT := 0;
+BEGIN
+    IF (TRIM(COALESCE(p_sub_category_name, '')) = '') THEN
+        OPEN p_result FOR
+            SELECT -1 AS response_code, 'Please enter SubCategory name.' AS response_msg, FALSE AS status_code;
+        RETURN;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM category
+        WHERE id_category = p_fk_category AND cancelled = FALSE
+    ) THEN
+        OPEN p_result FOR
+            SELECT -1 AS response_code, 'Invalid or deleted Category.' AS response_msg, FALSE AS status_code;
+        RETURN;
+    END IF;
+
+    SELECT COUNT(*) INTO v_is_duplicate
+    FROM subcategory
+    WHERE name = p_sub_category_name
+      AND id_subcategory <> v_sub_category_id
+      AND cancelled = FALSE;
+
+    IF (v_is_duplicate > 0) THEN
+        OPEN p_result FOR
+            SELECT -1 AS response_code,
+                   'SubCategory "' || p_sub_category_name || '" already exists.' AS response_msg,
+                   FALSE AS status_code;
+        RETURN;
+    END IF;
+
+    IF (p_user_action = 1) THEN
+        INSERT INTO subcategory (
+            name, fk_category, description, is_active, cancelled, cancelled_on, cancelled_reason
+        )
+        VALUES (
+            p_sub_category_name, p_fk_category, p_description, TRUE, FALSE, NULL, NULL
+        )
+        RETURNING id_subcategory INTO v_sub_category_id;
+
+        OPEN p_result FOR
+            SELECT v_sub_category_id AS response_code,
+                   'SubCategory created successfully.' AS response_msg,
+                   TRUE AS status_code;
+        RETURN;
+    END IF;
+
+    IF (p_user_action = 2) THEN
+        IF NOT EXISTS (SELECT 1 FROM subcategory WHERE id_subcategory = v_sub_category_id) THEN
+            OPEN p_result FOR
+                SELECT -1 AS response_code, 'Invalid SubCategory ID.' AS response_msg, FALSE AS status_code;
+            RETURN;
+        END IF;
+
+        IF EXISTS (
+            SELECT 1 FROM subcategory
+            WHERE id_subcategory = v_sub_category_id AND cancelled = TRUE
+        ) THEN
+            OPEN p_result FOR
+                SELECT -1 AS response_code,
+                       'This SubCategory is deleted and cannot be edited.' AS response_msg,
+                       FALSE AS status_code;
+            RETURN;
+        END IF;
+
+        UPDATE subcategory
+        SET name = p_sub_category_name,
+            fk_category = p_fk_category,
+            description = p_description
+        WHERE id_subcategory = v_sub_category_id;
+
+        OPEN p_result FOR
+            SELECT v_sub_category_id AS response_code,
+                   'SubCategory updated successfully.' AS response_msg,
+                   TRUE AS status_code;
+        RETURN;
+    END IF;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        OPEN p_result FOR
+            SELECT -1 AS response_code, SQLERRM AS response_msg, FALSE AS status_code;
+END;
+$$;
