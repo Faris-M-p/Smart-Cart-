@@ -6,7 +6,7 @@
 .table-container {
     border: none;
     border-radius: 0;
-    overflow: hidden;
+    overflow: visible;
     background: white;
     position: relative;
 }
@@ -14,7 +14,9 @@
 .table-scroll-wrapper {
     overflow-x: auto;
     overflow-y: auto;
+    max-width: 100%;
     max-height: 600px;
+    -webkit-overflow-scrolling: touch;
 
     // Custom Scrollbar
     &::-webkit-scrollbar {

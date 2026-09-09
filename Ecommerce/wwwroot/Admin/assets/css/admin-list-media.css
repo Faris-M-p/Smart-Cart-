@@ -178,3 +178,108 @@
   width: auto;
   display: inline-block;
 }
+
+.pc-container,
+.pc-content,
+.pc-content .row,
+.pc-content [class*="col-"],
+.pc-content .card,
+.pc-content .card-body,
+.pc-content .table-container,
+.pc-content .table-responsive,
+.modal-body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pc-content .table-container,
+.pc-content .table-responsive,
+.modal-body .table-responsive {
+  overflow: visible;
+}
+
+.pc-content .table-scroll-wrapper,
+.pc-content .table-responsive,
+.modal-body .table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.pc-content .table-scroll-wrapper .table,
+.pc-content .table-responsive .table,
+.pc-content .admin-master-list-table,
+.modal-body .table-responsive .table {
+  table-layout: auto !important;
+  width: max-content;
+  min-width: 100%;
+  margin-bottom: 0;
+}
+
+.pc-content .table-scroll-wrapper thead th,
+.pc-content .table-scroll-wrapper tbody td,
+.pc-content .table-responsive thead th,
+.pc-content .table-responsive tbody td,
+.pc-content .admin-master-list-table thead th,
+.pc-content .admin-master-list-table tbody td,
+.modal-body .table-responsive thead th,
+.modal-body .table-responsive tbody td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.pc-content .admin-master-list-table th,
+.pc-content .admin-master-list-table td {
+  width: auto !important;
+}
+
+.pc-content .card-header .d-flex,
+.pc-content .pagination-wrapper,
+.pc-content .card-body > .d-flex {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pc-content .search-input {
+  max-width: 100%;
+}
+
+.pc-content .modal-dialog {
+  max-width: min(960px, calc(100vw - 1.5rem));
+}
+
+@media (max-width: 767.98px) {
+  .pc-content .card-header .d-flex,
+  .pc-content .pagination-wrapper {
+    align-items: stretch !important;
+  }
+
+  .pc-content .card-header .btn,
+  .pc-content .card-header h5 {
+    margin-bottom: 0;
+  }
+
+  .pc-content .pagination-wrapper {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .pc-content .search-input,
+  .pc-content .flex-grow-1.mx-3 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100%;
+  }
+
+  .pc-content .page-header {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .modal-dialog {
+    margin: 0.75rem auto;
+  }
+}

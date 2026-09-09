@@ -22414,8 +22414,9 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
 
 /* Admin master list tables — keep in sync with wwwroot/Admin/assets/scss/_admin-table.scss */
 .admin-master-list-table {
-  table-layout: fixed;
+  table-layout: auto;
   width: 100%;
+  min-width: 720px;
 }
 .admin-master-list-table th,
 .admin-master-list-table td {
@@ -22541,14 +22542,14 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
 }
 
 .table-scroll-wrapper .admin-master-list-table {
-  min-width: 0;
+  min-width: 720px;
 }
 .table-scroll-wrapper .admin-master-list-table thead th {
   font-weight: 600;
   color: #6c757d;
   padding: 12px 10px;
   vertical-align: middle;
-  white-space: normal;
+  white-space: nowrap;
   text-transform: none;
   font-size: inherit;
   letter-spacing: normal;
@@ -22556,7 +22557,13 @@ select.form-control[data-multiselectsplitter-firstselect-selector], select.form-
 .table-scroll-wrapper .admin-master-list-table tbody td {
   padding: 12px 10px;
   vertical-align: middle;
-  white-space: normal;
+  white-space: nowrap;
+}
+#productTable.admin-master-list-table,
+#productVariantTable.admin-master-list-table,
+#employeeTable.admin-master-list-table,
+#purchaseTable.admin-master-list-table {
+  min-width: 1100px;
 }
 
 /* Searchable select — keep in sync with themes/pages/_product.scss */

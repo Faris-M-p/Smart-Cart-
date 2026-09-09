@@ -1,8 +1,9 @@
 // Reusable admin master list tables (Category, SubCategory, etc.)
 
 .admin-master-list-table {
-  table-layout: fixed;
+  table-layout: auto;
   width: 100%;
+  min-width: 720px;
 
   th,
   td {
@@ -165,16 +166,15 @@
   }
 }
 
-// Beat `.table-scroll-wrapper .table` rules from themes/pages/_product.scss (same specificity, later source)
 .table-scroll-wrapper .admin-master-list-table {
-  min-width: 0;
+  min-width: 720px;
 
   thead th {
     font-weight: 600;
     color: #6c757d;
     padding: 12px 10px;
     vertical-align: middle;
-    white-space: normal;
+    white-space: nowrap;
     text-transform: none;
     font-size: inherit;
     letter-spacing: normal;
@@ -183,8 +183,15 @@
   tbody td {
     padding: 12px 10px;
     vertical-align: middle;
-    white-space: normal;
+    white-space: nowrap;
   }
+}
+
+#productTable.admin-master-list-table,
+#productVariantTable.admin-master-list-table,
+#employeeTable.admin-master-list-table,
+#purchaseTable.admin-master-list-table {
+  min-width: 1100px;
 }
 
 .list-entity-cell {
