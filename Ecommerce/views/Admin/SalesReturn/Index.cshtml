@@ -1,0 +1,484 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Sales Returns</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/Sale">Sales</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Returns</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" data-permission-module="SalesReturns">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Return List</h5>
+                    <button type="button" class="btn btn-primary" data-action="Create" onclick="openCreateModal()">
+                        <i class="ti ti-plus"></i> Add Sales Return
+                    </button>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                        <i class="ti ti-filter"></i> Filter
+                    </button>
+                    <div class="flex-grow-1 mx-3 search-input">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="ti ti-search"></i></span>
+                            <input type="text" id="searchText" class="form-control" placeholder="Search return or sale invoice...">
+                        </div>
+                    </div>
+                </div>
+                <div class="collapse mb-3" id="filterCollapse">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">From Date</label>
+                            <input type="date" id="fromDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">To Date</label>
+                            <input type="date" id="toDate" class="form-control">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end gap-2">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="loadReturns(1)">Apply</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover align-middle mb-0 admin-master-list-table">
+                            <thead>
+                                <tr>
+                                    <th class="text-muted">Return Invoice</th>
+                                    <th class="text-muted">Original Sale</th>
+                                    <th class="text-muted">Customer</th>
+                                    <th class="text-muted">Return Date</th>
+                                    <th class="text-muted">Amount</th>
+                                    <th class="text-muted text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="returnTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top pagination-wrapper">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Show</span>
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="paginationInfo" class="text-muted small"></span>
+                        <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="returnModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Sales Return</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Original Sale <span class="text-danger">*</span></label>
+                        <select class="form-select" id="fkSale"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Return Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="returnDate">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Reason</label>
+                        <input type="text" class="form-control" id="reason" maxlength="500">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" rows="2" maxlength="500"></textarea>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Sold</th>
+                                <th>Already returned</th>
+                                <th>Return qty</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="returnLinesBody">
+                            <tr><td colspan="6" class="text-center text-muted">Select a sale to load items.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveReturn()">Save Return</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="viewReturnModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Return Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="viewReturnModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Sales Return</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>This puts the items back as sold and deducts stock again.</p>
+                <textarea class="form-control" id="deleteReason" rows="3" placeholder="Reason (optional)"></textarea>
+                <input type="hidden" id="deleteReturnID" value="0">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/Admin/assets/js/plugins/choices.min.js"></script>
+<script src="/Admin/assets/js/common/searchable-select.js?v=select-media-1"></script>
+<script>
+    let currentPage = 1;
+    let pageSize = 10;
+    let searchTimeout = null;
+    let paginationInstance = null;
+    let sales = [];
+    const presetSaleId = Number(new URLSearchParams(window.location.search).get('saleId') || 0);
+
+    const TABLE_BODY_ID = 'returnTableBody';
+    const TABLE_COLUMN_COUNT = 6;
+    const API = {
+        getList: '/Admin/SalesReturn/GetSalesReturnList',
+        getById: '/Admin/SalesReturn/GetById',
+        create: '/Admin/SalesReturn/Create',
+        delete: '/Admin/SalesReturn/Delete',
+        getSales: '/Admin/SalesReturn/GetSales',
+        getLines: '/Admin/SalesReturn/GetReturnableLines'
+    };
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: function (page) { loadReturns(page); }
+        });
+        await loadSaleOptions();
+        loadReturns(1);
+        document.getElementById('searchText')?.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function () { loadReturns(1); }, 400);
+        });
+        document.getElementById('fromDate')?.addEventListener('change', function () { loadReturns(1); });
+        document.getElementById('toDate')?.addEventListener('change', function () { loadReturns(1); });
+        document.getElementById('fkSale')?.addEventListener('change', function () { loadReturnableLines(); });
+        if (presetSaleId > 0) openCreateModal(presetSaleId);
+    });
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value, 10) || 10;
+        loadReturns(1);
+    }
+
+    function resetFilters() {
+        document.getElementById('searchText').value = '';
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+        loadReturns(1);
+    }
+
+    async function loadReturns(page) {
+        currentPage = page || 1;
+        const input = {
+            SearchText: document.getElementById('searchText')?.value || '',
+            FromDate: document.getElementById('fromDate')?.value || null,
+            ToDate: document.getElementById('toDate')?.value || null,
+            PageIndex: currentPage,
+            PageSize: pageSize,
+            SortColumn: 0,
+            SortMode: 'DESC'
+        };
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+            const result = await response.json();
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError('Return List Load', { url: API.getList, method: 'POST', payload: input, response, result }, TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                return;
+            }
+            const rows = result.tableData ?? result.TableData ?? [];
+            const settings = result.tableSettings ?? result.TableSettings;
+            if (!rows.length) listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+            else document.getElementById(TABLE_BODY_ID).innerHTML = rows.map(createReturnRow).join('');
+            if (paginationInstance && settings) paginationInstance.render(settings);
+        } catch (error) {
+            listing.handleListingError('Return List Load', { url: API.getList, method: 'POST', payload: input, error }, TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    function createReturnRow(r) {
+        const id = r.id_SalesReturn ?? r.iD_SalesReturn ?? r.ID_SalesReturn ?? 0;
+        const inv = r.invoiceNumber ?? r.InvoiceNumber ?? '-';
+        const saleInv = r.saleInvoiceNumber ?? r.SaleInvoiceNumber ?? '-';
+        const name = r.customerName ?? r.CustomerName ?? 'Walk-in';
+        const date = r.returnDate ?? r.ReturnDate;
+        const total = r.totalAmount ?? r.TotalAmount ?? 0;
+        return `
+            <tr>
+                <td><strong>${escapeHtml(inv)}</strong></td>
+                <td>${escapeHtml(saleInv)}</td>
+                <td>${escapeHtml(name)}</td>
+                <td>${date ? new Date(date).toLocaleDateString() : '-'}</td>
+                <td><strong>₹${Number(total).toFixed(2)}</strong></td>
+                <td class="text-end">
+                    <button class="btn-action btn-view" data-action="View" onclick="viewReturn(${id})" title="View"><i class="ti ti-eye"></i></button>
+                    <button class="btn-action btn-delete" data-action="Delete" onclick="openDeleteModal(${id})" title="Delete"><i class="ti ti-trash"></i></button>
+                </td>
+            </tr>`;
+    }
+
+    async function loadSaleOptions() {
+        try {
+            const response = await fetch(API.getSales);
+            sales = response.ok ? await response.json() : [];
+        } catch (e) {
+            sales = [];
+        }
+        const items = sales.map(function (s) {
+            const id = s.id_Sale ?? s.iD_Sale ?? s.ID_Sale;
+            const inv = s.invoiceNumber ?? s.InvoiceNumber ?? ('SALE-' + id);
+            const name = s.customerName ?? s.CustomerName ?? 'Walk-in';
+            const date = s.saleDate ?? s.SaleDate;
+            const total = s.totalAmount ?? s.TotalAmount ?? 0;
+            return { value: String(id), label: `${inv} · ${name} · ₹${Number(total).toFixed(2)}${date ? ' · ' + new Date(date).toLocaleDateString() : ''}` };
+        });
+        adminSelect.fill(document.getElementById('fkSale'), items, {
+            placeholder: 'Select sale',
+            searchPlaceholder: 'Search sales...'
+        });
+    }
+
+    async function openCreateModal(saleId) {
+        document.getElementById('returnDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('reason').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('returnLinesBody').innerHTML = '<tr><td colspan="6" class="text-center text-muted">Select a sale to load items.</td></tr>';
+        if (saleId) adminSelect.setValue?.(document.getElementById('fkSale'), String(saleId));
+        if (saleId) {
+            const el = document.getElementById('fkSale');
+            if (adminSelect.setValue) adminSelect.setValue(el, String(saleId));
+            else el.value = String(saleId);
+            await loadReturnableLines();
+        }
+        new bootstrap.Modal(document.getElementById('returnModal')).show();
+    }
+
+    async function loadReturnableLines() {
+        const saleId = parseInt(adminSelect.getValue(document.getElementById('fkSale')), 10);
+        const body = document.getElementById('returnLinesBody');
+        if (!saleId) {
+            body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Select a sale to load items.</td></tr>';
+            return;
+        }
+        const response = await fetch(`${API.getLines}/${saleId}`);
+        const lines = response.ok ? await response.json() : [];
+        if (!lines.length) {
+            body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No returnable items on this sale.</td></tr>';
+            return;
+        }
+        body.innerHTML = lines.map(function (d) {
+            const detailId = d.id_SaleDetail ?? d.iD_SaleDetail ?? d.ID_SaleDetail;
+            const pn = d.productName ?? d.ProductName ?? '';
+            const sku = d.sku ?? d.SKU ?? '';
+            const label = d.variantLabel ?? d.VariantLabel ?? sku;
+            const sold = d.quantity ?? d.Quantity ?? 0;
+            const returned = d.returnedQty ?? d.ReturnedQty ?? 0;
+            const remain = d.returnableQty ?? d.ReturnableQty ?? Math.max(0, sold - returned);
+            const price = d.sellingPrice ?? d.SellingPrice ?? 0;
+            return `
+                <tr class="return-line" data-detail-id="${detailId}">
+                    <td>${escapeHtml(pn)}</td>
+                    <td>${escapeHtml(label)}</td>
+                    <td>${sold}</td>
+                    <td>${returned}</td>
+                    <td><input type="number" min="0" max="${remain}" class="form-control return-qty" value="0" ${remain <= 0 ? 'disabled' : ''}></td>
+                    <td>₹${Number(price).toFixed(2)}</td>
+                </tr>`;
+        }).join('');
+    }
+
+    async function saveReturn() {
+        const saleId = parseInt(adminSelect.getValue(document.getElementById('fkSale')), 10);
+        if (!saleId) {
+            showWarning('Validation', 'Select a sale.');
+            return;
+        }
+        const details = [];
+        document.querySelectorAll('.return-line').forEach(function (row) {
+            const qty = parseInt(row.querySelector('.return-qty').value, 10) || 0;
+            const detailId = parseInt(row.getAttribute('data-detail-id'), 10);
+            if (qty > 0 && detailId > 0) details.push({ FK_SaleDetail: detailId, Quantity: qty });
+        });
+        if (!details.length) {
+            showWarning('Validation', 'Enter at least one return quantity.');
+            return;
+        }
+        const input = {
+            FK_Sale: saleId,
+            ReturnDate: document.getElementById('returnDate').value,
+            Reason: document.getElementById('reason').value.trim(),
+            Notes: document.getElementById('notes').value.trim(),
+            ReturnDetails: details
+        };
+        try {
+            const response = await fetch(API.create, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+            const result = await response.json().catch(function () { return null; });
+            const ok = response.ok && (result?.statusCode ?? result?.StatusCode) === true;
+            if (ok) {
+                bootstrap.Modal.getInstance(document.getElementById('returnModal'))?.hide();
+                loadReturns(currentPage);
+                showSuccess('Success', result?.responseMsg ?? result?.ResponseMsg ?? 'Return saved.');
+            } else {
+                showError('Error', result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? 'Could not save return.');
+            }
+        } catch (e) {
+            showError('Error', 'Could not save return.');
+        }
+    }
+
+    async function viewReturn(id) {
+        try {
+            const response = await fetch(`${API.getById}/${id}`);
+            if (!response.ok) { showError('Error', 'Return not found.'); return; }
+            const data = await response.json();
+            const h = data.returnHeader ?? data.ReturnHeader;
+            const details = data.returnDetails ?? data.ReturnDetails ?? [];
+            const inv = h.invoiceNumber ?? h.InvoiceNumber ?? '-';
+            const saleInv = h.saleInvoiceNumber ?? h.SaleInvoiceNumber ?? '-';
+            const name = h.customerName ?? h.CustomerName ?? '';
+            const date = h.returnDate ?? h.ReturnDate;
+            const total = h.totalAmount ?? h.TotalAmount ?? 0;
+            const reason = h.reason ?? h.Reason ?? '';
+            const notes = h.notes ?? h.Notes ?? '';
+            const rows = details.map(function (d) {
+                const pn = d.productName ?? d.ProductName ?? '';
+                const sku = d.variantLabel ?? d.VariantLabel ?? d.sku ?? d.SKU ?? '';
+                const qty = d.quantity ?? d.Quantity ?? 0;
+                const price = d.sellingPrice ?? d.SellingPrice ?? 0;
+                const line = d.lineTotal ?? d.LineTotal ?? (qty * price);
+                return `<tr><td>${escapeHtml(pn)}</td><td>${escapeHtml(sku)}</td><td>${qty}</td><td>₹${Number(price).toFixed(2)}</td><td>₹${Number(line).toFixed(2)}</td></tr>`;
+            }).join('');
+            document.getElementById('viewReturnModalBody').innerHTML = `
+                <div class="row mb-3">
+                    <div class="col-md-6"><strong>Return:</strong> ${escapeHtml(inv)}</div>
+                    <div class="col-md-6"><strong>Sale:</strong> ${escapeHtml(saleInv)}</div>
+                    <div class="col-md-6"><strong>Customer:</strong> ${escapeHtml(name)}</div>
+                    <div class="col-md-6"><strong>Date:</strong> ${date ? new Date(date).toLocaleDateString() : '-'}</div>
+                    <div class="col-md-6"><strong>Amount:</strong> ₹${Number(total).toFixed(2)}</div>
+                </div>
+                ${reason ? '<p><strong>Reason:</strong> ' + escapeHtml(reason) + '</p>' : ''}
+                ${notes ? '<p><strong>Notes:</strong> ' + escapeHtml(notes) + '</p>' : ''}
+                <table class="table table-bordered">
+                    <thead><tr><th>Product</th><th>SKU</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5">No items</td></tr>'}</tbody>
+                </table>`;
+            new bootstrap.Modal(document.getElementById('viewReturnModal')).show();
+        } catch (e) {
+            showError('Error', 'Failed to load return.');
+        }
+    }
+
+    function openDeleteModal(id) {
+        document.getElementById('deleteReturnID').value = id;
+        document.getElementById('deleteReason').value = '';
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    async function confirmDelete() {
+        const input = {
+            ID_SalesReturn: parseInt(document.getElementById('deleteReturnID').value, 10),
+            CancelledReason: document.getElementById('deleteReason').value.trim()
+        };
+        try {
+            const response = await fetch(API.delete, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+            const result = await response.json().catch(function () { return null; });
+            const ok = response.ok && (result?.statusCode ?? result?.StatusCode) === true;
+            if (ok) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
+                loadReturns(currentPage);
+                showSuccess('Success', result?.responseMsg ?? result?.ResponseMsg ?? 'Return deleted.');
+            } else {
+                showError('Error', result?.responseMsg ?? result?.ResponseMsg ?? 'Could not delete return.');
+            }
+        } catch (e) {
+            showError('Error', 'Could not delete return.');
+        }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>

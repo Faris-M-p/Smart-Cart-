@@ -106,6 +106,22 @@
 \i ./01_Tables/stock.sql
 \echo 'stock completed.'
 
+\echo '--- sales ---'
+\i ./01_Tables/sales.sql
+\echo 'sales completed.'
+
+\echo '--- sales_detail ---'
+\i ./01_Tables/sales_detail.sql
+\echo 'sales_detail completed.'
+
+\echo '--- sales_return ---'
+\i ./01_Tables/sales_return.sql
+\echo 'sales_return completed.'
+
+\echo '--- sales_return_detail ---'
+\i ./01_Tables/sales_return_detail.sql
+\echo 'sales_return_detail completed.'
+
 \echo '--- user_roles ---'
 \i ./01_Tables/user_roles.sql
 \echo 'user_roles completed.'

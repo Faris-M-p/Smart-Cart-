@@ -125,7 +125,7 @@ namespace Ecommerce.Helpers.UserRoles
             ("dashboard", "Dashboard", new[] { "Dashboard" }),
             ("catalog", "Catalog", new[] { "Categories", "SubCategories", "Brands", "Products", "Variants", "VariantValues", "ProductVariants" }),
             ("purchase", "Purchase & Inventory", new[] { "Suppliers", "Purchases", "Stock" }),
-            ("sales", "Sales", new[] { "Orders", "Billing" }),
+            ("sales", "Sales", new[] { "Orders", "Sales", "SalesReturns", "Billing" }),
             ("customers", "Customers", new[] { "Customers", "Ratings" }),
             ("administration", "Administration", new[] { "Employees", "UserRoles" })
         };

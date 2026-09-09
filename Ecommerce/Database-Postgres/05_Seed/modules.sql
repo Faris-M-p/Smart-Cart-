@@ -15,6 +15,8 @@ FROM (VALUES
     ('Purchases',        'Purchases',        100),
     ('Stock',            'Stock',            110),
     ('Orders',           'Orders',           120),
+    ('Sales',            'Manual Sales',     125),
+    ('SalesReturns',     'Sales Returns',    126),
     ('Billing',          'Billing',          130),
     ('Employees',        'Employees',        140),
     ('UserRoles',        'User Roles',       150)

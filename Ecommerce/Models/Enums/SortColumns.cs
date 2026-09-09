@@ -89,6 +89,22 @@ namespace Ecommerce.Models.Enums
         InvoiceNumber = 3
     }
 
+    public enum SaleSortColumn
+    {
+        Id = 0,
+        SaleDate = 1,
+        TotalAmount = 2,
+        InvoiceNumber = 3
+    }
+
+    public enum SalesReturnSortColumn
+    {
+        Id = 0,
+        ReturnDate = 1,
+        TotalAmount = 2,
+        InvoiceNumber = 3
+    }
+
     public enum ProductVariantSortColumn
     {
         Id = 0,

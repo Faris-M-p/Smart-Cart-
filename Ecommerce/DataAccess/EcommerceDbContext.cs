@@ -39,5 +39,9 @@ namespace Ecommerce.DataAccess
         public DbSet<OrderItemEntity> OrderItems => Set<OrderItemEntity>();
         public DbSet<PaymentEntity> Payments => Set<PaymentEntity>();
         public DbSet<ShippingEntity> Shipping => Set<ShippingEntity>();
+        public DbSet<SaleEntity> Sales => Set<SaleEntity>();
+        public DbSet<SaleDetailEntity> SaleDetails => Set<SaleDetailEntity>();
+        public DbSet<SalesReturnEntity> SalesReturns => Set<SalesReturnEntity>();
+        public DbSet<SalesReturnDetailEntity> SalesReturnDetails => Set<SalesReturnDetailEntity>();
     }
 }
