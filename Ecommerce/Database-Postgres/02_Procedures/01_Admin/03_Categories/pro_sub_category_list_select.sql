@@ -1,7 +1,7 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 07/12/2025
-Purpose     : To Select SubCategory List with Filtering & Pagination
+Purpose     : To Select subcategory List with Filtering & Pagination
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_sub_category_list_select(
     IN p_search_text TEXT DEFAULT '',
@@ -43,8 +43,8 @@ BEGIN
         description TEXT,
         created_date TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_subcat;
@@ -52,7 +52,7 @@ BEGIN
     v_sql := format($q$
         INSERT INTO tmp_subcat (
             rn, id_subcategory, subcategory_name, fk_category, description,
-            created_date, cancelled, cancelled_on, cancelled_reason
+            created_date, cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
@@ -62,8 +62,8 @@ BEGIN
             s.description,
             NULL::TIMESTAMP,
             s.cancelled,
-            s.cancelled_on,
-            s.cancelled_reason
+            s.cancelledon,
+            s.cancelledreason
         FROM subcategory s
         WHERE s.cancelled = FALSE
           AND (
@@ -95,7 +95,7 @@ BEGIN
 
     OPEN p_result FOR
         SELECT id_subcategory, subcategory_name, fk_category, description,
-               created_date, cancelled, cancelled_on, cancelled_reason
+               created_date, cancelled, cancelledon, cancelledreason
         FROM tmp_subcat
         WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)
                      AND ((p_page_index - 1) * p_page_size + p_page_size);

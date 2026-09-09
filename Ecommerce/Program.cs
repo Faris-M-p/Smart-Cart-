@@ -28,13 +28,17 @@ builder.Services.AddHttpClient("CountryStateCity", client =>
     client.BaseAddress = new Uri("https://api.countrystatecity.in/v1/");
 });
 
-// Register DataAccess
+builder.Services.Configure<DatabaseSettings>(
+    builder.Configuration.GetSection(DatabaseSettings.SectionName));
 builder.Services.AddScoped<IDataAccessDapper, DataAccessDapper>();
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgresDapperHealthCheck>("postgres_dapper");
 
-var ecommerceConnection = builder.Configuration.GetConnectionString("Ecommerse")
-    ?? throw new InvalidOperationException("Connection string 'Ecommerse' is not configured.");
+var postgresConnection = builder.Configuration.GetConnectionString("PostgresConnection")
+    ?? throw new InvalidOperationException("Connection string 'PostgresConnection' is not configured.");
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
-    options.UseSqlServer(ecommerceConnection));
+    options.UseNpgsql(postgresConnection)
+           .UseSnakeCaseNamingConvention());
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("JwtSettings is not configured.");
@@ -153,6 +157,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapHealthChecks("/health");
 
 app.Run();
 

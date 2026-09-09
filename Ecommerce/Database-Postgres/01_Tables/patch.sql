@@ -1,4 +1,4 @@
-﻿/* =============================================================================
+/* =============================================================================
    01_Tables / patch.sql — incremental (idempotent CREATE IF NOT EXISTS)
    For Postgres full builds, create.sql already has final schema folded in.
    Patch re-includes media tables + ensures StoreSettings cleanup.

@@ -1,14 +1,14 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 07/12/2025
-Purpose     : To Insert / Update Category Master with Validation
+Purpose     : To Insert / Update category Master with Validation
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_category_update(
     IN p_user_action INT,                  -- 1 = Add, 2 = Edit
     IN p_category_id INT DEFAULT 0,
-    IN p_category_name TEXT,
+    IN p_category_name TEXT DEFAULT NULL,
     IN p_description TEXT DEFAULT '',
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -38,7 +38,7 @@ BEGIN
     END IF;
 
     IF (p_user_action = 1) THEN
-        INSERT INTO category (name, description, is_active, cancelled, cancelled_on, cancelled_reason)
+        INSERT INTO category (name, description, isactive, cancelled, cancelledon, cancelledreason)
         VALUES (p_category_name, p_description, TRUE, FALSE, NULL, NULL)
         RETURNING id_category INTO v_category_id;
 

@@ -29,10 +29,10 @@ BEGIN
         v_cancel_reason := 'Cancelled by admin';
     END IF;
 
-    SELECT o.order_status, COALESCE(o.cancelled, FALSE)
+    SELECT o.orderstatus, COALESCE(o.cancelled, FALSE)
     INTO v_order_status, v_is_cancelled
     FROM orders o
-    WHERE o.order_id = p_order_id;
+    WHERE o.id_order = p_order_id;
 
     IF v_order_status IS NULL THEN
         OPEN p_result FOR
@@ -56,22 +56,22 @@ BEGIN
 
     BEGIN
         FOR r_item IN
-            SELECT oi.fk_product_variant, oi.quantity
-            FROM order_items oi
+            SELECT oi.fk_productvariant, oi.quantity
+            FROM orderitems oi
             WHERE oi.fk_order = p_order_id
-              AND oi.fk_product_variant IS NOT NULL
-              AND oi.fk_product_variant > 0
+              AND oi.fk_productvariant IS NOT NULL
+              AND oi.fk_productvariant > 0
         LOOP
-            v_variant_id := r_item.fk_product_variant;
+            v_variant_id := r_item.fk_productvariant;
             v_qty := r_item.quantity;
             v_stock_id := NULL;
 
             SELECT s.id_stock
             INTO v_stock_id
             FROM stock s
-            WHERE s.fk_product_variant = v_variant_id
+            WHERE s.fk_productvariant = v_variant_id
               AND COALESCE(s.cancelled, FALSE) = FALSE
-            ORDER BY s.created_on DESC, s.id_stock DESC
+            ORDER BY s.createdon DESC, s.id_stock DESC
             LIMIT 1
             FOR UPDATE;
 
@@ -84,26 +84,26 @@ BEGIN
 
         UPDATE payments
         SET cancelled = TRUE,
-            cancelled_on = NOW(),
-            cancelled_reason = v_cancel_reason,
-            payment_status = 'Cancelled'
-        WHERE order_id = p_order_id
+            cancelledon = NOW(),
+            cancelledreason = v_cancel_reason,
+            paymentstatus = 'Cancelled'
+        WHERE fk_order = p_order_id
           AND COALESCE(cancelled, FALSE) = FALSE;
 
         UPDATE shipping
         SET cancelled = TRUE,
-            cancelled_on = NOW(),
-            cancelled_reason = v_cancel_reason,
-            shipping_status = 'Cancelled'
-        WHERE order_id = p_order_id
+            cancelledon = NOW(),
+            cancelledreason = v_cancel_reason,
+            shippingstatus = 'Cancelled'
+        WHERE fk_order = p_order_id
           AND COALESCE(cancelled, FALSE) = FALSE;
 
         UPDATE orders
         SET cancelled = TRUE,
-            cancelled_on = NOW(),
-            cancelled_reason = v_cancel_reason,
-            order_status = 'Cancelled'
-        WHERE order_id = p_order_id
+            cancelledon = NOW(),
+            cancelledreason = v_cancel_reason,
+            orderstatus = 'Cancelled'
+        WHERE id_order = p_order_id
           AND COALESCE(cancelled, FALSE) = FALSE;
 
         GET DIAGNOSTICS v_rows = ROW_COUNT;

@@ -12,7 +12,7 @@ CREATE OR REPLACE PROCEDURE pro_variant_update(
     IN p_variant_name TEXT DEFAULT NULL,
     IN p_description TEXT DEFAULT NULL,
     IN p_display_order INT DEFAULT 1,
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     IN p_cancelled_reason TEXT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
@@ -41,7 +41,7 @@ BEGIN
             RETURN;
         END IF;
 
-        INSERT INTO variants (name, description, display_order, is_active, cancelled, cancelled_on)
+        INSERT INTO variants (name, description, displayorder, isactive, cancelled, cancelledon)
         VALUES (p_variant_name, p_description, p_display_order, TRUE, FALSE, NULL)
         RETURNING id_variant INTO v_id_variant;
 
@@ -68,7 +68,7 @@ BEGIN
         UPDATE variants
         SET name = p_variant_name,
             description = p_description,
-            display_order = p_display_order
+            displayorder = p_display_order
         WHERE id_variant = v_id_variant;
 
         OPEN p_result FOR
@@ -90,7 +90,7 @@ BEGIN
 
         UPDATE variants
         SET cancelled = TRUE,
-            cancelled_on = v_now
+            cancelledon = v_now
         WHERE id_variant = v_id_variant;
 
         OPEN p_result FOR

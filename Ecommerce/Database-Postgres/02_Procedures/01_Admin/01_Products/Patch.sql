@@ -1,7 +1,7 @@
 /* =============================================================================
    01_Admin / 01_Products / Patch.sql
    -----------------------------------------------------------------------------
-   Controls which product / SKU procedure scripts execute.
+   Controls which product / sku procedure scripts execute.
    psql resolves \i paths from the Database-Postgres folder.
 
    INITIAL CREATE : keep every \i line uncommented.

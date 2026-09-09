@@ -11,13 +11,13 @@ ACTIONS
 CREATE OR REPLACE PROCEDURE pro_supplier_update(
     IN p_user_action INT,                -- 1=Insert, 2=Update, 3=Delete
     IN p_id_supplier BIGINT DEFAULT 0,
-    IN p_supplier_name TEXT,
+    IN p_supplier_name TEXT DEFAULT NULL,
     IN p_contact_person TEXT DEFAULT NULL,
     IN p_phone TEXT DEFAULT NULL,
     IN p_email TEXT DEFAULT NULL,
     IN p_gst_number TEXT DEFAULT NULL,
     IN p_address TEXT DEFAULT NULL,
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     IN p_cancelled_reason TEXT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
@@ -50,7 +50,7 @@ BEGIN
         INSERT INTO supplier (
             name, phone, email, address,
             state, district, city,
-            created_at, cancelled
+            createdat, cancelled
         )
         VALUES (
             p_supplier_name, p_phone, p_email, p_address,
@@ -78,7 +78,7 @@ BEGIN
             phone = p_phone,
             email = p_email,
             address = p_address,
-            updated_at = v_now
+            updatedat = v_now
         WHERE id_supplier = v_id_supplier;
 
         OPEN p_result FOR
@@ -97,8 +97,8 @@ BEGIN
 
         UPDATE supplier
         SET cancelled = TRUE,
-            cancelled_on = v_now,
-            cancelled_reason = p_cancelled_reason
+            cancelledon = v_now,
+            cancelledreason = p_cancelled_reason
         WHERE id_supplier = v_id_supplier;
 
         OPEN p_result FOR

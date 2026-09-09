@@ -1,12 +1,12 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 14/01/2026
-Purpose     : To Delete Brand with Validation and Soft Deletion
+Purpose     : To Delete brand with Validation and Soft Deletion
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_brand_delete(
     IN p_brand_id INT,
     IN p_cancelled_reason TEXT DEFAULT '',
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -15,7 +15,7 @@ DECLARE
     v_user_date TIMESTAMP := NOW();
 BEGIN
     -------------------------------------------------------------------
-    -- 1. CHECK IF BRAND EXISTS
+    -- 1. CHECK IF brand EXISTS
     -------------------------------------------------------------------
     IF NOT EXISTS (SELECT 1 FROM brand WHERE id_brand = p_brand_id) THEN
         OPEN p_result FOR
@@ -24,7 +24,7 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- 2. ALREADY CANCELLED CHECK
+    -- 2. ALREADY cancelled CHECK
     -------------------------------------------------------------------
     IF EXISTS (SELECT 1 FROM brand WHERE id_brand = p_brand_id AND cancelled = TRUE) THEN
         OPEN p_result FOR
@@ -47,12 +47,12 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- 4. SOFT DELETE BRAND
+    -- 4. SOFT DELETE brand
     -------------------------------------------------------------------
     UPDATE brand
     SET cancelled = TRUE,
-        cancelled_on = v_user_date,
-        cancelled_reason = p_cancelled_reason
+        cancelledon = v_user_date,
+        cancelledreason = p_cancelled_reason
     WHERE id_brand = p_brand_id;
 
     OPEN p_result FOR

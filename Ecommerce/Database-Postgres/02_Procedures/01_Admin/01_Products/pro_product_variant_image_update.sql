@@ -3,10 +3,10 @@ Stored Procedure : pro_product_variant_image_update
 Created By       : Muhammed Faris
 Created On       : 10/12/2025
 Source           : ProProductVariantImageUpdate (SQL Server)
-Target table     : sku_media (canonical SKU media; supersedes product_variant_images)
+Target table     : skumedia (canonical sku media; supersedes productvariantimages)
 
 p_user_action:
-  1 = Add, 2 = Update, 3 = Delete (hard), 4 = Set as Default (is_primary)
+  1 = Add, 2 = Update, 3 = Delete (hard), 4 = Set as Default (isprimary)
 **********************************************************************/
 CREATE OR REPLACE PROCEDURE pro_product_variant_image_update(
     IN p_user_action INT,
@@ -26,12 +26,12 @@ DECLARE
     v_display_order INT;
 BEGIN
     -------------------------------------------------------------------
-    -- VALIDATION: SKU must exist
+    -- VALIDATION: sku must exist
     -------------------------------------------------------------------
     IF (p_user_action = 1) THEN
         IF NOT EXISTS (
-            SELECT 1 FROM product_variants
-            WHERE id_product_variant = p_fk_product_variant
+            SELECT 1 FROM productvariants
+            WHERE id_productvariant = p_fk_product_variant
               AND COALESCE(cancelled, FALSE) = FALSE
         ) THEN
             OPEN p_result FOR
@@ -41,7 +41,7 @@ BEGIN
     END IF;
 
     IF (p_user_action IN (2, 3, 4)) THEN
-        IF NOT EXISTS (SELECT 1 FROM sku_media WHERE id_sku_media = v_id) THEN
+        IF NOT EXISTS (SELECT 1 FROM skumedia WHERE id_skumedia = v_id) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code,
                        'Invalid ProductVariantImage ID.' AS response_msg,
@@ -60,18 +60,18 @@ BEGIN
             RETURN;
         END IF;
 
-        SELECT COALESCE(MAX(display_order), -1) + 1
+        SELECT COALESCE(MAX(displayorder), -1) + 1
         INTO v_display_order
-        FROM sku_media
-        WHERE fk_product_sku = p_fk_product_variant;
+        FROM skumedia
+        WHERE fk_productsku = p_fk_product_variant;
 
-        INSERT INTO sku_media (
-            fk_product_sku, media_type, media_url, display_order, is_primary, created_at, updated_at
+        INSERT INTO skumedia (
+            fk_productsku, mediatype, mediaurl, displayorder, isprimary, createdat, updatedat
         )
         VALUES (
             p_fk_product_variant, 'Image', p_image_url, v_display_order, FALSE, v_now, NULL
         )
-        RETURNING id_sku_media INTO v_id;
+        RETURNING id_skumedia INTO v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,
@@ -92,10 +92,10 @@ BEGIN
             RETURN;
         END IF;
 
-        UPDATE sku_media
-        SET media_url = p_image_url,
-            updated_at = v_now
-        WHERE id_sku_media = v_id;
+        UPDATE skumedia
+        SET mediaurl = p_image_url,
+            updatedat = v_now
+        WHERE id_skumedia = v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,
@@ -105,10 +105,10 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- DELETE IMAGE (hard delete — sku_media has no cancelled columns)
+    -- DELETE IMAGE (hard delete — skumedia has no cancelled columns)
     -------------------------------------------------------------------
     IF (p_user_action = 3) THEN
-        DELETE FROM sku_media WHERE id_sku_media = v_id;
+        DELETE FROM skumedia WHERE id_skumedia = v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,
@@ -118,22 +118,22 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- SET DEFAULT IMAGE (is_primary)
+    -- SET DEFAULT IMAGE (isprimary)
     -------------------------------------------------------------------
     IF (p_user_action = 4) THEN
-        SELECT fk_product_sku INTO v_sku
-        FROM sku_media
-        WHERE id_sku_media = v_id;
+        SELECT fk_productsku INTO v_sku
+        FROM skumedia
+        WHERE id_skumedia = v_id;
 
-        UPDATE sku_media
-        SET is_primary = FALSE,
-            updated_at = v_now
-        WHERE fk_product_sku = v_sku;
+        UPDATE skumedia
+        SET isprimary = FALSE,
+            updatedat = v_now
+        WHERE fk_productsku = v_sku;
 
-        UPDATE sku_media
-        SET is_primary = TRUE,
-            updated_at = v_now
-        WHERE id_sku_media = v_id;
+        UPDATE skumedia
+        SET isprimary = TRUE,
+            updatedat = v_now
+        WHERE id_skumedia = v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,

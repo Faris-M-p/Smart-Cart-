@@ -13,30 +13,30 @@ AS $$
 BEGIN
     OPEN p_result FOR
     SELECT
-        c.id_category AS "Id",
-        c.name AS "Name"
+        c.id_category AS id,
+        c.name AS name
     FROM category AS c
     WHERE COALESCE(c.cancelled, FALSE) = FALSE
-      AND c.is_active = TRUE
+      AND c.isactive = TRUE
     ORDER BY c.name;
 
     OPEN p_result2 FOR
     SELECT
-        sc.id_subcategory AS "Id",
-        sc.name AS "Name",
-        sc.fk_category AS "CategoryId"
+        sc.id_subcategory AS id,
+        sc.name AS name,
+        sc.fk_category AS categoryid
     FROM subcategory AS sc
     WHERE COALESCE(sc.cancelled, FALSE) = FALSE
-      AND sc.is_active = TRUE
+      AND sc.isactive = TRUE
     ORDER BY sc.name;
 
     OPEN p_result3 FOR
     SELECT
-        b.id_brand AS "Id",
-        b.brand_name AS "Name"
+        b.id_brand AS id,
+        b.brandname AS name
     FROM brand AS b
     WHERE COALESCE(b.cancelled, FALSE) = FALSE
-      AND b.is_active = TRUE
-    ORDER BY b.brand_name;
+      AND b.isactive = TRUE
+    ORDER BY b.brandname;
 END;
 $$;

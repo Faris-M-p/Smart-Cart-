@@ -13,15 +13,15 @@ AS $$
 DECLARE
     v_now TIMESTAMP := NOW();
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM user_roles WHERE id_user_role = p_id_user_role) THEN
+    IF NOT EXISTS (SELECT 1 FROM userroles WHERE id_userrole = p_id_user_role) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, 'User role not found.' AS response_msg, FALSE AS status_code;
         RETURN;
     END IF;
 
     IF EXISTS (
-        SELECT 1 FROM user_roles
-        WHERE id_user_role = p_id_user_role AND cancelled = TRUE
+        SELECT 1 FROM userroles
+        WHERE id_userrole = p_id_user_role AND cancelled = TRUE
     ) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, 'This user role is already deleted.' AS response_msg, FALSE AS status_code;
@@ -29,8 +29,8 @@ BEGIN
     END IF;
 
     IF EXISTS (
-        SELECT 1 FROM user_roles
-        WHERE id_user_role = p_id_user_role AND is_system_role = TRUE
+        SELECT 1 FROM userroles
+        WHERE id_userrole = p_id_user_role AND issystemrole = TRUE
     ) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, 'System roles cannot be deleted.' AS response_msg, FALSE AS status_code;
@@ -39,8 +39,8 @@ BEGIN
 
     IF EXISTS (
         SELECT 1
-        FROM admin_users
-        WHERE fk_user_role = p_id_user_role
+        FROM adminusers
+        WHERE fk_userrole = p_id_user_role
           AND cancelled = FALSE
     ) THEN
         OPEN p_result FOR
@@ -50,18 +50,18 @@ BEGIN
         RETURN;
     END IF;
 
-    UPDATE user_roles
+    UPDATE userroles
     SET cancelled = TRUE,
-        cancelled_on = v_now,
-        cancelled_reason = p_cancelled_reason,
-        updated_at = v_now
-    WHERE id_user_role = p_id_user_role;
+        cancelledon = v_now,
+        cancelledreason = p_cancelled_reason,
+        updatedat = v_now
+    WHERE id_userrole = p_id_user_role;
 
-    UPDATE user_role_permissions
+    UPDATE userrolepermissions
     SET cancelled = TRUE,
-        cancelled_on = v_now,
-        cancelled_reason = 'Role cancelled'
-    WHERE fk_user_role = p_id_user_role
+        cancelledon = v_now,
+        cancelledreason = 'Role cancelled'
+    WHERE fk_userrole = p_id_user_role
       AND cancelled = FALSE;
 
     OPEN p_result FOR

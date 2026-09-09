@@ -4,7 +4,7 @@
 
    PURPOSE
      Returns available stock for:
-       • A single ProductVariant (SKU)
+       • A single ProductVariant (sku)
        • OR a full Product (sum of all variants)
    ============================================================================= */
 
@@ -19,38 +19,38 @@ BEGIN
     IF (p_id_product = 0 AND p_id_product_variant = 0) THEN
         OPEN p_result FOR
         SELECT
-            -1 AS "ResponseCode",
-            'Provide either ID_Product or ID_ProductVariant.'::TEXT AS "ResponseMsg",
-            0 AS "StatusCode";
+            -1 AS responsecode,
+            'Provide either ID_Product or ID_ProductVariant.'::TEXT AS responsemsg,
+            0 AS statuscode;
         RETURN;
     END IF;
 
     IF (p_id_product_variant > 0) THEN
         OPEN p_result FOR
         SELECT
-            pv.id_product_variant AS "ID_ProductVariant",
-            pv.fk_product AS "FK_Product",
-            SUM(s.quantity) AS "AvailableStock"
-        FROM product_variants AS pv
+            pv.id_productvariant AS id_productvariant,
+            pv.fk_product AS fk_product,
+            SUM(s.quantity) AS availablestock
+        FROM productvariants AS pv
         LEFT JOIN stock AS s
-            ON s.fk_product_variant = pv.id_product_variant
+            ON s.fk_productvariant = pv.id_productvariant
            AND s.cancelled = FALSE
-        WHERE pv.id_product_variant = p_id_product_variant
+        WHERE pv.id_productvariant = p_id_product_variant
           AND pv.cancelled = FALSE
-        GROUP BY pv.id_product_variant, pv.fk_product;
+        GROUP BY pv.id_productvariant, pv.fk_product;
         RETURN;
     END IF;
 
     OPEN p_result FOR
     SELECT
-        p.id_product AS "ID_Product",
-        SUM(s.quantity) AS "AvailableStock"
+        p.id_product AS id_product,
+        SUM(s.quantity) AS availablestock
     FROM products AS p
-    INNER JOIN product_variants AS pv
+    INNER JOIN productvariants AS pv
         ON pv.fk_product = p.id_product
        AND pv.cancelled = FALSE
     LEFT JOIN stock AS s
-        ON s.fk_product_variant = pv.id_product_variant
+        ON s.fk_productvariant = pv.id_productvariant
        AND s.cancelled = FALSE
     WHERE p.id_product = p_id_product
     GROUP BY p.id_product;

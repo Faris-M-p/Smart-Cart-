@@ -46,10 +46,10 @@ BEGIN
         email TEXT,
         gst_number TEXT,
         address TEXT,
-        created_on TIMESTAMP,
+        createdon TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_suppliers;
@@ -57,7 +57,7 @@ BEGIN
     v_sql := format($q$
         INSERT INTO tmp_suppliers (
             rn, id_supplier, supplier_name, contact_person, phone, email,
-            gst_number, address, created_on, cancelled, cancelled_on, cancelled_reason
+            gst_number, address, createdon, cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
@@ -68,10 +68,10 @@ BEGIN
             s.email,
             NULL::TEXT,
             s.address,
-            s.created_at,
+            s.createdat,
             s.cancelled,
-            s.cancelled_on,
-            s.cancelled_reason
+            s.cancelledon,
+            s.cancelledreason
         FROM supplier s
         WHERE 1 = 1
           AND ($3 OR s.cancelled = FALSE)
@@ -98,7 +98,7 @@ BEGIN
 
     OPEN p_result FOR
         SELECT id_supplier, supplier_name, contact_person, phone, email,
-               gst_number, address, created_on, cancelled, cancelled_on, cancelled_reason
+               gst_number, address, createdon, cancelled, cancelledon, cancelledreason
         FROM tmp_suppliers
         WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)
                       AND (p_page_index * p_page_size);

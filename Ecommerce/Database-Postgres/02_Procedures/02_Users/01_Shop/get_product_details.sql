@@ -24,31 +24,31 @@ BEGIN
         INTO v_product_id
         FROM products AS p
         WHERE COALESCE(p.cancelled, FALSE) = FALSE
-          AND p.is_active = TRUE
-          AND COALESCE(p.sell_online, FALSE) = TRUE
+          AND p.isactive = TRUE
+          AND COALESCE(p.sellonline, FALSE) = TRUE
           AND (p.id_product = v_slug_as_int OR p.slug = p_slug);
     ELSE
         SELECT p.id_product
         INTO v_product_id
         FROM products AS p
         WHERE COALESCE(p.cancelled, FALSE) = FALSE
-          AND p.is_active = TRUE
-          AND COALESCE(p.sell_online, FALSE) = TRUE
+          AND p.isactive = TRUE
+          AND COALESCE(p.sellonline, FALSE) = TRUE
           AND p.slug = p_slug;
     END IF;
 
     OPEN p_result FOR
     SELECT
-        p.id_product AS "ProductId",
-        p.name AS "Name",
-        p.slug AS "Slug",
-        COALESCE(p.description, '') AS "Description",
-        c.id_category AS "CategoryId",
-        c.name AS "CategoryName",
-        p.fk_subcategory AS "SubCategoryId",
-        sc.name AS "SubCategoryName",
-        COALESCE(p.fk_brand, 0) AS "BrandId",
-        COALESCE(b.brand_name, '') AS "BrandName"
+        p.id_product AS productid,
+        p.name AS name,
+        p.slug AS slug,
+        COALESCE(p.description, '') AS description,
+        c.id_category AS categoryid,
+        c.name AS categoryname,
+        p.fk_subcategory AS subcategoryid,
+        sc.name AS subcategoryname,
+        COALESCE(p.fk_brand, 0) AS brandid,
+        COALESCE(b.brandname, '') AS brandname
     FROM products AS p
     INNER JOIN subcategory AS sc ON sc.id_subcategory = p.fk_subcategory
     INNER JOIN category AS c ON c.id_category = sc.fk_category
@@ -57,66 +57,66 @@ BEGIN
 
     OPEN p_result2 FOR
     SELECT
-        pm.media_url AS "MediaUrl"
-    FROM product_media AS pm
+        pm.mediaurl AS mediaurl
+    FROM productmedia AS pm
     WHERE pm.fk_product = v_product_id
-      AND pm.media_type = 'Image'
-      AND pm.media_url IS NOT NULL
-      AND pm.media_url <> ''
-    ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id_product_media ASC;
+      AND pm.mediatype = 'Image'
+      AND pm.mediaurl IS NOT NULL
+      AND pm.mediaurl <> ''
+    ORDER BY pm.isprimary DESC, pm.displayorder ASC, pm.id_productmedia ASC;
 
     OPEN p_result3 FOR
     SELECT
-        pv.id_product_variant AS "ProductVariantId",
-        pv.sku AS "SKU",
-        CASE WHEN COALESCE(pv.variant_label, '') = '' THEN pv.sku ELSE pv.variant_label END AS "Label",
-        pv.selling_price AS "Price",
-        pv.mrp AS "MRP",
-        CASE WHEN COALESCE(st.qty, 0) > 0 THEN TRUE ELSE FALSE END AS "InStock",
-        pv.is_default AS "IsDefault"
-    FROM product_variants AS pv
+        pv.id_productvariant AS productvariantid,
+        pv.sku AS sku,
+        CASE WHEN COALESCE(pv.variantlabel, '') = '' THEN pv.sku ELSE pv.variantlabel END AS label,
+        pv.sellingprice AS price,
+        pv.mrp AS mrp,
+        CASE WHEN COALESCE(st.qty, 0) > 0 THEN TRUE ELSE FALSE END AS instock,
+        pv.isdefault AS isdefault
+    FROM productvariants AS pv
     LEFT JOIN (
-        SELECT fk_product_variant, SUM(quantity) AS qty
+        SELECT fk_productvariant, SUM(quantity) AS qty
         FROM stock
         WHERE COALESCE(cancelled, FALSE) = FALSE
-        GROUP BY fk_product_variant
-    ) AS st ON st.fk_product_variant = pv.id_product_variant
+        GROUP BY fk_productvariant
+    ) AS st ON st.fk_productvariant = pv.id_productvariant
     WHERE pv.fk_product = v_product_id
       AND COALESCE(pv.cancelled, FALSE) = FALSE
-      AND pv.is_active = TRUE
-      AND COALESCE(pv.sell_online, FALSE) = TRUE
-    ORDER BY pv.is_default DESC, pv.selling_price ASC, pv.id_product_variant ASC;
+      AND pv.isactive = TRUE
+      AND COALESCE(pv.sellonline, FALSE) = TRUE
+    ORDER BY pv.isdefault DESC, pv.sellingprice ASC, pv.id_productvariant ASC;
 
     OPEN p_result4 FOR
     SELECT
-        pva.fk_product_variant AS "ProductVariantId",
-        v.id_variant AS "VariantId",
-        v.name AS "VariantName",
-        vv.id_variant_value AS "VariantValueId",
-        vv.name AS "VariantValueName"
-    FROM product_variant_attributes AS pva
-    INNER JOIN product_variants AS pv ON pv.id_product_variant = pva.fk_product_variant
+        pva.fk_productvariant AS productvariantid,
+        v.id_variant AS variantid,
+        v.name AS variantname,
+        vv.id_variantvalue AS variantvalueid,
+        vv.name AS variantvaluename
+    FROM productvariantattributes AS pva
+    INNER JOIN productvariants AS pv ON pv.id_productvariant = pva.fk_productvariant
     INNER JOIN variants AS v ON v.id_variant = pva.fk_variant
-    INNER JOIN variant_values AS vv ON vv.id_variant_value = pva.fk_variant_value
+    INNER JOIN variantvalues AS vv ON vv.id_variantvalue = pva.fk_variantvalue
     WHERE pv.fk_product = v_product_id
       AND COALESCE(pv.cancelled, FALSE) = FALSE
-      AND pv.is_active = TRUE
-      AND COALESCE(pv.sell_online, FALSE) = TRUE
-    ORDER BY v.display_order, v.name, vv.display_order, vv.name;
+      AND pv.isactive = TRUE
+      AND COALESCE(pv.sellonline, FALSE) = TRUE
+    ORDER BY v.displayorder, v.name, vv.displayorder, vv.name;
 
     OPEN p_result5 FOR
     SELECT
-        sm.fk_product_sku AS "ProductVariantId",
-        sm.media_url AS "ImageUrl"
-    FROM sku_media AS sm
-    INNER JOIN product_variants AS pv ON pv.id_product_variant = sm.fk_product_sku
+        sm.fk_productsku AS productvariantid,
+        sm.mediaurl AS imageurl
+    FROM skumedia AS sm
+    INNER JOIN productvariants AS pv ON pv.id_productvariant = sm.fk_productsku
     WHERE pv.fk_product = v_product_id
       AND COALESCE(pv.cancelled, FALSE) = FALSE
-      AND pv.is_active = TRUE
-      AND COALESCE(pv.sell_online, FALSE) = TRUE
-      AND sm.media_type = 'Image'
-      AND sm.media_url IS NOT NULL
-      AND sm.media_url <> ''
-    ORDER BY sm.is_primary DESC, sm.display_order ASC;
+      AND pv.isactive = TRUE
+      AND COALESCE(pv.sellonline, FALSE) = TRUE
+      AND sm.mediatype = 'Image'
+      AND sm.mediaurl IS NOT NULL
+      AND sm.mediaurl <> ''
+    ORDER BY sm.isprimary DESC, sm.displayorder ASC;
 END;
 $$;

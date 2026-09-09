@@ -124,88 +124,88 @@ BEGIN
     WITH sku_price AS (
         SELECT
             pv.fk_product,
-            MIN(pv.selling_price) AS min_price
-        FROM product_variants AS pv
+            MIN(pv.sellingprice) AS min_price
+        FROM productvariants AS pv
         WHERE COALESCE(pv.cancelled, FALSE) = FALSE
-          AND pv.is_active = TRUE
-          AND COALESCE(pv.sell_online, FALSE) = TRUE
+          AND pv.isactive = TRUE
+          AND COALESCE(pv.sellonline, FALSE) = TRUE
         GROUP BY pv.fk_product
     ),
     cheapest_sku AS (
         SELECT
             pv.fk_product,
-            pv.selling_price,
+            pv.sellingprice,
             pv.mrp,
             ROW_NUMBER() OVER (
                 PARTITION BY pv.fk_product
-                ORDER BY pv.selling_price ASC, pv.is_default DESC, pv.id_product_variant ASC
+                ORDER BY pv.sellingprice ASC, pv.isdefault DESC, pv.id_productvariant ASC
             ) AS rn
-        FROM product_variants AS pv
+        FROM productvariants AS pv
         WHERE COALESCE(pv.cancelled, FALSE) = FALSE
-          AND pv.is_active = TRUE
-          AND COALESCE(pv.sell_online, FALSE) = TRUE
+          AND pv.isactive = TRUE
+          AND COALESCE(pv.sellonline, FALSE) = TRUE
     ),
     stock_by_product AS (
         SELECT
             pv.fk_product,
             SUM(s.quantity) AS qty
-        FROM product_variants AS pv
+        FROM productvariants AS pv
         INNER JOIN stock AS s
-            ON s.fk_product_variant = pv.id_product_variant
+            ON s.fk_productvariant = pv.id_productvariant
            AND COALESCE(s.cancelled, FALSE) = FALSE
         WHERE COALESCE(pv.cancelled, FALSE) = FALSE
-          AND pv.is_active = TRUE
-          AND COALESCE(pv.sell_online, FALSE) = TRUE
+          AND pv.isactive = TRUE
+          AND COALESCE(pv.sellonline, FALSE) = TRUE
         GROUP BY pv.fk_product
     ),
     product_image AS (
         SELECT
             pm.fk_product,
-            pm.media_url,
+            pm.mediaurl,
             ROW_NUMBER() OVER (
                 PARTITION BY pm.fk_product
-                ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id_product_media ASC
+                ORDER BY pm.isprimary DESC, pm.displayorder ASC, pm.id_productmedia ASC
             ) AS rn
-        FROM product_media AS pm
-        WHERE pm.media_type = 'Image'
-          AND pm.media_url IS NOT NULL
-          AND pm.media_url <> ''
+        FROM productmedia AS pm
+        WHERE pm.mediatype = 'Image'
+          AND pm.mediaurl IS NOT NULL
+          AND pm.mediaurl <> ''
     ),
     sku_image AS (
         SELECT
             pv.fk_product,
-            sm.media_url,
+            sm.mediaurl,
             ROW_NUMBER() OVER (
                 PARTITION BY pv.fk_product
-                ORDER BY sm.is_primary DESC, sm.display_order ASC
+                ORDER BY sm.isprimary DESC, sm.displayorder ASC
             ) AS rn
-        FROM product_variants AS pv
-        INNER JOIN sku_media AS sm
-            ON sm.fk_product_sku = pv.id_product_variant
+        FROM productvariants AS pv
+        INNER JOIN skumedia AS sm
+            ON sm.fk_productsku = pv.id_productvariant
         WHERE COALESCE(pv.cancelled, FALSE) = FALSE
-          AND pv.is_active = TRUE
-          AND COALESCE(pv.sell_online, FALSE) = TRUE
-          AND sm.media_type = 'Image'
-          AND sm.media_url IS NOT NULL
-          AND sm.media_url <> ''
+          AND pv.isactive = TRUE
+          AND COALESCE(pv.sellonline, FALSE) = TRUE
+          AND sm.mediatype = 'Image'
+          AND sm.mediaurl IS NOT NULL
+          AND sm.mediaurl <> ''
     ),
     filtered AS (
         SELECT
-            p.id_product AS product_id,
+            p.id_product AS productid,
             p.name,
             p.slug,
             c.id_category AS category_id,
             c.name AS category_name,
             p.fk_subcategory AS sub_category_id,
             COALESCE(p.fk_brand, 0) AS brand_id,
-            COALESCE(b.brand_name, '') AS brand_name,
-            COALESCE(pi.media_url, si.media_url) AS image_url,
+            COALESCE(b.brandname, '') AS brandname,
+            COALESCE(pi.mediaurl, si.mediaurl) AS imageurl,
             0 AS rating,
             ''::TEXT AS gender,
-            COALESCE(cs.selling_price, 0) AS price,
+            COALESCE(cs.sellingprice, 0) AS price,
             COALESCE(cs.mrp, 0) AS mrp,
             CASE WHEN COALESCE(st.qty, 0) > 0 THEN TRUE ELSE FALSE END AS in_stock,
-            p.created_at
+            p.createdat
         FROM products AS p
         INNER JOIN subcategory AS sc ON sc.id_subcategory = p.fk_subcategory
         INNER JOIN category AS c ON c.id_category = sc.fk_category
@@ -216,8 +216,8 @@ BEGIN
         LEFT JOIN product_image AS pi ON pi.fk_product = p.id_product AND pi.rn = 1
         LEFT JOIN sku_image AS si ON si.fk_product = p.id_product AND si.rn = 1
         WHERE COALESCE(p.cancelled, FALSE) = FALSE
-          AND p.is_active = TRUE
-          AND COALESCE(p.sell_online, FALSE) = TRUE
+          AND p.isactive = TRUE
+          AND COALESCE(p.sellonline, FALSE) = TRUE
           AND (
                 p_search_name IS NULL
                 OR p.name ILIKE '%' || p_search_name || '%'
@@ -232,62 +232,62 @@ BEGIN
           AND (p_price_to IS NULL OR sp.min_price <= p_price_to)
     )
     SELECT
-        product_id AS "ProductId",
-        name AS "Name",
-        slug AS "Slug",
-        category_id AS "CategoryId",
-        category_name AS "CategoryName",
-        sub_category_id AS "SubCategoryId",
-        brand_id AS "BrandId",
-        brand_name AS "BrandName",
-        image_url AS "ImageUrl",
-        rating AS "Rating",
-        gender AS "Gender",
-        price AS "Price",
-        mrp AS "MRP",
-        in_stock AS "InStock",
-        created_at AS "CreatedAt"
+        productid AS productid,
+        name AS name,
+        slug AS slug,
+        category_id AS categoryid,
+        category_name AS categoryname,
+        sub_category_id AS subcategoryid,
+        brand_id AS brandid,
+        brandname AS brandname,
+        imageurl AS imageurl,
+        rating AS rating,
+        gender AS gender,
+        price AS price,
+        mrp AS mrp,
+        in_stock AS instock,
+        createdat AS createdat
     FROM filtered;
 
     SELECT COUNT(*) INTO v_total_count FROM tmp_page_rows;
 
     OPEN p_result FOR
     SELECT
-        "ProductId",
-        "Name",
-        "Slug",
-        "CategoryId",
-        "CategoryName",
-        "SubCategoryId",
-        "BrandId",
-        "BrandName",
-        "ImageUrl",
-        "Rating",
-        "Gender",
-        "Price",
-        "MRP",
-        "InStock"
+        productid,
+        name,
+        slug,
+        categoryid,
+        categoryname,
+        subcategoryid,
+        brandid,
+        brandname,
+        imageurl,
+        rating,
+        gender,
+        price,
+        mrp,
+        instock
     FROM tmp_page_rows
     ORDER BY
-        CASE WHEN p_sort_column = 1 AND p_sort_mode = 'ASC' THEN "Name" END ASC,
-        CASE WHEN p_sort_column = 1 AND p_sort_mode = 'DESC' THEN "Name" END DESC,
-        CASE WHEN p_sort_column = 2 AND p_sort_mode = 'ASC' THEN "Price" END ASC,
-        CASE WHEN p_sort_column = 2 AND p_sort_mode = 'DESC' THEN "Price" END DESC,
-        CASE WHEN p_sort_column = 3 AND p_sort_mode = 'ASC' THEN "SubCategoryId" END ASC,
-        CASE WHEN p_sort_column = 3 AND p_sort_mode = 'DESC' THEN "SubCategoryId" END DESC,
-        CASE WHEN p_sort_column = 4 AND p_sort_mode = 'ASC' THEN "CreatedAt" END ASC,
-        CASE WHEN p_sort_column = 4 AND p_sort_mode = 'DESC' THEN "CreatedAt" END DESC,
-        CASE WHEN p_sort_column = 0 AND p_sort_mode = 'ASC' THEN "ProductId" END ASC,
-        CASE WHEN COALESCE(p_sort_column, 4) NOT IN (0, 1, 2, 3) AND p_sort_mode = 'ASC' THEN "CreatedAt" END ASC,
-        CASE WHEN COALESCE(p_sort_column, 4) NOT IN (0, 1, 2, 3) AND p_sort_mode <> 'ASC' THEN "CreatedAt" END DESC,
-        "ProductId" DESC
+        CASE WHEN p_sort_column = 1 AND p_sort_mode = 'ASC' THEN name END ASC,
+        CASE WHEN p_sort_column = 1 AND p_sort_mode = 'DESC' THEN name END DESC,
+        CASE WHEN p_sort_column = 2 AND p_sort_mode = 'ASC' THEN price END ASC,
+        CASE WHEN p_sort_column = 2 AND p_sort_mode = 'DESC' THEN price END DESC,
+        CASE WHEN p_sort_column = 3 AND p_sort_mode = 'ASC' THEN subcategoryid END ASC,
+        CASE WHEN p_sort_column = 3 AND p_sort_mode = 'DESC' THEN subcategoryid END DESC,
+        CASE WHEN p_sort_column = 4 AND p_sort_mode = 'ASC' THEN createdat END ASC,
+        CASE WHEN p_sort_column = 4 AND p_sort_mode = 'DESC' THEN createdat END DESC,
+        CASE WHEN p_sort_column = 0 AND p_sort_mode = 'ASC' THEN productid END ASC,
+        CASE WHEN COALESCE(p_sort_column, 4) NOT IN (0, 1, 2, 3) AND p_sort_mode = 'ASC' THEN createdat END ASC,
+        CASE WHEN COALESCE(p_sort_column, 4) NOT IN (0, 1, 2, 3) AND p_sort_mode <> 'ASC' THEN createdat END DESC,
+        productid DESC
     OFFSET (p_page_index - 1) * p_page_size
     LIMIT p_page_size;
 
     OPEN p_result2 FOR
     SELECT
-        v_total_count AS "TotalCount",
-        p_page_size AS "PageSize",
-        p_page_index AS "PageIndex";
+        v_total_count AS totalcount,
+        p_page_size AS pagesize,
+        p_page_index AS pageindex;
 END;
 $$;

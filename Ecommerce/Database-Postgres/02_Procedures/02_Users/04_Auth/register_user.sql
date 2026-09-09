@@ -22,22 +22,22 @@ BEGIN
 
     IF p_full_name = '' THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Please enter your name.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Please enter your name.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     IF p_email = '' THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Please enter your email.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Please enter your email.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     IF TRIM(COALESCE(p_password_hash, '')) = '' THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Please enter a password.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Please enter a password.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
@@ -48,18 +48,18 @@ BEGIN
           AND COALESCE(cancelled, FALSE) = FALSE
     ) THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'An account with this email already exists.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'An account with this email already exists.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     INSERT INTO users (
-        user_name,
-        full_name,
-        password_hash,
+        username,
+        fullname,
+        passwordhash,
         email,
-        is_admin,
-        created_at,
+        isadmin,
+        createdat,
         cancelled
     )
     VALUES (
@@ -71,10 +71,10 @@ BEGIN
         NOW(),
         FALSE
     )
-    RETURNING user_id INTO v_user_id;
+    RETURNING id_user INTO v_user_id;
 
     OPEN p_result FOR
-    SELECT v_user_id AS "ResponseCode", 1 AS "StatusCode",
-           'Account created.'::TEXT AS "ResponseMsg";
+    SELECT v_user_id AS responsecode, 1 AS statuscode,
+           'Account created.'::TEXT AS responsemsg;
 END;
 $$;

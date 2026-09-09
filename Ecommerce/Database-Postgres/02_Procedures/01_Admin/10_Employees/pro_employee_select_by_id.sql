@@ -12,16 +12,16 @@ AS $$
 BEGIN
     OPEN p_result FOR
         SELECT
-            e.id_admin_user AS employee_id,
-            e.full_name AS employee_name,
-            e.user_name,
-            e.fk_user_role,
-            r.role_name AS user_role_name,
-            e.is_active,
-            e.created_at
-        FROM admin_users e
-        INNER JOIN user_roles r ON r.id_user_role = e.fk_user_role
-        WHERE e.id_admin_user = p_id_admin_user
+            e.id_adminuser AS employee_id,
+            e.fullname AS employee_name,
+            e.username,
+            e.fk_userrole,
+            r.rolename AS user_role_name,
+            e.isactive,
+            e.createdat
+        FROM adminusers e
+        INNER JOIN userroles r ON r.id_userrole = e.fk_userrole
+        WHERE e.id_adminuser = p_id_admin_user
           AND e.cancelled = FALSE;
 END;
 $$;

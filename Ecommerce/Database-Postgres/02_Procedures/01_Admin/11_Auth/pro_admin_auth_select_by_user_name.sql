@@ -13,18 +13,18 @@ AS $$
 BEGIN
     OPEN p_result FOR
         SELECT
-            e.id_admin_user,
-            e.user_name,
-            e.password_hash,
-            e.full_name,
-            e.is_active,
+            e.id_adminuser,
+            e.username,
+            e.passwordhash,
+            e.fullname,
+            e.isactive,
             e.cancelled,
-            e.fk_user_role,
-            r.role_name,
-            r.is_active AS role_is_active,
+            e.fk_userrole,
+            r.rolename,
+            r.isactive AS role_is_active,
             r.cancelled AS role_cancelled
-        FROM admin_users e
-        LEFT JOIN user_roles r ON r.id_user_role = e.fk_user_role
-        WHERE e.user_name = p_user_name;
+        FROM adminusers e
+        LEFT JOIN userroles r ON r.id_userrole = e.fk_userrole
+        WHERE e.username = p_user_name;
 END;
 $$;

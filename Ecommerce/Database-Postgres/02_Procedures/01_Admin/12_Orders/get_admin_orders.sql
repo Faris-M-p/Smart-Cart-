@@ -39,14 +39,14 @@ BEGIN
 
     CREATE TEMP TABLE IF NOT EXISTS tmp_admin_orders (
         rn BIGINT,
-        order_id INT,
-        order_number TEXT,
-        order_date TIMESTAMP,
-        total_amount NUMERIC(10,2),
-        order_status TEXT,
-        payment_method TEXT,
-        payment_status TEXT,
-        receiver_name TEXT,
+        orderid INT,
+        ordernumber TEXT,
+        orderdate TIMESTAMP,
+        totalamount NUMERIC(10,2),
+        orderstatus TEXT,
+        paymentmethod TEXT,
+        paymentstatus TEXT,
+        receivername TEXT,
         phone TEXT,
         city TEXT,
         customer_name TEXT,
@@ -60,91 +60,91 @@ BEGIN
     DELETE FROM tmp_admin_orders;
 
     INSERT INTO tmp_admin_orders (
-        rn, order_id, order_number, order_date, total_amount, order_status,
-        payment_method, payment_status, receiver_name, phone, city,
+        rn, orderid, ordernumber, orderdate, totalamount, orderstatus,
+        paymentmethod, paymentstatus, receivername, phone, city,
         customer_name, customer_email, cancelled, item_count,
         first_product_name, first_image_url
     )
     SELECT
-        ROW_NUMBER() OVER (ORDER BY o.order_date DESC, o.order_id DESC) AS rn,
-        o.order_id,
-        COALESCE(o.order_number, 'SC' || LPAD(o.order_id::TEXT, 6, '0')) AS order_number,
-        o.order_date,
-        o.total_amount,
-        CASE WHEN COALESCE(o.cancelled, FALSE) THEN 'Cancelled' ELSE o.order_status END AS order_status,
-        o.payment_method,
+        ROW_NUMBER() OVER (ORDER BY o.orderdate DESC, o.id_order DESC) AS rn,
+        o.id_order AS orderid,
+        COALESCE(o.ordernumber, 'SC' || LPAD(o.id_order::TEXT, 6, '0')) AS ordernumber,
+        o.orderdate,
+        o.totalamount,
+        CASE WHEN COALESCE(o.cancelled, FALSE) THEN 'Cancelled' ELSE o.orderstatus END AS orderstatus,
+        o.paymentmethod,
         COALESCE((
-            SELECT p.payment_status
+            SELECT p.paymentstatus
             FROM payments p
-            WHERE p.order_id = o.order_id
-            ORDER BY p.payment_id DESC
+            WHERE p.fk_order = o.id_order
+            ORDER BY p.id_payment DESC
             LIMIT 1
-        ), 'Pending') AS payment_status,
-        COALESCE(o.receiver_name, '') AS receiver_name,
+        ), 'Pending') AS paymentstatus,
+        COALESCE(o.receivername, '') AS receivername,
         COALESCE(o.phone, '') AS phone,
         COALESCE(o.city, '') AS city,
-        COALESCE(NULLIF(TRIM(u.full_name), ''), COALESCE(u.user_name, '')) AS customer_name,
+        COALESCE(NULLIF(TRIM(u.fullname), ''), COALESCE(u.username, '')) AS customer_name,
         COALESCE(u.email, '') AS customer_email,
         COALESCE(o.cancelled, FALSE) AS cancelled,
         COALESCE((
             SELECT COUNT(*)::INT
-            FROM order_items oi
-            WHERE oi.fk_order = o.order_id
+            FROM orderitems oi
+            WHERE oi.fk_order = o.id_order
         ), 0) AS item_count,
         COALESCE(fi.first_product_name, '') AS first_product_name,
         COALESCE(fi.first_image_url, '') AS first_image_url
     FROM orders o
-    LEFT JOIN users u ON u.user_id = o.user_id
+    LEFT JOIN users u ON u.id_user = o.fk_user
     LEFT JOIN LATERAL (
         SELECT
-            oi.product_name AS first_product_name,
+            oi.productname AS first_product_name,
             COALESCE((
-                SELECT sm.media_url
-                FROM sku_media sm
-                WHERE sm.fk_product_sku = oi.fk_product_variant
-                  AND sm.media_url IS NOT NULL
-                  AND sm.media_url <> ''
-                ORDER BY sm.is_primary DESC, sm.display_order ASC
+                SELECT sm.mediaurl
+                FROM skumedia sm
+                WHERE sm.fk_productsku = oi.fk_productvariant
+                  AND sm.mediaurl IS NOT NULL
+                  AND sm.mediaurl <> ''
+                ORDER BY sm.isprimary DESC, sm.displayorder ASC
                 LIMIT 1
             ), (
-                SELECT pm.media_url
-                FROM product_media pm
+                SELECT pm.mediaurl
+                FROM productmedia pm
                 WHERE pm.fk_product = oi.fk_product
-                  AND pm.media_type = 'Image'
-                  AND pm.media_url IS NOT NULL
-                  AND pm.media_url <> ''
-                ORDER BY pm.is_primary DESC, pm.display_order ASC
+                  AND pm.mediatype = 'Image'
+                  AND pm.mediaurl IS NOT NULL
+                  AND pm.mediaurl <> ''
+                ORDER BY pm.isprimary DESC, pm.displayorder ASC
                 LIMIT 1
             )) AS first_image_url
-        FROM order_items oi
-        WHERE oi.fk_order = o.order_id
-        ORDER BY oi.id_order_item
+        FROM orderitems oi
+        WHERE oi.fk_order = o.id_order
+        ORDER BY oi.id_orderitem
         LIMIT 1
     ) fi ON TRUE
     WHERE (v_search = ''
-           OR COALESCE(o.order_number, 'SC' || LPAD(o.order_id::TEXT, 6, '0')) ILIKE '%' || v_search || '%'
-           OR COALESCE(o.receiver_name, '') ILIKE '%' || v_search || '%'
+           OR COALESCE(o.ordernumber, 'SC' || LPAD(o.id_order::TEXT, 6, '0')) ILIKE '%' || v_search || '%'
+           OR COALESCE(o.receivername, '') ILIKE '%' || v_search || '%'
            OR COALESCE(o.phone, '') ILIKE '%' || v_search || '%'
            OR COALESCE(o.city, '') ILIKE '%' || v_search || '%'
-           OR COALESCE(NULLIF(TRIM(u.full_name), ''), COALESCE(u.user_name, '')) ILIKE '%' || v_search || '%'
+           OR COALESCE(NULLIF(TRIM(u.fullname), ''), COALESCE(u.username, '')) ILIKE '%' || v_search || '%'
            OR COALESCE(u.email, '') ILIKE '%' || v_search || '%')
       AND (v_status = ''
-           OR CASE WHEN COALESCE(o.cancelled, FALSE) THEN 'Cancelled' ELSE o.order_status END = v_status)
-      AND (p_from_date IS NULL OR o.order_date::DATE >= p_from_date)
-      AND (p_to_date IS NULL OR o.order_date::DATE <= p_to_date);
+           OR CASE WHEN COALESCE(o.cancelled, FALSE) THEN 'Cancelled' ELSE o.orderstatus END = v_status)
+      AND (p_from_date IS NULL OR o.orderdate::DATE >= p_from_date)
+      AND (p_to_date IS NULL OR o.orderdate::DATE <= p_to_date);
 
     SELECT COUNT(*) INTO v_total_count FROM tmp_admin_orders;
 
     OPEN p_result FOR
         SELECT
-            order_id,
-            order_number,
-            order_date,
-            total_amount,
-            order_status,
-            payment_method,
-            payment_status,
-            receiver_name,
+            orderid,
+            ordernumber,
+            orderdate,
+            totalamount,
+            orderstatus,
+            paymentmethod,
+            paymentstatus,
+            receivername,
             phone,
             city,
             customer_name,
@@ -152,10 +152,10 @@ BEGIN
             item_count,
             first_product_name,
             first_image_url,
-            (NOT cancelled AND order_status IN ('Placed', 'Pending')) AS can_confirm,
-            (NOT cancelled AND order_status = 'Confirmed') AS can_update_status,
-            (NOT cancelled AND order_status IN ('Confirmed', 'Shipped')) AS can_deliver,
-            (NOT cancelled AND order_status IN ('Placed', 'Pending', 'Confirmed')) AS can_cancel
+            (NOT cancelled AND orderstatus IN ('Placed', 'Pending')) AS can_confirm,
+            (NOT cancelled AND orderstatus = 'Confirmed') AS can_update_status,
+            (NOT cancelled AND orderstatus IN ('Confirmed', 'Shipped')) AS can_deliver,
+            (NOT cancelled AND orderstatus IN ('Placed', 'Pending', 'Confirmed')) AS can_cancel
         FROM tmp_admin_orders
         WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)
                       AND (p_page_index * p_page_size)

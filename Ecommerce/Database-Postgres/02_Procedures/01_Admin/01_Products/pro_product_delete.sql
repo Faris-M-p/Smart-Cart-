@@ -6,7 +6,7 @@ Source      : ProProductDelete (SQL Server)
 CREATE OR REPLACE PROCEDURE pro_product_delete(
     IN p_id_product INT,
     IN p_cancelled_reason TEXT DEFAULT '',
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -26,11 +26,11 @@ BEGIN
         RETURN;
     END IF;
 
-    -- products has cancelled / cancelled_on only (no cancelled_reason / cancelled_by)
+    -- products has cancelled / cancelledon only (no cancelledreason / cancelledby)
     UPDATE products
     SET cancelled = TRUE,
-        cancelled_on = v_user_date,
-        is_active = FALSE
+        cancelledon = v_user_date,
+        isactive = FALSE
     WHERE id_product = p_id_product;
 
     OPEN p_result FOR

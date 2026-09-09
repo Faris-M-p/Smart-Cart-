@@ -13,23 +13,23 @@ AS $$
 DECLARE
     v_rowcount INT;
 BEGIN
-    DELETE FROM cart_items AS ci
+    DELETE FROM cartitems AS ci
     USING cart AS c
-    WHERE c.cart_id = ci.cart_id
-      AND ci.cart_item_id = p_cart_item_id
-      AND c.user_id = p_user_id;
+    WHERE c.id_cart = ci.fk_cart
+      AND ci.id_cartitem = p_cart_item_id
+      AND c.fk_user = p_user_id;
 
     GET DIAGNOSTICS v_rowcount = ROW_COUNT;
 
     IF v_rowcount = 0 THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Cart item was not found.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Cart item was not found.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     OPEN p_result FOR
-    SELECT 0 AS "ResponseCode", 1 AS "StatusCode",
-           'Item removed from cart.'::TEXT AS "ResponseMsg";
+    SELECT 0 AS responsecode, 1 AS statuscode,
+           'Item removed from cart.'::TEXT AS responsemsg;
 END;
 $$;

@@ -1,13 +1,13 @@
-﻿CREATE TABLE IF NOT EXISTS wishlist_items (
-    wishlist_item_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    wishlist_id      INT NOT NULL,
-    product_id       INT NOT NULL,
-    created_at       TIMESTAMP NULL DEFAULT NOW(),
-    cancelled        BOOLEAN NULL DEFAULT FALSE,
-    cancelled_on     TIMESTAMP NULL,
-    cancelled_reason TEXT NULL,
-    CONSTRAINT fk_wishlist_items_wishlist
-        FOREIGN KEY (wishlist_id) REFERENCES wishlist (wishlist_id),
-    CONSTRAINT fk_wishlist_items_product
-        FOREIGN KEY (product_id) REFERENCES products (id_product)
+CREATE TABLE IF NOT EXISTS wishlistitems (
+    id_wishlistitem INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_wishlist     INT NOT NULL,
+    fk_product      INT NOT NULL,
+    createdat       TIMESTAMP NULL DEFAULT NOW(),
+    cancelled       BOOLEAN NULL DEFAULT FALSE,
+    cancelledon     TIMESTAMP NULL,
+    cancelledreason TEXT NULL,
+    CONSTRAINT fk_wishlistitems_wishlist
+        FOREIGN KEY (fk_wishlist) REFERENCES wishlist (id_wishlist),
+    CONSTRAINT fk_wishlistitems_product
+        FOREIGN KEY (fk_product) REFERENCES products (id_product)
 );

@@ -1,15 +1,14 @@
-﻿CREATE TABLE IF NOT EXISTS user_role_permissions (
-    id_user_role_permission INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    fk_user_role            INT NOT NULL,
-    fk_permission           INT NOT NULL,
-    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
-    cancelled               BOOLEAN NOT NULL DEFAULT FALSE,
-    cancelled_on            TIMESTAMP NULL,
-    cancelled_reason        TEXT NULL,
-    CONSTRAINT uq_user_role_permissions_role_permission
-        UNIQUE (fk_user_role, fk_permission),
-    CONSTRAINT fk_user_role_permissions_user_role
-        FOREIGN KEY (fk_user_role) REFERENCES user_roles (id_user_role),
-    CONSTRAINT fk_user_role_permissions_permission
+CREATE TABLE IF NOT EXISTS userrolepermissions (
+    id_userrolepermission INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_userrole           INT NOT NULL,
+    fk_permission         INT NOT NULL,
+    createdat             TIMESTAMP NOT NULL DEFAULT NOW(),
+    cancelled             BOOLEAN NOT NULL DEFAULT FALSE,
+    cancelledon           TIMESTAMP NULL,
+    cancelledreason       TEXT NULL,
+    CONSTRAINT uq_userrolepermissions_role_permission UNIQUE (fk_userrole, fk_permission),
+    CONSTRAINT fk_userrolepermissions_userrole
+        FOREIGN KEY (fk_userrole) REFERENCES userroles (id_userrole),
+    CONSTRAINT fk_userrolepermissions_permission
         FOREIGN KEY (fk_permission) REFERENCES permissions (id_permission)
 );

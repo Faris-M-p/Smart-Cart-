@@ -1,6 +1,6 @@
 /**********************************************************************
 Created By  : Muhammed Faris
-Purpose     : Select Brand By ID for Admin Edit
+Purpose     : Select brand By ID for Admin Edit
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_brand_select_by_id(
     IN p_brand_id INT,
@@ -25,15 +25,15 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- RESULT: BRAND INFO
+    -- RESULT: brand INFO
     -------------------------------------------------------------------
     OPEN p_result FOR
         SELECT
             b.id_brand AS brand_id,
-            b.brand_name,
+            b.brandname,
             b.cancelled,
-            b.cancelled_on,
-            b.cancelled_reason
+            b.cancelledon,
+            b.cancelledreason
         FROM brand b
         WHERE b.id_brand = p_brand_id;
 END;

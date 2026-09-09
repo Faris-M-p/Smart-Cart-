@@ -11,13 +11,13 @@ AS $$
 BEGIN
     OPEN p_result FOR
         SELECT
-            r.id_user_role,
-            r.role_name,
+            r.id_userrole,
+            r.rolename,
             r.description,
-            r.is_system_role,
-            r.is_active
-        FROM user_roles r
+            r.issystemrole,
+            r.isactive
+        FROM userroles r
         WHERE r.cancelled = FALSE
-        ORDER BY r.is_system_role DESC, r.role_name ASC;
+        ORDER BY r.issystemrole DESC, r.rolename ASC;
 END;
 $$;

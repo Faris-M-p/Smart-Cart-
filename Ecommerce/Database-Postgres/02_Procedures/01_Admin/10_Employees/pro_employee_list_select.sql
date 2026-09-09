@@ -4,7 +4,7 @@ Created By       : Muhammed Faris
 Created On       : 06/09/2026
 
 PURPOSE
-  Admin Employee listing from admin_users with User Role name.
+  Admin Employee listing from adminusers with User Role name.
 **********************************************************************/
 CREATE OR REPLACE PROCEDURE pro_employee_list_select(
     IN p_search_text TEXT DEFAULT '',
@@ -31,34 +31,34 @@ BEGIN
     OPEN p_result FOR
         WITH filtered AS (
             SELECT
-                e.id_admin_user,
-                e.full_name,
-                e.user_name,
-                e.fk_user_role,
-                r.role_name,
-                e.is_active,
-                e.created_at
-            FROM admin_users e
-            INNER JOIN user_roles r ON r.id_user_role = e.fk_user_role
+                e.id_adminuser,
+                e.fullname,
+                e.username,
+                e.fk_userrole,
+                r.rolename,
+                e.isactive,
+                e.createdat
+            FROM adminusers e
+            INNER JOIN userroles r ON r.id_userrole = e.fk_userrole
             WHERE e.cancelled = FALSE
               AND (
                     v_search = ''
-                    OR LOWER(e.full_name) LIKE '%' || v_search || '%'
-                    OR LOWER(e.user_name) LIKE '%' || v_search || '%'
-                    OR LOWER(r.role_name) LIKE '%' || v_search || '%'
+                    OR LOWER(e.fullname) LIKE '%' || v_search || '%'
+                    OR LOWER(e.username) LIKE '%' || v_search || '%'
+                    OR LOWER(r.rolename) LIKE '%' || v_search || '%'
                   )
         )
         SELECT
             COUNT(1) OVER() AS total_count,
-            id_admin_user AS employee_id,
-            full_name AS employee_name,
-            user_name,
-            fk_user_role,
-            role_name AS user_role_name,
-            is_active,
-            created_at
+            id_adminuser AS employee_id,
+            fullname AS employee_name,
+            username,
+            fk_userrole,
+            rolename AS user_role_name,
+            isactive,
+            createdat
         FROM filtered
-        ORDER BY id_admin_user DESC
+        ORDER BY id_adminuser DESC
         OFFSET (v_page_index - 1) * v_page_size
         LIMIT v_page_size;
 END;

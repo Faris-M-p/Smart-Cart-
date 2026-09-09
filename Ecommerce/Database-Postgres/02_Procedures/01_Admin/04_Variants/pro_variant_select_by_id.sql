@@ -27,11 +27,11 @@ BEGIN
             id_variant,
             name AS variant_name,
             description,
-            display_order,
-            NULL::TIMESTAMP AS created_on,
+            displayorder,
+            NULL::TIMESTAMP AS createdon,
             cancelled,
-            cancelled_on,
-            NULL::TEXT AS cancelled_reason
+            cancelledon,
+            NULL::TEXT AS cancelledreason
         FROM variants
         WHERE id_variant = p_id_variant;
 END;

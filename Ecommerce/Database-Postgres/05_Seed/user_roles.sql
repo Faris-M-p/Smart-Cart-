@@ -1,7 +1,7 @@
-﻿\echo 'Seeding user_roles...'
+\echo 'Seeding user_roles...'
 
-INSERT INTO user_roles (
-    role_name, description, is_system_role, is_active, created_at, cancelled
+INSERT INTO userroles (
+    rolename, description, issystemrole, isactive, createdat, cancelled
 )
 SELECT
     'Admin',
@@ -11,5 +11,5 @@ SELECT
     NOW(),
     FALSE
 WHERE NOT EXISTS (
-    SELECT 1 FROM user_roles WHERE role_name = 'Admin'
+    SELECT 1 FROM userroles WHERE rolename = 'Admin'
 );

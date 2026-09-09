@@ -34,13 +34,13 @@ BEGIN
             p.name,
             p.description,
             COALESCE((
-                SELECT MIN(pv.selling_price)
-                FROM product_variants pv
+                SELECT MIN(pv.sellingprice)
+                FROM productvariants pv
                 WHERE pv.fk_product = p.id_product AND COALESCE(pv.cancelled, FALSE) = FALSE
             ), 0) AS price,
             COALESCE((
                 SELECT MIN(pv.mrp)
-                FROM product_variants pv
+                FROM productvariants pv
                 WHERE pv.fk_product = p.id_product AND COALESCE(pv.cancelled, FALSE) = FALSE
             ), 0) AS mrp,
             sc.fk_category,
@@ -48,15 +48,15 @@ BEGIN
             p.fk_brand,
             NULL::NUMERIC(3,1) AS rating,
             NULL::TEXT AS gender,
-            CASE WHEN p.is_active THEN 1 ELSE 0 END AS fk_status,
-            p.created_at AS created_on,
-            p.modified_at AS updated_on,
+            CASE WHEN p.isactive THEN 1 ELSE 0 END AS fk_status,
+            p.createdat AS createdon,
+            p.modifiedat AS updated_on,
             (
-                SELECT pm.media_url
-                FROM product_media pm
+                SELECT pm.mediaurl
+                FROM productmedia pm
                 WHERE pm.fk_product = p.id_product
-                  AND pm.media_type = 'Image'
-                ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id_product_media ASC
+                  AND pm.mediatype = 'Image'
+                ORDER BY pm.isprimary DESC, pm.displayorder ASC, pm.id_productmedia ASC
                 LIMIT 1
             ) AS image_data,
             FALSE AS is_base64

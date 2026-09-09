@@ -13,14 +13,14 @@ AS $$
 DECLARE
     v_rowcount INT;
 BEGIN
-    UPDATE wishlist_items AS wi
+    UPDATE wishlistitems AS wi
     SET cancelled = TRUE,
-        cancelled_on = NOW(),
-        cancelled_reason = 'Removed from wishlist'
+        cancelledon = NOW(),
+        cancelledreason = 'Removed from wishlist'
     FROM wishlist AS w
-    WHERE w.wishlist_id = wi.wishlist_id
-      AND wi.wishlist_item_id = p_wishlist_item_id
-      AND w.user_id = p_user_id
+    WHERE w.id_wishlist = wi.fk_wishlist
+      AND wi.id_wishlistitem = p_wishlist_item_id
+      AND w.fk_user = p_user_id
       AND COALESCE(wi.cancelled, FALSE) = FALSE
       AND COALESCE(w.cancelled, FALSE) = FALSE;
 
@@ -28,13 +28,13 @@ BEGIN
 
     IF v_rowcount = 0 THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Wishlist item was not found.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Wishlist item was not found.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     OPEN p_result FOR
-    SELECT 0 AS "ResponseCode", 1 AS "StatusCode",
-           'Removed from wishlist.'::TEXT AS "ResponseMsg";
+    SELECT 0 AS responsecode, 1 AS statuscode,
+           'Removed from wishlist.'::TEXT AS responsemsg;
 END;
 $$;

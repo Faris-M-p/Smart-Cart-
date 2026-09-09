@@ -1,15 +1,15 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 07/12/2025
-Purpose     : To Insert / Update SubCategory Master with Validation
+Purpose     : To Insert / Update subcategory Master with Validation
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_sub_category_update(
     IN p_user_action INT,                  -- 1 = Add, 2 = Edit
     IN p_sub_category_id INT DEFAULT 0,
-    IN p_sub_category_name TEXT,
-    IN p_fk_category INT,
+    IN p_sub_category_name TEXT DEFAULT NULL,
+    IN p_fk_category INT DEFAULT NULL,
     IN p_description TEXT DEFAULT '',
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -49,7 +49,7 @@ BEGIN
 
     IF (p_user_action = 1) THEN
         INSERT INTO subcategory (
-            name, fk_category, description, is_active, cancelled, cancelled_on, cancelled_reason
+            name, fk_category, description, isactive, cancelled, cancelledon, cancelledreason
         )
         VALUES (
             p_sub_category_name, p_fk_category, p_description, TRUE, FALSE, NULL, NULL

@@ -13,8 +13,8 @@ AS $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
-        FROM user_roles
-        WHERE id_user_role = p_id_user_role
+        FROM userroles
+        WHERE id_userrole = p_id_user_role
           AND cancelled = FALSE
     ) THEN
         OPEN p_result FOR
@@ -26,19 +26,19 @@ BEGIN
 
     OPEN p_result FOR
         SELECT
-            r.id_user_role,
-            r.role_name,
+            r.id_userrole,
+            r.rolename,
             r.description,
-            r.is_system_role,
-            r.is_active
-        FROM user_roles r
-        WHERE r.id_user_role = p_id_user_role
+            r.issystemrole,
+            r.isactive
+        FROM userroles r
+        WHERE r.id_userrole = p_id_user_role
           AND r.cancelled = FALSE;
 
     OPEN p_permissions FOR
         SELECT urp.fk_permission AS id_permission
-        FROM user_role_permissions urp
-        WHERE urp.fk_user_role = p_id_user_role
+        FROM userrolepermissions urp
+        WHERE urp.fk_userrole = p_id_user_role
           AND urp.cancelled = FALSE;
 END;
 $$;

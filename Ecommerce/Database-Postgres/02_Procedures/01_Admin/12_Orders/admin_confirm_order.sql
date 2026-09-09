@@ -18,10 +18,10 @@ DECLARE
     v_is_cancelled BOOLEAN;
     v_rows INT;
 BEGIN
-    SELECT o.order_status, COALESCE(o.cancelled, FALSE)
+    SELECT o.orderstatus, COALESCE(o.cancelled, FALSE)
     INTO v_order_status, v_is_cancelled
     FROM orders o
-    WHERE o.order_id = p_order_id;
+    WHERE o.id_order = p_order_id;
 
     IF v_order_status IS NULL THEN
         OPEN p_result FOR
@@ -43,10 +43,10 @@ BEGIN
     END IF;
 
     UPDATE orders
-    SET order_status = 'Confirmed'
-    WHERE order_id = p_order_id
+    SET orderstatus = 'Confirmed'
+    WHERE id_order = p_order_id
       AND COALESCE(cancelled, FALSE) = FALSE
-      AND order_status IN ('Placed', 'Pending');
+      AND orderstatus IN ('Placed', 'Pending');
 
     GET DIAGNOSTICS v_rows = ROW_COUNT;
 

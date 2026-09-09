@@ -15,7 +15,7 @@ CREATE OR REPLACE PROCEDURE pro_variant_value_update(
     IN p_description TEXT DEFAULT NULL,
     IN p_value_icon TEXT DEFAULT NULL,             -- retained for API parity; not stored in PG schema
     IN p_display_order INT DEFAULT 1,
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     IN p_cancelled_reason TEXT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
@@ -47,7 +47,7 @@ BEGIN
     -------------------------------------------------------------------
     IF (p_user_action = 1) THEN
         IF EXISTS (
-            SELECT 1 FROM variant_values
+            SELECT 1 FROM variantvalues
             WHERE fk_variant = p_fk_variant
               AND name = p_value_name
               AND cancelled = FALSE
@@ -57,9 +57,9 @@ BEGIN
             RETURN;
         END IF;
 
-        INSERT INTO variant_values (fk_variant, name, description, display_order, cancelled, cancelled_on)
+        INSERT INTO variantvalues (fk_variant, name, description, displayorder, cancelled, cancelledon)
         VALUES (p_fk_variant, p_value_name, p_description, p_display_order, FALSE, NULL)
-        RETURNING id_variant_value INTO v_id_variant_value;
+        RETURNING id_variantvalue INTO v_id_variant_value;
 
         OPEN p_result FOR
             SELECT v_id_variant_value AS response_code,
@@ -73,19 +73,19 @@ BEGIN
     -------------------------------------------------------------------
     IF (p_user_action = 2) THEN
         IF NOT EXISTS (
-            SELECT 1 FROM variant_values
-            WHERE id_variant_value = v_id_variant_value AND cancelled = FALSE
+            SELECT 1 FROM variantvalues
+            WHERE id_variantvalue = v_id_variant_value AND cancelled = FALSE
         ) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'Invalid Variant Value ID.' AS response_msg, FALSE AS status_code;
             RETURN;
         END IF;
 
-        UPDATE variant_values
+        UPDATE variantvalues
         SET name = p_value_name,
             description = p_description,
-            display_order = p_display_order
-        WHERE id_variant_value = v_id_variant_value;
+            displayorder = p_display_order
+        WHERE id_variantvalue = v_id_variant_value;
 
         OPEN p_result FOR
             SELECT v_id_variant_value AS response_code,
@@ -99,17 +99,17 @@ BEGIN
     -------------------------------------------------------------------
     IF (p_user_action = 3) THEN
         IF NOT EXISTS (
-            SELECT 1 FROM variant_values WHERE id_variant_value = v_id_variant_value
+            SELECT 1 FROM variantvalues WHERE id_variantvalue = v_id_variant_value
         ) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'Invalid Variant Value ID.' AS response_msg, FALSE AS status_code;
             RETURN;
         END IF;
 
-        UPDATE variant_values
+        UPDATE variantvalues
         SET cancelled = TRUE,
-            cancelled_on = v_now
-        WHERE id_variant_value = v_id_variant_value;
+            cancelledon = v_now
+        WHERE id_variantvalue = v_id_variant_value;
 
         OPEN p_result FOR
             SELECT v_id_variant_value AS response_code,

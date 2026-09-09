@@ -12,19 +12,19 @@ BEGIN
     OPEN p_result FOR
         SELECT
             m.id_module,
-            m.module_name,
-            m.display_name,
-            m.display_order AS module_display_order,
+            m.modulename,
+            m.displayname,
+            m.displayorder AS module_display_order,
             p.id_permission,
-            p.permission_name,
-            p.permission_code,
-            p.display_order AS permission_display_order
+            p.permissionname,
+            p.permissioncode,
+            p.displayorder AS permission_display_order
         FROM modules m
         INNER JOIN permissions p ON p.fk_module = m.id_module
         WHERE m.cancelled = FALSE
-          AND m.is_active = TRUE
+          AND m.isactive = TRUE
           AND p.cancelled = FALSE
-          AND p.is_active = TRUE
-        ORDER BY m.display_order ASC, p.display_order ASC, p.permission_name ASC;
+          AND p.isactive = TRUE
+        ORDER BY m.displayorder ASC, p.displayorder ASC, p.permissionname ASC;
 END;
 $$;

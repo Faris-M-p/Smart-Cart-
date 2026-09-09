@@ -1,12 +1,12 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 07/12/2025
-Purpose     : To Delete SubCategory with Validation and Soft Deletion
+Purpose     : To Delete subcategory with Validation and Soft Deletion
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_sub_category_delete(
     IN p_sub_category_id INT,
     IN p_cancelled_reason TEXT DEFAULT '',
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -45,8 +45,8 @@ BEGIN
 
     UPDATE subcategory
     SET cancelled = TRUE,
-        cancelled_on = v_user_date,
-        cancelled_reason = p_cancelled_reason
+        cancelledon = v_user_date,
+        cancelledreason = p_cancelled_reason
     WHERE id_subcategory = p_sub_category_id;
 
     OPEN p_result FOR

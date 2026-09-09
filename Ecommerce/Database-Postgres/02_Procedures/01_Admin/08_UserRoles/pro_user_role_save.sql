@@ -9,7 +9,7 @@ Purpose     : Insert / Update User Role and replace permission mappings
 CREATE OR REPLACE PROCEDURE pro_user_role_save(
     IN p_user_action INT,
     IN p_id_user_role INT DEFAULT 0,
-    IN p_role_name TEXT,
+    IN p_role_name TEXT DEFAULT NULL,
     IN p_description TEXT DEFAULT NULL,
     IN p_is_active BOOLEAN DEFAULT TRUE,
     IN p_selected_permission_ids TEXT DEFAULT NULL,
@@ -78,8 +78,8 @@ BEGIN
     IF (p_user_action = 1) THEN
         IF EXISTS (
             SELECT 1
-            FROM user_roles
-            WHERE LOWER(role_name) = LOWER(v_normalized_name)
+            FROM userroles
+            WHERE LOWER(rolename) = LOWER(v_normalized_name)
               AND cancelled = FALSE
         ) THEN
             OPEN p_result FOR
@@ -87,13 +87,13 @@ BEGIN
             RETURN;
         END IF;
 
-        INSERT INTO user_roles (
-            role_name, description, is_system_role, is_active, created_at, cancelled
+        INSERT INTO userroles (
+            rolename, description, issystemrole, isactive, createdat, cancelled
         )
         VALUES (
             v_normalized_name, p_description, FALSE, COALESCE(p_is_active, TRUE), v_now, FALSE
         )
-        RETURNING id_user_role INTO v_id_user_role;
+        RETURNING id_userrole INTO v_id_user_role;
 
     ELSIF (p_user_action = 2) THEN
         IF (v_id_user_role <= 0) THEN
@@ -103,8 +103,8 @@ BEGIN
         END IF;
 
         IF NOT EXISTS (
-            SELECT 1 FROM user_roles
-            WHERE id_user_role = v_id_user_role AND cancelled = FALSE
+            SELECT 1 FROM userroles
+            WHERE id_userrole = v_id_user_role AND cancelled = FALSE
         ) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'User role not found.' AS response_msg, FALSE AS status_code;
@@ -112,8 +112,8 @@ BEGIN
         END IF;
 
         IF EXISTS (
-            SELECT 1 FROM user_roles
-            WHERE id_user_role = v_id_user_role AND is_system_role = TRUE
+            SELECT 1 FROM userroles
+            WHERE id_userrole = v_id_user_role AND issystemrole = TRUE
         ) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'System roles cannot be modified.' AS response_msg, FALSE AS status_code;
@@ -122,36 +122,36 @@ BEGIN
 
         IF EXISTS (
             SELECT 1
-            FROM user_roles
-            WHERE LOWER(role_name) = LOWER(v_normalized_name)
+            FROM userroles
+            WHERE LOWER(rolename) = LOWER(v_normalized_name)
               AND cancelled = FALSE
-              AND id_user_role <> v_id_user_role
+              AND id_userrole <> v_id_user_role
         ) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'Role name already exists.' AS response_msg, FALSE AS status_code;
             RETURN;
         END IF;
 
-        UPDATE user_roles
-        SET role_name = v_normalized_name,
+        UPDATE userroles
+        SET rolename = v_normalized_name,
             description = p_description,
-            is_active = COALESCE(p_is_active, TRUE),
-            updated_at = v_now
-        WHERE id_user_role = v_id_user_role;
+            isactive = COALESCE(p_is_active, TRUE),
+            updatedat = v_now
+        WHERE id_userrole = v_id_user_role;
 
-        UPDATE user_role_permissions urp
+        UPDATE userrolepermissions urp
         SET cancelled = FALSE,
-            cancelled_on = NULL,
-            cancelled_reason = NULL
+            cancelledon = NULL,
+            cancelledreason = NULL
         FROM tmp_perm_ids p
         WHERE p.id_permission = urp.fk_permission
-          AND urp.fk_user_role = v_id_user_role;
+          AND urp.fk_userrole = v_id_user_role;
 
-        UPDATE user_role_permissions
+        UPDATE userrolepermissions
         SET cancelled = TRUE,
-            cancelled_on = v_now,
-            cancelled_reason = 'Replaced during role update'
-        WHERE fk_user_role = v_id_user_role
+            cancelledon = v_now,
+            cancelledreason = 'Replaced during role update'
+        WHERE fk_userrole = v_id_user_role
           AND cancelled = FALSE
           AND fk_permission NOT IN (SELECT id_permission FROM tmp_perm_ids);
     ELSE
@@ -160,8 +160,8 @@ BEGIN
         RETURN;
     END IF;
 
-    INSERT INTO user_role_permissions (
-        fk_user_role, fk_permission, created_at, cancelled
+    INSERT INTO userrolepermissions (
+        fk_userrole, fk_permission, createdat, cancelled
     )
     SELECT
         v_id_user_role,
@@ -171,8 +171,8 @@ BEGIN
     FROM tmp_perm_ids p
     WHERE NOT EXISTS (
         SELECT 1
-        FROM user_role_permissions urp
-        WHERE urp.fk_user_role = v_id_user_role
+        FROM userrolepermissions urp
+        WHERE urp.fk_userrole = v_id_user_role
           AND urp.fk_permission = p.id_permission
     );
 

@@ -14,17 +14,17 @@ BEGIN
     SELECT
         COALESCE((
             SELECT COUNT(1)
-            FROM cart_items AS ci
-            INNER JOIN cart AS c ON c.cart_id = ci.cart_id
-            WHERE c.user_id = p_user_id
-        ), 0) AS "CartCount",
+            FROM cartitems AS ci
+            INNER JOIN cart AS c ON c.id_cart = ci.fk_cart
+            WHERE c.fk_user = p_user_id
+        ), 0) AS cartcount,
         COALESCE((
             SELECT COUNT(1)
-            FROM wishlist_items AS wi
-            INNER JOIN wishlist AS w ON w.wishlist_id = wi.wishlist_id
-            WHERE w.user_id = p_user_id
+            FROM wishlistitems AS wi
+            INNER JOIN wishlist AS w ON w.id_wishlist = wi.fk_wishlist
+            WHERE w.fk_user = p_user_id
               AND COALESCE(w.cancelled, FALSE) = FALSE
               AND COALESCE(wi.cancelled, FALSE) = FALSE
-        ), 0) AS "WishlistCount";
+        ), 0) AS wishlistcount;
 END;
 $$;

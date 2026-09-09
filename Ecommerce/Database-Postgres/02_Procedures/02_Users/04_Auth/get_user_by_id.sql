@@ -12,12 +12,12 @@ AS $$
 BEGIN
     OPEN p_result FOR
     SELECT
-        u.user_id AS "UserId",
-        COALESCE(u.full_name, u.user_name) AS "FullName",
-        u.email AS "Email",
-        COALESCE(u.cancelled, FALSE) AS "Cancelled"
+        u.id_user AS userid,
+        COALESCE(u.fullname, u.username) AS fullname,
+        u.email AS email,
+        COALESCE(u.cancelled, FALSE) AS cancelled
     FROM users AS u
-    WHERE u.user_id = p_user_id
+    WHERE u.id_user = p_user_id
       AND COALESCE(u.cancelled, FALSE) = FALSE;
 END;
 $$;

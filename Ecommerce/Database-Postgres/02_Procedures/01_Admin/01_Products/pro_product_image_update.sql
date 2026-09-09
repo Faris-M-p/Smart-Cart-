@@ -1,12 +1,12 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 09/12/2025
-Purpose     : Insert / Update / Delete Product Image (product_media)
+Purpose     : Insert / Update / Delete Product Image (productmedia)
 Source      : ProProductImageUpdate (SQL Server)
 ------------------------------------------------------------------------
 p_user_action = 1 → Add
 p_user_action = 2 → Update
-p_user_action = 3 → Delete (hard delete; product_media has no cancelled)
+p_user_action = 3 → Delete (hard delete; productmedia has no cancelled)
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_product_image_update(
     IN p_user_action INT,
@@ -14,7 +14,7 @@ CREATE OR REPLACE PROCEDURE pro_product_image_update(
     IN p_fk_product INT DEFAULT 0,
     IN p_image TEXT DEFAULT NULL,
     IN p_cancelled_reason TEXT DEFAULT NULL,
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -48,18 +48,18 @@ BEGIN
             RETURN;
         END IF;
 
-        SELECT COALESCE(MAX(display_order), -1) + 1
+        SELECT COALESCE(MAX(displayorder), -1) + 1
         INTO v_display_order
-        FROM product_media
+        FROM productmedia
         WHERE fk_product = p_fk_product;
 
-        INSERT INTO product_media (
-            fk_product, media_type, media_url, display_order, is_primary, created_at, updated_at
+        INSERT INTO productmedia (
+            fk_product, mediatype, mediaurl, displayorder, isprimary, createdat, updatedat
         )
         VALUES (
             p_fk_product, 'Image', p_image, v_display_order, FALSE, v_user_date, NULL
         )
-        RETURNING id_product_media INTO v_id;
+        RETURNING id_productmedia INTO v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,
@@ -72,7 +72,7 @@ BEGIN
     -- 2. UPDATE EXISTING IMAGE
     -------------------------------------------------------------------
     IF (p_user_action = 2) THEN
-        IF NOT EXISTS (SELECT 1 FROM product_media WHERE id_product_media = v_id) THEN
+        IF NOT EXISTS (SELECT 1 FROM productmedia WHERE id_productmedia = v_id) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code,
                        'Invalid or deleted Product Image ID.' AS response_msg,
@@ -80,10 +80,10 @@ BEGIN
             RETURN;
         END IF;
 
-        UPDATE product_media
-        SET media_url = p_image,
-            updated_at = v_user_date
-        WHERE id_product_media = v_id;
+        UPDATE productmedia
+        SET mediaurl = p_image,
+            updatedat = v_user_date
+        WHERE id_productmedia = v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,
@@ -96,13 +96,13 @@ BEGIN
     -- 3. DELETE IMAGE (hard delete — no soft-cancel columns)
     -------------------------------------------------------------------
     IF (p_user_action = 3) THEN
-        IF NOT EXISTS (SELECT 1 FROM product_media WHERE id_product_media = v_id) THEN
+        IF NOT EXISTS (SELECT 1 FROM productmedia WHERE id_productmedia = v_id) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'Invalid Product Image ID.' AS response_msg, FALSE AS status_code;
             RETURN;
         END IF;
 
-        DELETE FROM product_media WHERE id_product_media = v_id;
+        DELETE FROM productmedia WHERE id_productmedia = v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,

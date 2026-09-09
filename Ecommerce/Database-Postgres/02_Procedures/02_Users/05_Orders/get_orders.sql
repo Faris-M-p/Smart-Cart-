@@ -12,69 +12,69 @@ AS $$
 BEGIN
     OPEN p_result FOR
     SELECT
-        o.order_id AS "OrderId",
-        COALESCE(o.order_number, 'SC' || lpad(o.order_id::TEXT, 6, '0')) AS "OrderNumber",
-        o.order_date AS "OrderDate",
-        o.total_amount AS "TotalAmount",
-        CASE WHEN COALESCE(o.cancelled, FALSE) = TRUE THEN 'Cancelled' ELSE o.order_status END AS "OrderStatus",
-        o.payment_method AS "PaymentMethod",
+        o.id_order AS orderid,
+        COALESCE(o.ordernumber, 'SC' || lpad(o.id_order::TEXT, 6, '0')) AS ordernumber,
+        o.orderdate AS orderdate,
+        o.totalamount AS totalamount,
+        CASE WHEN COALESCE(o.cancelled, FALSE) = TRUE THEN 'Cancelled' ELSE o.orderstatus END AS orderstatus,
+        o.paymentmethod AS paymentmethod,
         COALESCE((
-            SELECT p.payment_status
+            SELECT p.paymentstatus
             FROM payments AS p
-            WHERE p.order_id = o.order_id
-            ORDER BY p.payment_id DESC
+            WHERE p.fk_order = o.id_order
+            ORDER BY p.id_payment DESC
             LIMIT 1
-        ), 'Pending') AS "PaymentStatus",
-        COALESCE(o.cancelled, FALSE) AS "Cancelled",
+        ), 'Pending') AS paymentstatus,
+        COALESCE(o.cancelled, FALSE) AS cancelled,
         CASE
             WHEN COALESCE(o.cancelled, FALSE) = FALSE
-             AND o.order_status IN ('Placed', 'Pending')
+             AND o.orderstatus IN ('Placed', 'Pending')
              AND NOT EXISTS (
                 SELECT 1
                 FROM shipping AS s
-                WHERE s.order_id = o.order_id
+                WHERE s.fk_order = o.id_order
                   AND COALESCE(s.cancelled, FALSE) = FALSE
-                  AND s.shipping_status IN ('Shipped', 'Out for delivery', 'Delivered', 'In Transit')
+                  AND s.shippingstatus IN ('Shipped', 'Out for delivery', 'Delivered', 'In Transit')
              )
             THEN TRUE
             ELSE FALSE
-        END AS "CanCancel",
-        COALESCE(counts.item_count, 0) AS "ItemCount",
-        COALESCE(first_item.first_product_name, '') AS "FirstProductName",
-        COALESCE(first_item.first_image_url, '') AS "FirstImageUrl"
+        END AS cancancel,
+        COALESCE(counts.item_count, 0) AS itemcount,
+        COALESCE(first_item.first_product_name, '') AS firstproductname,
+        COALESCE(first_item.first_image_url, '') AS firstimageurl
     FROM orders AS o
     LEFT JOIN LATERAL (
         SELECT COUNT(*) AS item_count
-        FROM order_items AS oi
-        WHERE oi.fk_order = o.order_id
+        FROM orderitems AS oi
+        WHERE oi.fk_order = o.id_order
     ) AS counts ON TRUE
     LEFT JOIN LATERAL (
         SELECT
-            oi.product_name AS first_product_name,
+            oi.productname AS first_product_name,
             COALESCE((
-                SELECT sm.media_url
-                FROM sku_media AS sm
-                WHERE sm.fk_product_sku = oi.fk_product_variant
-                  AND sm.media_url IS NOT NULL
-                  AND sm.media_url <> ''
-                ORDER BY sm.is_primary DESC, sm.display_order ASC
+                SELECT sm.mediaurl
+                FROM skumedia AS sm
+                WHERE sm.fk_productsku = oi.fk_productvariant
+                  AND sm.mediaurl IS NOT NULL
+                  AND sm.mediaurl <> ''
+                ORDER BY sm.isprimary DESC, sm.displayorder ASC
                 LIMIT 1
             ), (
-                SELECT pm.media_url
-                FROM product_media AS pm
+                SELECT pm.mediaurl
+                FROM productmedia AS pm
                 WHERE pm.fk_product = oi.fk_product
-                  AND pm.media_type = 'Image'
-                  AND pm.media_url IS NOT NULL
-                  AND pm.media_url <> ''
-                ORDER BY pm.is_primary DESC, pm.display_order ASC
+                  AND pm.mediatype = 'Image'
+                  AND pm.mediaurl IS NOT NULL
+                  AND pm.mediaurl <> ''
+                ORDER BY pm.isprimary DESC, pm.displayorder ASC
                 LIMIT 1
             )) AS first_image_url
-        FROM order_items AS oi
-        WHERE oi.fk_order = o.order_id
-        ORDER BY oi.id_order_item
+        FROM orderitems AS oi
+        WHERE oi.fk_order = o.id_order
+        ORDER BY oi.id_orderitem
         LIMIT 1
     ) AS first_item ON TRUE
-    WHERE o.user_id = p_user_id
-    ORDER BY o.order_date DESC, o.order_id DESC;
+    WHERE o.fk_user = p_user_id
+    ORDER BY o.orderdate DESC, o.id_order DESC;
 END;
 $$;

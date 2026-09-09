@@ -1,6 +1,6 @@
 /**********************************************************************
 Created By  : Muhammed Faris
-Purpose     : Select Supplier By ID for Admin Edit
+Purpose     : Select supplier By ID for Admin Edit
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_supplier_select_by_id(
     IN p_id_supplier BIGINT,
@@ -30,10 +30,10 @@ BEGIN
             s.email,
             NULL::TEXT AS gst_number,
             s.address,
-            s.created_at AS created_on,
+            s.createdat AS createdon,
             s.cancelled,
-            s.cancelled_on,
-            s.cancelled_reason
+            s.cancelledon,
+            s.cancelledreason
         FROM supplier s
         WHERE s.id_supplier = p_id_supplier;
 END;

@@ -10,13 +10,13 @@ CREATE OR REPLACE PROCEDURE clear_cart(
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    DELETE FROM cart_items AS ci
+    DELETE FROM cartitems AS ci
     USING cart AS c
-    WHERE c.cart_id = ci.cart_id
-      AND c.user_id = p_user_id;
+    WHERE c.id_cart = ci.fk_cart
+      AND c.fk_user = p_user_id;
 
     OPEN p_result FOR
-    SELECT 0 AS "ResponseCode", 1 AS "StatusCode",
-           'Cart cleared.'::TEXT AS "ResponseMsg";
+    SELECT 0 AS responsecode, 1 AS statuscode,
+           'Cart cleared.'::TEXT AS responsemsg;
 END;
 $$;

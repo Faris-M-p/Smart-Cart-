@@ -48,48 +48,48 @@ BEGIN
 
     CREATE TEMP TABLE IF NOT EXISTS tmp_sku (
         rn BIGINT,
-        id_product_variant INT,
+        id_productvariant INT,
         price_adjustment NUMERIC(10,2),
-        is_default BOOLEAN,
-        created_on TIMESTAMP,
+        isdefault BOOLEAN,
+        createdon TIMESTAMP,
         attribute_signature TEXT,
         stock_available INT,
-        image_url TEXT
+        imageurl TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_sku;
 
     INSERT INTO tmp_sku (
-        rn, id_product_variant, price_adjustment, is_default, created_on,
-        attribute_signature, stock_available, image_url
+        rn, id_productvariant, price_adjustment, isdefault, createdon,
+        attribute_signature, stock_available, imageurl
     )
     SELECT
-        ROW_NUMBER() OVER (ORDER BY pv.id_product_variant) AS rn,
-        pv.id_product_variant,
-        pv.selling_price,
-        pv.is_default,
-        pv.created_at,
+        ROW_NUMBER() OVER (ORDER BY pv.id_productvariant) AS rn,
+        pv.id_productvariant,
+        pv.sellingprice,
+        pv.isdefault,
+        pv.createdat,
         (
             SELECT string_agg(v.name || ':' || vv.name, ' | ' ORDER BY pva.fk_variant)
-            FROM product_variant_attributes pva
+            FROM productvariantattributes pva
             INNER JOIN variants v ON pva.fk_variant = v.id_variant
-            INNER JOIN variant_values vv ON pva.fk_variant_value = vv.id_variant_value
-            WHERE pva.fk_product_variant = pv.id_product_variant
+            INNER JOIN variantvalues vv ON pva.fk_variantvalue = vv.id_variantvalue
+            WHERE pva.fk_productvariant = pv.id_productvariant
         ),
         COALESCE((
             SELECT SUM(s.quantity)
             FROM stock s
-            WHERE s.fk_product_variant = pv.id_product_variant
+            WHERE s.fk_productvariant = pv.id_productvariant
               AND COALESCE(s.cancelled, FALSE) = FALSE
         ), 0),
         (
-            SELECT sm.media_url
-            FROM sku_media sm
-            WHERE sm.fk_product_sku = pv.id_product_variant
-            ORDER BY sm.is_primary DESC, sm.display_order ASC, sm.id_sku_media ASC
+            SELECT sm.mediaurl
+            FROM skumedia sm
+            WHERE sm.fk_productsku = pv.id_productvariant
+            ORDER BY sm.isprimary DESC, sm.displayorder ASC, sm.id_skumedia ASC
             LIMIT 1
         )
-    FROM product_variants pv
+    FROM productvariants pv
     WHERE pv.fk_product = p_fk_product
       AND COALESCE(pv.cancelled, FALSE) = FALSE;
 
@@ -100,9 +100,9 @@ BEGIN
 
     IF (COALESCE(p_filter_variant_ids, '') <> '' AND COALESCE(p_filter_variant_ids, '') <> '[]') THEN
         DELETE FROM tmp_sku
-        WHERE id_product_variant NOT IN (
-            SELECT DISTINCT pva.fk_product_variant
-            FROM product_variant_attributes pva
+        WHERE id_productvariant NOT IN (
+            SELECT DISTINCT pva.fk_productvariant
+            FROM productvariantattributes pva
             WHERE pva.fk_variant IN (
                 SELECT (elem->>'ID_Value')::INT
                 FROM jsonb_array_elements(p_filter_variant_ids::jsonb) AS elem
@@ -113,10 +113,10 @@ BEGIN
 
     IF (COALESCE(p_filter_variant_value_ids, '') <> '' AND COALESCE(p_filter_variant_value_ids, '') <> '[]') THEN
         DELETE FROM tmp_sku
-        WHERE id_product_variant NOT IN (
-            SELECT DISTINCT pva.fk_product_variant
-            FROM product_variant_attributes pva
-            WHERE pva.fk_variant_value IN (
+        WHERE id_productvariant NOT IN (
+            SELECT DISTINCT pva.fk_productvariant
+            FROM productvariantattributes pva
+            WHERE pva.fk_variantvalue IN (
                 SELECT (elem->>'ID_Value')::INT
                 FROM jsonb_array_elements(p_filter_variant_value_ids::jsonb) AS elem
                 WHERE (elem->>'ID_Value') ~ '^\d+$'
@@ -127,26 +127,26 @@ BEGIN
     -- Re-number after filters for stable pagination
     CREATE TEMP TABLE IF NOT EXISTS tmp_sku_sorted (
         rn BIGINT,
-        id_product_variant INT,
+        id_productvariant INT,
         price_adjustment NUMERIC(10,2),
-        is_default BOOLEAN,
-        created_on TIMESTAMP,
+        isdefault BOOLEAN,
+        createdon TIMESTAMP,
         attribute_signature TEXT,
         stock_available INT,
-        image_url TEXT
+        imageurl TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_sku_sorted;
 
     EXECUTE format($q$
         INSERT INTO tmp_sku_sorted (
-            rn, id_product_variant, price_adjustment, is_default, created_on,
-            attribute_signature, stock_available, image_url
+            rn, id_productvariant, price_adjustment, isdefault, createdon,
+            attribute_signature, stock_available, imageurl
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s),
-            id_product_variant, price_adjustment, is_default, created_on,
-            attribute_signature, stock_available, image_url
+            id_productvariant, price_adjustment, isdefault, createdon,
+            attribute_signature, stock_available, imageurl
         FROM tmp_sku
     $q$, v_order);
 
@@ -154,13 +154,13 @@ BEGIN
 
     OPEN p_result FOR
         SELECT
-            id_product_variant,
+            id_productvariant,
             price_adjustment,
-            is_default,
-            created_on,
+            isdefault,
+            createdon,
             attribute_signature,
             stock_available,
-            image_url
+            imageurl
         FROM tmp_sku_sorted
         WHERE rn > ((GREATEST(p_page_index, 1) - 1) * GREATEST(p_page_size, 1))
           AND rn <= (GREATEST(p_page_index, 1) * GREATEST(p_page_size, 1));

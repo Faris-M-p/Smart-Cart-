@@ -5,7 +5,7 @@ Created By       : Muhammed Faris
 Created On       : 12/12/2025
 
 PURPOSE
-  Paginated stock batches for a product variant (SKU), with purchase /
+  Paginated stock batches for a product variant (sku), with purchase /
   supplier context and totals summary.
 **********************************************************************/
 CREATE OR REPLACE PROCEDURE pro_product_variant_stock_select(
@@ -40,8 +40,8 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM product_variants
-        WHERE id_product_variant = p_fk_product_variant
+        SELECT 1 FROM productvariants
+        WHERE id_productvariant = p_fk_product_variant
           AND cancelled = FALSE
     ) THEN
         OPEN p_result FOR
@@ -81,17 +81,17 @@ BEGIN
     CREATE TEMP TABLE IF NOT EXISTS tmp_stock (
         rn BIGINT,
         id_stock INT,
-        fk_product_variant INT,
-        fk_purchase_detail INT,
+        fk_productvariant INT,
+        fk_purchasedetail INT,
         quantity INT,
-        created_on TIMESTAMP,
+        createdon TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT,
-        purchase_date DATE,
-        purchase_price NUMERIC(10,2),
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT,
+        purchasedate DATE,
+        purchaseprice NUMERIC(10,2),
         mrp NUMERIC(10,2),
-        expiry_date DATE,
+        expirydate DATE,
         supplier_name TEXT
     ) ON COMMIT DROP;
 
@@ -99,30 +99,30 @@ BEGIN
 
     EXECUTE format($q$
         INSERT INTO tmp_stock (
-            rn, id_stock, fk_product_variant, fk_purchase_detail, quantity,
-            created_on, cancelled, cancelled_on, cancelled_reason,
-            purchase_date, purchase_price, mrp, expiry_date, supplier_name
+            rn, id_stock, fk_productvariant, fk_purchasedetail, quantity,
+            createdon, cancelled, cancelledon, cancelledreason,
+            purchasedate, purchaseprice, mrp, expirydate, supplier_name
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
             s.id_stock,
-            s.fk_product_variant,
-            s.fk_purchase_detail,
+            s.fk_productvariant,
+            s.fk_purchasedetail,
             s.quantity,
-            s.created_on,
+            s.createdon,
             s.cancelled,
-            s.cancelled_on,
-            s.cancelled_reason,
-            p.purchase_date,
-            pd.purchase_price,
+            s.cancelledon,
+            s.cancelledreason,
+            p.purchasedate,
+            pd.purchaseprice,
             pd.mrp,
-            pd.expiry_date,
+            pd.expirydate,
             sup.name
         FROM stock s
-        INNER JOIN purchase_detail pd ON pd.id_purchase_detail = s.fk_purchase_detail
+        INNER JOIN purchasedetail pd ON pd.id_purchasedetail = s.fk_purchasedetail
         INNER JOIN purchase p ON p.id_purchase = pd.fk_purchase
         INNER JOIN supplier sup ON sup.id_supplier = p.fk_supplier
-        WHERE s.fk_product_variant = $1
+        WHERE s.fk_productvariant = $1
           AND ($2 OR s.cancelled = FALSE)
     $q$, v_order)
     USING p_fk_product_variant, COALESCE(p_include_cancelled, FALSE);
@@ -135,17 +135,17 @@ BEGIN
     OPEN p_result FOR
         SELECT
             id_stock,
-            fk_product_variant,
-            fk_purchase_detail,
+            fk_productvariant,
+            fk_purchasedetail,
             quantity,
-            created_on,
+            createdon,
             cancelled,
-            cancelled_on,
-            cancelled_reason,
-            purchase_date,
-            purchase_price,
+            cancelledon,
+            cancelledreason,
+            purchasedate,
+            purchaseprice,
             mrp,
-            expiry_date,
+            expirydate,
             supplier_name
         FROM tmp_stock
         WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)

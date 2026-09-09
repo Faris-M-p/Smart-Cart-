@@ -27,68 +27,66 @@ BEGIN
     END IF;
 
     SELECT
-        o.order_status,
+        o.orderstatus,
         COALESCE(o.cancelled, FALSE)
     INTO
         v_order_status,
         v_is_cancelled
     FROM orders AS o
-    WHERE o.order_id = p_order_id
-      AND o.user_id = p_user_id;
+    WHERE o.id_order = p_order_id
+      AND o.fk_user = p_user_id;
 
     IF v_order_status IS NULL THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Order was not found.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Order was not found.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     IF v_is_cancelled = TRUE THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'This order is already cancelled.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'This order is already cancelled.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
     IF v_order_status NOT IN ('Placed', 'Pending') THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'This order can no longer be cancelled.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'This order can no longer be cancelled.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
-    SELECT s.shipping_status
+    SELECT s.shippingstatus
     INTO v_shipping_status
     FROM shipping AS s
-    WHERE s.order_id = p_order_id
+    WHERE s.fk_order = p_order_id
       AND COALESCE(s.cancelled, FALSE) = FALSE
-    ORDER BY s.shipping_id DESC
+    ORDER BY s.id_shipping DESC
     LIMIT 1;
 
     IF v_shipping_status IN ('Shipped', 'Out for delivery', 'Delivered', 'In Transit') THEN
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'This order can no longer be cancelled.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'This order can no longer be cancelled.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
-    SAVEPOINT sp_cancel_order;
-
     FOR r IN
-        SELECT oi.fk_product_variant AS variant_id, oi.quantity AS qty
-        FROM order_items AS oi
+        SELECT oi.fk_productvariant AS variant_id, oi.quantity AS qty
+        FROM orderitems AS oi
         WHERE oi.fk_order = p_order_id
-          AND oi.fk_product_variant IS NOT NULL
-          AND oi.fk_product_variant > 0
+          AND oi.fk_productvariant IS NOT NULL
+          AND oi.fk_productvariant > 0
     LOOP
         v_stock_id := NULL;
 
         SELECT s.id_stock
         INTO v_stock_id
         FROM stock AS s
-        WHERE s.fk_product_variant = r.variant_id
+        WHERE s.fk_productvariant = r.variant_id
           AND COALESCE(s.cancelled, FALSE) = FALSE
-        ORDER BY s.created_on DESC, s.id_stock DESC
+        ORDER BY s.createdon DESC, s.id_stock DESC
         LIMIT 1
         FOR UPDATE;
 
@@ -101,43 +99,40 @@ BEGIN
 
     UPDATE payments
     SET cancelled = TRUE,
-        cancelled_on = NOW(),
-        cancelled_reason = v_cancel_reason,
-        payment_status = 'Cancelled'
-    WHERE order_id = p_order_id
+        cancelledon = NOW(),
+        cancelledreason = v_cancel_reason,
+        paymentstatus = 'Cancelled'
+    WHERE fk_order = p_order_id
       AND COALESCE(cancelled, FALSE) = FALSE;
 
     UPDATE shipping
     SET cancelled = TRUE,
-        cancelled_on = NOW(),
-        cancelled_reason = v_cancel_reason,
-        shipping_status = 'Cancelled'
-    WHERE order_id = p_order_id
+        cancelledon = NOW(),
+        cancelledreason = v_cancel_reason,
+        shippingstatus = 'Cancelled'
+    WHERE fk_order = p_order_id
       AND COALESCE(cancelled, FALSE) = FALSE;
 
     UPDATE orders
     SET cancelled = TRUE,
-        cancelled_on = NOW(),
-        cancelled_reason = v_cancel_reason,
-        order_status = 'Cancelled'
-    WHERE order_id = p_order_id
-      AND user_id = p_user_id
+        cancelledon = NOW(),
+        cancelledreason = v_cancel_reason,
+        orderstatus = 'Cancelled'
+    WHERE id_order = p_order_id
+      AND fk_user = p_user_id
       AND COALESCE(cancelled, FALSE) = FALSE;
 
     GET DIAGNOSTICS v_rowcount = ROW_COUNT;
 
     IF v_rowcount = 0 THEN
-        ROLLBACK TO SAVEPOINT sp_cancel_order;
         OPEN p_result FOR
-        SELECT -1 AS "ResponseCode", 0 AS "StatusCode",
-               'Order was not found.'::TEXT AS "ResponseMsg";
+        SELECT -1 AS responsecode, 0 AS statuscode,
+               'Order was not found.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
-    RELEASE SAVEPOINT sp_cancel_order;
-
     OPEN p_result FOR
-    SELECT p_order_id AS "ResponseCode", 1 AS "StatusCode",
-           'Order cancelled.'::TEXT AS "ResponseMsg";
+    SELECT p_order_id AS responsecode, 1 AS statuscode,
+           'Order cancelled.'::TEXT AS responsemsg;
 END;
 $$;

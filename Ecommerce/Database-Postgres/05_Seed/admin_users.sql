@@ -1,4 +1,4 @@
-﻿\echo 'Seeding initial Admin user...'
+\echo 'Seeding initial Admin user...'
 
 /*
     Temporary development credentials:
@@ -6,12 +6,12 @@
       Password : Admin@123
     PasswordHash is ASP.NET Core Identity V3 (PBKDF2-HMAC-SHA256).
 */
-INSERT INTO admin_users (
-    fk_user_role, user_name, password_hash, full_name, email,
-    phone_number, is_active, created_at, cancelled
+INSERT INTO adminusers (
+    fk_userrole, username, passwordhash, fullname, email,
+    phonenumber, isactive, createdat, cancelled
 )
 SELECT
-    r.id_user_role,
+    r.id_userrole,
     'admin',
     'AQAAAAEAAYagAAAAEPGBDPr1vrIh1zlYcblDhIRjePewKQpikuv9yxb2oVFsGwoDVTS9GhHDPlcaMiPGEA==',
     'System Administrator',
@@ -20,9 +20,9 @@ SELECT
     TRUE,
     NOW(),
     FALSE
-FROM user_roles r
-WHERE r.role_name = 'Admin'
+FROM userroles r
+WHERE r.rolename = 'Admin'
   AND r.cancelled = FALSE
   AND NOT EXISTS (
-      SELECT 1 FROM admin_users WHERE user_name = 'admin'
+      SELECT 1 FROM adminusers WHERE username = 'admin'
   );

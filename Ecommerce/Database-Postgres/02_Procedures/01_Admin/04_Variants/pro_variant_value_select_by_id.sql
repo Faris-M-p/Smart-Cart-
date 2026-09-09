@@ -11,7 +11,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM variant_values WHERE id_variant_value = p_id_variant_value
+        SELECT 1 FROM variantvalues WHERE id_variantvalue = p_id_variant_value
     ) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, 'Invalid Variant Value ID.' AS response_msg, FALSE AS status_code;
@@ -19,8 +19,8 @@ BEGIN
     END IF;
 
     IF EXISTS (
-        SELECT 1 FROM variant_values
-        WHERE id_variant_value = p_id_variant_value AND cancelled = TRUE
+        SELECT 1 FROM variantvalues
+        WHERE id_variantvalue = p_id_variant_value AND cancelled = TRUE
     ) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, 'Variant Value is deleted.' AS response_msg, FALSE AS status_code;
@@ -29,19 +29,19 @@ BEGIN
 
     OPEN p_result FOR
         SELECT
-            vv.id_variant_value,
+            vv.id_variantvalue,
             vv.fk_variant,
             vv.name AS value_name,
             vv.description,
             NULL::TEXT AS value_icon,
-            vv.display_order,
-            NULL::TIMESTAMP AS created_on,
+            vv.displayorder,
+            NULL::TIMESTAMP AS createdon,
             vv.cancelled,
-            vv.cancelled_on,
-            NULL::TEXT AS cancelled_reason,
+            vv.cancelledon,
+            NULL::TEXT AS cancelledreason,
             v.name AS variant_name
-        FROM variant_values vv
+        FROM variantvalues vv
         LEFT JOIN variants v ON v.id_variant = vv.fk_variant
-        WHERE vv.id_variant_value = p_id_variant_value;
+        WHERE vv.id_variantvalue = p_id_variant_value;
 END;
 $$;

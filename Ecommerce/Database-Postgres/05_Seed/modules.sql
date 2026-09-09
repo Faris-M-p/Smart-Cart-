@@ -1,7 +1,7 @@
-﻿\echo 'Seeding modules...'
+\echo 'Seeding modules...'
 
-INSERT INTO modules (module_name, display_name, display_order, is_active, created_at, cancelled)
-SELECT s.module_name, s.display_name, s.display_order, TRUE, NOW(), FALSE
+INSERT INTO modules (modulename, displayname, displayorder, isactive, createdat, cancelled)
+SELECT s.modulename, s.displayname, s.displayorder, TRUE, NOW(), FALSE
 FROM (VALUES
     ('Dashboard',        'Dashboard',         10),
     ('Categories',       'Categories',        20),
@@ -18,7 +18,7 @@ FROM (VALUES
     ('Billing',          'Billing',          130),
     ('Employees',        'Employees',        140),
     ('UserRoles',        'User Roles',       150)
-) AS s(module_name, display_name, display_order)
+) AS s(modulename, displayname, displayorder)
 WHERE NOT EXISTS (
-    SELECT 1 FROM modules m WHERE m.module_name = s.module_name
+    SELECT 1 FROM modules m WHERE m.modulename = s.modulename
 );

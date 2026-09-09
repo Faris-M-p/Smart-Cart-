@@ -3,7 +3,7 @@ Stored Procedure : pro_product_variant_image_select
 Created By       : Muhammed Faris
 Created On       : 10/12/2025
 Source           : ProProductVariantImageSelect (SQL Server)
-Target table     : sku_media
+Target table     : skumedia
 **********************************************************************/
 CREATE OR REPLACE PROCEDURE pro_product_variant_image_select(
     IN p_fk_product_variant INT,
@@ -32,8 +32,8 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM product_variants
-        WHERE id_product_variant = p_fk_product_variant
+        SELECT 1 FROM productvariants
+        WHERE id_productvariant = p_fk_product_variant
           AND COALESCE(cancelled, FALSE) = FALSE
     ) THEN
         OPEN p_result FOR
@@ -45,7 +45,7 @@ BEGIN
         RETURN;
     END IF;
 
-    -- p_include_cancelled kept for API parity; sku_media has no cancelled column
+    -- p_include_cancelled kept for API parity; skumedia has no cancelled column
     IF v_sort_mode NOT IN ('ASC', 'DESC') THEN
         v_sort_mode := 'ASC';
     END IF;
@@ -60,35 +60,35 @@ BEGIN
 
     CREATE TEMP TABLE IF NOT EXISTS tmp_variant_image (
         rn BIGINT,
-        id_product_variant_image INT,
-        fk_product_variant INT,
-        image_url TEXT,
-        is_default BOOLEAN,
-        created_on TIMESTAMP,
+        id_productvariantimage INT,
+        fk_productvariant INT,
+        imageurl TEXT,
+        isdefault BOOLEAN,
+        createdon TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_variant_image;
 
     EXECUTE format($q$
         INSERT INTO tmp_variant_image (
-            rn, id_product_variant_image, fk_product_variant, image_url,
-            is_default, created_on, cancelled, cancelled_on, cancelled_reason
+            rn, id_productvariantimage, fk_productvariant, imageurl,
+            isdefault, createdon, cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s),
-            sm.id_sku_media,
-            sm.fk_product_sku,
-            sm.media_url,
-            sm.is_primary,
-            sm.created_at,
+            sm.id_skumedia,
+            sm.fk_productsku,
+            sm.mediaurl,
+            sm.isprimary,
+            sm.createdat,
             FALSE,
             NULL::TIMESTAMP,
             NULL::TEXT
-        FROM sku_media sm
-        WHERE sm.fk_product_sku = $1
+        FROM skumedia sm
+        WHERE sm.fk_productsku = $1
     $q$, v_order)
     USING p_fk_product_variant;
 
@@ -96,14 +96,14 @@ BEGIN
 
     OPEN p_result FOR
         SELECT
-            id_product_variant_image,
-            fk_product_variant,
-            image_url,
-            is_default,
-            created_on,
+            id_productvariantimage,
+            fk_productvariant,
+            imageurl,
+            isdefault,
+            createdon,
             cancelled,
-            cancelled_on,
-            cancelled_reason
+            cancelledon,
+            cancelledreason
         FROM tmp_variant_image
         WHERE rn > ((GREATEST(p_page_index, 1) - 1) * GREATEST(p_page_size, 1))
           AND rn <= (GREATEST(p_page_index, 1) * GREATEST(p_page_size, 1));

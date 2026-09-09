@@ -1,7 +1,7 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 14/01/2026
-Purpose     : To Select Brand List with Search, Filter, Sorting, Pagination
+Purpose     : To Select brand List with Search, Filter, Sorting, Pagination
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_brand_list_select(
     IN p_search_text TEXT DEFAULT '',
@@ -37,29 +37,29 @@ BEGIN
     CREATE TEMP TABLE IF NOT EXISTS tmp_brands (
         rn BIGINT,
         brand_id INT,
-        brand_name TEXT,
+        brandname TEXT,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_brands;
 
     v_sql := format($q$
-        INSERT INTO tmp_brands (rn, brand_id, brand_name, cancelled, cancelled_on, cancelled_reason)
+        INSERT INTO tmp_brands (rn, brand_id, brandname, cancelled, cancelledon, cancelledreason)
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
             b.id_brand,
-            b.brand_name,
+            b.brandname,
             b.cancelled,
-            b.cancelled_on,
-            b.cancelled_reason
+            b.cancelledon,
+            b.cancelledreason
         FROM brand b
         WHERE 1 = 1
           AND (
                 COALESCE($1, '') = ''
                 OR LENGTH($1) < 2
-                OR b.brand_name ILIKE '%%' || $1 || '%%'
+                OR b.brandname ILIKE '%%' || $1 || '%%'
               )
           AND (
                 COALESCE($2, '') = ''
@@ -77,13 +77,13 @@ BEGIN
 
     IF (p_page_index > 0 AND p_page_size > 0) THEN
         OPEN p_result FOR
-            SELECT brand_id, brand_name, cancelled, cancelled_on, cancelled_reason
+            SELECT brand_id, brandname, cancelled, cancelledon, cancelledreason
             FROM tmp_brands
             WHERE rn >= ((p_page_index - 1) * p_page_size) + 1
               AND rn <= (((p_page_index - 1) * p_page_size) + p_page_size);
     ELSE
         OPEN p_result FOR
-            SELECT brand_id, brand_name, cancelled, cancelled_on, cancelled_reason
+            SELECT brand_id, brandname, cancelled, cancelledon, cancelledreason
             FROM tmp_brands;
     END IF;
 

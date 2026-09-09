@@ -1,6 +1,5 @@
-using System.Data;
-using Dapper;
 using Ecommerce.Interface;
+using Ecommerce.Models;
 using static Ecommerce.Models.CartModel;
 using static Ecommerce.Models.CommonModel;
 
@@ -17,62 +16,74 @@ namespace Ecommerce.Repository
 
         public async Task<BagCounts> GetCountsAsync(int userId)
         {
-            using var connection = _dapper.CreateConnection();
-            var counts = await connection.QueryFirstOrDefaultAsync<BagCounts>(
-                "GetBagCounts",
-                new { UserId = userId },
-                commandType: CommandType.StoredProcedure);
+            var counts = await _dapper.GetSingleByProcedure<BagCounts, object>(
+                StoredProcedures.Cart.GetBagCounts,
+                new { UserId = userId });
 
             return counts ?? new BagCounts();
         }
 
         public async Task<CartPage> GetCartAsync(int userId)
         {
-            using var connection = _dapper.CreateConnection();
-            using var multi = await connection.QueryMultipleAsync(
-                "GetCart",
+            var multi = await _dapper.GetMultipleListsByProcedure<CartLine, CartSummary, object>(
+                StoredProcedures.Cart.GetCart,
                 new { UserId = userId },
-                commandType: CommandType.StoredProcedure);
+                new[] { "p_result", "p_result2" });
 
             return new CartPage
             {
-                Items = (await multi.ReadAsync<CartLine>()).ToList(),
-                Summary = await multi.ReadFirstOrDefaultAsync<CartSummary>() ?? new CartSummary()
+                Items = multi.TableOut1 ?? new List<CartLine>(),
+                Summary = multi.TableOut2?.FirstOrDefault() ?? new CartSummary()
             };
         }
 
-        public Task<CommonResponse> AddItemAsync(int userId, CartItemInput input)
+        public async Task<CommonResponse> AddItemAsync(int userId, CartItemInput input)
         {
-            return _dapper.ExecuteStoredProcedure("AddCartItem", new
-            {
-                UserId = userId,
-                input.ProductVariantId,
-                Quantity = input.Quantity < 1 ? 1 : input.Quantity
-            });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Cart.AddCartItem,
+                new
+                {
+                    UserId = userId,
+                    input.ProductVariantId,
+                    Quantity = input.Quantity < 1 ? 1 : input.Quantity
+                }) ?? StatusFail();
         }
 
-        public Task<CommonResponse> UpdateItemAsync(int userId, CartItemUpdateInput input)
+        public async Task<CommonResponse> UpdateItemAsync(int userId, CartItemUpdateInput input)
         {
-            return _dapper.ExecuteStoredProcedure("UpdateCartItem", new
-            {
-                UserId = userId,
-                input.CartItemId,
-                input.Quantity
-            });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Cart.UpdateCartItem,
+                new
+                {
+                    UserId = userId,
+                    input.CartItemId,
+                    input.Quantity
+                }) ?? StatusFail();
         }
 
-        public Task<CommonResponse> RemoveItemAsync(int userId, int cartItemId)
+        public async Task<CommonResponse> RemoveItemAsync(int userId, int cartItemId)
         {
-            return _dapper.ExecuteStoredProcedure("RemoveCartItem", new
-            {
-                UserId = userId,
-                CartItemId = cartItemId
-            });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Cart.RemoveCartItem,
+                new
+                {
+                    UserId = userId,
+                    CartItemId = cartItemId
+                }) ?? StatusFail();
         }
 
-        public Task<CommonResponse> ClearAsync(int userId)
+        public async Task<CommonResponse> ClearAsync(int userId)
         {
-            return _dapper.ExecuteStoredProcedure("ClearCart", new { UserId = userId });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Cart.ClearCart,
+                new { UserId = userId }) ?? StatusFail();
         }
+
+        private static CommonResponse StatusFail() => new()
+        {
+            ResponseCode = -1,
+            StatusCode = false,
+            ResponseMsg = "No response from stored procedure."
+        };
     }
 }

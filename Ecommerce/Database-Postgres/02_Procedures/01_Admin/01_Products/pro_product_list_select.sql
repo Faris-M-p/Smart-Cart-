@@ -36,12 +36,12 @@ BEGIN
         v_order := format('p.created_at %s', v_sort_mode);
     ELSIF v_sort_col IN ('price') THEN
         v_order := format($o$(
-            SELECT MIN(pv.selling_price) FROM product_variants pv
+            SELECT MIN(pv.sellingprice) FROM productvariants pv
             WHERE pv.fk_product = p.id_product AND COALESCE(pv.cancelled, FALSE) = FALSE
         ) %s$o$, v_sort_mode);
     ELSIF v_sort_col IN ('mrp') THEN
         v_order := format($o$(
-            SELECT MIN(pv.mrp) FROM product_variants pv
+            SELECT MIN(pv.mrp) FROM productvariants pv
             WHERE pv.fk_product = p.id_product AND COALESCE(pv.cancelled, FALSE) = FALSE
         ) %s$o$, v_sort_mode);
     ELSIF v_sort_col IN ('id_product', 'idproduct', 'productid') THEN
@@ -63,7 +63,7 @@ BEGIN
         rating NUMERIC(3,1),
         gender TEXT,
         fk_status INT,
-        created_on TIMESTAMP,
+        createdon TIMESTAMP,
         updated_on TIMESTAMP,
         image_data TEXT,
         is_base64 BOOLEAN
@@ -75,7 +75,7 @@ BEGIN
         INSERT INTO tmp_product (
             rn, id_product, name, description, price, mrp,
             fk_category, fk_subcategory, fk_brand, rating, gender,
-            fk_status, created_on, updated_on, image_data, is_base64
+            fk_status, createdon, updated_on, image_data, is_base64
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
@@ -83,13 +83,13 @@ BEGIN
             p.name,
             p.description,
             COALESCE((
-                SELECT MIN(pv.selling_price)
-                FROM product_variants pv
+                SELECT MIN(pv.sellingprice)
+                FROM productvariants pv
                 WHERE pv.fk_product = p.id_product AND COALESCE(pv.cancelled, FALSE) = FALSE
             ), 0),
             COALESCE((
                 SELECT MIN(pv.mrp)
-                FROM product_variants pv
+                FROM productvariants pv
                 WHERE pv.fk_product = p.id_product AND COALESCE(pv.cancelled, FALSE) = FALSE
             ), 0),
             sc.fk_category,
@@ -97,15 +97,15 @@ BEGIN
             p.fk_brand,
             NULL::NUMERIC(3,1),
             NULL::TEXT,
-            CASE WHEN p.is_active THEN 1 ELSE 0 END,
-            p.created_at,
-            p.modified_at,
+            CASE WHEN p.isactive THEN 1 ELSE 0 END,
+            p.createdat,
+            p.modifiedat,
             (
-                SELECT pm.media_url
-                FROM product_media pm
+                SELECT pm.mediaurl
+                FROM productmedia pm
                 WHERE pm.fk_product = p.id_product
-                  AND pm.media_type = 'Image'
-                ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id_product_media ASC
+                  AND pm.mediatype = 'Image'
+                ORDER BY pm.isprimary DESC, pm.displayorder ASC, pm.id_productmedia ASC
                 LIMIT 1
             ),
             FALSE
@@ -118,7 +118,7 @@ BEGIN
                 OR p.name ILIKE '%%' || $1 || '%%'
               )
           AND (
-                -- Subcategory filter takes priority (matches SQL Server IF/ELSE)
+                -- subcategory filter takes priority (matches SQL Server IF/ELSE)
                 CASE
                     WHEN COALESCE($3, '') <> '' AND COALESCE($3, '') <> '[]' THEN
                         p.fk_subcategory IN (
@@ -147,7 +147,7 @@ BEGIN
           AND (
                 COALESCE($5, '') = ''
                 OR COALESCE($5, '') = '[]'
-                OR (CASE WHEN p.is_active THEN 1 ELSE 0 END) IN (
+                OR (CASE WHEN p.isactive THEN 1 ELSE 0 END) IN (
                     SELECT (elem->>'ID_Value')::INT
                     FROM jsonb_array_elements($5::jsonb) AS elem
                     WHERE (elem->>'ID_Value') ~ '^\d+$'
@@ -165,7 +165,7 @@ BEGIN
         OPEN p_result FOR
             SELECT id_product, name, description, price, mrp,
                    fk_category, fk_subcategory, fk_brand, rating, gender,
-                   fk_status, created_on, updated_on, image_data, is_base64
+                   fk_status, createdon, updated_on, image_data, is_base64
             FROM tmp_product
             WHERE rn >= ((p_page_index - 1) * p_page_size) + 1
               AND rn <= (((p_page_index - 1) * p_page_size) + p_page_size);
@@ -173,7 +173,7 @@ BEGIN
         OPEN p_result FOR
             SELECT id_product, name, description, price, mrp,
                    fk_category, fk_subcategory, fk_brand, rating, gender,
-                   fk_status, created_on, updated_on, image_data, is_base64
+                   fk_status, createdon, updated_on, image_data, is_base64
             FROM tmp_product;
     END IF;
 

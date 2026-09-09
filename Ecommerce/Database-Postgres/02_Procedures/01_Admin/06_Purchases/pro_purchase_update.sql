@@ -5,8 +5,8 @@ Created By       : Muhammed Faris
 Created On       : 12/12/2025
 
 PURPOSE
-  Insert / update / soft-delete purchase header, purchase_detail lines,
-  and matching stock batches. Purchase details arrive as JSON array text.
+  Insert / update / soft-delete purchase header, purchasedetail lines,
+  and matching stock batches. purchase details arrive as JSON array text.
 
 ACTIONS
   1 → Insert
@@ -16,12 +16,12 @@ ACTIONS
 PurchaseDetails JSON:
 [
   {
-    "ID_PurchaseDetail": 0,
-    "FK_ProductVariant": 601,
-    "Quantity": 30,
-    "PurchasePrice": 100.00,
-    "MRP": 150.00,
-    "ExpiryDate": "2026-05-20"
+    id_purchasedetail: 0,
+    fk_productvariant: 601,
+    quantity: 30,
+    purchaseprice: 100.00,
+    mrp: 150.00,
+    expirydate: 2026-05-20
   }
 ]
 **********************************************************************/
@@ -52,12 +52,12 @@ DECLARE
     r_detail RECORD;
 BEGIN
     CREATE TEMP TABLE IF NOT EXISTS tmp_purchase_details (
-        id_purchase_detail INT,
-        fk_product_variant INT,
+        id_purchasedetail INT,
+        fk_productvariant INT,
         quantity INT,
-        purchase_price NUMERIC(18,2),
+        purchaseprice NUMERIC(18,2),
         mrp NUMERIC(18,2),
-        expiry_date DATE
+        expirydate DATE
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_purchase_details;
@@ -100,8 +100,8 @@ BEGIN
 
         IF p_purchase_details IS NOT NULL AND TRIM(p_purchase_details) <> '' THEN
             INSERT INTO tmp_purchase_details (
-                id_purchase_detail, fk_product_variant, quantity,
-                purchase_price, mrp, expiry_date
+                id_purchasedetail, fk_productvariant, quantity,
+                purchaseprice, mrp, expirydate
             )
             SELECT
                 COALESCE((elem->>'ID_PurchaseDetail')::INT, 0),
@@ -114,7 +114,7 @@ BEGIN
         END IF;
 
         ------------------------------------------------------------------
-        -- ACTION 1: INSERT
+        -- action 1: INSERT
         ------------------------------------------------------------------
         IF p_user_action = 1 THEN
             IF NOT EXISTS (SELECT 1 FROM tmp_purchase_details) THEN
@@ -125,10 +125,10 @@ BEGIN
             IF EXISTS (
                 SELECT 1
                 FROM tmp_purchase_details d
-                WHERE d.fk_product_variant IS NULL
+                WHERE d.fk_productvariant IS NULL
                    OR NOT EXISTS (
-                        SELECT 1 FROM product_variants pv
-                        WHERE pv.id_product_variant = d.fk_product_variant
+                        SELECT 1 FROM productvariants pv
+                        WHERE pv.id_productvariant = d.fk_productvariant
                           AND pv.cancelled = FALSE
                    )
             ) THEN
@@ -145,8 +145,8 @@ BEGIN
             END IF;
 
             INSERT INTO purchase (
-                fk_supplier, purchase_date, invoice_number, total_amount, notes,
-                created_on, enter_by, cancelled, cancelled_on, cancelled_reason, cancelled_by
+                fk_supplier, purchasedate, invoicenumber, totalamount, notes,
+                createdon, enterby, cancelled, cancelledon, cancelledreason, cancelledby
             )
             VALUES (
                 p_fk_supplier, v_purchase_date, p_invoice_number, 0.00, p_notes,
@@ -155,34 +155,34 @@ BEGIN
             RETURNING id_purchase INTO v_id_purchase;
 
             FOR r_detail IN
-                SELECT fk_product_variant, quantity, purchase_price, mrp, expiry_date
+                SELECT fk_productvariant, quantity, purchaseprice, mrp, expirydate
                 FROM tmp_purchase_details
             LOOP
-                INSERT INTO purchase_detail (
-                    fk_purchase, fk_product_variant, quantity, purchase_price, mrp, expiry_date,
-                    created_on, enter_by, cancelled, cancelled_on, cancelled_reason, cancelled_by
+                INSERT INTO purchasedetail (
+                    fk_purchase, fk_productvariant, quantity, purchaseprice, mrp, expirydate,
+                    createdon, enterby, cancelled, cancelledon, cancelledreason, cancelledby
                 )
                 VALUES (
-                    v_id_purchase, r_detail.fk_product_variant, r_detail.quantity,
-                    r_detail.purchase_price, r_detail.mrp, r_detail.expiry_date,
+                    v_id_purchase, r_detail.fk_productvariant, r_detail.quantity,
+                    r_detail.purchaseprice, r_detail.mrp, r_detail.expirydate,
                     v_now, p_enter_by, FALSE, NULL, NULL, NULL
                 )
-                RETURNING id_purchase_detail INTO v_detail_id;
+                RETURNING id_purchasedetail INTO v_detail_id;
 
                 INSERT INTO stock (
-                    fk_purchase_detail, fk_product_variant, quantity,
-                    created_on, enter_by, cancelled, cancelled_on, cancelled_reason, cancelled_by
+                    fk_purchasedetail, fk_productvariant, quantity,
+                    createdon, enterby, cancelled, cancelledon, cancelledreason, cancelledby
                 )
                 VALUES (
-                    v_detail_id, r_detail.fk_product_variant, r_detail.quantity,
+                    v_detail_id, r_detail.fk_productvariant, r_detail.quantity,
                     v_now, p_enter_by, FALSE, NULL, NULL, NULL
                 );
             END LOOP;
 
             UPDATE purchase
-            SET total_amount = COALESCE((
-                SELECT SUM(COALESCE(quantity, 0) * COALESCE(purchase_price, 0))
-                FROM purchase_detail
+            SET totalamount = COALESCE((
+                SELECT SUM(COALESCE(quantity, 0) * COALESCE(purchaseprice, 0))
+                FROM purchasedetail
                 WHERE fk_purchase = v_id_purchase AND cancelled = FALSE
             ), 0)
             WHERE id_purchase = v_id_purchase;
@@ -195,23 +195,23 @@ BEGIN
         END IF;
 
         ------------------------------------------------------------------
-        -- ACTION 2: UPDATE
+        -- action 2: UPDATE
         ------------------------------------------------------------------
         IF p_user_action = 2 THEN
             UPDATE purchase
             SET fk_supplier = p_fk_supplier,
-                purchase_date = v_purchase_date,
-                invoice_number = p_invoice_number,
+                purchasedate = v_purchase_date,
+                invoicenumber = p_invoice_number,
                 notes = p_notes
             WHERE id_purchase = v_id_purchase;
 
             IF EXISTS (
                 SELECT 1
                 FROM tmp_purchase_details d
-                WHERE d.fk_product_variant IS NULL
+                WHERE d.fk_productvariant IS NULL
                    OR NOT EXISTS (
-                        SELECT 1 FROM product_variants pv
-                        WHERE pv.id_product_variant = d.fk_product_variant
+                        SELECT 1 FROM productvariants pv
+                        WHERE pv.id_productvariant = d.fk_productvariant
                           AND pv.cancelled = FALSE
                    )
             ) THEN
@@ -219,73 +219,73 @@ BEGIN
                     USING ERRCODE = 'P0001';
             END IF;
 
-            UPDATE purchase_detail pd
+            UPDATE purchasedetail pd
             SET cancelled = TRUE,
-                cancelled_on = v_now,
-                cancelled_reason = 'Removed in update',
-                cancelled_by = p_enter_by
+                cancelledon = v_now,
+                cancelledreason = 'Removed in update',
+                cancelledby = p_enter_by
             WHERE pd.fk_purchase = v_id_purchase
               AND pd.cancelled = FALSE
-              AND pd.id_purchase_detail NOT IN (
-                    SELECT d.id_purchase_detail
+              AND pd.id_purchasedetail NOT IN (
+                    SELECT d.id_purchasedetail
                     FROM tmp_purchase_details d
-                    WHERE d.id_purchase_detail > 0
+                    WHERE d.id_purchasedetail > 0
               );
 
             UPDATE stock s
             SET cancelled = TRUE,
-                cancelled_on = v_now,
-                cancelled_reason = 'Removed due to purchase detail removal',
-                cancelled_by = p_enter_by
-            WHERE s.fk_purchase_detail IN (
-                SELECT pd.id_purchase_detail
-                FROM purchase_detail pd
+                cancelledon = v_now,
+                cancelledreason = 'Removed due to purchase detail removal',
+                cancelledby = p_enter_by
+            WHERE s.fk_purchasedetail IN (
+                SELECT pd.id_purchasedetail
+                FROM purchasedetail pd
                 WHERE pd.fk_purchase = v_id_purchase
                   AND pd.cancelled = TRUE
             )
               AND s.cancelled = FALSE;
 
             FOR r_detail IN
-                SELECT id_purchase_detail, fk_product_variant, quantity,
-                       purchase_price, mrp, expiry_date
+                SELECT id_purchasedetail, fk_productvariant, quantity,
+                       purchaseprice, mrp, expirydate
                 FROM tmp_purchase_details
             LOOP
-                v_detail_id := r_detail.id_purchase_detail;
-                v_pv := r_detail.fk_product_variant;
+                v_detail_id := r_detail.id_purchasedetail;
+                v_pv := r_detail.fk_productvariant;
                 v_qty := r_detail.quantity;
-                v_pprice := r_detail.purchase_price;
+                v_pprice := r_detail.purchaseprice;
                 v_mrp := r_detail.mrp;
-                v_exp := r_detail.expiry_date;
+                v_exp := r_detail.expirydate;
 
                 IF v_detail_id > 0 THEN
-                    UPDATE purchase_detail
-                    SET fk_product_variant = v_pv,
+                    UPDATE purchasedetail
+                    SET fk_productvariant = v_pv,
                         quantity = v_qty,
-                        purchase_price = v_pprice,
+                        purchaseprice = v_pprice,
                         mrp = v_mrp,
-                        expiry_date = v_exp,
-                        enter_by = p_enter_by
-                    WHERE id_purchase_detail = v_detail_id;
+                        expirydate = v_exp,
+                        enterby = p_enter_by
+                    WHERE id_purchasedetail = v_detail_id;
 
                     UPDATE stock
                     SET quantity = v_qty
-                    WHERE fk_purchase_detail = v_detail_id
-                      AND fk_product_variant = v_pv
+                    WHERE fk_purchasedetail = v_detail_id
+                      AND fk_productvariant = v_pv
                       AND cancelled = FALSE;
                 ELSE
-                    INSERT INTO purchase_detail (
-                        fk_purchase, fk_product_variant, quantity, purchase_price, mrp, expiry_date,
-                        created_on, enter_by, cancelled
+                    INSERT INTO purchasedetail (
+                        fk_purchase, fk_productvariant, quantity, purchaseprice, mrp, expirydate,
+                        createdon, enterby, cancelled
                     )
                     VALUES (
                         v_id_purchase, v_pv, v_qty, v_pprice, v_mrp, v_exp,
                         v_now, p_enter_by, FALSE
                     )
-                    RETURNING id_purchase_detail INTO v_detail_id;
+                    RETURNING id_purchasedetail INTO v_detail_id;
 
                     INSERT INTO stock (
-                        fk_purchase_detail, fk_product_variant, quantity,
-                        created_on, enter_by, cancelled
+                        fk_purchasedetail, fk_productvariant, quantity,
+                        createdon, enterby, cancelled
                     )
                     VALUES (
                         v_detail_id, v_pv, v_qty,
@@ -295,9 +295,9 @@ BEGIN
             END LOOP;
 
             UPDATE purchase
-            SET total_amount = COALESCE((
-                SELECT SUM(COALESCE(quantity, 0) * COALESCE(purchase_price, 0))
-                FROM purchase_detail
+            SET totalamount = COALESCE((
+                SELECT SUM(COALESCE(quantity, 0) * COALESCE(purchaseprice, 0))
+                FROM purchasedetail
                 WHERE fk_purchase = v_id_purchase AND cancelled = FALSE
             ), 0)
             WHERE id_purchase = v_id_purchase;
@@ -310,31 +310,31 @@ BEGIN
         END IF;
 
         ------------------------------------------------------------------
-        -- ACTION 3: SOFT DELETE
+        -- action 3: SOFT DELETE
         ------------------------------------------------------------------
         IF p_user_action = 3 THEN
             UPDATE purchase
             SET cancelled = TRUE,
-                cancelled_on = v_now,
-                cancelled_reason = p_cancelled_reason,
-                cancelled_by = p_enter_by
+                cancelledon = v_now,
+                cancelledreason = p_cancelled_reason,
+                cancelledby = p_enter_by
             WHERE id_purchase = v_id_purchase;
 
-            UPDATE purchase_detail
+            UPDATE purchasedetail
             SET cancelled = TRUE,
-                cancelled_on = v_now,
-                cancelled_reason = p_cancelled_reason,
-                cancelled_by = p_enter_by
+                cancelledon = v_now,
+                cancelledreason = p_cancelled_reason,
+                cancelledby = p_enter_by
             WHERE fk_purchase = v_id_purchase;
 
             UPDATE stock
             SET cancelled = TRUE,
-                cancelled_on = v_now,
-                cancelled_reason = p_cancelled_reason,
-                cancelled_by = p_enter_by
-            WHERE fk_purchase_detail IN (
-                SELECT id_purchase_detail
-                FROM purchase_detail
+                cancelledon = v_now,
+                cancelledreason = p_cancelled_reason,
+                cancelledby = p_enter_by
+            WHERE fk_purchasedetail IN (
+                SELECT id_purchasedetail
+                FROM purchasedetail
                 WHERE fk_purchase = v_id_purchase
             );
 

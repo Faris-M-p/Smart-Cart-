@@ -6,17 +6,17 @@ Source      : ProProductUpdate (SQL Server)
 CREATE OR REPLACE PROCEDURE pro_product_update(
     IN p_user_action INT,              -- 1 = Insert, 2 = Update
     IN p_id_product INT DEFAULT 0,
-    IN p_name TEXT,
+    IN p_name TEXT DEFAULT NULL,
     IN p_description TEXT DEFAULT '',
-    IN p_price NUMERIC(10,2),
-    IN p_mrp NUMERIC(10,2),
-    IN p_fk_category INT,
-    IN p_fk_subcategory INT,
+    IN p_price NUMERIC(10,2) DEFAULT NULL,
+    IN p_mrp NUMERIC(10,2) DEFAULT NULL,
+    IN p_fk_category INT DEFAULT NULL,
+    IN p_fk_subcategory INT DEFAULT NULL,
     IN p_fk_brand INT DEFAULT NULL,
     IN p_rating NUMERIC(3,1) DEFAULT NULL,
     IN p_gender TEXT DEFAULT NULL,
     IN p_fk_status INT DEFAULT 1,
-    IN p_enter_by INT,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -71,7 +71,7 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- DUPLICATE CHECK: Same Name in same Category/SubCategory
+    -- DUPLICATE CHECK: Same name in same category/subcategory
     -------------------------------------------------------------------
     SELECT COUNT(*) INTO v_is_duplicate
     FROM products p
@@ -88,7 +88,7 @@ BEGIN
         RETURN;
     END IF;
 
-    -- Slug from name (products.slug is NOT NULL / UNIQUE)
+    -- slug from name (products.slug is NOT NULL / UNIQUE)
     v_slug_base := LOWER(TRIM(BOTH '-' FROM regexp_replace(p_name, '[^a-zA-Z0-9]+', '-', 'g')));
     IF (v_slug_base = '') THEN
         v_slug_base := 'product';
@@ -106,8 +106,8 @@ BEGIN
 
         INSERT INTO products (
             fk_subcategory, fk_brand, name, slug, description,
-            is_active, sell_online, created_at, modified_at,
-            cancelled, cancelled_on
+            isactive, sellonline, createdat, modifiedat,
+            cancelled, cancelledon
         )
         VALUES (
             p_fk_subcategory, p_fk_brand, p_name, v_slug, p_description,
@@ -117,7 +117,7 @@ BEGIN
         RETURNING id_product INTO v_id_product;
 
         -- p_price / p_mrp / p_rating / p_gender / p_enter_by: accepted for API parity;
-        -- price lives on product_variants; products has no rating/gender/enter_by.
+        -- price lives on productvariants; products has no rating/gender/enterby.
         OPEN p_result FOR
             SELECT v_id_product AS response_code,
                    'Product created successfully.' AS response_msg,
@@ -154,8 +154,8 @@ BEGIN
             fk_subcategory = p_fk_subcategory,
             fk_brand = p_fk_brand,
             slug = v_slug,
-            is_active = COALESCE(p_fk_status, 1) = 1,
-            modified_at = v_user_date
+            isactive = COALESCE(p_fk_status, 1) = 1,
+            modifiedat = v_user_date
         WHERE id_product = v_id_product;
 
         OPEN p_result FOR

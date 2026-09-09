@@ -38,38 +38,38 @@ BEGIN
 
     CREATE TEMP TABLE IF NOT EXISTS tmp_variant_value (
         rn BIGINT,
-        id_variant_value INT,
+        id_variantvalue INT,
         fk_variant INT,
         value_name TEXT,
         description TEXT,
         value_icon TEXT,
-        display_order INT,
-        created_on TIMESTAMP,
+        displayorder INT,
+        createdon TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_variant_value;
 
     v_sql := format($q$
         INSERT INTO tmp_variant_value (
-            rn, id_variant_value, fk_variant, value_name, description, value_icon,
-            display_order, created_on, cancelled, cancelled_on, cancelled_reason
+            rn, id_variantvalue, fk_variant, value_name, description, value_icon,
+            displayorder, createdon, cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
-            vv.id_variant_value,
+            vv.id_variantvalue,
             vv.fk_variant,
             vv.name,
             vv.description,
             NULL::TEXT,
-            vv.display_order,
+            vv.displayorder,
             NULL::TIMESTAMP,
             vv.cancelled,
-            vv.cancelled_on,
+            vv.cancelledon,
             NULL::TEXT
-        FROM variant_values vv
+        FROM variantvalues vv
         WHERE 1 = 1
           AND (
                 COALESCE($1, '') = ''
@@ -91,8 +91,8 @@ BEGIN
     GET DIAGNOSTICS v_total_count = ROW_COUNT;
 
     OPEN p_result FOR
-        SELECT id_variant_value, fk_variant, value_name, description, value_icon,
-               display_order, created_on, cancelled, cancelled_on, cancelled_reason
+        SELECT id_variantvalue, fk_variant, value_name, description, value_icon,
+               displayorder, createdon, cancelled, cancelledon, cancelledreason
         FROM tmp_variant_value
         WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)
                       AND (p_page_index * p_page_size);

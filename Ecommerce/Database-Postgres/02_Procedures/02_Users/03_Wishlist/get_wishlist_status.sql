@@ -15,12 +15,12 @@ BEGIN
     SELECT
         CASE WHEN EXISTS (
             SELECT 1
-            FROM wishlist_items AS wi
-            INNER JOIN wishlist AS w ON w.wishlist_id = wi.wishlist_id
-            WHERE w.user_id = p_user_id
-              AND wi.product_id = p_product_id
+            FROM wishlistitems AS wi
+            INNER JOIN wishlist AS w ON w.id_wishlist = wi.fk_wishlist
+            WHERE w.fk_user = p_user_id
+              AND wi.fk_product = p_product_id
               AND COALESCE(w.cancelled, FALSE) = FALSE
               AND COALESCE(wi.cancelled, FALSE) = FALSE
-        ) THEN TRUE ELSE FALSE END AS "InWishlist";
+        ) THEN TRUE ELSE FALSE END AS inwishlist;
 END;
 $$;

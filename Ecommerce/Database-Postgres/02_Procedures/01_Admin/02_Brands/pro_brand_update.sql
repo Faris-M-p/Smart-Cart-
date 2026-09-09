@@ -1,13 +1,13 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 14/01/2026
-Purpose     : To Insert / Update Brand Master with Validation
+Purpose     : To Insert / Update brand Master with Validation
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_brand_update(
     IN p_user_action INT,                  -- 1 = Add, 2 = Edit
     IN p_brand_id INT DEFAULT 0,
-    IN p_brand_name TEXT,
-    IN p_enter_by INT,
+    IN p_brand_name TEXT DEFAULT NULL,
+    IN p_enter_by INT DEFAULT NULL,
     INOUT p_result REFCURSOR DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -30,7 +30,7 @@ BEGIN
     -------------------------------------------------------------------
     SELECT COUNT(*) INTO v_is_duplicate
     FROM brand
-    WHERE brand_name = p_brand_name
+    WHERE brandname = p_brand_name
       AND id_brand <> v_brand_id
       AND cancelled = FALSE;
 
@@ -43,10 +43,10 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- 1. ADD NEW BRAND
+    -- 1. ADD NEW brand
     -------------------------------------------------------------------
     IF (p_user_action = 1) THEN
-        INSERT INTO brand (brand_name, cancelled, cancelled_on, cancelled_reason)
+        INSERT INTO brand (brandname, cancelled, cancelledon, cancelledreason)
         VALUES (p_brand_name, FALSE, NULL, NULL)
         RETURNING id_brand INTO v_brand_id;
 
@@ -58,7 +58,7 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- 2. UPDATE EXISTING BRAND
+    -- 2. UPDATE EXISTING brand
     -------------------------------------------------------------------
     IF (p_user_action = 2) THEN
         IF NOT EXISTS (SELECT 1 FROM brand WHERE id_brand = v_brand_id) THEN
@@ -76,7 +76,7 @@ BEGIN
         END IF;
 
         UPDATE brand
-        SET brand_name = p_brand_name
+        SET brandname = p_brand_name
         WHERE id_brand = v_brand_id;
 
         OPEN p_result FOR

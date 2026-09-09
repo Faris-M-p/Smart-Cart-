@@ -1,7 +1,7 @@
 /**********************************************************************
 Created By  :  Muhammed Faris
 Created On  : 07/12/2025
-Purpose     : To Select Category List with Search, Filter, Sorting, Pagination
+Purpose     : To Select category List with Search, Filter, Sorting, Pagination
 ------------------------------------------------------------------------*/
 CREATE OR REPLACE PROCEDURE pro_category_list_select(
     IN p_search_text TEXT DEFAULT '',
@@ -41,8 +41,8 @@ BEGIN
         description TEXT,
         created_date TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_categories;
@@ -50,7 +50,7 @@ BEGIN
     v_sql := format($q$
         INSERT INTO tmp_categories (
             rn, category_id, category_name, description, created_date,
-            cancelled, cancelled_on, cancelled_reason
+            cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
@@ -59,8 +59,8 @@ BEGIN
             c.description,
             NULL::TIMESTAMP,
             c.cancelled,
-            c.cancelled_on,
-            c.cancelled_reason
+            c.cancelledon,
+            c.cancelledreason
         FROM category c
         WHERE 1 = 1
           AND (
@@ -85,14 +85,14 @@ BEGIN
     IF (p_page_index > 0 AND p_page_size > 0) THEN
         OPEN p_result FOR
             SELECT category_id, category_name, description, created_date,
-                   cancelled, cancelled_on, cancelled_reason
+                   cancelled, cancelledon, cancelledreason
             FROM tmp_categories
             WHERE rn >= ((p_page_index - 1) * p_page_size) + 1
               AND rn <= (((p_page_index - 1) * p_page_size) + p_page_size);
     ELSE
         OPEN p_result FOR
             SELECT category_id, category_name, description, created_date,
-                   cancelled, cancelled_on, cancelled_reason
+                   cancelled, cancelledon, cancelledreason
             FROM tmp_categories;
     END IF;
 

@@ -1,5 +1,5 @@
-﻿/* =============================================================================
-   REVIEW NEEDED — not fully dialect-converted
+/* =============================================================================
+   review NEEDED — not fully dialect-converted
    -----------------------------------------------------------------------------
    Source: Database/05_Seed/DevSampleCatalog.sql (SQL Server).
    This file is intentionally a stub. Convert INSERT statements to snake_case

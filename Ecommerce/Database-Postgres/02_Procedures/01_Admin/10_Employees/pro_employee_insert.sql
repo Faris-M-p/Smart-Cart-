@@ -40,8 +40,8 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM user_roles
-        WHERE id_user_role = p_fk_user_role AND cancelled = FALSE AND is_active = TRUE
+        SELECT 1 FROM userroles
+        WHERE id_userrole = p_fk_user_role AND cancelled = FALSE AND isactive = TRUE
     ) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, FALSE AS status_code, 'Please select a valid active user role.' AS response_msg;
@@ -49,17 +49,17 @@ BEGIN
     END IF;
 
     IF EXISTS (
-        SELECT 1 FROM admin_users
-        WHERE LOWER(user_name) = LOWER(TRIM(p_user_name))
+        SELECT 1 FROM adminusers
+        WHERE LOWER(username) = LOWER(TRIM(p_user_name))
     ) THEN
         OPEN p_result FOR
             SELECT -1 AS response_code, FALSE AS status_code, 'Username already exists.' AS response_msg;
         RETURN;
     END IF;
 
-    INSERT INTO admin_users (
-        fk_user_role, user_name, password_hash, full_name, email,
-        is_active, created_at, cancelled
+    INSERT INTO adminusers (
+        fk_userrole, username, passwordhash, fullname, email,
+        isactive, createdat, cancelled
     )
     VALUES (
         p_fk_user_role,
@@ -71,7 +71,7 @@ BEGIN
         NOW(),
         FALSE
     )
-    RETURNING id_admin_user INTO v_id_admin_user;
+    RETURNING id_adminuser INTO v_id_admin_user;
 
     OPEN p_result FOR
         SELECT v_id_admin_user AS response_code, TRUE AS status_code, 'Employee created successfully.' AS response_msg;

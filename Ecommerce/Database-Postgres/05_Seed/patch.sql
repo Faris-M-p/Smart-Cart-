@@ -1,4 +1,4 @@
-﻿/* =============================================================================
+/* =============================================================================
    05_Seed / patch.sql
    -----------------------------------------------------------------------------
    INITIAL CREATE : keep every \i line uncommented.
@@ -20,7 +20,9 @@
 \i ./05_Seed/admin_users.sql
 \echo 'admin_users patch successfully completed.'
 
-/* Development sample catalogs (commented — convert from SQL Server before use):
+\i ./05_Seed/super_market_catalog.sql
+\echo 'super_market_catalog patch successfully completed.'
+
+/* Development electronics sample (commented — convert from SQL Server before use):
    -- \i ./05_Seed/dev_sample_catalog.sql
-   -- \i ./05_Seed/super_market_catalog.sql
 */

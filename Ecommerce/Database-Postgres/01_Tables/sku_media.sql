@@ -1,17 +1,17 @@
-﻿CREATE TABLE IF NOT EXISTS sku_media (
-    id_sku_media   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    fk_product_sku INT NOT NULL,
-    media_type     TEXT NOT NULL DEFAULT 'Image',
-    media_url      TEXT NOT NULL,
-    display_order  INT NOT NULL DEFAULT 0,
-    is_primary     BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at     TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at     TIMESTAMP NULL,
-    CONSTRAINT fk_sku_media_product_variant
-        FOREIGN KEY (fk_product_sku) REFERENCES product_variants (id_product_variant),
-    CONSTRAINT ck_sku_media_media_type
-        CHECK (media_type = 'Image')
+CREATE TABLE IF NOT EXISTS skumedia (
+    id_skumedia   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_productsku INT NOT NULL,
+    mediatype     TEXT NOT NULL DEFAULT 'Image',
+    mediaurl      TEXT NOT NULL,
+    displayorder  INT NOT NULL DEFAULT 0,
+    isprimary     BOOLEAN NOT NULL DEFAULT FALSE,
+    createdat     TIMESTAMP NOT NULL DEFAULT NOW(),
+    updatedat     TIMESTAMP NULL,
+    CONSTRAINT fk_skumedia_productvariant
+        FOREIGN KEY (fk_productsku) REFERENCES productvariants (id_productvariant),
+    CONSTRAINT ck_skumedia_mediatype
+        CHECK (mediatype = 'Image')
 );
 
-CREATE INDEX IF NOT EXISTS ix_sku_media_fk_product_sku
-    ON sku_media (fk_product_sku, display_order);
+CREATE INDEX IF NOT EXISTS ix_skumedia_fk_productsku
+    ON skumedia (fk_productsku, displayorder);

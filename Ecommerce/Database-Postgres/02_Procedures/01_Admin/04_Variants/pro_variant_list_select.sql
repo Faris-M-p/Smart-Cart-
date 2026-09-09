@@ -41,29 +41,29 @@ BEGIN
         id_variant INT,
         variant_name TEXT,
         description TEXT,
-        display_order INT,
-        created_on TIMESTAMP,
+        displayorder INT,
+        createdon TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_variant;
 
     v_sql := format($q$
         INSERT INTO tmp_variant (
-            rn, id_variant, variant_name, description, display_order,
-            created_on, cancelled, cancelled_on, cancelled_reason
+            rn, id_variant, variant_name, description, displayorder,
+            createdon, cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
             v.id_variant,
             v.name,
             v.description,
-            v.display_order,
+            v.displayorder,
             NULL::TIMESTAMP,
             v.cancelled,
-            v.cancelled_on,
+            v.cancelledon,
             NULL::TEXT
         FROM variants v
         WHERE 1 = 1
@@ -88,15 +88,15 @@ BEGIN
 
     IF (p_page_index > 0 AND p_page_size > 0) THEN
         OPEN p_result FOR
-            SELECT id_variant, variant_name, description, display_order,
-                   created_on, cancelled, cancelled_on, cancelled_reason
+            SELECT id_variant, variant_name, description, displayorder,
+                   createdon, cancelled, cancelledon, cancelledreason
             FROM tmp_variant
             WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)
                           AND (p_page_index * p_page_size);
     ELSE
         OPEN p_result FOR
-            SELECT id_variant, variant_name, description, display_order,
-                   created_on, cancelled, cancelled_on, cancelled_reason
+            SELECT id_variant, variant_name, description, displayorder,
+                   createdon, cancelled, cancelledon, cancelledreason
             FROM tmp_variant;
     END IF;
 

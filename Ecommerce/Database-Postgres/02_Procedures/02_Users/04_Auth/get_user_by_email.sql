@@ -12,11 +12,11 @@ AS $$
 BEGIN
     OPEN p_result FOR
     SELECT
-        u.user_id AS "UserId",
-        COALESCE(u.full_name, u.user_name) AS "FullName",
-        u.email AS "Email",
-        u.password_hash AS "PasswordHash",
-        COALESCE(u.cancelled, FALSE) AS "Cancelled"
+        u.id_user AS userid,
+        COALESCE(u.fullname, u.username) AS fullname,
+        u.email AS email,
+        u.passwordhash AS passwordhash,
+        COALESCE(u.cancelled, FALSE) AS cancelled
     FROM users AS u
     WHERE LOWER(u.email) = LOWER(TRIM(COALESCE(p_email, '')))
       AND COALESCE(u.cancelled, FALSE) = FALSE;

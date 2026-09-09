@@ -1,4 +1,4 @@
-﻿/* =============================================================================
+/* =============================================================================
    SmartCart - Master PostgreSQL database build script
    -----------------------------------------------------------------------------
    Run with psql from this folder (Database-Postgres):
@@ -6,7 +6,7 @@
      psql -v ON_ERROR_STOP=1 -v dbname=smartcart -f Database.sql
 
    Optional: set dbname (default smartcart). Connects first to maintenance DB
-   "postgres", creates target DB if missing, then \c into it.
+   postgres, creates target DB if missing, then \c into it.
 
    Flow:
      Database.sql

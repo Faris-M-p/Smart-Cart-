@@ -56,33 +56,33 @@ BEGIN
         rn BIGINT,
         id_purchase INT,
         supplier_name TEXT,
-        invoice_number TEXT,
-        purchase_date DATE,
-        total_amount NUMERIC(12,2),
-        created_on TIMESTAMP,
+        invoicenumber TEXT,
+        purchasedate DATE,
+        totalamount NUMERIC(12,2),
+        createdon TIMESTAMP,
         cancelled BOOLEAN,
-        cancelled_on TIMESTAMP,
-        cancelled_reason TEXT
+        cancelledon TIMESTAMP,
+        cancelledreason TEXT
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_purchases;
 
     v_sql := format($q$
         INSERT INTO tmp_purchases (
-            rn, id_purchase, supplier_name, invoice_number, purchase_date,
-            total_amount, created_on, cancelled, cancelled_on, cancelled_reason
+            rn, id_purchase, supplier_name, invoicenumber, purchasedate,
+            totalamount, createdon, cancelled, cancelledon, cancelledreason
         )
         SELECT
             ROW_NUMBER() OVER (ORDER BY %s) AS rn,
             p.id_purchase,
             s.name,
-            p.invoice_number,
-            p.purchase_date,
-            p.total_amount,
-            p.created_on,
+            p.invoicenumber,
+            p.purchasedate,
+            p.totalamount,
+            p.createdon,
             p.cancelled,
-            p.cancelled_on,
-            p.cancelled_reason
+            p.cancelledon,
+            p.cancelledreason
         FROM purchase p
         INNER JOIN supplier s ON s.id_supplier = p.fk_supplier
         WHERE 1 = 1
@@ -90,7 +90,7 @@ BEGIN
                 COALESCE($1, '') = ''
                 OR LENGTH($1) < 2
                 OR s.name ILIKE '%%' || $1 || '%%'
-                OR COALESCE(p.invoice_number, '') ILIKE '%%' || $1 || '%%'
+                OR COALESCE(p.invoicenumber, '') ILIKE '%%' || $1 || '%%'
               )
           AND (
                 COALESCE($2, '') = ''
@@ -101,8 +101,8 @@ BEGIN
                     WHERE (elem->>'ID_Value') ~ '^\d+$'
                 )
               )
-          AND ($3::DATE IS NULL OR p.purchase_date >= $3::DATE)
-          AND ($4::DATE IS NULL OR p.purchase_date <= $4::DATE)
+          AND ($3::DATE IS NULL OR p.purchasedate >= $3::DATE)
+          AND ($4::DATE IS NULL OR p.purchasedate <= $4::DATE)
     $q$, v_order);
 
     EXECUTE v_sql USING p_search_text, p_filter_supplier_ids, p_from_date, p_to_date;
@@ -112,13 +112,13 @@ BEGIN
         SELECT
             id_purchase,
             supplier_name,
-            invoice_number,
-            purchase_date,
-            total_amount,
-            created_on,
+            invoicenumber,
+            purchasedate,
+            totalamount,
+            createdon,
             cancelled,
-            cancelled_on,
-            cancelled_reason
+            cancelledon,
+            cancelledreason
         FROM tmp_purchases
         WHERE rn BETWEEN ((p_page_index - 1) * p_page_size + 1)
                       AND (p_page_index * p_page_size);

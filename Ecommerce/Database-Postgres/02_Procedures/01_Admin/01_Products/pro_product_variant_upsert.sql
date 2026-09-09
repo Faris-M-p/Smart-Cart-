@@ -5,7 +5,7 @@ Created On       : 09/12/2025
 Source           : ProProductVariantUpsert (SQL Server)
 
 p_user_action: 1=Insert, 2=Update, 3=Delete (soft)
-p_variant_attributes JSON: [{"FK_Variant":1,"FK_VariantValue":21}, ...]
+p_variant_attributes JSON: [{fk_variant:1,fk_variantvalue:21}, ...]
 **********************************************************************/
 CREATE OR REPLACE PROCEDURE pro_product_variant_upsert(
     IN p_user_action INT,
@@ -33,7 +33,7 @@ DECLARE
 BEGIN
     CREATE TEMP TABLE IF NOT EXISTS tmp_variant_attrs (
         fk_variant INT NOT NULL,
-        fk_variant_value INT NOT NULL
+        fk_variantvalue INT NOT NULL
     ) ON COMMIT DROP;
 
     DELETE FROM tmp_variant_attrs;
@@ -60,7 +60,7 @@ BEGIN
             END IF;
 
             IF NOT EXISTS (
-                SELECT 1 FROM product_variants WHERE id_product_variant = v_id
+                SELECT 1 FROM productvariants WHERE id_productvariant = v_id
             ) THEN
                 OPEN p_result FOR
                     SELECT -1 AS response_code,
@@ -71,8 +71,8 @@ BEGIN
 
             IF (v_fk_product = 0) THEN
                 SELECT fk_product INTO v_fk_product
-                FROM product_variants
-                WHERE id_product_variant = v_id;
+                FROM productvariants
+                WHERE id_productvariant = v_id;
             END IF;
         END IF;
 
@@ -91,7 +91,7 @@ BEGIN
     -- Parse VariantAttributes JSON
     -------------------------------------------------------------------
     IF (p_variant_attributes IS NOT NULL AND TRIM(p_variant_attributes) <> '') THEN
-        INSERT INTO tmp_variant_attrs (fk_variant, fk_variant_value)
+        INSERT INTO tmp_variant_attrs (fk_variant, fk_variantvalue)
         SELECT
             CASE WHEN (elem->>'FK_Variant') ~ '^\d+$' THEN (elem->>'FK_Variant')::INT ELSE NULL END,
             CASE WHEN (elem->>'FK_VariantValue') ~ '^\d+$' THEN (elem->>'FK_VariantValue')::INT ELSE NULL END
@@ -113,9 +113,9 @@ BEGIN
             SELECT 1
             FROM tmp_variant_attrs a
             LEFT JOIN variants v ON v.id_variant = a.fk_variant
-            LEFT JOIN variant_values vv ON vv.id_variant_value = a.fk_variant_value
+            LEFT JOIN variantvalues vv ON vv.id_variantvalue = a.fk_variantvalue
             WHERE v.id_variant IS NULL
-               OR vv.id_variant_value IS NULL
+               OR vv.id_variantvalue IS NULL
                OR vv.fk_variant <> a.fk_variant
         ) THEN
             OPEN p_result FOR
@@ -135,10 +135,10 @@ BEGIN
     END IF;
 
     -------------------------------------------------------------------
-    -- Incoming attribute signature (ordered): "1:21,2:33"
+    -- Incoming attribute signature (ordered): 1:21,2:33
     -------------------------------------------------------------------
     IF EXISTS (SELECT 1 FROM tmp_variant_attrs) THEN
-        SELECT string_agg(a.fk_variant::TEXT || ':' || a.fk_variant_value::TEXT, ',' ORDER BY a.fk_variant)
+        SELECT string_agg(a.fk_variant::TEXT || ':' || a.fk_variantvalue::TEXT, ',' ORDER BY a.fk_variant)
         INTO v_incoming_sig
         FROM tmp_variant_attrs a;
     END IF;
@@ -147,18 +147,18 @@ BEGIN
     -- DUPLICATE CHECK (same product, same attribute signature)
     -------------------------------------------------------------------
     IF (v_incoming_sig IS NOT NULL) THEN
-        SELECT pv.id_product_variant
+        SELECT pv.id_productvariant
         INTO v_dup_existing_id
-        FROM product_variants pv
+        FROM productvariants pv
         WHERE pv.fk_product = v_fk_product
           AND COALESCE(pv.cancelled, FALSE) = FALSE
           AND (
                 SELECT string_agg(
-                    pva.fk_variant::TEXT || ':' || pva.fk_variant_value::TEXT,
+                    pva.fk_variant::TEXT || ':' || pva.fk_variantvalue::TEXT,
                     ',' ORDER BY pva.fk_variant
                 )
-                FROM product_variant_attributes pva
-                WHERE pva.fk_product_variant = pv.id_product_variant
+                FROM productvariantattributes pva
+                WHERE pva.fk_productvariant = pv.id_productvariant
               ) = v_incoming_sig
         LIMIT 1;
     END IF;
@@ -166,7 +166,7 @@ BEGIN
     v_price := COALESCE(p_price_adjustment, 0);
 
     -------------------------------------------------------------------
-    -- INSERT (CREATE SKU)
+    -- INSERT (CREATE sku)
     -------------------------------------------------------------------
     IF (p_user_action = 1) THEN
         IF (v_dup_existing_id IS NOT NULL) THEN
@@ -178,8 +178,8 @@ BEGIN
         END IF;
 
         IF (COALESCE(p_is_default, FALSE)) THEN
-            UPDATE product_variants
-            SET is_default = FALSE
+            UPDATE productvariants
+            SET isdefault = FALSE
             WHERE fk_product = v_fk_product AND COALESCE(cancelled, FALSE) = FALSE;
         END IF;
 
@@ -187,25 +187,25 @@ BEGIN
         INTO v_label
         FROM tmp_variant_attrs a
         INNER JOIN variants v ON v.id_variant = a.fk_variant
-        INNER JOIN variant_values vv ON vv.id_variant_value = a.fk_variant_value;
+        INNER JOIN variantvalues vv ON vv.id_variantvalue = a.fk_variantvalue;
 
         v_label := COALESCE(NULLIF(TRIM(v_label), ''), 'SKU');
         v_sku := 'SKU-' || v_fk_product::TEXT || '-' || substr(md5(v_incoming_sig || clock_timestamp()::TEXT), 1, 10);
 
-        INSERT INTO product_variants (
-            fk_product, sku, barcode, variant_label, description,
-            mrp, selling_price, is_default, is_active, sell_online,
-            created_at, cancelled, cancelled_on
+        INSERT INTO productvariants (
+            fk_product, sku, barcode, variantlabel, description,
+            mrp, sellingprice, isdefault, isactive, sellonline,
+            createdat, cancelled, cancelledon
         )
         VALUES (
             v_fk_product, v_sku, NULL, v_label, NULL,
             v_price, v_price, COALESCE(p_is_default, FALSE), TRUE, FALSE,
             v_now, FALSE, NULL
         )
-        RETURNING id_product_variant INTO v_id;
+        RETURNING id_productvariant INTO v_id;
 
-        INSERT INTO product_variant_attributes (fk_product_variant, fk_variant, fk_variant_value)
-        SELECT v_id, fk_variant, fk_variant_value
+        INSERT INTO productvariantattributes (fk_productvariant, fk_variant, fk_variantvalue)
+        SELECT v_id, fk_variant, fk_variantvalue
         FROM tmp_variant_attrs;
 
         OPEN p_result FOR
@@ -219,7 +219,7 @@ BEGIN
     -- UPDATE
     -------------------------------------------------------------------
     IF (p_user_action = 2) THEN
-        IF NOT EXISTS (SELECT 1 FROM product_variants WHERE id_product_variant = v_id) THEN
+        IF NOT EXISTS (SELECT 1 FROM productvariants WHERE id_productvariant = v_id) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'Invalid ProductVariant ID.' AS response_msg, FALSE AS status_code;
             RETURN;
@@ -234,32 +234,32 @@ BEGIN
         END IF;
 
         IF (COALESCE(p_is_default, FALSE)) THEN
-            UPDATE product_variants
-            SET is_default = FALSE
+            UPDATE productvariants
+            SET isdefault = FALSE
             WHERE fk_product = v_fk_product AND COALESCE(cancelled, FALSE) = FALSE;
         END IF;
 
-        UPDATE product_variants
-        SET selling_price = v_price,
+        UPDATE productvariants
+        SET sellingprice = v_price,
             mrp = v_price,
-            is_default = COALESCE(p_is_default, FALSE)
-        WHERE id_product_variant = v_id;
+            isdefault = COALESCE(p_is_default, FALSE)
+        WHERE id_productvariant = v_id;
 
         IF (v_incoming_sig IS NOT NULL) THEN
-            DELETE FROM product_variant_attributes WHERE fk_product_variant = v_id;
+            DELETE FROM productvariantattributes WHERE fk_productvariant = v_id;
 
-            INSERT INTO product_variant_attributes (fk_product_variant, fk_variant, fk_variant_value)
-            SELECT v_id, fk_variant, fk_variant_value
+            INSERT INTO productvariantattributes (fk_productvariant, fk_variant, fk_variantvalue)
+            SELECT v_id, fk_variant, fk_variantvalue
             FROM tmp_variant_attrs;
 
             SELECT string_agg(v.name || ':' || vv.name, ' | ' ORDER BY a.fk_variant)
             INTO v_label
             FROM tmp_variant_attrs a
             INNER JOIN variants v ON v.id_variant = a.fk_variant
-            INNER JOIN variant_values vv ON vv.id_variant_value = a.fk_variant_value;
+            INNER JOIN variantvalues vv ON vv.id_variantvalue = a.fk_variantvalue;
 
             IF (v_label IS NOT NULL) THEN
-                UPDATE product_variants SET variant_label = v_label WHERE id_product_variant = v_id;
+                UPDATE productvariants SET variantlabel = v_label WHERE id_productvariant = v_id;
             END IF;
         END IF;
 
@@ -274,19 +274,19 @@ BEGIN
     -- DELETE (SOFT)
     -------------------------------------------------------------------
     IF (p_user_action = 3) THEN
-        IF NOT EXISTS (SELECT 1 FROM product_variants WHERE id_product_variant = v_id) THEN
+        IF NOT EXISTS (SELECT 1 FROM productvariants WHERE id_productvariant = v_id) THEN
             OPEN p_result FOR
                 SELECT -1 AS response_code, 'Invalid ProductVariant ID.' AS response_msg, FALSE AS status_code;
             RETURN;
         END IF;
 
-        -- product_variants has cancelled / cancelled_on only (no cancelled_reason / cancelled_by)
-        UPDATE product_variants
+        -- productvariants has cancelled / cancelledon only (no cancelledreason / cancelledby)
+        UPDATE productvariants
         SET cancelled = TRUE,
-            cancelled_on = v_now,
-            is_active = FALSE,
-            is_default = FALSE
-        WHERE id_product_variant = v_id;
+            cancelledon = v_now,
+            isactive = FALSE,
+            isdefault = FALSE
+        WHERE id_productvariant = v_id;
 
         OPEN p_result FOR
             SELECT v_id AS response_code,

@@ -1,8 +1,7 @@
-using System.Data;
-using Dapper;
 using Ecommerce.Helpers.Common;
 using Ecommerce.Helpers.UserAuth;
 using Ecommerce.Interface;
+using Ecommerce.Models;
 using Microsoft.AspNetCore.Identity;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.UserAuthModel;
@@ -47,12 +46,14 @@ namespace Ecommerce.Repository
             }
 
             var hash = _passwordHasher.HashPassword(new StorefrontUser { Email = email }, password);
-            return await _dapper.ExecuteStoredProcedure("RegisterUser", new
-            {
-                FullName = name,
-                Email = email,
-                PasswordHash = hash
-            });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Auth.RegisterUser,
+                new
+                {
+                    FullName = name,
+                    Email = email,
+                    PasswordHash = hash
+                }) ?? Fail("No response from stored procedure.");
         }
 
         public async Task<(CommonResponse Response, UserLoginData? Login)> LoginAsync(UserLoginInput input)
@@ -65,11 +66,9 @@ namespace Ecommerce.Repository
                 return (Fail(UserAuthHelper.InvalidCredentialsMessage), null);
             }
 
-            using var connection = _dapper.CreateConnection();
-            var user = await connection.QueryFirstOrDefaultAsync<UserAuthRow>(
-                "GetUserByEmail",
-                new { Email = email },
-                commandType: CommandType.StoredProcedure);
+            var user = await _dapper.GetSingleByProcedure<UserAuthRow, object>(
+                StoredProcedures.Auth.GetUserByEmail,
+                new { Email = email });
 
             if (user == null || user.Cancelled || string.IsNullOrWhiteSpace(user.PasswordHash))
             {
@@ -112,11 +111,9 @@ namespace Ecommerce.Repository
                 return null;
             }
 
-            using var connection = _dapper.CreateConnection();
-            var user = await connection.QueryFirstOrDefaultAsync<UserAuthRow>(
-                "GetUserById",
-                new { UserId = userId },
-                commandType: CommandType.StoredProcedure);
+            var user = await _dapper.GetSingleByProcedure<UserAuthRow, object>(
+                StoredProcedures.Auth.GetUserById,
+                new { UserId = userId });
 
             if (user == null || user.Cancelled)
             {

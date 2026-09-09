@@ -5,8 +5,8 @@ Created By       : Muhammed Faris
 Created On       : 11/12/2025
 
 PURPOSE
-  Insert / update / soft-delete stock rows linked to purchase_detail
-  and product_variants (SKU).
+  Insert / update / soft-delete stock rows linked to purchasedetail
+  and productvariants (sku).
 
 ACTIONS
   1 → Insert
@@ -15,7 +15,7 @@ ACTIONS
 
 NOTE
   Source referenced PurchaseDetails/PurchaseDetailID and ProductVariant;
-  mapped to purchase_detail / id_purchase_detail and product_variants.
+  mapped to purchasedetail / id_purchasedetail and productvariants.
 **********************************************************************/
 CREATE OR REPLACE PROCEDURE pro_product_variant_stock_upsert(
     IN p_user_action INT,
@@ -39,16 +39,16 @@ BEGIN
         END IF;
 
         IF NOT EXISTS (
-            SELECT 1 FROM purchase_detail
-            WHERE id_purchase_detail = p_fk_purchase_detail
+            SELECT 1 FROM purchasedetail
+            WHERE id_purchasedetail = p_fk_purchase_detail
               AND cancelled = FALSE
         ) THEN
             RAISE EXCEPTION 'PurchaseDetail does not exist or deleted.' USING ERRCODE = 'P0001';
         END IF;
 
         IF NOT EXISTS (
-            SELECT 1 FROM product_variants
-            WHERE id_product_variant = p_fk_product_variant
+            SELECT 1 FROM productvariants
+            WHERE id_productvariant = p_fk_product_variant
               AND cancelled = FALSE
         ) THEN
             RAISE EXCEPTION 'Invalid SKU (ProductVariant).' USING ERRCODE = 'P0001';
@@ -61,7 +61,7 @@ BEGIN
         IF p_user_action = 1 THEN
             IF EXISTS (
                 SELECT 1 FROM stock
-                WHERE fk_purchase_detail = p_fk_purchase_detail
+                WHERE fk_purchasedetail = p_fk_purchase_detail
                   AND cancelled = FALSE
             ) THEN
                 RAISE EXCEPTION 'Stock already exists for this Purchase Detail.'
@@ -69,15 +69,15 @@ BEGIN
             END IF;
 
             INSERT INTO stock (
-                fk_purchase_detail,
-                fk_product_variant,
+                fk_purchasedetail,
+                fk_productvariant,
                 quantity,
-                created_on,
-                enter_by,
+                createdon,
+                enterby,
                 cancelled,
-                cancelled_on,
-                cancelled_reason,
-                cancelled_by
+                cancelledon,
+                cancelledreason,
+                cancelledby
             )
             VALUES (
                 p_fk_purchase_detail,
@@ -125,9 +125,9 @@ BEGIN
 
             UPDATE stock
             SET cancelled = TRUE,
-                cancelled_on = v_now,
-                cancelled_reason = p_cancelled_reason,
-                cancelled_by = p_enter_by
+                cancelledon = v_now,
+                cancelledreason = p_cancelled_reason,
+                cancelledby = p_enter_by
             WHERE id_stock = v_stock_id;
 
             OPEN p_result FOR

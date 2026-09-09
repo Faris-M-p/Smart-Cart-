@@ -73,23 +73,42 @@ namespace Ecommerce.Models
             public string? ContentType { get; set; }
             public object? Value { get; set; }
         }
+        public class MultipleOutput<T1, T2>
+        {
+            public List<T1>? TableOut1 { get; set; }
+            public List<T2>? TableOut2 { get; set; }
+        }
+
         public class MultipleOutput<T1, T2, T3>
         {
             public List<T1>? TableOut1 { get; set; }
             public List<T2>? TableOut2 { get; set; }
             public List<T3>? TableOut3 { get; set; }
         }
+
+        public class MultipleOutput<T1, T2, T3, T4>
+        {
+            public List<T1>? TableOut1 { get; set; }
+            public List<T2>? TableOut2 { get; set; }
+            public List<T3>? TableOut3 { get; set; }
+            public List<T4>? TableOut4 { get; set; }
+        }
+
+        public class InfoList<TInfo, TData>
+        {
+            public TInfo? ListInfo { get; set; }
+            public List<TData>? ListData { get; set; }
+        }
+
         public class ApiResponse<T>
         {
             public bool Success { get; set; }
 
-            public string Message { get; set; }
+            public string Message { get; set; } = string.Empty;
 
-            public T Data { get; set; }
+            public T? Data { get; set; }
 
             public List<string> Errors { get; set; } = new();
         }
-
-
     }
 }

@@ -13,13 +13,13 @@ AS $$
 BEGIN
     OPEN p_result FOR
         SELECT
-            p.permission_code
-        FROM user_role_permissions urp
+            p.permissioncode
+        FROM userrolepermissions urp
         INNER JOIN permissions p ON p.id_permission = urp.fk_permission
-        WHERE urp.fk_user_role = p_id_user_role
+        WHERE urp.fk_userrole = p_id_user_role
           AND urp.cancelled = FALSE
           AND p.cancelled = FALSE
-          AND p.is_active = TRUE
-        ORDER BY p.display_order ASC;
+          AND p.isactive = TRUE
+        ORDER BY p.displayorder ASC;
 END;
 $$;

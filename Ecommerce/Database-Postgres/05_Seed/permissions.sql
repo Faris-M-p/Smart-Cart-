@@ -1,7 +1,7 @@
-﻿\echo 'Seeding permissions...'
+\echo 'Seeding permissions...'
 
-INSERT INTO permissions (fk_module, permission_name, permission_code, display_order, is_active, created_at, cancelled)
-SELECT m.id_module, s.permission_name, s.permission_code, s.display_order, TRUE, NOW(), FALSE
+INSERT INTO permissions (fk_module, permissionname, permissioncode, displayorder, isactive, createdat, cancelled)
+SELECT m.id_module, s.permissionname, s.permissioncode, s.displayorder, TRUE, NOW(), FALSE
 FROM (VALUES
     ('Dashboard',       'View',        'Dashboard.View',        10),
     ('Categories',      'View',        'Categories.View',       10),
@@ -58,20 +58,20 @@ FROM (VALUES
     ('UserRoles',       'Create',      'UserRoles.Create',      20),
     ('UserRoles',       'Edit',        'UserRoles.Edit',        30),
     ('UserRoles',       'Delete',      'UserRoles.Delete',      40)
-) AS s(module_name, permission_name, permission_code, display_order)
-INNER JOIN modules m ON m.module_name = s.module_name
+) AS s(modulename, permissionname, permissioncode, displayorder)
+INNER JOIN modules m ON m.modulename = s.modulename
 WHERE NOT EXISTS (
-    SELECT 1 FROM permissions p WHERE p.permission_code = s.permission_code
+    SELECT 1 FROM permissions p WHERE p.permissioncode = s.permissioncode
 );
 
--- Remove leftover store-wide Settings (online sell is per product/SKU)
-DELETE FROM user_role_permissions urp
+-- Remove leftover store-wide Settings (online sell is per product/sku)
+DELETE FROM userrolepermissions urp
 USING permissions p
 WHERE p.id_permission = urp.fk_permission
-  AND p.permission_code IN ('Settings.View', 'Settings.Edit');
+  AND p.permissioncode IN ('Settings.View', 'Settings.Edit');
 
 DELETE FROM permissions
-WHERE permission_code IN ('Settings.View', 'Settings.Edit');
+WHERE permissioncode IN ('Settings.View', 'Settings.Edit');
 
 DELETE FROM modules
-WHERE module_name = 'Settings';
+WHERE modulename = 'Settings';

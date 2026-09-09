@@ -1,6 +1,5 @@
-using System.Data;
-using Dapper;
 using Ecommerce.Interface;
+using Ecommerce.Models;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.WishlistModel;
 
@@ -17,42 +16,47 @@ namespace Ecommerce.Repository
 
         public async Task<List<WishlistLine>> GetWishlistAsync(int userId)
         {
-            using var connection = _dapper.CreateConnection();
-            var items = await connection.QueryAsync<WishlistLine>(
-                "GetWishlist",
-                new { UserId = userId },
-                commandType: CommandType.StoredProcedure);
-
-            return items.ToList();
+            return await _dapper.GetListByProcedure<WishlistLine, object>(
+                StoredProcedures.Wishlist.GetWishlist,
+                new { UserId = userId });
         }
 
         public async Task<WishlistStatus> GetStatusAsync(int userId, int productId)
         {
-            using var connection = _dapper.CreateConnection();
-            var status = await connection.QueryFirstOrDefaultAsync<WishlistStatus>(
-                "GetWishlistStatus",
-                new { UserId = userId, ProductId = productId },
-                commandType: CommandType.StoredProcedure);
+            var status = await _dapper.GetSingleByProcedure<WishlistStatus, object>(
+                StoredProcedures.Wishlist.GetWishlistStatus,
+                new { UserId = userId, ProductId = productId });
 
             return status ?? new WishlistStatus();
         }
 
-        public Task<CommonResponse> ToggleAsync(int userId, int productId)
+        public async Task<CommonResponse> ToggleAsync(int userId, int productId)
         {
-            return _dapper.ExecuteStoredProcedure("ToggleWishlist", new
-            {
-                UserId = userId,
-                ProductId = productId
-            });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Wishlist.ToggleWishlist,
+                new
+                {
+                    UserId = userId,
+                    ProductId = productId
+                }) ?? StatusFail();
         }
 
-        public Task<CommonResponse> RemoveItemAsync(int userId, int wishlistItemId)
+        public async Task<CommonResponse> RemoveItemAsync(int userId, int wishlistItemId)
         {
-            return _dapper.ExecuteStoredProcedure("RemoveWishlistItem", new
-            {
-                UserId = userId,
-                WishlistItemId = wishlistItemId
-            });
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                StoredProcedures.Wishlist.RemoveWishlistItem,
+                new
+                {
+                    UserId = userId,
+                    WishlistItemId = wishlistItemId
+                }) ?? StatusFail();
         }
+
+        private static CommonResponse StatusFail() => new()
+        {
+            ResponseCode = -1,
+            StatusCode = false,
+            ResponseMsg = "No response from stored procedure."
+        };
     }
 }
