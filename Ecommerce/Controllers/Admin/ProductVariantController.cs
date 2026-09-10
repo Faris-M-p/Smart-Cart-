@@ -158,15 +158,15 @@ namespace Ecommerce.Controllers.Admin
                 if (!imageSync.StatusCode)
                 {
                     await tx.RollbackAsync();
-                    imageSync.SavedFileAbsolutePaths.ForEach(_commonImageService.TryDeleteFile);
+                    await DeleteStoredUrlsAsync(imageSync.SavedUrls);
                     return BadRequest(Fail(imageSync.Message));
                 }
 
-                savedFiles.AddRange(imageSync.SavedFileAbsolutePaths);
-                deferredDeleteFiles.AddRange(imageSync.DeferredDeleteAbsolutePaths);
+                savedFiles.AddRange(imageSync.SavedUrls);
+                deferredDeleteFiles.AddRange(imageSync.DeferredDeleteUrls);
 
                 await tx.CommitAsync();
-                deferredDeleteFiles.ForEach(_commonImageService.TryDeleteFile);
+                await DeleteStoredUrlsAsync(deferredDeleteFiles);
 
                 var images = await GetImagesForSkuAsync(skuId);
                 return Ok(new
@@ -180,7 +180,7 @@ namespace Ecommerce.Controllers.Admin
             catch
             {
                 await tx.RollbackAsync();
-                savedFiles.ForEach(_commonImageService.TryDeleteFile);
+                await DeleteStoredUrlsAsync(savedFiles);
                 throw;
             }
         }
@@ -251,15 +251,15 @@ namespace Ecommerce.Controllers.Admin
                 if (!imageSync.StatusCode)
                 {
                     await tx.RollbackAsync();
-                    imageSync.SavedFileAbsolutePaths.ForEach(_commonImageService.TryDeleteFile);
+                    await DeleteStoredUrlsAsync(imageSync.SavedUrls);
                     return BadRequest(Fail(imageSync.Message));
                 }
 
-                savedFiles.AddRange(imageSync.SavedFileAbsolutePaths);
-                deferredDeleteFiles.AddRange(imageSync.DeferredDeleteAbsolutePaths);
+                savedFiles.AddRange(imageSync.SavedUrls);
+                deferredDeleteFiles.AddRange(imageSync.DeferredDeleteUrls);
 
                 await tx.CommitAsync();
-                deferredDeleteFiles.ForEach(_commonImageService.TryDeleteFile);
+                await DeleteStoredUrlsAsync(deferredDeleteFiles);
 
                 var images = await GetImagesForSkuAsync(skuId);
                 return Ok(new
@@ -273,7 +273,7 @@ namespace Ecommerce.Controllers.Admin
             catch
             {
                 await tx.RollbackAsync();
-                savedFiles.ForEach(_commonImageService.TryDeleteFile);
+                await DeleteStoredUrlsAsync(savedFiles);
                 throw;
             }
         }
@@ -346,16 +346,13 @@ namespace Ecommerce.Controllers.Admin
                 return BadRequest(Fail($"Maximum {MaxFilesPerSku} images are allowed per SKU."));
             }
 
-            var uploadRoot = _commonImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
-            Directory.CreateDirectory(uploadRoot);
-
             var orderedExisting = _commonImageService.ReorderExisting(existing, input.ExistingImageOrder);
             for (var i = 0; i < orderedExisting.Count; i++)
             {
                 orderedExisting[i].DisplayOrder = i;
             }
 
-            var savedAbsolutePaths = new List<string>();
+            var savedUrls = new List<string>();
             var newRows = new List<ProductVariantImageEntity>();
             var nextOrder = orderedExisting.Count;
 
@@ -363,14 +360,19 @@ namespace Ecommerce.Controllers.Admin
             {
                 foreach (var file in input.Files)
                 {
+                    var uploadRoot = _commonImageService.GetUploadRoot(
+                        _environment.WebRootPath,
+                        pathContext.ProductSlug,
+                        pathContext.Sku);
                     var fileName = await _commonImageService.SaveFileAsync(file, uploadRoot);
-                    savedAbsolutePaths.Add(Path.Combine(uploadRoot, fileName));
+                    var imageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName);
+                    savedUrls.Add(imageUrl);
 
                     newRows.Add(new ProductVariantImageEntity
                     {
                         FK_ProductVariant = input.SKUId,
                         MediaType = "Image",
-                        ImageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
+                        ImageUrl = imageUrl,
                         IsPrimary = false,
                         DisplayOrder = nextOrder++,
                         CreatedAt = DateTime.Now
@@ -413,10 +415,7 @@ namespace Ecommerce.Controllers.Admin
             }
             catch (Exception ex)
             {
-                foreach (var path in savedAbsolutePaths)
-                {
-                    _commonImageService.TryDeleteFile(path);
-                }
+                await DeleteStoredUrlsAsync(savedUrls);
 
                 _logger.LogError(ex, "Failed uploading images for SKU {SkuId}", input.SKUId);
                 throw;
@@ -461,7 +460,7 @@ namespace Ecommerce.Controllers.Admin
 
             await _productVariantImageRepository.SaveChangesAsync();
 
-            _commonImageService.TryDeleteByUrl(_environment.WebRootPath, image.ImageUrl);
+            await _commonImageService.TryDeleteStoredAsync(image.ImageUrl, _environment.WebRootPath);
 
             return Ok(Ok(image.ID_ProductVariantImage, "Image deleted successfully."));
         }
@@ -547,6 +546,14 @@ namespace Ecommerce.Controllers.Admin
             }
         }
 
+        private async Task DeleteStoredUrlsAsync(IEnumerable<string> urls)
+        {
+            foreach (var url in urls)
+            {
+                await _commonImageService.TryDeleteStoredAsync(url, _environment.WebRootPath);
+            }
+        }
+
         private async Task<List<ProductVariantImageDto>> GetImagesForSkuAsync(int skuId)
         {
             var rows = await _productVariantImageRepository.GetBySkuIdAsync(skuId);
@@ -573,12 +580,11 @@ namespace Ecommerce.Controllers.Admin
             foreach (var row in existing.Where(x => removedIds.Contains(x.ID_ProductVariantImage)))
             {
                 await _productVariantImageRepository.RemoveAsync(row);
-                result.DeferredDeleteAbsolutePaths.Add(_commonImageService.ToAbsolutePath(_environment.WebRootPath, row.ImageUrl));
+                result.DeferredDeleteUrls.Add(row.ImageUrl);
             }
 
             var newRows = new List<ProductVariantImageEntity>();
             var incomingFiles = viewInput.Files ?? new List<IFormFile>();
-            var uploadRoot = _commonImageService.GetUploadRoot(_environment.WebRootPath, pathContext.ProductSlug, pathContext.Sku);
 
             if (orderedExisting.Count + incomingFiles.Count > MaxFilesPerSku)
             {
@@ -593,13 +599,18 @@ namespace Ecommerce.Controllers.Admin
                     return ImageSyncResult.Fail(uploadValidation);
                 }
 
+                var uploadRoot = _commonImageService.GetUploadRoot(
+                    _environment.WebRootPath,
+                    pathContext.ProductSlug,
+                    pathContext.Sku);
                 var fileName = await _commonImageService.SaveFileAsync(file, uploadRoot);
-                result.SavedFileAbsolutePaths.Add(Path.Combine(uploadRoot, fileName));
+                var imageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName);
+                result.SavedUrls.Add(imageUrl);
                 newRows.Add(new ProductVariantImageEntity
                 {
                     FK_ProductVariant = skuId,
                     MediaType = "Image",
-                    ImageUrl = _commonImageService.BuildImageUrl(pathContext.ProductSlug, pathContext.Sku, fileName),
+                    ImageUrl = imageUrl,
                     IsPrimary = false,
                     DisplayOrder = 0,
                     CreatedAt = DateTime.Now
@@ -670,8 +681,8 @@ namespace Ecommerce.Controllers.Admin
         {
             public bool StatusCode { get; set; } = true;
             public string Message { get; set; } = string.Empty;
-            public List<string> SavedFileAbsolutePaths { get; } = new();
-            public List<string> DeferredDeleteAbsolutePaths { get; } = new();
+            public List<string> SavedUrls { get; } = new();
+            public List<string> DeferredDeleteUrls { get; } = new();
 
             public static ImageSyncResult Fail(string message) =>
                 new()

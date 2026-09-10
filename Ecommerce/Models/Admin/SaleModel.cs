@@ -160,9 +160,25 @@ namespace Ecommerce.Models.Admin
             public string ProductName { get; set; } = string.Empty;
             public string VariantLabel { get; set; } = string.Empty;
             public string SKU { get; set; } = string.Empty;
+            public string Barcode { get; set; } = string.Empty;
             public decimal SellingPrice { get; set; }
             public decimal MRP { get; set; }
             public int AvailableQty { get; set; }
+        }
+
+        public class PosCustomerOption
+        {
+            public int? UserId { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Phone { get; set; } = string.Empty;
+            public string Source { get; set; } = "sale";
+        }
+
+        public class SaleAdjacentResult
+        {
+            public Sale? Sale { get; set; }
+            public bool HasPrevious { get; set; }
+            public bool HasNext { get; set; }
         }
     }
 }

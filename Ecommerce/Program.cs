@@ -200,6 +200,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPasswordHasher<AdminUserEntity>, PasswordHasher<AdminUserEntity>>();
         services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();
         services.AddTransient<CommonImageService>();
+        services.AddSingleton<IMediaStorageProvider, LocalMediaStorageProvider>();
         
         return services;
     }

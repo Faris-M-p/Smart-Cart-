@@ -6,6 +6,13 @@ namespace Ecommerce.Helpers.Common
 {
     public class CommonImageService
     {
+        private readonly IMediaStorageProvider _storage;
+
+        public CommonImageService(IMediaStorageProvider storage)
+        {
+            _storage = storage;
+        }
+
         private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".jpg", ".jpeg", ".png", ".webp"
@@ -227,23 +234,37 @@ namespace Ecommerce.Helpers.Common
         public string BuildBrandImageUrl(int brandId, string fileName) =>
             $"/uploads/brands/{brandId}/{fileName}";
 
+        public string GetEntityUploadRoot(string webRootPath, string folder, int entityId) =>
+            Path.Combine(webRootPath, "uploads", NormalizePathSegment(folder), entityId.ToString());
+
+        public string BuildEntityImageUrl(string folder, int entityId, string fileName) =>
+            $"/uploads/{NormalizePathSegment(folder)}/{entityId}/{fileName}";
+
+        /// <summary>
+        /// Common upload entry point. Destination is a logical folder such as products or categories.
+        /// The active storage provider decides where the file is stored.
+        /// </summary>
+        public async Task<string> UploadAsync(IFormFile file, string destination)
+        {
+            var uploaded = await _storage.UploadAsync(file, new MediaUploadContext
+            {
+                Destination = destination
+            });
+            return uploaded.Url;
+        }
+
         public async Task<string> SaveFileAsync(IFormFile file, string folderPath)
         {
-            Directory.CreateDirectory(folderPath);
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var fileName = CreateUniqueFileName(folderPath, ext);
-            var absolutePath = Path.Combine(folderPath, fileName);
-            await using (var stream = new FileStream(absolutePath, FileMode.CreateNew))
+            var uploaded = await _storage.UploadAsync(file, new MediaUploadContext
             {
-                await file.CopyToAsync(stream);
-            }
-
-            return fileName;
+                Destination = ResolveDestination(folderPath),
+                LocalFolderPath = folderPath
+            });
+            return uploaded.FileName;
         }
 
         public async Task<string> SaveEmployeeProfileAsync(IFormFile file, string folderPath)
         {
-            ClearFolder(folderPath);
             return await SaveFileAsync(file, folderPath);
         }
 
@@ -251,37 +272,28 @@ namespace Ecommerce.Helpers.Common
             IFormFile? file,
             string webRootPath,
             string folder,
-            int entityId)
+            int entityId,
+            string? previousUrl = null)
         {
-            var folderPath = GetEntityUploadRoot(webRootPath, folder, entityId);
-            ClearFolder(folderPath);
+            var destination = NormalizePathSegment(folder);
+            var folderPath = GetEntityUploadRoot(webRootPath, destination, entityId);
 
             if (file == null)
             {
+                await TryDeleteStoredAsync(previousUrl, webRootPath);
+                ClearFolder(folderPath);
                 return null;
             }
 
-            var fileName = await SaveFileAsync(file, folderPath);
-            return BuildEntityImageUrl(folder, entityId, fileName);
-        }
-
-        public string GetEntityUploadRoot(string webRootPath, string folder, int entityId) =>
-            Path.Combine(webRootPath, "uploads", NormalizePathSegment(folder), entityId.ToString());
-
-        public string BuildEntityImageUrl(string folder, int entityId, string fileName) =>
-            $"/uploads/{NormalizePathSegment(folder)}/{entityId}/{fileName}";
-
-        private void ClearFolder(string folderPath)
-        {
-            if (!Directory.Exists(folderPath))
+            var uploaded = await _storage.UploadAsync(file, new MediaUploadContext
             {
-                return;
-            }
+                Destination = destination,
+                LocalFolderPath = folderPath,
+                RelativeUrlDirectory = $"uploads/{destination}/{entityId}",
+                ReplaceExistingInFolder = true
+            });
 
-            foreach (var existing in Directory.GetFiles(folderPath))
-            {
-                TryDeleteFile(existing);
-            }
+            return uploaded.Url;
         }
 
         public string ToAbsolutePath(string webRootPath, string publicUrl)
@@ -304,18 +316,27 @@ namespace Ecommerce.Helpers.Common
 
         public void TryDeleteByUrl(string webRootPath, string? publicUrl)
         {
+            TryDeleteStoredAsync(publicUrl, webRootPath).GetAwaiter().GetResult();
+        }
+
+        public async Task TryDeleteStoredAsync(string? publicUrl, string? webRootPath = null)
+        {
             if (string.IsNullOrWhiteSpace(publicUrl))
             {
                 return;
             }
 
-            var absolutePath = ToAbsolutePath(webRootPath, publicUrl);
-            if (string.IsNullOrWhiteSpace(absolutePath))
+            try
             {
-                return;
+                await _storage.DeleteAsync(publicUrl, new MediaDeleteContext
+                {
+                    WebRootPath = webRootPath
+                });
             }
-
-            TryDeleteFile(absolutePath);
+            catch
+            {
+                // Best-effort storage cleanup only.
+            }
         }
 
         public void TryDeleteFile(string absolutePath)
@@ -333,16 +354,36 @@ namespace Ecommerce.Helpers.Common
             }
         }
 
-        private static string CreateUniqueFileName(string folderPath, string extension)
+        private void ClearFolder(string folderPath)
         {
-            string fileName;
-            do
+            if (!Directory.Exists(folderPath))
             {
-                fileName = $"{Guid.NewGuid():N}{extension}";
+                return;
             }
-            while (File.Exists(Path.Combine(folderPath, fileName)));
 
-            return fileName;
+            foreach (var existing in Directory.GetFiles(folderPath))
+            {
+                TryDeleteFile(existing);
+            }
+        }
+
+        private static readonly string[] KnownDestinations =
+        {
+            "products", "categories", "subcategories", "brands", "banners", "sku", "employees"
+        };
+
+        private static string ResolveDestination(string folderPath)
+        {
+            var normalized = (folderPath ?? string.Empty).Replace('\\', '/').ToLowerInvariant();
+            foreach (var folder in KnownDestinations)
+            {
+                if (normalized == folder || normalized.Contains($"/{folder}/") || normalized.EndsWith($"/{folder}"))
+                {
+                    return folder;
+                }
+            }
+
+            return "products";
         }
 
         private static string NormalizePathSegment(string value)

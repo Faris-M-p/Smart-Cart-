@@ -320,7 +320,7 @@ namespace Ecommerce.Controllers.Admin
             }
 
             await _dbContext.SaveChangesAsync();
-            _commonImageService.TryDeleteByUrl(_environment.WebRootPath, media.MediaUrl);
+            await _commonImageService.TryDeleteStoredAsync(media.MediaUrl, _environment.WebRootPath);
             return Ok(new CommonResponse
             {
                 ResponseCode = media.ID_ProductMedia,
@@ -504,11 +504,10 @@ namespace Ecommerce.Controllers.Admin
             foreach (var row in existing.Where(x => removedIds.Contains(x.ID_ProductMedia)))
             {
                 _dbContext.ProductMedia.Remove(row);
-                _commonImageService.TryDeleteByUrl(_environment.WebRootPath, row.MediaUrl);
+                await _commonImageService.TryDeleteStoredAsync(row.MediaUrl, _environment.WebRootPath);
             }
 
             var incomingFiles = viewInput.Files ?? new List<IFormFile>();
-            var uploadRoot = _commonImageService.GetProductMediaUploadRoot(_environment.WebRootPath, product.Slug);
             var newRows = new List<ProductMediaEntity>();
 
             foreach (var file in incomingFiles)
@@ -525,12 +524,14 @@ namespace Ecommerce.Controllers.Admin
                     return "Invalid media file.";
                 }
 
+                var uploadRoot = _commonImageService.GetProductMediaUploadRoot(_environment.WebRootPath, product.Slug);
                 var fileName = await _commonImageService.SaveFileAsync(file, uploadRoot);
+                var mediaUrl = _commonImageService.BuildProductMediaUrl(product.Slug, fileName);
                 newRows.Add(new ProductMediaEntity
                 {
                     FK_Product = productId,
                     MediaType = mediaType,
-                    MediaUrl = _commonImageService.BuildProductMediaUrl(product.Slug, fileName),
+                    MediaUrl = mediaUrl,
                     IsPrimary = false,
                     DisplayOrder = 0,
                     CreatedAt = DateTime.Now

@@ -8,6 +8,9 @@ namespace Ecommerce.Interface.Admin
         Task<TableOutput<Sale>> GetSaleListAsync(SaleListInput input);
         Task<SaleDetailFull> GetSaleByIdAsync(int id);
         Task<List<SaleSkuOption>> GetSkuOptionsAsync(int productId);
+        Task<List<SaleSkuOption>> SearchSkusAsync(string searchText, int take = 20);
+        Task<List<PosCustomerOption>> SearchCustomersAsync(string searchText, int take = 8);
+        Task<SaleAdjacentResult> GetAdjacentSaleAsync(int id, int direction);
         Task<CommonResponse> CreateSaleAsync(SaleUpdateInput input);
         Task<CommonResponse> UpdateSaleAsync(SaleUpdateInput input);
         Task<CommonResponse> DeleteSaleAsync(SaleDeleteInput input);

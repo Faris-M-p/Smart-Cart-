@@ -147,10 +147,180 @@ namespace Ecommerce.Repository.Admin
                 ProductName = productName,
                 VariantLabel = v.VariantLabel,
                 SKU = v.SKU,
+                Barcode = v.Barcode ?? string.Empty,
                 SellingPrice = v.SellingPrice,
                 MRP = v.MRP,
                 AvailableQty = stockMap.TryGetValue(v.ID_ProductVariant, out var qty) ? qty : 0
             }).ToList();
+        }
+
+        public async Task<List<SaleSkuOption>> SearchSkusAsync(string searchText, int take = 20)
+        {
+            var term = (searchText ?? string.Empty).Trim().ToLowerInvariant();
+            take = Math.Clamp(take, 1, 40);
+            if (term.Length == 0)
+            {
+                return new List<SaleSkuOption>();
+            }
+
+            var matches = await (
+                from pv in _db.ProductVariants.AsNoTracking()
+                join p in _db.Products.AsNoTracking() on pv.FK_Product equals p.ID_Product
+                where !pv.Cancelled && pv.IsActive && !p.Cancelled && p.IsActive
+                      && (
+                          p.Name.ToLower().Contains(term)
+                          || pv.SKU.ToLower().Contains(term)
+                          || pv.VariantLabel.ToLower().Contains(term)
+                          || (pv.Barcode != null && pv.Barcode.ToLower().Contains(term)))
+                orderby p.Name, pv.VariantLabel
+                select new
+                {
+                    pv.FK_Product,
+                    pv.ID_ProductVariant,
+                    ProductName = p.Name,
+                    pv.VariantLabel,
+                    pv.SKU,
+                    pv.Barcode,
+                    pv.SellingPrice,
+                    pv.MRP
+                }
+            ).Take(take).ToListAsync();
+
+            if (matches.Count == 0)
+            {
+                return new List<SaleSkuOption>();
+            }
+
+            var ids = matches.Select(v => v.ID_ProductVariant).ToList();
+            var stockRows = await _db.Stock.AsNoTracking()
+                .Where(s => ids.Contains(s.FK_ProductVariant) && !s.Cancelled)
+                .GroupBy(s => s.FK_ProductVariant)
+                .Select(g => new { Id = g.Key, Qty = g.Sum(x => x.Quantity) })
+                .ToListAsync();
+            var stockMap = stockRows.ToDictionary(x => x.Id, x => Math.Max(0, x.Qty));
+
+            return matches
+                .Select(v => new SaleSkuOption
+                {
+                    FK_Product = v.FK_Product,
+                    ID_ProductVariant = v.ID_ProductVariant,
+                    ProductName = v.ProductName,
+                    VariantLabel = v.VariantLabel,
+                    SKU = v.SKU,
+                    Barcode = v.Barcode ?? string.Empty,
+                    SellingPrice = v.SellingPrice,
+                    MRP = v.MRP,
+                    AvailableQty = stockMap.TryGetValue(v.ID_ProductVariant, out var qty) ? qty : 0
+                })
+                .OrderBy(v =>
+                    string.Equals(v.Barcode, term, StringComparison.OrdinalIgnoreCase) ? 0 :
+                    string.Equals(v.SKU, term, StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+                .ThenBy(v => v.ProductName)
+                .ToList();
+        }
+
+        public async Task<List<PosCustomerOption>> SearchCustomersAsync(string searchText, int take = 8)
+        {
+            var term = (searchText ?? string.Empty).Trim();
+            take = Math.Clamp(take, 1, 20);
+            if (term.Length < 2)
+            {
+                return new List<PosCustomerOption>();
+            }
+
+            var lower = term.ToLowerInvariant();
+            var accounts = await _db.Users.AsNoTracking()
+                .Where(u => u.Cancelled != true
+                    && (
+                        (u.PhoneNumber != null && u.PhoneNumber.Contains(term))
+                        || (u.FullName != null && u.FullName.ToLower().Contains(lower))
+                        || u.UserName.ToLower().Contains(lower)))
+                .OrderBy(u => u.FullName)
+                .Take(take)
+                .Select(u => new PosCustomerOption
+                {
+                    UserId = u.ID_User,
+                    Name = string.IsNullOrWhiteSpace(u.FullName) ? u.UserName : u.FullName,
+                    Phone = u.PhoneNumber ?? string.Empty,
+                    Source = "account"
+                })
+                .ToListAsync();
+
+            var accountPhones = accounts
+                .Select(a => (a.Phone ?? string.Empty).Trim())
+                .Where(p => p.Length > 0)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var saleRows = await _db.Sales.AsNoTracking()
+                .Where(s => !s.Cancelled
+                    && !string.IsNullOrWhiteSpace(s.CustomerPhone)
+                    && (
+                        (s.CustomerPhone != null && s.CustomerPhone.Contains(term))
+                        || (s.CustomerName != null && s.CustomerName.ToLower().Contains(lower))))
+                .Select(s => new { s.CustomerName, s.CustomerPhone })
+                .ToListAsync();
+
+            var fromSales = saleRows
+                .GroupBy(s => (s.CustomerPhone ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .Where(s =>
+                {
+                    var phone = (s.CustomerPhone ?? string.Empty).Trim();
+                    var name = (s.CustomerName ?? string.Empty).Trim();
+                    if (phone.Length == 0 || string.Equals(name, "Walk-in", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+
+                    return !accountPhones.Contains(phone);
+                })
+                .Take(take)
+                .Select(s => new PosCustomerOption
+                {
+                    Name = (s.CustomerName ?? string.Empty).Trim(),
+                    Phone = (s.CustomerPhone ?? string.Empty).Trim(),
+                    Source = "sale"
+                })
+                .ToList();
+
+            return accounts.Concat(fromSales).Take(take).ToList();
+        }
+
+        public async Task<SaleAdjacentResult> GetAdjacentSaleAsync(int id, int direction)
+        {
+            SaleEntity? neighbor;
+            if (direction < 0)
+            {
+                neighbor = await _db.Sales.AsNoTracking()
+                    .Where(s => !s.Cancelled && s.ID_Sale < id)
+                    .OrderByDescending(s => s.ID_Sale)
+                    .FirstOrDefaultAsync();
+            }
+            else
+            {
+                neighbor = await _db.Sales.AsNoTracking()
+                    .Where(s => !s.Cancelled && s.ID_Sale > id)
+                    .OrderBy(s => s.ID_Sale)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (neighbor == null)
+            {
+                return new SaleAdjacentResult();
+            }
+
+            var neighborId = neighbor.ID_Sale;
+            var hasPrev = await _db.Sales.AsNoTracking().AnyAsync(s => !s.Cancelled && s.ID_Sale < neighborId);
+            var hasNext = await _db.Sales.AsNoTracking().AnyAsync(s => !s.Cancelled && s.ID_Sale > neighborId);
+            var hasReturns = await _db.SalesReturns.AsNoTracking()
+                .AnyAsync(r => r.FK_Sale == neighborId && !r.Cancelled);
+
+            return new SaleAdjacentResult
+            {
+                Sale = MapSale(neighbor, hasReturns),
+                HasPrevious = hasPrev,
+                HasNext = hasNext
+            };
         }
 
         public async Task<CommonResponse> CreateSaleAsync(SaleUpdateInput input)

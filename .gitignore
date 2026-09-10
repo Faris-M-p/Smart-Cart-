@@ -11,3 +11,6 @@ obj/
 # Config (optional – careful!)
 appsettings.json
 appsettings.*.json
+
+# Wrangler CLI cache from Cloudflare experiments
+.wrangler/

@@ -94,6 +94,38 @@ namespace Ecommerce.Controllers.Admin
             return Ok(options);
         }
 
+        [HttpGet]
+        [Route("SearchSkus")]
+        [RequirePermission("Sales.View")]
+        public async Task<IActionResult> SearchSkus([FromQuery] string q = "")
+        {
+            var options = await _sales.SearchSkusAsync(q);
+            return Ok(options);
+        }
+
+        [HttpGet]
+        [Route("SearchCustomers")]
+        [RequirePermission("Sales.View")]
+        public async Task<IActionResult> SearchCustomers([FromQuery] string q = "")
+        {
+            var options = await _sales.SearchCustomersAsync(q);
+            return Ok(options);
+        }
+
+        [HttpGet]
+        [Route("Adjacent/{id:int}")]
+        [RequirePermission("Sales.View")]
+        public async Task<IActionResult> Adjacent(int id, [FromQuery] int dir = 1)
+        {
+            var result = await _sales.GetAdjacentSaleAsync(id, dir);
+            if (result.Sale == null)
+            {
+                return NotFound(new { message = dir < 0 ? "No previous bill." : "No next bill." });
+            }
+
+            return Ok(result);
+        }
+
         [HttpPost]
         [Route("Create")]
         [RequirePermission("Sales.Create")]

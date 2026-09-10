@@ -2,193 +2,205 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="page-header">
-    <div class="page-block">
-        <div class="row align-items-center">
-            <div class="col-md-12">
-                <div class="page-header-title">
-                    <h5 class="m-b-10">Manual Sales</h5>
+<link rel="stylesheet" href="/Admin/assets/css/pos-billing.css?v=pos-2">
+
+<div class="pos-workstation" data-permission-module="Sales">
+    <div class="pos-topbar">
+        <div class="pos-brand">
+            <span class="pos-brand-mark">SC</span>
+            <div>
+                <div class="pos-brand-title">SmartCart POS</div>
+                <div class="pos-brand-sub">Manual billing</div>
+            </div>
+        </div>
+
+        <div class="pos-nav">
+            <button type="button" class="pos-nav-btn" title="Previous bill" onclick="posBilling.navigateBill(-1)">
+                <i class="ti ti-chevron-left"></i>
+            </button>
+            <div class="pos-bill-label">
+                <span id="posBillTitle">New Bill</span>
+                <span id="posBillStatus" class="pos-pill pos-pill-pending">PENDING</span>
+            </div>
+            <button type="button" class="pos-nav-btn" title="Next bill" onclick="posBilling.navigateBill(1)">
+                <i class="ti ti-chevron-right"></i>
+            </button>
+        </div>
+
+        <div class="pos-top-actions">
+            <input type="search" id="posBillSearch" class="form-control form-control-sm pos-bill-search" placeholder="Bill # …">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#posHistoryOffcanvas">
+                <i class="ti ti-history"></i> <span>History</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-action="Create" onclick="posBilling.newBill()">
+                <i class="ti ti-plus"></i> <span>F10 New Bill</span>
+            </button>
+            <span id="posClock" class="text-muted small"></span>
+        </div>
+    </div>
+
+    <div id="posDrafts" class="pos-drafts"></div>
+
+    <div class="pos-main">
+        <div class="pos-left">
+            <div class="pos-search">
+                <div class="pos-search-wrap">
+                    <i class="ti ti-search"></i>
+                    <input type="search" id="posSkuSearch" class="form-control pos-search-input" placeholder="Search name, SKU or barcode…  F2" autocomplete="off">
                 </div>
-                <ul class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
-                    <li class="breadcrumb-item"><a href="javascript:void(0)">Sales</a></li>
-                    <li class="breadcrumb-item" aria-current="page">Manual Sales</li>
-                </ul>
+                <div id="posSkuResults" class="pos-results"></div>
+            </div>
+
+            <div class="pos-items">
+                <div class="pos-items-head">
+                    <div>Product</div>
+                    <div>Qty</div>
+                    <div>Price</div>
+                    <div class="text-end">Total</div>
+                    <div></div>
+                </div>
+                <div id="posItemsBody" class="pos-items-body"></div>
+            </div>
+        </div>
+
+        <div class="pos-right">
+            <div class="pos-side-card">
+                <div class="pos-side-label">Bill summary</div>
+                <div class="pos-sum-row">
+                    <span>Items</span>
+                    <span id="posItemCount">0 items</span>
+                </div>
+                <div class="pos-sum-row">
+                    <span>Subtotal</span>
+                    <span id="posSubtotal">₹0.00</span>
+                </div>
+                <div class="pos-sum-total">
+                    <span>Total</span>
+                    <strong id="posTotal">₹0.00</strong>
+                </div>
+            </div>
+
+            <div class="pos-side-card pos-customer-box">
+                <div class="pos-side-label">Customer (optional)</div>
+                <div class="pos-customer-row">
+                    <input type="search" id="posCustomerSearch" class="form-control form-control-sm" placeholder="Search mobile…" autocomplete="off">
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-action="Create" onclick="posBilling.openCreateCustomer()">+ New</button>
+                </div>
+                <div id="posCustomerResults" class="pos-customer-results"></div>
+                <div id="posCustomerSelected" class="pos-customer-selected">
+                    <div>
+                        <strong>None</strong>
+                        <span class="pos-result-meta">Customer is optional</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pos-side-card">
+                <div class="pos-side-label">Payment</div>
+                <div class="pos-pay-grid">
+                    <button type="button" class="pos-pay-btn is-active" data-pay="Cash" onclick="posBilling.setPayment('Cash')">Cash</button>
+                    <button type="button" class="pos-pay-btn" data-pay="Card" onclick="posBilling.setPayment('Card')">Card</button>
+                    <button type="button" class="pos-pay-btn" data-pay="UPI" onclick="posBilling.setPayment('UPI')">UPI</button>
+                    <button type="button" class="pos-pay-btn" data-pay="Credit" onclick="posBilling.setPayment('Credit')">Credit</button>
+                </div>
+                <div id="posCashExtras" class="mt-2">
+                    <label class="form-label small text-muted mb-1">Tendered</label>
+                    <input type="number" min="0" step="0.01" id="posTendered" class="form-control form-control-sm" placeholder="0.00">
+                    <div class="d-flex justify-content-between mt-2 small">
+                        <span class="text-muted">Change</span>
+                        <strong id="posChange">₹0.00</strong>
+                    </div>
+                </div>
+                <label class="form-label small text-muted mb-1 mt-2">Notes</label>
+                <textarea id="posNotes" class="form-control form-control-sm" rows="2" maxlength="500" placeholder="Optional"></textarea>
+                <button type="button" id="posCompleteBtn" class="btn btn-primary pos-complete mt-3" data-action="Create" onclick="posBilling.completeBill()">Complete Bill</button>
+                <button type="button" id="posHoldBtn" class="btn btn-link pos-hold" onclick="posBilling.holdBill()">Hold Bill</button>
+                <a id="posViewReturn" class="btn btn-outline-secondary w-100 mt-2" href="#" style="display:none">Sales Return</a>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row" data-permission-module="Sales">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h5 class="mb-0">Sale List</h5>
-                    <button type="button" class="btn btn-primary" data-action="Create" onclick="openCreateModal()">
-                        <i class="ti ti-plus"></i> Add Manual Sale
-                    </button>
-                </div>
-            </div>
-            <div class="card-body pt-3">
-                <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
-                        <i class="ti ti-filter"></i> Filter
-                    </button>
-                    <div class="flex-grow-1 mx-3 search-input">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="ti ti-search"></i></span>
-                            <input type="text" id="searchText" class="form-control" placeholder="Search invoice, customer, phone...">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="collapse mb-3" id="filterCollapse">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">Payment</label>
-                            <select id="filterPayment" class="form-select">
-                                <option value="">All</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Card">Card</option>
-                                <option value="UPI">UPI</option>
-                                <option value="Credit">Credit</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">From Date</label>
-                            <input type="date" id="fromDate" class="form-control">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted mb-1">To Date</label>
-                            <input type="date" id="toDate" class="form-control">
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="loadSales(1)">Apply</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">Reset</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <div class="table-scroll-wrapper">
-                        <table class="table table-hover align-middle mb-0 admin-master-list-table" id="saleTable">
-                            <thead>
-                                <tr>
-                                    <th class="text-muted">Invoice</th>
-                                    <th class="text-muted">Customer</th>
-                                    <th class="text-muted">Sale Date</th>
-                                    <th class="text-muted">Payment</th>
-                                    <th class="text-muted">Total</th>
-                                    <th class="text-muted text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="saleTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top pagination-wrapper">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small">Show</span>
-                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
-                            <option value="10" selected>10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                        </select>
-                        <span class="text-muted small">per page</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span id="paginationInfo" class="text-muted small"></span>
-                        <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="pos-shortcuts">
+        <span><kbd>F2</kbd> Search</span>
+        <span><kbd>F10</kbd> New Bill</span>
+        <span><kbd>F8</kbd> Customer</span>
+        <span><kbd>F9</kbd> Complete</span>
+        <span><kbd>←</kbd> <kbd>→</kbd> Bills</span>
     </div>
 </div>
 
-<div class="modal fade" id="saleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+<div class="modal fade pos-create-modal" id="posCreateCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="saleModalLabel">Add Manual Sale</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="saleForm">
-                    <input type="hidden" id="saleID" value="0">
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Sale Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="saleDate" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Customer</label>
-                            <input type="text" class="form-control" id="customerName" maxlength="200" placeholder="Walk-in">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Phone</label>
-                            <input type="text" class="form-control" id="customerPhone" maxlength="30">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Payment <span class="text-danger">*</span></label>
-                            <select class="form-select" id="paymentMethod">
-                                <option value="Cash">Cash</option>
-                                <option value="Card">Card</option>
-                                <option value="UPI">UPI</option>
-                                <option value="Credit">Credit</option>
-                            </select>
-                        </div>
+            <form id="posCreateCustomerForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Customer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" id="posNewCustomerName" class="form-control" maxlength="200" required>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" id="notes" rows="2" maxlength="500"></textarea>
-                        </div>
+                    <div class="mb-0">
+                        <label class="form-label">Mobile Number</label>
+                        <input type="tel" id="posNewCustomerPhone" class="form-control" maxlength="30" required>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label mb-0">Items <span class="text-danger">*</span></label>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSaleRow()">
-                            <i class="ti ti-plus"></i> Add Item
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>SKU</th>
-                                    <th style="width: 90px">Qty</th>
-                                    <th style="width: 120px">Price</th>
-                                    <th style="width: 90px">Stock</th>
-                                    <th style="width: 50px"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="saleDetailsBody"></tbody>
-                        </table>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveSale()">Save Sale</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="viewSaleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Sale Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="offcanvas offcanvas-end pos-history-offcanvas" tabindex="-1" id="posHistoryOffcanvas">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Completed bills</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="d-flex gap-2 mb-3">
+            <input type="search" id="posHistorySearch" class="form-control" placeholder="Search invoice, customer, phone...">
+            <button type="button" class="btn btn-outline-secondary" onclick="posBilling.resetHistoryFilters()">Reset</button>
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col-4">
+                <select id="posHistoryPayment" class="form-select form-select-sm" onchange="posBilling.loadHistory(1)">
+                    <option value="">All payments</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Credit">Credit</option>
+                </select>
             </div>
-            <div class="modal-body" id="viewSaleModalBody"></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="col-4">
+                <input type="date" id="posHistoryFrom" class="form-control form-control-sm" onchange="posBilling.loadHistory(1)">
             </div>
+            <div class="col-4">
+                <input type="date" id="posHistoryTo" class="form-control form-control-sm" onchange="posBilling.loadHistory(1)">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 admin-master-list-table">
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Pay</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="posHistoryBody"></tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+            <span id="posHistoryInfo" class="text-muted small"></span>
+            <nav><ul class="pagination pagination-sm mb-0" id="posHistoryPagination"></ul></nav>
         </div>
     </div>
 </div>
@@ -207,410 +219,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+                <button type="button" class="btn btn-danger" onclick="posBilling.confirmDelete()">Delete</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="/Admin/assets/js/plugins/choices.min.js"></script>
-<script src="/Admin/assets/js/common/searchable-select.js?v=select-media-1"></script>
-<script>
-    let currentPage = 1;
-    let pageSize = 10;
-    let searchTimeout = null;
-    let products = [];
-    let productVariants = {};
-    let paginationInstance = null;
-
-    const TABLE_BODY_ID = 'saleTableBody';
-    const TABLE_COLUMN_COUNT = 6;
-    const API = {
-        getList: '/Admin/Sale/GetSaleList',
-        getById: '/Admin/Sale/GetById',
-        create: '/Admin/Sale/Create',
-        update: '/Admin/Sale/Update',
-        delete: '/Admin/Sale/Delete',
-        getProducts: '/Admin/Sale/GetProducts',
-        getProductVariants: '/Admin/Sale/GetProductVariants'
-    };
-
-    document.addEventListener('DOMContentLoaded', function () {
-        paginationInstance = new Pagination({
-            containerId: 'pagination',
-            infoId: 'paginationInfo',
-            onPageChange: function (page) { loadSales(page); }
-        });
-        loadProducts();
-        loadSales(1);
-        document.getElementById('searchText')?.addEventListener('input', function () {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(function () { loadSales(1); }, 400);
-        });
-        document.getElementById('filterPayment')?.addEventListener('change', function () { loadSales(1); });
-        document.getElementById('fromDate')?.addEventListener('change', function () { loadSales(1); });
-        document.getElementById('toDate')?.addEventListener('change', function () { loadSales(1); });
-    });
-
-    function handlePageSizeChange() {
-        pageSize = parseInt(document.getElementById('pageSize').value, 10) || 10;
-        loadSales(1);
-    }
-
-    function resetFilters() {
-        document.getElementById('searchText').value = '';
-        document.getElementById('filterPayment').value = '';
-        document.getElementById('fromDate').value = '';
-        document.getElementById('toDate').value = '';
-        loadSales(1);
-    }
-
-    async function loadSales(page) {
-        currentPage = page || 1;
-        const input = {
-            SearchText: document.getElementById('searchText')?.value || '',
-            PaymentMethod: document.getElementById('filterPayment')?.value || '',
-            FromDate: document.getElementById('fromDate')?.value || null,
-            ToDate: document.getElementById('toDate')?.value || null,
-            PageIndex: currentPage,
-            PageSize: pageSize,
-            SortColumn: 0,
-            SortMode: 'DESC'
-        };
-        const listing = window.emptyState;
-        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
-        try {
-            const response = await fetch(API.getList, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-            const result = await response.json();
-            if (!response.ok || result?.success === false) {
-                listing.handleListingError('Sale List Load', { url: API.getList, method: 'POST', payload: input, response, result }, TABLE_BODY_ID, TABLE_COLUMN_COUNT);
-                return;
-            }
-            const rows = result.tableData ?? result.TableData ?? [];
-            const settings = result.tableSettings ?? result.TableSettings;
-            if (!rows.length) listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
-            else document.getElementById(TABLE_BODY_ID).innerHTML = rows.map(createSaleRow).join('');
-            if (paginationInstance && settings) paginationInstance.render(settings);
-        } catch (error) {
-            listing.handleListingError('Sale List Load', { url: API.getList, method: 'POST', payload: input, error }, TABLE_BODY_ID, TABLE_COLUMN_COUNT);
-        } finally {
-            listing.endListingLoad(TABLE_BODY_ID);
-        }
-    }
-
-    function createSaleRow(s) {
-        const id = s.id_Sale ?? s.iD_Sale ?? s.ID_Sale ?? 0;
-        const inv = s.invoiceNumber ?? s.InvoiceNumber ?? '-';
-        const name = s.customerName ?? s.CustomerName ?? 'Walk-in';
-        const phone = s.customerPhone ?? s.CustomerPhone ?? '';
-        const date = s.saleDate ?? s.SaleDate;
-        const pay = s.paymentMethod ?? s.PaymentMethod ?? 'Cash';
-        const total = s.totalAmount ?? s.TotalAmount ?? 0;
-        const hasReturns = s.hasReturns ?? s.HasReturns ?? false;
-        return `
-            <tr>
-                <td><strong>${escapeHtml(inv)}</strong></td>
-                <td>${escapeHtml(name)}${phone ? '<div class="text-muted small">' + escapeHtml(phone) + '</div>' : ''}</td>
-                <td>${date ? new Date(date).toLocaleDateString() : '-'}</td>
-                <td>${escapeHtml(pay)}</td>
-                <td><strong>₹${Number(total).toFixed(2)}</strong></td>
-                <td class="text-end">
-                    <button class="btn-action btn-view" data-action="View" onclick="viewSale(${id})" title="View"><i class="ti ti-eye"></i></button>
-                    ${hasReturns ? '' : `<button class="btn-action btn-edit" data-action="Edit" onclick="openEditModal(${id})" title="Edit"><i class="ti ti-edit"></i></button>`}
-                    ${hasReturns ? '' : `<button class="btn-action btn-delete" data-action="Delete" onclick="openDeleteModal(${id})" title="Delete"><i class="ti ti-trash"></i></button>`}
-                    <a class="btn-action btn-view" href="/Admin/SalesReturn?saleId=${id}" title="Return"><i class="ti ti-receipt-refund"></i></a>
-                </td>
-            </tr>`;
-    }
-
-    function openCreateModal() {
-        document.getElementById('saleModalLabel').textContent = 'Add Manual Sale';
-        document.getElementById('saleForm').reset();
-        document.getElementById('saleID').value = '0';
-        document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('saleDetailsBody').innerHTML = '';
-        addSaleRow();
-        new bootstrap.Modal(document.getElementById('saleModal')).show();
-    }
-
-    async function openEditModal(id) {
-        const data = await fetchJson(`${API.getById}/${id}`);
-        if (!data) return;
-        const header = data.saleHeader ?? data.SaleHeader;
-        const details = data.saleDetails ?? data.SaleDetails ?? [];
-        if (!header) { showError('Error', 'Sale not found.'); return; }
-        document.getElementById('saleModalLabel').textContent = 'Edit Sale';
-        document.getElementById('saleID').value = header.id_Sale ?? header.iD_Sale ?? header.ID_Sale ?? 0;
-        const d = header.saleDate ?? header.SaleDate;
-        document.getElementById('saleDate').value = d ? new Date(d).toISOString().split('T')[0] : '';
-        document.getElementById('customerName').value = header.customerName ?? header.CustomerName ?? '';
-        document.getElementById('customerPhone').value = header.customerPhone ?? header.CustomerPhone ?? '';
-        document.getElementById('paymentMethod').value = header.paymentMethod ?? header.PaymentMethod ?? 'Cash';
-        document.getElementById('notes').value = header.notes ?? header.Notes ?? '';
-        document.getElementById('saleDetailsBody').innerHTML = '';
-        if (details.length) {
-            for (const line of details) {
-                await addSaleRow(
-                    line.fk_Product ?? line.FK_Product,
-                    line.fk_ProductVariant ?? line.FK_ProductVariant,
-                    line.quantity ?? line.Quantity,
-                    line.sellingPrice ?? line.SellingPrice,
-                    line.mrp ?? line.MRP
-                );
-            }
-        } else {
-            addSaleRow();
-        }
-        new bootstrap.Modal(document.getElementById('saleModal')).show();
-    }
-
-    async function viewSale(id) {
-        const data = await fetchJson(`${API.getById}/${id}`);
-        if (!data) return;
-        const h = data.saleHeader ?? data.SaleHeader;
-        const details = data.saleDetails ?? data.SaleDetails ?? [];
-        if (!h) { showError('Error', 'Sale not found.'); return; }
-        const inv = h.invoiceNumber ?? h.InvoiceNumber ?? '-';
-        const name = h.customerName ?? h.CustomerName ?? 'Walk-in';
-        const phone = h.customerPhone ?? h.CustomerPhone ?? '';
-        const date = h.saleDate ?? h.SaleDate;
-        const pay = h.paymentMethod ?? h.PaymentMethod ?? '';
-        const total = h.totalAmount ?? h.TotalAmount ?? 0;
-        const notes = h.notes ?? h.Notes ?? '';
-        let rows = details.map(function (d) {
-            const pn = d.productName ?? d.ProductName ?? '';
-            const sku = d.sku ?? d.SKU ?? '';
-            const label = d.variantLabel ?? d.VariantLabel ?? '';
-            const qty = d.quantity ?? d.Quantity ?? 0;
-            const price = d.sellingPrice ?? d.SellingPrice ?? 0;
-            const line = d.lineTotal ?? d.LineTotal ?? (qty * price);
-            return `<tr><td>${escapeHtml(pn)}</td><td>${escapeHtml(label || sku)}</td><td>${qty}</td><td>₹${Number(price).toFixed(2)}</td><td>₹${Number(line).toFixed(2)}</td></tr>`;
-        }).join('');
-        document.getElementById('viewSaleModalBody').innerHTML = `
-            <div class="row mb-3">
-                <div class="col-md-6"><strong>Invoice:</strong> ${escapeHtml(inv)}</div>
-                <div class="col-md-6"><strong>Customer:</strong> ${escapeHtml(name)}${phone ? ' (' + escapeHtml(phone) + ')' : ''}</div>
-                <div class="col-md-6"><strong>Date:</strong> ${date ? new Date(date).toLocaleDateString() : '-'}</div>
-                <div class="col-md-6"><strong>Payment:</strong> ${escapeHtml(pay)}</div>
-                <div class="col-md-6"><strong>Total:</strong> ₹${Number(total).toFixed(2)}</div>
-            </div>
-            ${notes ? '<p><strong>Notes:</strong> ' + escapeHtml(notes) + '</p>' : ''}
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead><tr><th>Product</th><th>SKU</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="5" class="text-center">No items</td></tr>'}</tbody>
-                </table>
-            </div>`;
-        new bootstrap.Modal(document.getElementById('viewSaleModal')).show();
-    }
-
-    async function addSaleRow(productId, variantId, qty, price, mrp) {
-        const tbody = document.getElementById('saleDetailsBody');
-        const row = document.createElement('tr');
-        row.className = 'sale-detail-row';
-        row.innerHTML = `
-            <td><select class="form-select product-select"></select></td>
-            <td><select class="form-select product-variant-select"></select></td>
-            <td><input type="number" min="1" class="form-control quantity-input" value="${qty || 1}"></td>
-            <td><input type="number" min="0" step="0.01" class="form-control price-input" value="${price != null ? price : ''}"></td>
-            <td><span class="stock-label text-muted small">-</span><input type="hidden" class="mrp-input" value="${mrp != null ? mrp : ''}"></td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeSaleRow(this)"><i class="ti ti-trash"></i></button></td>`;
-        tbody.appendChild(row);
-
-        const productSelect = row.querySelector('.product-select');
-        const variantSelect = row.querySelector('.product-variant-select');
-        const productItems = products.map(function (p) {
-            const cancelled = p.cancelled ?? p.Cancelled;
-            const pid = p.productId ?? p.ID_Product ?? p.iD_Product;
-            const pname = p.name ?? p.Name ?? '';
-            if (cancelled || !(pid > 0) || !pname) return null;
-            return { value: String(pid), label: pname, imageUrl: p.imageUrl ?? p.ImageUrl ?? '' };
-        }).filter(Boolean);
-
-        adminSelect.fill(productSelect, productItems, {
-            placeholder: 'Select Product',
-            searchPlaceholder: 'Search products...',
-            selected: productId || ''
-        });
-        productSelect.addEventListener('change', function () { onProductChange(productSelect); });
-        variantSelect.addEventListener('change', function () { onSkuChange(variantSelect); });
-
-        if (productId) {
-            await loadProductVariants(productId, variantSelect, variantId);
-            if (variantId) onSkuChange(variantSelect, true);
-        } else {
-            adminSelect.fill(variantSelect, [], { placeholder: 'Select SKU', searchPlaceholder: 'Search SKUs...' });
-        }
-    }
-
-    function removeSaleRow(btn) {
-        const tbody = document.getElementById('saleDetailsBody');
-        if (tbody.children.length > 1) btn.closest('.sale-detail-row').remove();
-        else showWarning('Validation', 'At least one item is required.');
-    }
-
-    async function onProductChange(select) {
-        const row = select.closest('.sale-detail-row');
-        const variantSelect = row.querySelector('.product-variant-select');
-        row.querySelector('.price-input').value = '';
-        row.querySelector('.stock-label').textContent = '-';
-        await loadProductVariants(parseInt(adminSelect.getValue(select), 10), variantSelect);
-    }
-
-    function onSkuChange(select, keepPrice) {
-        const row = select.closest('.sale-detail-row');
-        const vid = parseInt(adminSelect.getValue(select), 10);
-        const productId = parseInt(adminSelect.getValue(row.querySelector('.product-select')), 10);
-        const list = productVariants[productId] || [];
-        const sku = list.find(function (v) {
-            return Number(v.id_ProductVariant ?? v.iD_ProductVariant ?? v.ID_ProductVariant) === vid;
-        });
-        if (!sku) return;
-        if (!keepPrice) {
-            row.querySelector('.price-input').value = sku.sellingPrice ?? sku.SellingPrice ?? '';
-        }
-        row.querySelector('.mrp-input').value = sku.mrp ?? sku.MRP ?? '';
-        const stock = sku.availableQty ?? sku.AvailableQty ?? 0;
-        row.querySelector('.stock-label').textContent = stock;
-    }
-
-    async function loadProductVariants(productId, selectElement, selectedId) {
-        if (!productId || productId <= 0) {
-            adminSelect.fill(selectElement, [], { placeholder: 'Select SKU', searchPlaceholder: 'Search SKUs...' });
-            return;
-        }
-        if (!productVariants[productId]) {
-            const response = await fetch(`${API.getProductVariants}/${productId}`);
-            productVariants[productId] = response.ok ? await response.json() : [];
-        }
-        const items = (productVariants[productId] || []).map(function (v) {
-            const vid = v.id_ProductVariant ?? v.iD_ProductVariant ?? v.ID_ProductVariant;
-            const sku = v.sku ?? v.SKU ?? '';
-            const label = v.variantLabel ?? v.VariantLabel ?? sku;
-            const stock = v.availableQty ?? v.AvailableQty ?? 0;
-            if (!vid) return null;
-            return { value: String(vid), label: `${label} (${sku}) · ${stock} in stock` };
-        }).filter(Boolean);
-        adminSelect.fill(selectElement, items, {
-            placeholder: 'Select SKU',
-            searchPlaceholder: 'Search SKUs...',
-            selected: selectedId || ''
-        });
-    }
-
-    async function loadProducts() {
-        try {
-            const response = await fetch(API.getProducts);
-            products = response.ok ? await response.json() : [];
-        } catch (e) {
-            products = [];
-        }
-    }
-
-    async function saveSale() {
-        const rows = document.querySelectorAll('.sale-detail-row');
-        const details = [];
-        rows.forEach(function (row) {
-            const variantId = parseInt(adminSelect.getValue(row.querySelector('.product-variant-select')), 10);
-            const qty = parseInt(row.querySelector('.quantity-input').value, 10);
-            const price = parseFloat(row.querySelector('.price-input').value);
-            const mrp = row.querySelector('.mrp-input').value ? parseFloat(row.querySelector('.mrp-input').value) : null;
-            if (variantId > 0 && qty > 0 && price >= 0) {
-                details.push({ FK_ProductVariant: variantId, Quantity: qty, SellingPrice: price, MRP: mrp });
-            }
-        });
-        if (!details.length) {
-            showWarning('Validation', 'Add at least one valid item.');
-            return;
-        }
-        const saleID = parseInt(document.getElementById('saleID').value, 10) || 0;
-        const input = {
-            ID_Sale: saleID,
-            SaleDate: document.getElementById('saleDate').value,
-            CustomerName: document.getElementById('customerName').value.trim(),
-            CustomerPhone: document.getElementById('customerPhone').value.trim(),
-            PaymentMethod: document.getElementById('paymentMethod').value,
-            Notes: document.getElementById('notes').value.trim(),
-            SaleDetails: details
-        };
-        if (!input.SaleDate) {
-            showWarning('Validation', 'Sale date is required.');
-            return;
-        }
-        const url = saleID === 0 ? API.create : API.update;
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-            const result = await response.json().catch(function () { return null; });
-            const ok = response.ok && (result?.statusCode ?? result?.StatusCode) === true;
-            if (ok) {
-                bootstrap.Modal.getInstance(document.getElementById('saleModal'))?.hide();
-                loadSales(currentPage);
-                showSuccess('Success', result?.responseMsg ?? result?.ResponseMsg ?? 'Sale saved.');
-            } else {
-                showError('Error', result?.responseMsg ?? result?.ResponseMsg ?? result?.message ?? 'Could not save sale.');
-            }
-        } catch (e) {
-            showError('Error', 'Could not save sale.');
-        }
-    }
-
-    function openDeleteModal(id) {
-        document.getElementById('deleteSaleID').value = id;
-        document.getElementById('deleteReason').value = '';
-        new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-
-    async function confirmDelete() {
-        const input = {
-            ID_Sale: parseInt(document.getElementById('deleteSaleID').value, 10),
-            CancelledReason: document.getElementById('deleteReason').value.trim()
-        };
-        try {
-            const response = await fetch(API.delete, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(input)
-            });
-            const result = await response.json().catch(function () { return null; });
-            const ok = response.ok && (result?.statusCode ?? result?.StatusCode) === true;
-            if (ok) {
-                bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
-                loadSales(currentPage);
-                showSuccess('Success', result?.responseMsg ?? result?.ResponseMsg ?? 'Sale deleted.');
-            } else {
-                showError('Error', result?.responseMsg ?? result?.ResponseMsg ?? 'Could not delete sale.');
-            }
-        } catch (e) {
-            showError('Error', 'Could not delete sale.');
-        }
-    }
-
-    async function fetchJson(url) {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                showError('Error', 'Failed to load details.');
-                return null;
-            }
-            return await response.json();
-        } catch (e) {
-            showError('Error', 'Failed to load details.');
-            return null;
-        }
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-</script>
+<script src="/Admin/assets/js/pages/pos-billing.js?v=pos-2"></script>
