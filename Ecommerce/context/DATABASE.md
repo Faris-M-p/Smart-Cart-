@@ -16,18 +16,19 @@ The current database structure is represented in: [`context/database.dbml`](file
 This DBML file is the database diagram source for SmartCart and can be opened or imported directly into [dbdiagram.io](https://dbdiagram.io).
 
 ### Database Structure Summary
-- **Total Tables Documented:** 33 physical tables
+- **Total Tables Documented:** 37 physical tables
 - **Major Table Groups:**
-  1. **Identity & Auth (6 tables):** `Users`, `AdminUsers`, `UserRoles`, `Modules`, `Permissions`, `UserRolePermissions`
-  2. **Catalog & Attributes (9 tables):** `Category`, `SubCategory`, `Brand`, `Products`, `ProductVariants`, `Variants`, `VariantValues`, `ProductVariantAttributes`, `ProductStatus`
-  3. **Media (4 tables):** `ProductMedia`, `SkuMedia`, `ProductImages`, `ProductVariantImages`
-  4. **Purchasing & Stock (4 tables):** `Supplier`, `Purchase`, `PurchaseDetail`, `Stock`
-  5. **Storefront Bags (4 tables):** `Cart`, `CartItems`, `Wishlist`, `WishlistItems`
-  6. **Order Fulfillment & Payment (4 tables):** `Orders`, `OrderItems`, `Payments`, `Shipping`
-  7. **Auxiliary & Logs (2 tables):** `Ratings`, `AuditLogs`
-- **Main User-Side Database Entities:** `Users`, `Products`, `ProductVariants`, `Cart`, `CartItems`, `Wishlist`, `WishlistItems`, `Orders`, `OrderItems`, `Payments`, `Shipping`
-- **Main Admin-Side Database Entities:** `AdminUsers`, `UserRoles`, `Modules`, `Permissions`, `UserRolePermissions`, `Category`, `SubCategory`, `Brand`, `Products`, `ProductVariants`, `ProductMedia`, `SkuMedia`, `Supplier`, `Purchase`, `PurchaseDetail`, `Stock`, `Orders`, `OrderItems`
-- **Important Relationships:** 36 foreign keys linking catalog hierarchy, SKU attributes, purchase stock batches, storefront bags, and customer orders.
+  1. **Identity & Auth (6 tables):** `users`, `adminusers`, `userroles`, `modules`, `permissions`, `userrolepermissions`
+  2. **Catalog & Attributes (9 tables):** `category`, `subcategory`, `brand`, `products`, `productvariants`, `variants`, `variantvalues`, `productvariantattributes`, `productstatus`
+  3. **Media (4 tables):** `productmedia`, `skumedia`, `productimages`, `productvariantimages`
+  4. **Purchasing & Stock (4 tables):** `supplier`, `purchase`, `purchasedetail`, `stock`
+  5. **POS Counter Sales & Returns (4 tables):** `sales`, `salesdetail`, `salesreturn`, `salesreturndetail`
+  6. **Storefront Bags (4 tables):** `cart`, `cartitems`, `wishlist`, `wishlistitems`
+  7. **Order Fulfillment & Payment (4 tables):** `orders`, `orderitems`, `payments`, `shipping`
+  8. **Auxiliary & Logs (2 tables):** `ratings`, `auditlogs`
+- **Main User-Side Database Entities:** `users`, `products`, `productvariants`, `cart`, `cartitems`, `wishlist`, `wishlistitems`, `orders`, `orderitems`, `payments`, `shipping`
+- **Main Admin-Side Database Entities:** `adminusers`, `userroles`, `modules`, `permissions`, `userrolepermissions`, `category`, `subcategory`, `brand`, `products`, `productvariants`, `productmedia`, `skumedia`, `supplier`, `purchase`, `purchasedetail`, `stock`, `orders`, `orderitems`, `sales`, `salesdetail`
+- **Important Relationships:** Foreign keys linking catalog hierarchy, SKU attributes, purchase stock batches, POS counter sales, storefront bags, and customer orders.
 
 ## Access from the app
 

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Ecommerce.Configuration;
 using Ecommerce.Controllers;
 using Ecommerce.DataAccess;
@@ -34,7 +34,10 @@ builder.Services.AddScoped<IDataAccessDapper, DataAccessDapper>();
 var ecommerceConnection = builder.Configuration.GetConnectionString("Ecommerse")
     ?? throw new InvalidOperationException("Connection string 'Ecommerse' is not configured.");
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
-    options.UseSqlServer(ecommerceConnection));
+{
+    options.UseSqlServer(ecommerceConnection);
+    options.AddInterceptors(new EFDbCommandInterceptor());
+});
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("JwtSettings is not configured.");

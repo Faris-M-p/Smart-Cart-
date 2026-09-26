@@ -45,6 +45,14 @@ Empty folder entries exist in the csproj (`Controllers/User`, `views/User`, …)
 
 **Helpers** normalize paging/search/sort for admin lists (`CategoryHelper`, `ProductHelper`, …) and shop (`ShopHelper`).
 
+### Database Trace Logging Layer
+
+- **Target File:** `Logs/DatabaseTrace.txt`
+- **Logger Helper:** `DatabaseTraceLogger.cs` (thread-safe, high-performance trace writer with password/token parameter masking).
+- **EF Core Interceptor:** `EFDbCommandInterceptor.cs` registered via `options.AddInterceptors(new EFDbCommandInterceptor())` in `Program.cs`.
+- **Dapper / ADO.NET Wrapper:** `TraceDbConnection.cs` wrapping `SqlConnection` in `DataAccessDapper.CreateConnection()`.
+- **Captured Telemetry:** Execution timestamp `[yyyy-MM-dd HH:mm:ss.fff]`, inferred module name, query type (`STORED PROCEDURE` vs `QUERY`), procedure name, parameter key-values, status (`SUCCESS` / `FAILED`), execution duration in `ms`, full SQL/procedure execution call, and exception details on error.
+
 **Repositories** own queries. Storefront repositories take `IDataAccessDapper`. Admin catalog repositories take `EcommerceDbContext`. `AdminOrderRepository` takes Dapper.
 
 DI is registered in `ServiceCollectionExtensions.AddCustomServices` in `Program.cs`.

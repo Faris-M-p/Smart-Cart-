@@ -528,6 +528,50 @@ Table Ratings {
   Note: 'Product reviews and ratings table'
 }
 
+Table Sales {
+  ID_Sale int [pk, increment]
+  InvoiceNumber nvarchar(100) [not null, unique]
+  SaleDate datetime [not null, default: `getdate()`]
+  TotalAmount decimal(12,2) [not null]
+  PaymentMethod nvarchar(50)
+  CreatedBy int
+  Cancelled bit [default: 0]
+
+  Note: 'Store POS counter sales header'
+}
+
+Table SalesDetail {
+  ID_SalesDetail int [pk, increment]
+  FK_Sale int [not null]
+  FK_ProductVariant int [not null]
+  Quantity int [not null]
+  UnitPrice decimal(10,2) [not null]
+  TotalPrice decimal(10,2) [not null]
+
+  Note: 'Store POS counter sales line items'
+}
+
+Table SalesReturn {
+  ID_SalesReturn int [pk, increment]
+  FK_Sale int [not null]
+  ReturnDate datetime [not null, default: `getdate()`]
+  TotalRefundAmount decimal(12,2) [not null]
+  Reason nvarchar(255)
+  CreatedBy int
+
+  Note: 'Store POS counter sales return header'
+}
+
+Table SalesReturnDetail {
+  ID_SalesReturnDetail int [pk, increment]
+  FK_SalesReturn int [not null]
+  FK_ProductVariant int [not null]
+  Quantity int [not null]
+  RefundAmount decimal(10,2) [not null]
+
+  Note: 'Store POS counter sales return line items'
+}
+
 // =====================================================================
 // Foreign Key Relationships (DBML Ref Definitions)
 // =====================================================================

@@ -1,4 +1,4 @@
-﻿using Ecommerce.Interface;
+using Ecommerce.Interface;
 using System.Data;
 using static Ecommerce.Models.CommonModel;
 using Dapper;
@@ -32,8 +32,8 @@ namespace Ecommerce.DataAccess
                 throw new ArgumentException("Connection string is empty or not defined.");
             }
 
-            // Create and return a new SqlConnection
-            return new SqlConnection(connectionString);
+            // Create and return a new TraceDbConnection wrapping SqlConnection
+            return new TraceDbConnection(new SqlConnection(connectionString));
         }
         public IDbConnection GetCatalogDatabase()
         {
@@ -44,7 +44,7 @@ namespace Ecommerce.DataAccess
                 throw new ArgumentException($"Connection string '{_connectionStringName}' not found.");
             }
 
-            return new SqlConnection(connectionString);
+            return new TraceDbConnection(new SqlConnection(connectionString));
         }
         public async Task<TableOutput<U>> GetMultipleListByStoredProcedure<U, T>( string storedProcedureName, T parameter)
         {
