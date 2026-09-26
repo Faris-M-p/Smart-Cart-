@@ -34,7 +34,14 @@ Header/footer in `_Layout.cshtml` (SmartCart branding, Kochi copy). Pages: Home,
 
 ## Current modules
 
-See `modules/`: HOME, ACCOUNT, PRODUCTS, CATEGORIES, CART, WISHLIST, CHECKOUT, ORDERS.
+Specific User storefront modules documented under `modules/`:
+- [`home.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/home.md) — Storefront landing & home page
+- [`account.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/account.md) — Customer authentication & profile
+- [`shop.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/shop.md) — Catalog browsing, search, details & filters
+- [`cart.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/cart.md) — Shopping cart operations
+- [`wishlist.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/wishlist.md) — Product wishlist operations
+- [`checkout.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/checkout.md) — COD order checkout & address entry
+- [`orders.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/orders.md) — Customer order history & cancellation
 
 ## Business rules (cross-cutting)
 

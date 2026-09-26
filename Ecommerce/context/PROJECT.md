@@ -8,6 +8,41 @@ One store, one SQL Server database (`SmartCart`). Customers browse products, add
 
 There is **no** multi-store, zone, or tenant model in the running application.
 
+## Prerequisites
+
+- **.NET SDK 8.0** or later
+- **Node.js** (v14 or later) and **npm** (required for Bootstrap SCSS compilation)
+- **SQL Server** (LocalDB or SQL Express/Server instance)
+
+## Getting Started & Setup Workflow
+
+1. **Clone repository:**
+   ```bash
+   git clone <repository-url>
+   cd Ecommerce
+   ```
+
+2. **Install Node.js Dependencies (Required for SCSS):**
+   ```bash
+   npm install
+   ```
+   *Why Node.js?* The Mantis Admin SCSS files (`wwwroot/Admin/assets/scss/style.scss`) import Bootstrap SCSS source files from `node_modules/bootstrap`. The compilation is executed by `AspNetCore.SassCompiler` during `.NET build`. Node.js is only required for restoring `node_modules`.
+
+3. **Restore .NET Packages:**
+   ```bash
+   dotnet restore
+   ```
+
+4. **Database Setup:**
+   - Execute `Ecommerce/Database/RunDatabase.bat` (full schema creation + seed) or `RunPatch.bat` (incremental schema patch).
+   - Configure connection string in `appsettings.json` under connection string key `Ecommerse`.
+
+5. **Build & Run:**
+   ```bash
+   dotnet build
+   dotnet run
+   ```
+
 ## Main users
 
 | Audience | Who | Entry |
@@ -70,4 +105,4 @@ Admin writes catalog and stock. Storefront reads only products/SKUs that are not
 - Soft delete via `Cancelled` / `CancelledOn` / `CancelledReason` on most admin entities
 - Stock is **SKU-level** (`Stock.FK_ProductVariant`), often as purchase batches
 - Do not mix storefront Dapper/SP paths with admin EF catalog paths unless the existing module already does (admin orders are the Dapper exception)
-- `README.md` / `SETUP.md` still mention old `xPROCEDURExTABLES` paths and omit EF/JWT; **`Ecommerce/Database/` plus this `context/` folder are the source of truth**
+- Database scripts in `Ecommerce/Database/` plus this `context/` folder are the source of truth.

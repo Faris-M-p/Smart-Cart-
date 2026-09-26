@@ -4,27 +4,36 @@ These rules describe how the **current** codebase is structured. Follow them for
 
 ## Context maintenance (permanent)
 
-Whenever a new feature/module is created:
+Whenever a new feature or module is added, or an existing architecture, rule, or database behavior changes:
 
-1. Decide whether it belongs to **USER** or **ADMIN**.
-2. Create or update the matching file under `context/USER/modules/` or `context/ADMIN/modules/`.
-3. Use the standard module sections (Purpose, Current Status, Responsibilities, Features, Filters/Search/Sorting, Data, Database, API/Data Access, UI Rules, Business Rules, Dependencies, Notes).
-4. Document purpose, responsibilities, implemented features, filters/search/sorting (only what exists), database dependencies, API/data-access, business rules, and UI rules.
-5. Mark status: `IMPLEMENTED` / `PARTIALLY IMPLEMENTED` / `PLANNED` / `NOT CONFIRMED`.
-6. Update `USER/USER.md` or `ADMIN/ADMIN.md` if the area-level module list changes.
-7. Update `DATABASE.md` if tables, columns, or procedures change.
-8. Update `ARCHITECTURE.md` or `PROJECT.md` only if the overall shape changes.
-9. Put planned-only ideas in `FUTURE.md`, never as implemented.
-10. Do not leave a new module undocumented.
+1. **Update the relevant context file** (`PROJECT.md`, `ARCHITECTURE.md`, `DATABASE.md`, `RULES.md`, `FUTURE.md`) immediately.
+2. **Create a new module context file** under `context/USER/modules/` or `context/ADMIN/modules/` when a new module is created.
+3. **Keep User and Admin documentation strictly separate**, even when they operate on shared tables.
+4. **Keep database documentation synchronized** with actual SQL scripts and database schema.
+5. **Do not create duplicate project documentation elsewhere** (such as `findings/`, `docs/`, `decisions/`, or temporary logs). `context/` is the single source of truth.
+6. **Context documentation must be updated as part of the same development task** — do not defer documentation updates.
 
-Keep User and Admin documentation **separate** even when they share tables.
+### Module Documentation Standard Sections
+
+When creating or updating a module context file, include:
+- Module Name & Area (USER or ADMIN)
+- Purpose & Responsibilities
+- Current Status (`IMPLEMENTED` / `PARTIALLY IMPLEMENTED` / `PLANNED`)
+- Implemented Features
+- Filters / Search / Sorting (only what is actually implemented)
+- Data (Entities / DTOs)
+- Database dependencies (Tables & SPs / EF mappings)
+- API & Data Access (Controllers, Repositories, Endpoints)
+- UI Rules & Conventions
+- Business Rules
+- Dependencies & Related Modules
+- Notes
 
 ## Solution layout
 
 - App project: `Ecommerce/`
 - Database scripts: `Ecommerce/Database/` (`RunDatabase.bat` full create, `RunPatch.bat` incremental)
-- Docs for future work: this `context/` folder
-- `Ecommerce/findings/` is older notes; it is **not** the live spec and may be outdated (for example ProductImages vs ProductMedia)
+- Knowledge & Specs: `context/` folder (single source of truth)
 
 ## Data access (do not invert)
 

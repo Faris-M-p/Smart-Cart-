@@ -55,6 +55,25 @@ DI is registered in `ServiceCollectionExtensions.AddCustomServices` in `Program.
 
 **Admin:** `_AdminLayout.cshtml` (sidebar + permission attributes on links), `_AdminAuthLayout.cshtml` for login. Pages are mostly one `Index.cshtml` per module with modals and fetch APIs. Login page: `views/Admin/Login/Index.cshtml`.
 
+### SCSS Compilation Pipeline
+
+- **Compiler:** `AspNetCore.SassCompiler` NuGet package executes SCSS compilation during `.NET build`.
+- **Source:** `wwwroot/Admin/assets/scss/style.scss` compiles to `wwwroot/Admin/assets/css/style.css`.
+- **Dependencies:** Imports Bootstrap SCSS source files from `node_modules/bootstrap/scss/` (requires `npm install` after repository cloning).
+- **Component Packaging:** Custom components (Toast, Empty State, presets) are imported into `style.scss` and compiled into a single `style.css` file.
+
+### Admin Shared UI Components
+
+- **Toast Notification System:**
+  - Styles: Custom SCSS `wwwroot/Admin/assets/scss/themes/components/_toast.scss` compiled into `style.css`.
+  - Script: `wwwroot/Admin/assets/js/common/toast.js` exposing global methods `showSuccess()`, `showError()`, `showWarning()`, `showInfo()`.
+  - Layout: `<div id="toastContainer" class="toast-container"></div>` rendered in `_AdminLayout.cshtml`.
+
+- **Empty State Handler:**
+  - View Partial & Styles: `views/Shared/_EmptyState.cshtml` and `wwwroot/Admin/assets/scss/themes/components/_empty-state.scss`.
+  - Client Handler: `wwwroot/Admin/assets/js/common/empty-state.js` exposing `emptyState` global instance (`showNoData()`, `showError()`, `showInTable()`).
+  - Capabilities: Auto-detects network and 500 server errors, renders formatted empty tables with action buttons (Retry, Clear Search, Reset Filters).
+
 ## Request flow — storefront shop
 
 1. `GET /Shop` → `ShopController.Index` → Razor.
