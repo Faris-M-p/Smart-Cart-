@@ -9,6 +9,26 @@
 
 Connection string key: `Ecommerse`.
 
+## Database Diagram
+
+The current database structure is represented in: [`context/database.dbml`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/database.dbml)
+
+This DBML file is the database diagram source for SmartCart and can be opened or imported directly into [dbdiagram.io](https://dbdiagram.io).
+
+### Database Structure Summary
+- **Total Tables Documented:** 33 physical tables
+- **Major Table Groups:**
+  1. **Identity & Auth (6 tables):** `Users`, `AdminUsers`, `UserRoles`, `Modules`, `Permissions`, `UserRolePermissions`
+  2. **Catalog & Attributes (9 tables):** `Category`, `SubCategory`, `Brand`, `Products`, `ProductVariants`, `Variants`, `VariantValues`, `ProductVariantAttributes`, `ProductStatus`
+  3. **Media (4 tables):** `ProductMedia`, `SkuMedia`, `ProductImages`, `ProductVariantImages`
+  4. **Purchasing & Stock (4 tables):** `Supplier`, `Purchase`, `PurchaseDetail`, `Stock`
+  5. **Storefront Bags (4 tables):** `Cart`, `CartItems`, `Wishlist`, `WishlistItems`
+  6. **Order Fulfillment & Payment (4 tables):** `Orders`, `OrderItems`, `Payments`, `Shipping`
+  7. **Auxiliary & Logs (2 tables):** `Ratings`, `AuditLogs`
+- **Main User-Side Database Entities:** `Users`, `Products`, `ProductVariants`, `Cart`, `CartItems`, `Wishlist`, `WishlistItems`, `Orders`, `OrderItems`, `Payments`, `Shipping`
+- **Main Admin-Side Database Entities:** `AdminUsers`, `UserRoles`, `Modules`, `Permissions`, `UserRolePermissions`, `Category`, `SubCategory`, `Brand`, `Products`, `ProductVariants`, `ProductMedia`, `SkuMedia`, `Supplier`, `Purchase`, `PurchaseDetail`, `Stock`, `Orders`, `OrderItems`
+- **Important Relationships:** 36 foreign keys linking catalog hierarchy, SKU attributes, purchase stock batches, storefront bags, and customer orders.
+
 ## Access from the app
 
 | Consumer | Mechanism |

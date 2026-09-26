@@ -1,0 +1,612 @@
+// =====================================================================
+// SmartCart Master Database DBML Diagram
+// Single Source of Truth for DB Schema (dbdiagram.io compatible)
+// =====================================================================
+
+Project SmartCart {
+  database_type: 'SqlServer'
+  Note: 'SmartCart Supermarket Database Schema — ASP.NET Core 8 MVC Application'
+}
+
+// ---------------------------------------------------------------------
+// 1. Identity & Auth (Admin & Storefront Users)
+// ---------------------------------------------------------------------
+
+Table Users {
+  UserId int [pk, increment]
+  UserName nvarchar(100) [not null]
+  FullName nvarchar(150)
+  PasswordHash nvarchar(255) [not null]
+  Email nvarchar(100) [not null, unique]
+  PhoneNumber nvarchar(15)
+  IsAdmin bit [not null, note: 'Unused by admin panel']
+  CreatedAt datetime [default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Storefront customer identity store'
+}
+
+Table AdminUsers {
+  ID_AdminUser int [pk, increment]
+  FK_UserRole int [not null]
+  UserName nvarchar(100) [not null, unique]
+  PasswordHash nvarchar(255) [not null]
+  FullName nvarchar(150) [not null]
+  Email nvarchar(150) [not null]
+  PhoneNumber nvarchar(20)
+  ProfileImageUrl nvarchar(500)
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Admin employee user accounts'
+}
+
+Table UserRoles {
+  ID_UserRole int [pk, increment]
+  RoleName nvarchar(100) [not null, unique]
+  Description nvarchar(1000)
+  IsSystemRole bit [not null, default: 0]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Back-office admin security roles'
+}
+
+Table Modules {
+  ID_Module int [pk, increment]
+  ModuleName nvarchar(100) [not null, unique]
+  DisplayName nvarchar(150) [not null]
+  DisplayOrder int [not null, default: 0]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'System security module definitions'
+}
+
+Table Permissions {
+  ID_Permission int [pk, increment]
+  FK_Module int [not null]
+  PermissionName nvarchar(100) [not null]
+  PermissionCode nvarchar(150) [not null, unique]
+  DisplayOrder int [not null, default: 0]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Granular admin action permission codes'
+}
+
+Table UserRolePermissions {
+  ID_UserRolePermission int [pk, increment]
+  FK_UserRole int [not null]
+  FK_Permission int [not null]
+  CreatedAt datetime [not null, default: `getdate()`]
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Indexes {
+    (FK_UserRole, FK_Permission) [unique, name: 'UQ_UserRolePermissions_Role_Permission']
+  }
+
+  Note: 'Permission matrix mapping roles to permissions'
+}
+
+// ---------------------------------------------------------------------
+// 2. Catalog & Products
+// ---------------------------------------------------------------------
+
+Table Category {
+  ID_Category int [pk, increment]
+  Name nvarchar(100) [not null]
+  Description nvarchar(1000)
+  IsActive bit [not null, default: 1]
+  ImageUrl nvarchar(500)
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Top-level product categories'
+}
+
+Table SubCategory {
+  ID_SubCategory int [pk, increment]
+  Name nvarchar(100) [not null]
+  Description nvarchar(1000)
+  FK_Category int [not null]
+  IsActive bit [not null, default: 1]
+  ImageUrl nvarchar(500)
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Sub-categories linked to a parent Category'
+}
+
+Table Brand {
+  ID_Brand int [pk, increment]
+  BrandName nvarchar(100) [not null]
+  Description nvarchar(1000)
+  IsActive bit [not null, default: 1]
+  ImageUrl nvarchar(500)
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Product brand manufacturers'
+}
+
+Table Products {
+  ID_Product int [pk, increment]
+  FK_SubCategory int [not null]
+  FK_Brand int
+  Name nvarchar(255) [not null]
+  Slug nvarchar(255) [not null, unique]
+  Description nvarchar(max)
+  IsActive bit [not null, default: 1]
+  SellOnline bit [not null, default: 0]
+  CreatedAt datetime [default: `getdate()`]
+  ModifiedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Master product catalog header'
+}
+
+Table ProductVariants {
+  ID_ProductVariant int [pk, increment]
+  FK_Product int [not null]
+  SKU nvarchar(100) [not null, unique]
+  Barcode nvarchar(100) [unique]
+  VariantLabel nvarchar(255) [not null]
+  Description nvarchar(1000)
+  MRP decimal(10,2) [not null]
+  SellingPrice decimal(10,2) [not null]
+  UnitOfMeasure nvarchar(20)
+  UnitValue decimal(10,3)
+  IsDefault bit [default: 0]
+  MaxOrderQty int [default: 10]
+  IsActive bit [default: 1]
+  SellOnline bit [not null, default: 0]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+
+  Note: 'SKU variant items for sell and stock'
+}
+
+Table Variants {
+  ID_Variant int [pk, increment]
+  Name nvarchar(255) [not null, unique]
+  Description nvarchar(500)
+  DisplayOrder int [default: 0]
+  IsActive bit [default: 1]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+
+  Note: 'Variant axes (e.g. Size, Color)'
+}
+
+Table VariantValues {
+  ID_VariantValue int [pk, increment]
+  FK_Variant int [not null]
+  Name nvarchar(255) [not null]
+  Description nvarchar(500)
+  DisplayOrder int [default: 0]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+
+  Indexes {
+    (FK_Variant, Name) [unique, name: 'UQ_Variant_Value']
+  }
+
+  Note: 'Variant option values (e.g. Small, Red)'
+}
+
+Table ProductVariantAttributes {
+  ID_ProductVariantAttribute int [pk, increment]
+  FK_ProductVariant int [not null]
+  FK_Variant int [not null]
+  FK_VariantValue int [not null]
+  Description nvarchar(500)
+
+  Indexes {
+    (FK_ProductVariant, FK_Variant) [unique, name: 'UQ_ProductVariantAttributes_SKU_Axis']
+  }
+
+  Note: 'Maps SKUs to variant axis/value attributes'
+}
+
+// ---------------------------------------------------------------------
+// 3. Media Tables
+// ---------------------------------------------------------------------
+
+Table ProductMedia {
+  ID_ProductMedia int [pk, increment]
+  FK_Product int [not null]
+  MediaType nvarchar(20) [not null, note: 'Image or Video']
+  MediaUrl nvarchar(500) [not null]
+  DisplayOrder int [not null, default: 0]
+  IsPrimary bit [not null, default: 0]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+
+  Note: 'Live product images and videos'
+}
+
+Table SkuMedia {
+  ID_SkuMedia int [pk, increment]
+  FK_ProductSKU int [not null]
+  MediaType nvarchar(20) [not null, default: 'Image']
+  MediaUrl nvarchar(500) [not null]
+  DisplayOrder int [not null, default: 0]
+  IsPrimary bit [not null, default: 0]
+  CreatedAt datetime [not null, default: `getdate()`]
+  UpdatedAt datetime
+
+  Note: 'Live SKU specific image gallery'
+}
+
+Table ProductImages {
+  ProductImageId int [pk, increment]
+  ProductId int [not null]
+  ImageUrl nvarchar(max) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Legacy product images table'
+}
+
+Table ProductVariantImages {
+  ID_ProductVariantImage int [pk, increment]
+  FK_ProductVariant int [not null]
+  ImageUrl nvarchar(500) [not null]
+  IsPrimary bit [not null, default: 0]
+  DisplayOrder int [not null, default: 0]
+  CreatedAt datetime [not null, default: `getdate()`]
+
+  Note: 'Legacy SKU images table'
+}
+
+// ---------------------------------------------------------------------
+// 4. Purchasing & Inventory
+// ---------------------------------------------------------------------
+
+Table Supplier {
+  ID_Supplier int [pk, increment]
+  Name nvarchar(150) [not null]
+  CompanyName nvarchar(200)
+  Email nvarchar(150) [unique]
+  Phone nvarchar(20)
+  State nvarchar(100)
+  District nvarchar(100)
+  City nvarchar(100)
+  Address nvarchar(500)
+  Pincode nvarchar(10)
+  Description nvarchar(500)
+  IsActive bit [not null, default: 1]
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  UpdatedAt datetime
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Vendors and suppliers'
+}
+
+Table Purchase {
+  ID_Purchase int [pk, increment]
+  FK_Supplier int [not null]
+  PurchaseDate date [not null, default: `getdate()`]
+  InvoiceNumber nvarchar(100)
+  TotalAmount decimal(12,2) [not null, default: 0]
+  Notes nvarchar(500)
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(500)
+  CancelledBy int
+
+  Note: 'Purchase order stock intake header'
+}
+
+Table PurchaseDetail {
+  ID_PurchaseDetail int [pk, increment]
+  FK_Purchase int [not null]
+  FK_ProductVariant int [not null]
+  Quantity int [not null]
+  PurchasePrice decimal(18,2) [not null]
+  MRP decimal(18,2)
+  ExpiryDate date
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(500)
+  CancelledBy int
+
+  Note: 'Purchase order line items'
+}
+
+Table Stock {
+  ID_Stock int [pk, increment]
+  FK_PurchaseDetail int [not null]
+  FK_ProductVariant int [not null]
+  Quantity int [not null]
+  CreatedOn datetime [not null, default: `getdate()`]
+  EnterBy int
+  Cancelled bit [not null, default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+  CancelledBy int
+
+  Note: 'Batch stock inventory rows per SKU'
+}
+
+// ---------------------------------------------------------------------
+// 5. Storefront Customer Shopping (Cart & Wishlist)
+// ---------------------------------------------------------------------
+
+Table Cart {
+  CartId int [pk, increment]
+  UserId int [not null]
+  SessionKey uniqueidentifier [unique]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Customer cart header'
+}
+
+Table CartItems {
+  CartItemId int [pk, increment]
+  CartId int [not null]
+  ProductId int [not null]
+  ProductVariantId int [not null]
+  Quantity int [not null]
+  Price decimal(10,2) [not null]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Cart line items referencing SKU'
+}
+
+Table Wishlist {
+  WishlistId int [pk, increment]
+  UserId int [not null]
+  SessionKey uniqueidentifier [unique]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Customer wishlist header'
+}
+
+Table WishlistItems {
+  WishlistItemId int [pk, increment]
+  WishlistId int [not null]
+  ProductId int [not null]
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Product items in wishlist'
+}
+
+// ---------------------------------------------------------------------
+// 6. Orders, Payments & Shipping
+// ---------------------------------------------------------------------
+
+Table Orders {
+  OrderId int [pk, increment]
+  UserId int [not null]
+  OrderNumber nvarchar(30)
+  OrderDate datetime [default: `getdate()`]
+  TotalAmount decimal(10,2) [not null]
+  OrderStatus nvarchar(50) [not null]
+  ShippingAddress nvarchar(max) [not null]
+  ReceiverName nvarchar(150)
+  Phone nvarchar(15)
+  AddressLine nvarchar(300)
+  City nvarchar(100)
+  Pincode nvarchar(10)
+  PaymentMethod nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Customer orders header'
+}
+
+Table OrderItems {
+  ID_OrderItem int [pk, increment]
+  FK_Order int [not null]
+  FK_Product int [not null]
+  FK_ProductVariant int [not null]
+  ProductName nvarchar(255) [not null]
+  SKU nvarchar(100) [not null]
+  VariantLabel nvarchar(255) [not null]
+  Quantity int [not null]
+  UnitPrice decimal(10,2) [not null]
+  TotalPrice decimal(10,2) [not null]
+  CreatedAt datetime [not null, default: `getdate()`]
+
+  Note: 'Purchased order line item snapshots'
+}
+
+Table Payments {
+  PaymentId int [pk, increment]
+  OrderId int [not null]
+  PaymentDate datetime [default: `getdate()`]
+  PaymentAmount decimal(10,2) [not null]
+  PaymentStatus nvarchar(50) [not null]
+  PaymentMethod nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Order payment transaction tracking'
+}
+
+Table Shipping {
+  ShippingId int [pk, increment]
+  OrderId int [not null]
+  ShippingAddress nvarchar(max) [not null]
+  ShippingDate datetime
+  EstimatedDeliveryDate datetime
+  ShippingStatus nvarchar(50) [not null]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Order shipping fulfillment tracking'
+}
+
+// ---------------------------------------------------------------------
+// 7. Auxiliary & Legacy Tables
+// ---------------------------------------------------------------------
+
+Table ProductStatus {
+  ProductStatusId int [pk, increment]
+  StatusName nvarchar(50) [not null]
+  Description nvarchar(255)
+
+  Note: 'Secondary status definitions table'
+}
+
+Table AuditLogs {
+  AuditLogId int [pk, increment]
+  UserId int
+  Action nvarchar(100) [not null]
+  EntityName nvarchar(100) [not null]
+  EntityId int
+  Details nvarchar(max)
+  IpAddress nvarchar(50)
+  Timestamp datetime [default: `getdate()`]
+
+  Note: 'Audit log entries table'
+}
+
+Table Ratings {
+  RatingId int [pk, increment]
+  ProductId int [not null]
+  UserId int [not null]
+  RatingValue decimal(2,1) [not null]
+  Review nvarchar(max)
+  CreatedAt datetime [default: `getdate()`]
+  Cancelled bit [default: 0]
+  CancelledOn datetime
+  CancelledReason nvarchar(255)
+
+  Note: 'Product reviews and ratings table'
+}
+
+// =====================================================================
+// Foreign Key Relationships (DBML Ref Definitions)
+// =====================================================================
+
+// Catalog & Hierarchy
+Ref: SubCategory.FK_Category > Category.ID_Category
+Ref: Products.FK_SubCategory > SubCategory.ID_SubCategory
+Ref: Products.FK_Brand > Brand.ID_Brand
+
+// Variants & Attributes
+Ref: VariantValues.FK_Variant > Variants.ID_Variant
+Ref: ProductVariants.FK_Product > Products.ID_Product
+Ref: ProductVariantAttributes.FK_ProductVariant > ProductVariants.ID_ProductVariant
+Ref: ProductVariantAttributes.FK_Variant > Variants.ID_Variant
+Ref: ProductVariantAttributes.FK_VariantValue > VariantValues.ID_VariantValue
+
+// Media
+Ref: ProductMedia.FK_Product > Products.ID_Product
+Ref: SkuMedia.FK_ProductSKU > ProductVariants.ID_ProductVariant
+Ref: ProductImages.ProductId > Products.ID_Product
+Ref: ProductVariantImages.FK_ProductVariant > ProductVariants.ID_ProductVariant
+
+// Auth & Security
+Ref: AdminUsers.FK_UserRole > UserRoles.ID_UserRole
+Ref: Permissions.FK_Module > Modules.ID_Module
+Ref: UserRolePermissions.FK_UserRole > UserRoles.ID_UserRole
+Ref: UserRolePermissions.FK_Permission > Permissions.ID_Permission
+
+// Purchasing & Stock
+Ref: Purchase.FK_Supplier > Supplier.ID_Supplier
+Ref: PurchaseDetail.FK_Purchase > Purchase.ID_Purchase
+Ref: PurchaseDetail.FK_ProductVariant > ProductVariants.ID_ProductVariant
+Ref: Stock.FK_PurchaseDetail > PurchaseDetail.ID_PurchaseDetail
+Ref: Stock.FK_ProductVariant > ProductVariants.ID_ProductVariant
+
+// Customer Cart & Wishlist
+Ref: Cart.UserId > Users.UserId
+Ref: CartItems.CartId > Cart.CartId
+Ref: CartItems.ProductId > Products.ID_Product
+Ref: CartItems.ProductVariantId > ProductVariants.ID_ProductVariant
+Ref: Wishlist.UserId > Users.UserId
+Ref: WishlistItems.WishlistId > Wishlist.WishlistId
+Ref: WishlistItems.ProductId > Products.ID_Product
+
+// Orders, Payment & Shipping
+Ref: Orders.UserId > Users.UserId
+Ref: OrderItems.FK_Order > Orders.OrderId
+Ref: OrderItems.FK_Product > Products.ID_Product
+Ref: OrderItems.FK_ProductVariant > ProductVariants.ID_ProductVariant
+Ref: Payments.OrderId > Orders.OrderId
+Ref: Shipping.OrderId > Orders.OrderId
+
+// Ratings
+Ref: Ratings.ProductId > Products.ID_Product
+Ref: Ratings.UserId > Users.UserId
+
+// =====================================================================
+// Representative Sample / Seed Records
+// =====================================================================
+
+// Seed Modules
+// Modules(ID_Module, ModuleName, DisplayName, DisplayOrder, IsActive, Cancelled)
+// 1, 'Dashboard', 'Dashboard', 10, true, false
+// 2, 'Categories', 'Categories', 20, true, false
+// 3, 'SubCategories', 'Sub Categories', 30, true, false
+// 4, 'Brands', 'Brands', 40, true, false
+// 5, 'Products', 'Products', 50, true, false
+// 6, 'Suppliers', 'Suppliers', 90, true, false
+// 7, 'Purchases', 'Purchases', 100, true, false
+// 8, 'Orders', 'Orders', 120, true, false
+
+// Seed Roles
+// UserRoles(ID_UserRole, RoleName, Description, IsSystemRole, IsActive, Cancelled)
+// 1, 'Admin', 'System Administrator with complete access', true, true, false
+
+// Seed Admin Users
+// AdminUsers(ID_AdminUser, FK_UserRole, UserName, FullName, Email, IsActive, Cancelled)
+// 1, 1, 'admin', 'System Administrator', 'admin@smartcart.local', true, false
+
+// Sample Customer
+// Users(UserId, UserName, FullName, Email, IsAdmin, Cancelled)
+// 1, 'customer1', 'John Doe', 'john.doe@example.com', false, false

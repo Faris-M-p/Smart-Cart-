@@ -29,6 +29,30 @@ When creating or updating a module context file, include:
 - Dependencies & Related Modules
 - Notes
 
+## Database Context Maintenance Rule
+
+Whenever any database structure changes, the database context must be updated in the same task. This includes:
+- New table / Removed table / Renamed table
+- New column / Removed column / Renamed column
+- Data type change / Primary key change / Foreign key change
+- Relationship change / New index / Removed index
+- New stored procedure / Modified stored procedure / Removed stored procedure
+- Database constraint changes
+
+### Enforced AI & Developer Database Workflow
+```text
+Database Change ↓ Update Database Implementation ↓ Update context/DATABASE.md ↓ Update context/database.dbml ↓ Verify Relationships ↓ Verify DBML
+```
+
+After making a database change:
+1. Update the actual database implementation (`Ecommerce/Database/`).
+2. Update `context/DATABASE.md` when required.
+3. Update `context/database.dbml`.
+4. Verify that the DBML still represents the current database.
+5. Keep the DBML importable by dbdiagram.io.
+
+The DBML must never become an outdated copy of the database. If an AI agent or developer changes the database but does not update the database context, the task is incomplete.
+
 ## Solution layout
 
 - App project: `Ecommerce/`
