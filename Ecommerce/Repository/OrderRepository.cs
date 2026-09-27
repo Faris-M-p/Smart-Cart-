@@ -3,6 +3,7 @@ using Ecommerce.Models;
 using static Ecommerce.Models.CartModel;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.OrderModel;
+using static Ecommerce.Models.UserAddressModel;
 
 namespace Ecommerce.Repository
 {
@@ -26,6 +27,11 @@ namespace Ecommerce.Repository
                     Quantity = quantity < 1 ? 1 : quantity
                 },
                 new[] { "p_result", "p_result2", "p_result3" });
+
+            var items = (await multi.ReadAsync<CartLine>()).ToList();
+            var summary = await multi.ReadFirstOrDefaultAsync<CheckoutSummary>() ?? new CheckoutSummary();
+            var customer = await multi.ReadFirstOrDefaultAsync<CheckoutCustomer>() ?? new CheckoutCustomer();
+            var addresses = multi.IsConsumed ? new List<UserAddress>() : (await multi.ReadAsync<UserAddress>()).ToList();
 
             return new CheckoutPage
             {

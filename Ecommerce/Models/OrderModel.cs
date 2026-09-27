@@ -1,4 +1,5 @@
 using static Ecommerce.Models.CartModel;
+using static Ecommerce.Models.UserAddressModel;
 
 namespace Ecommerce.Models
 {
@@ -20,6 +21,11 @@ namespace Ecommerce.Models
             public string City { get; set; } = string.Empty;
             public string Pincode { get; set; } = string.Empty;
             public string PaymentMethod { get; set; } = "COD";
+            public string AddressType { get; set; } = "Home";
+            public bool SaveAddress { get; set; } = false;
+            public int AddressId { get; set; } = 0;
+            public decimal? Latitude { get; set; }
+            public decimal? Longitude { get; set; }
         }
 
         public class CheckoutCustomer
@@ -40,6 +46,7 @@ namespace Ecommerce.Models
             public List<CartLine> Items { get; set; } = new();
             public CheckoutSummary Summary { get; set; } = new();
             public CheckoutCustomer Customer { get; set; } = new();
+            public List<UserAddress> Addresses { get; set; } = new();
         }
 
         public class OrderHeader

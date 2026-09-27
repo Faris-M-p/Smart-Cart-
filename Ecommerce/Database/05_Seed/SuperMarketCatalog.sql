@@ -332,13 +332,14 @@ VALUES
 /* -------------------------------------------------------------------------
    Products
    ------------------------------------------------------------------------- */
-INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [IsActive], [CreatedAt], [Cancelled])
+INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [SellOnline], [IsActive], [CreatedAt], [Cancelled])
 SELECT
     sc.[ID_SubCategory],
     b.[ID_Brand],
     MIN(p.[ProductName]),
     p.[Slug],
     MIN(p.[ProductDesc]),
+    1,
     1,
     GETDATE(),
     0
@@ -357,7 +358,7 @@ GROUP BY p.[Slug], sc.[ID_SubCategory], b.[ID_Brand];
 INSERT INTO [dbo].[ProductVariants] (
     [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
     [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-    [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+    [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
 )
 SELECT
     pr.[ID_Product],
@@ -371,6 +372,7 @@ SELECT
     c.[UnitValue],
     CASE WHEN c.[SKU] = N'SM-IG-RICE-5KG' THEN 0 ELSE 1 END,
     20,
+    1,
     1,
     GETDATE(),
     0

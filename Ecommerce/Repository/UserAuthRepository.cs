@@ -24,7 +24,7 @@ namespace Ecommerce.Repository
             _jwtTokenService = jwtTokenService;
         }
 
-        public async Task<CommonResponse> RegisterAsync(UserRegisterInput input)
+        public async Task<(CommonResponse Response, UserLoginData? Login)> RegisterAsync(UserRegisterInput input)
         {
             var name = UserAuthHelper.NormalizeName(input.Name);
             var email = UserAuthHelper.NormalizeEmail(input.Email);
@@ -32,17 +32,17 @@ namespace Ecommerce.Repository
 
             if (name.Length < 2)
             {
-                return Fail("Please enter your name.");
+                return (Fail("Please enter your name."), null);
             }
 
             if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
             {
-                return Fail("Please enter a valid email.");
+                return (Fail("Please enter a valid email."), null);
             }
 
             if (password.Length < 6)
             {
-                return Fail("Password must be at least 6 characters.");
+                return (Fail("Password must be at least 6 characters."), null);
             }
 
             var hash = _passwordHasher.HashPassword(new StorefrontUser { Email = email }, password);

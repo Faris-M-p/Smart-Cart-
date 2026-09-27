@@ -45,8 +45,20 @@ namespace Ecommerce.Controllers
                 });
             }
 
-            var result = await _userAuth.RegisterAsync(input);
-            return Ok(result);
+            var (response, login) = await _userAuth.RegisterAsync(input);
+            if (!response.StatusCode || login == null)
+            {
+                return Ok(response);
+            }
+
+            SetAuthCookie(login.AccessToken, login.ExpiresAt);
+            return Ok(new
+            {
+                response.ResponseCode,
+                response.StatusCode,
+                response.ResponseMsg,
+                user = login.User
+            });
         }
 
         [HttpPost]

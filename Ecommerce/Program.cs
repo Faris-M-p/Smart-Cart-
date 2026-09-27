@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Ecommerce.Configuration;
 using Ecommerce.Controllers;
 using Ecommerce.DataAccess;

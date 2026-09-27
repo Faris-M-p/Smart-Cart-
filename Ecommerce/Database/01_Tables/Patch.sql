@@ -34,6 +34,10 @@ GO
 GO
 PRINT N'Users_AddFullName patch successfully completed.';
 GO
+:r .\01_Tables\UserAddresses.sql
+GO
+PRINT N'UserAddresses patch successfully completed.';
+GO
 :r .\01_Tables\Orders_AddCheckoutFields.sql
 GO
 PRINT N'Orders_AddCheckoutFields patch successfully completed.';

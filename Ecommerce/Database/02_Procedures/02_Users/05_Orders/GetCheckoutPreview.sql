@@ -186,6 +186,24 @@ BEGIN
     WHERE U.UserId = @UserId
       AND ISNULL(U.Cancelled, 0) = 0;
 
+    SELECT
+        AddressId,
+        UserId,
+        AddressType,
+        ReceiverName,
+        Phone,
+        AddressLine,
+        City,
+        Pincode,
+        Latitude,
+        Longitude,
+        IsDefault,
+        CreatedAt
+    FROM [dbo].[UserAddresses] WITH (NOLOCK)
+    WHERE UserId = @UserId
+      AND ISNULL(Cancelled, 0) = 0
+    ORDER BY IsDefault DESC, AddressId DESC;
+
     DROP TABLE #Lines;
 END
 GO

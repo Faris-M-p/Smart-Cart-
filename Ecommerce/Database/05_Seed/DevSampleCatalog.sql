@@ -208,47 +208,47 @@ DECLARE
 
 IF @Smartphones IS NOT NULL AND @Apple IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM [dbo].[Products] WHERE [Slug] = N'iphone-15')
-    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [IsActive], [CreatedAt], [Cancelled])
+    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [SellOnline], [IsActive], [CreatedAt], [Cancelled])
     VALUES (
         @Smartphones, @Apple, N'iPhone 15', N'iphone-15',
         N'6.1-inch Super Retina XDR display, A16 Bionic, Dual 48MP camera system, USB-C.',
-        1, GETDATE(), 0
+        1, 1, GETDATE(), 0
     );
 
 IF @Smartphones IS NOT NULL AND @Samsung IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM [dbo].[Products] WHERE [Slug] = N'samsung-galaxy-a35')
-    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [IsActive], [CreatedAt], [Cancelled])
+    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [SellOnline], [IsActive], [CreatedAt], [Cancelled])
     VALUES (
         @Smartphones, @Samsung, N'Samsung Galaxy A35', N'samsung-galaxy-a35',
         N'6.6-inch Super AMOLED, 120 Hz, 50MP OIS camera, 5000 mAh battery.',
-        1, GETDATE(), 0
+        1, 1, GETDATE(), 0
     );
 
 IF @Audio IS NOT NULL AND @Boat IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM [dbo].[Products] WHERE [Slug] = N'boat-airdopes-141')
-    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [IsActive], [CreatedAt], [Cancelled])
+    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [SellOnline], [IsActive], [CreatedAt], [Cancelled])
     VALUES (
         @Audio, @Boat, N'boAt Airdopes 141', N'boat-airdopes-141',
         N'True wireless earbuds with 42-hour playback, ASAP charge, and IPX4 sweat resistance.',
-        1, GETDATE(), 0
+        1, 1, GETDATE(), 0
     );
 
 IF @KitchenAppliances IS NOT NULL AND @Prestige IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM [dbo].[Products] WHERE [Slug] = N'prestige-pic-20-induction-cooktop')
-    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [IsActive], [CreatedAt], [Cancelled])
+    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [SellOnline], [IsActive], [CreatedAt], [Cancelled])
     VALUES (
         @KitchenAppliances, @Prestige, N'Prestige PIC 20 Induction Cooktop', N'prestige-pic-20-induction-cooktop',
         N'2000W induction cooktop with Indian menu options, push-button controls, and automatic shut-off.',
-        1, GETDATE(), 0
+        1, 1, GETDATE(), 0
     );
 
 IF @Skincare IS NOT NULL AND @Himalaya IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM [dbo].[Products] WHERE [Slug] = N'himalaya-purifying-neem-face-wash-150ml')
-    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [IsActive], [CreatedAt], [Cancelled])
+    INSERT INTO [dbo].[Products] ([FK_SubCategory], [FK_Brand], [Name], [Slug], [Description], [SellOnline], [IsActive], [CreatedAt], [Cancelled])
     VALUES (
         @Skincare, @Himalaya, N'Himalaya Purifying Neem Face Wash', N'himalaya-purifying-neem-face-wash-150ml',
         N'Neem and turmeric face wash that helps cleanse excess oil and keep skin fresh.',
-        1, GETDATE(), 0
+        1, 1, GETDATE(), 0
     );
 
 DECLARE
@@ -263,12 +263,12 @@ IF @Iphone15 IS NOT NULL
     INSERT INTO [dbo].[ProductVariants] (
         [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
         [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-        [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+        [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
     )
     VALUES (
         @Iphone15, N'IP15-BLK-128', N'8901234500017', N'Black / 128GB',
         N'iPhone 15, Black, 128 GB',
-        79900.00, 74900.00, N'pcs', 1, 1, 5, 1, GETDATE(), 0
+        79900.00, 74900.00, N'pcs', 1, 1, 5, 1, 1, GETDATE(), 0
     );
 
 IF @Iphone15 IS NOT NULL
@@ -276,12 +276,12 @@ IF @Iphone15 IS NOT NULL
     INSERT INTO [dbo].[ProductVariants] (
         [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
         [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-        [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+        [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
     )
     VALUES (
         @Iphone15, N'IP15-BLU-256', N'8901234500024', N'Blue / 256GB',
         N'iPhone 15, Blue, 256 GB',
-        89900.00, 84900.00, N'pcs', 1, 0, 5, 1, GETDATE(), 0
+        89900.00, 84900.00, N'pcs', 1, 0, 5, 1, 1, GETDATE(), 0
     );
 
 IF @GalaxyA35 IS NOT NULL
@@ -289,12 +289,12 @@ IF @GalaxyA35 IS NOT NULL
     INSERT INTO [dbo].[ProductVariants] (
         [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
         [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-        [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+        [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
     )
     VALUES (
         @GalaxyA35, N'SMA35-NVY-128', N'8901234500031', N'Awesome Navy / 128GB',
         N'Samsung Galaxy A35, Awesome Navy, 128 GB',
-        33999.00, 30999.00, N'pcs', 1, 1, 8, 1, GETDATE(), 0
+        33999.00, 30999.00, N'pcs', 1, 1, 8, 1, 1, GETDATE(), 0
     );
 
 IF @Airdopes141 IS NOT NULL
@@ -302,12 +302,12 @@ IF @Airdopes141 IS NOT NULL
     INSERT INTO [dbo].[ProductVariants] (
         [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
         [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-        [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+        [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
     )
     VALUES (
         @Airdopes141, N'BOAT-AD141-BLK', N'8901234500048', N'Black',
         N'boAt Airdopes 141, Black',
-        4490.00, 1299.00, N'pcs', 1, 1, 10, 1, GETDATE(), 0
+        4490.00, 1299.00, N'pcs', 1, 1, 10, 1, 1, GETDATE(), 0
     );
 
 IF @Pic20 IS NOT NULL
@@ -315,12 +315,12 @@ IF @Pic20 IS NOT NULL
     INSERT INTO [dbo].[ProductVariants] (
         [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
         [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-        [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+        [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
     )
     VALUES (
         @Pic20, N'PRE-PIC20-2000W', N'8901234500055', N'2000W',
         N'Prestige PIC 20, 2000W',
-        3495.00, 2499.00, N'pcs', 1, 1, 6, 1, GETDATE(), 0
+        3495.00, 2499.00, N'pcs', 1, 1, 6, 1, 1, GETDATE(), 0
     );
 
 IF @NeemWash IS NOT NULL
@@ -328,12 +328,12 @@ IF @NeemWash IS NOT NULL
     INSERT INTO [dbo].[ProductVariants] (
         [FK_Product], [SKU], [Barcode], [VariantLabel], [Description],
         [MRP], [SellingPrice], [UnitOfMeasure], [UnitValue],
-        [IsDefault], [MaxOrderQty], [IsActive], [CreatedAt], [Cancelled]
+        [IsDefault], [MaxOrderQty], [SellOnline], [IsActive], [CreatedAt], [Cancelled]
     )
     VALUES (
         @NeemWash, N'HIM-NEEM-FW-150', N'8901234500062', N'150ml',
         N'Himalaya Purifying Neem Face Wash, 150 ml',
-        170.00, 145.00, N'bottle', 150, 1, 20, 1, GETDATE(), 0
+        170.00, 145.00, N'bottle', 150, 1, 20, 1, 1, GETDATE(), 0
     );
 
 DECLARE

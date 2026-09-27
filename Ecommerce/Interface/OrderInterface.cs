@@ -1,5 +1,6 @@
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.OrderModel;
+using static Ecommerce.Models.UserAddressModel;
 
 namespace Ecommerce.Interface
 {
@@ -14,5 +15,11 @@ namespace Ecommerce.Interface
         Task<List<OrderListItem>> GetOrdersAsync(int userId);
 
         Task<CommonResponse> CancelOrderAsync(int userId, CancelOrderInput input);
+
+        Task<List<UserAddress>> GetUserAddressesAsync(int userId);
+
+        Task<CommonResponse> SaveUserAddressAsync(int userId, SaveAddressInput input);
+
+        Task<CommonResponse> DeleteUserAddressAsync(int userId, int addressId);
     }
 }
