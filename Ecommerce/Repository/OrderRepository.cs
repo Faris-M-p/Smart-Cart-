@@ -4,6 +4,7 @@ using Ecommerce.Interface;
 using static Ecommerce.Models.CartModel;
 using static Ecommerce.Models.CommonModel;
 using static Ecommerce.Models.OrderModel;
+using static Ecommerce.Models.UserAddressModel;
 
 namespace Ecommerce.Repository
 {
@@ -29,18 +30,41 @@ namespace Ecommerce.Repository
                 },
                 commandType: CommandType.StoredProcedure);
 
+            var items = (await multi.ReadAsync<CartLine>()).ToList();
+            var summary = await multi.ReadFirstOrDefaultAsync<CheckoutSummary>() ?? new CheckoutSummary();
+            var customer = await multi.ReadFirstOrDefaultAsync<CheckoutCustomer>() ?? new CheckoutCustomer();
+            var addresses = multi.IsConsumed ? new List<UserAddress>() : (await multi.ReadAsync<UserAddress>()).ToList();
+
             return new CheckoutPage
             {
                 Source = productVariantId > 0 ? "buynow" : "cart",
-                Items = (await multi.ReadAsync<CartLine>()).ToList(),
-                Summary = await multi.ReadFirstOrDefaultAsync<CheckoutSummary>() ?? new CheckoutSummary(),
-                Customer = await multi.ReadFirstOrDefaultAsync<CheckoutCustomer>() ?? new CheckoutCustomer()
+                Items = items,
+                Summary = summary,
+                Customer = customer,
+                Addresses = addresses
             };
         }
 
-        public Task<CommonResponse> PlaceOrderAsync(int userId, PlaceOrderInput input)
+        public async Task<CommonResponse> PlaceOrderAsync(int userId, PlaceOrderInput input)
         {
-            return _dapper.ExecuteStoredProcedure("PlaceOrder", new
+            if (input.SaveAddress)
+            {
+                await SaveUserAddressAsync(userId, new SaveAddressInput
+                {
+                    AddressId = input.AddressId,
+                    AddressType = string.IsNullOrWhiteSpace(input.AddressType) ? "Home" : input.AddressType,
+                    ReceiverName = input.ReceiverName,
+                    Phone = input.Phone,
+                    AddressLine = input.AddressLine,
+                    City = input.City,
+                    Pincode = input.Pincode,
+                    Latitude = input.Latitude,
+                    Longitude = input.Longitude,
+                    IsDefault = false
+                });
+            }
+
+            return await _dapper.ExecuteStoredProcedure("PlaceOrder", new
             {
                 UserId = userId,
                 ProductVariantId = input.ProductVariantId,
@@ -92,6 +116,43 @@ namespace Ecommerce.Repository
                 UserId = userId,
                 OrderId = input.OrderId,
                 Reason = (input.Reason ?? string.Empty).Trim()
+            });
+        }
+
+        public async Task<List<UserAddress>> GetUserAddressesAsync(int userId)
+        {
+            using var connection = _dapper.CreateConnection();
+            var addresses = await connection.QueryAsync<UserAddress>(
+                "GetUserAddresses",
+                new { UserId = userId },
+                commandType: CommandType.StoredProcedure);
+            return addresses.ToList();
+        }
+
+        public Task<CommonResponse> SaveUserAddressAsync(int userId, SaveAddressInput input)
+        {
+            return _dapper.ExecuteStoredProcedure("SaveUserAddress", new
+            {
+                UserId = userId,
+                AddressId = input.AddressId,
+                AddressType = string.IsNullOrWhiteSpace(input.AddressType) ? "Home" : input.AddressType.Trim(),
+                ReceiverName = (input.ReceiverName ?? string.Empty).Trim(),
+                Phone = (input.Phone ?? string.Empty).Trim(),
+                AddressLine = (input.AddressLine ?? string.Empty).Trim(),
+                City = (input.City ?? string.Empty).Trim(),
+                Pincode = (input.Pincode ?? string.Empty).Trim(),
+                Latitude = input.Latitude,
+                Longitude = input.Longitude,
+                IsDefault = input.IsDefault ? 1 : 0
+            });
+        }
+
+        public Task<CommonResponse> DeleteUserAddressAsync(int userId, int addressId)
+        {
+            return _dapper.ExecuteStoredProcedure("DeleteUserAddress", new
+            {
+                UserId = userId,
+                AddressId = addressId
             });
         }
     }

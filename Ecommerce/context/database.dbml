@@ -29,6 +29,24 @@ Table Users {
   Note: 'Storefront customer identity store'
 }
 
+Table UserAddresses {
+  AddressId int [pk, increment]
+  UserId int [not null]
+  AddressType nvarchar(50) [not null, default: 'Home', note: 'Home, Work, Office, Other']
+  ReceiverName nvarchar(200) [not null]
+  Phone nvarchar(20) [not null]
+  AddressLine nvarchar(300) [not null]
+  City nvarchar(100) [not null]
+  Pincode nvarchar(20) [not null]
+  Latitude decimal(10, 7)
+  Longitude decimal(10, 7)
+  IsDefault bit [not null, default: 0]
+  CreatedAt datetime [not null, default: `getdate()`]
+  Cancelled bit [not null, default: 0]
+
+  Note: 'Saved customer delivery addresses'
+}
+
 Table AdminUsers {
   ID_AdminUser int [pk, increment]
   FK_UserRole int [not null]
@@ -608,6 +626,7 @@ Ref: Stock.FK_PurchaseDetail > PurchaseDetail.ID_PurchaseDetail
 Ref: Stock.FK_ProductVariant > ProductVariants.ID_ProductVariant
 
 // Customer Cart & Wishlist
+Ref: UserAddresses.UserId > Users.UserId
 Ref: Cart.UserId > Users.UserId
 Ref: CartItems.CartId > Cart.CartId
 Ref: CartItems.ProductId > Products.ID_Product

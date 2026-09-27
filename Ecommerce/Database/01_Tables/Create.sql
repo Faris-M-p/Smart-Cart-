@@ -9,6 +9,10 @@
 GO
 PRINT N'Users patch successfully completed.';
 GO
+:r .\01_Tables\UserAddresses.sql
+GO
+PRINT N'UserAddresses patch successfully completed.';
+GO
 :r .\01_Tables\Categories.sql
 GO
 PRINT N'Categories patch successfully completed.';

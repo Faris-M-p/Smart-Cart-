@@ -20,8 +20,8 @@ Handles customer authentication including registration, login, JWT cookie genera
 - DTOs: `RegisterUserView`, `LoginView`, `User` entity snapshot.
 
 ## Database Dependencies
-- Tables: `Users`.
-- Stored Procedures: `RegisterUser`, `GetUserByEmail`, `GetUserById`.
+- Tables: `Users`, `UserAddresses`.
+- Stored Procedures: `RegisterUser`, `GetUserByEmail`, `GetUserById`, `GetUserAddresses`, `SaveUserAddress`, `DeleteUserAddress`.
 
 ## API & Data Access
 - Controller: `Controllers/AccountController.cs` (`Login`, `Register`, `Logout`).

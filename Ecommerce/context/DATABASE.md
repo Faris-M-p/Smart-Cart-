@@ -16,9 +16,9 @@ The current database structure is represented in: [`context/database.dbml`](file
 This DBML file is the database diagram source for SmartCart and can be opened or imported directly into [dbdiagram.io](https://dbdiagram.io).
 
 ### Database Structure Summary
-- **Total Tables Documented:** 37 physical tables
+- **Total Tables Documented:** 38 physical tables
 - **Major Table Groups:**
-  1. **Identity & Auth (6 tables):** `users`, `adminusers`, `userroles`, `modules`, `permissions`, `userrolepermissions`
+  1. **Identity & Auth (7 tables):** `users`, `useraddresses`, `adminusers`, `userroles`, `modules`, `permissions`, `userrolepermissions`
   2. **Catalog & Attributes (9 tables):** `category`, `subcategory`, `brand`, `products`, `productvariants`, `variants`, `variantvalues`, `productvariantattributes`, `productstatus`
   3. **Media (4 tables):** `productmedia`, `skumedia`, `productimages`, `productvariantimages`
   4. **Purchasing & Stock (4 tables):** `supplier`, `purchase`, `purchasedetail`, `stock`
@@ -26,9 +26,9 @@ This DBML file is the database diagram source for SmartCart and can be opened or
   6. **Storefront Bags (4 tables):** `cart`, `cartitems`, `wishlist`, `wishlistitems`
   7. **Order Fulfillment & Payment (4 tables):** `orders`, `orderitems`, `payments`, `shipping`
   8. **Auxiliary & Logs (2 tables):** `ratings`, `auditlogs`
-- **Main User-Side Database Entities:** `users`, `products`, `productvariants`, `cart`, `cartitems`, `wishlist`, `wishlistitems`, `orders`, `orderitems`, `payments`, `shipping`
+- **Main User-Side Database Entities:** `users`, `useraddresses`, `products`, `productvariants`, `cart`, `cartitems`, `wishlist`, `wishlistitems`, `orders`, `orderitems`, `payments`, `shipping`
 - **Main Admin-Side Database Entities:** `adminusers`, `userroles`, `modules`, `permissions`, `userrolepermissions`, `category`, `subcategory`, `brand`, `products`, `productvariants`, `productmedia`, `skumedia`, `supplier`, `purchase`, `purchasedetail`, `stock`, `orders`, `orderitems`, `sales`, `salesdetail`
-- **Important Relationships:** Foreign keys linking catalog hierarchy, SKU attributes, purchase stock batches, POS counter sales, storefront bags, and customer orders.
+- **Important Relationships:** Foreign keys linking catalog hierarchy, SKU attributes, purchase stock batches, POS counter sales, storefront bags, saved customer addresses, and customer orders.
 
 ## Access from the app
 
@@ -52,6 +52,8 @@ EF does **not** map `Users`, `Orders`, `Cart`, `Payments`, `Shipping`, `Ratings`
 ### Identity
 
 **Users** (legacy PK `UserId`): `UserName`, `FullName`, `PasswordHash`, `Email`, `PhoneNumber`, `IsAdmin`, timestamps, cancelled. Unique email index added in `Users_AddFullName.sql`. Used by storefront auth. `IsAdmin` is **not** how the admin panel authenticates.
+
+**UserAddresses** (PK `AddressId`): `UserId`, `AddressType` (`Home`, `Work`, `Office`, `Other`), `ReceiverName`, `Phone`, `AddressLine`, `City`, `Pincode`, `Latitude`, `Longitude`, `IsDefault`, `CreatedAt`, `Cancelled`. Stores customer saved delivery addresses for storefront checkout.
 
 **AdminUsers** PK `ID_AdminUser`: `FK_UserRole`, `UserName` unique, `PasswordHash`, `FullName`, `Email`, `PhoneNumber`, `ProfileImageUrl`, `IsActive`, cancelled.
 
