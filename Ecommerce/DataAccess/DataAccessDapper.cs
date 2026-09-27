@@ -86,7 +86,8 @@ namespace Ecommerce.DataAccess
         private static string BuildCallSql<T>(string procedureName, T? parameter, IEnumerable<string> cursorNames)
         {
             var inputParamNames = GetPropertyNames(parameter);
-            var allParams = string.Join(", ", inputParamNames.Concat(cursorNames).Select(n => "@" + n));
+            var cursors = cursorNames.Select(n => "@" + n + "::refcursor");
+            var allParams = string.Join(", ", inputParamNames.Select(n => "@" + n).Concat(cursors));
             return string.IsNullOrEmpty(allParams)
                 ? $"CALL {procedureName}()"
                 : $"CALL {procedureName}({allParams})";
@@ -511,7 +512,7 @@ namespace Ecommerce.DataAccess
                     continue;
                 }
 
-                paramList.Add(ToPgParameterName(prop.Name), prop.GetValue(parameter));
+                paramList.Add(ToPgParameterName(prop.Name), prop.GetValue(parameter), dbType: InferDbType(prop.PropertyType));
             }
 
             return paramList;
