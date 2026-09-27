@@ -165,12 +165,20 @@ body.pos-page .pc-container .pc-content {
   border: 0;
 }
 
-.pos-left,
+.pos-left {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .pos-right {
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .pos-search {
@@ -462,8 +470,35 @@ body.pos-page .pc-container .pc-content {
 
 .pos-complete {
   width: 100%;
-  height: 46px;
+  min-height: 48px;
   font-weight: 700;
+  font-size: 15px;
+  background: var(--pos-ok);
+  border-color: var(--pos-ok);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(44, 168, 127, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.pos-complete:hover,
+.pos-complete:focus {
+  background: #248f6c;
+  border-color: #248f6c;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(44, 168, 127, 0.45);
+}
+
+.pos-complete:disabled {
+  background: #cbd5e1;
+  border-color: #cbd5e1;
+  color: #64748b;
+  box-shadow: none;
+  opacity: 0.7;
 }
 
 .pos-hold {

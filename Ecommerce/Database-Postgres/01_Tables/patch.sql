@@ -28,6 +28,10 @@
 \i ./01_Tables/sales_return_detail.sql
 \echo 'sales_return_detail completed.'
 
+\echo '--- user_addresses (idempotent) ---'
+\i ./01_Tables/user_addresses.sql
+\echo 'user_addresses completed.'
+
 \echo '--- drop legacy store_settings if present ---'
 DROP PROCEDURE IF EXISTS get_store_settings;
 DROP PROCEDURE IF EXISTS update_store_settings;

@@ -70,6 +70,23 @@ GO
 GO
 PRINT N'ProductVariants patch successfully completed.';
 GO
+:r .\01_Tables\sales.sql
+GO
+PRINT N'sales patch successfully completed.';
+GO
+:r .\01_Tables\salesdetail.sql
+GO
+PRINT N'salesdetail patch successfully completed.';
+GO
+:r .\01_Tables\salesreturn.sql
+GO
+PRINT N'salesreturn patch successfully completed.';
+GO
+:r .\01_Tables\salesreturndetail.sql
+GO
+PRINT N'salesreturndetail patch successfully completed.';
+GO
+
 
 IF OBJECT_ID(N'[dbo].[GetStoreSettings]', N'P') IS NOT NULL
     DROP PROCEDURE [dbo].[GetStoreSettings];

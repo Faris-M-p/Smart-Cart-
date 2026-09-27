@@ -6,6 +6,10 @@
 \i ./01_Tables/users.sql
 \echo 'users completed.'
 
+\echo '--- user_addresses ---'
+\i ./01_Tables/user_addresses.sql
+\echo 'user_addresses completed.'
+
 \echo '--- category ---'
 \i ./01_Tables/category.sql
 \echo 'category completed.'

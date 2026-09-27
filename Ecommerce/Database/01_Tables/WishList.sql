@@ -1,29 +1,20 @@
-﻿/****** Object:  Table [dbo].[Wishlist]    Script Date: 18-01-2025 22:55:36 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[Wishlist](
-	[WishlistId] [int] IDENTITY(1,1) NOT NULL,
-	[UserId] [int] NOT NULL,
-	[SessionKey] [uniqueidentifier] NULL,
-	[CreatedAt] [datetime] NULL,
-	[Cancelled] [bit] NULL,
-	[CancelledOn] [datetime] NULL,
-	[CancelledReason] [nvarchar](255) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[WishlistId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+IF OBJECT_ID(N'[dbo].[Wishlist]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Wishlist](
+        [WishlistId] [int] IDENTITY(1,1) NOT NULL,
+        [UserId] [int] NOT NULL,
+        [SessionKey] [uniqueidentifier] NULL,
+        [CreatedAt] [datetime] NULL CONSTRAINT [DF_Wishlist_CreatedAt] DEFAULT (getdate()),
+        [Cancelled] [bit] NULL CONSTRAINT [DF_Wishlist_Cancelled] DEFAULT ((0)),
+        [CancelledOn] [datetime] NULL,
+        [CancelledReason] [nvarchar](255) NULL,
+        PRIMARY KEY CLUSTERED ([WishlistId] ASC)
+    );
+END
 GO
-
-ALTER TABLE [dbo].[Wishlist] ADD  DEFAULT (getdate()) FOR [CreatedAt]
-GO
-
-ALTER TABLE [dbo].[Wishlist] ADD  DEFAULT ((0)) FOR [Cancelled]
-GO
-
-

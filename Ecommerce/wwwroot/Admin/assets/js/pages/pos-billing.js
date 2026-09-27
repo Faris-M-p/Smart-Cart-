@@ -687,7 +687,7 @@
         pill.className = 'pos-pill ' + (pending ? 'pos-pill-pending' : 'pos-pill-done');
         document.getElementById('posClock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const completeBtn = document.getElementById('posCompleteBtn');
-        completeBtn.textContent = 'Complete Bill';
+        completeBtn.innerHTML = '<i class="ti ti-check"></i> <span>Save & Complete Bill (F9)</span>';
         completeBtn.disabled = isReadOnly() || !current.items.length;
         completeBtn.style.display = isReadOnly() ? 'none' : '';
         document.getElementById('posHoldBtn').style.display = isReadOnly() ? 'none' : '';

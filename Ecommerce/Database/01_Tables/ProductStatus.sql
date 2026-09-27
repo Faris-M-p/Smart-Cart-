@@ -1,24 +1,18 @@
-﻿/****** Object:  Table [dbo].[ProductStatus]    Script Date: 18-01-2025 22:58:42 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[ProductStatus](
-	[StatusId] [int] IDENTITY(1,1) NOT NULL,
-	[StatusName] [nvarchar](50) NOT NULL,
-	[Cancelled] [bit] NULL,
-	[CancelledOn] [datetime] NULL,
-	[CancelledReason] [nvarchar](255) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[StatusId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+IF OBJECT_ID(N'[dbo].[ProductStatus]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[ProductStatus](
+        [StatusId] [int] IDENTITY(1,1) NOT NULL,
+        [StatusName] [nvarchar](50) NOT NULL,
+        [Cancelled] [bit] NULL CONSTRAINT [DF_ProductStatus_Cancelled] DEFAULT ((0)),
+        [CancelledOn] [datetime] NULL,
+        [CancelledReason] [nvarchar](255) NULL,
+        PRIMARY KEY CLUSTERED ([StatusId] ASC)
+    );
+END
 GO
-
-ALTER TABLE [dbo].[ProductStatus] ADD  DEFAULT ((0)) FOR [Cancelled]
-GO
-
-

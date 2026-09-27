@@ -141,3 +141,20 @@ GO
 GO
 PRINT N'UserRolePermissions patch successfully completed.';
 GO
+:r .\01_Tables\sales.sql
+GO
+PRINT N'sales patch successfully completed.';
+GO
+:r .\01_Tables\salesdetail.sql
+GO
+PRINT N'salesdetail patch successfully completed.';
+GO
+:r .\01_Tables\salesreturn.sql
+GO
+PRINT N'salesreturn patch successfully completed.';
+GO
+:r .\01_Tables\salesreturndetail.sql
+GO
+PRINT N'salesreturndetail patch successfully completed.';
+GO
+

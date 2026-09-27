@@ -346,10 +346,10 @@ namespace Ecommerce.Repository.Admin
             await using var tx = await _db.Database.BeginTransactionAsync();
             try
             {
-                var now = DateTime.Now;
+                var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
                 var sale = new SaleEntity
                 {
-                    SaleDate = input.SaleDate.Date,
+                    SaleDate = DateTime.SpecifyKind(input.SaleDate.Date, DateTimeKind.Utc),
                     CustomerName = string.IsNullOrWhiteSpace(input.CustomerName) ? "Walk-in" : input.CustomerName.Trim(),
                     CustomerPhone = string.IsNullOrWhiteSpace(input.CustomerPhone) ? null : input.CustomerPhone.Trim(),
                     PaymentMethod = NormalizePayment(input.PaymentMethod),
@@ -380,9 +380,12 @@ namespace Ecommerce.Repository.Admin
                 await tx.CommitAsync();
                 return Ok(sale.ID_Sale, "Sale saved.");
             }
-            catch
+            catch (Exception ex)
             {
                 await tx.RollbackAsync();
+
+                Console.WriteLine($"TRANSACTION ERROR: {ex}");
+
                 throw;
             }
         }
@@ -432,7 +435,7 @@ namespace Ecommerce.Repository.Admin
             await using var tx = await _db.Database.BeginTransactionAsync();
             try
             {
-                var now = DateTime.Now;
+                var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
                 var existing = await _db.SaleDetails
                     .Where(d => d.FK_Sale == sale.ID_Sale && !d.Cancelled)
                     .ToListAsync();
@@ -448,7 +451,7 @@ namespace Ecommerce.Repository.Admin
 
                 await _db.SaveChangesAsync();
 
-                sale.SaleDate = input.SaleDate.Date;
+                sale.SaleDate = DateTime.SpecifyKind(input.SaleDate.Date, DateTimeKind.Utc);
                 sale.CustomerName = string.IsNullOrWhiteSpace(input.CustomerName) ? "Walk-in" : input.CustomerName.Trim();
                 sale.CustomerPhone = string.IsNullOrWhiteSpace(input.CustomerPhone) ? null : input.CustomerPhone.Trim();
                 sale.PaymentMethod = NormalizePayment(input.PaymentMethod);
@@ -507,7 +510,7 @@ namespace Ecommerce.Repository.Admin
             await using var tx = await _db.Database.BeginTransactionAsync();
             try
             {
-                var now = DateTime.Now;
+                var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
                 sale.Cancelled = true;
                 sale.CancelledOn = now;
                 sale.CancelledReason = input.CancelledReason;
