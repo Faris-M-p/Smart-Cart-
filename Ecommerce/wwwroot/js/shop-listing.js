@@ -371,7 +371,7 @@
 
         const data = await response.json();
         state.allSubCategories = data.subCategories || data.SubCategories || [];
-        fillSelect(categorySelect, data.categories || data.Categories || [], "All categories", queryValue("category"));
+        fillSelect(categorySelect, data.categories || data.Categories || [], "All categories", queryValue("category") || queryValue("categoryIds"));
         fillSelect(brandSelect, data.brands || data.Brands || [], "All brands", queryValue("brand"));
         refreshSubcategories();
         if (subcategorySelect && queryValue("subcategory")) {

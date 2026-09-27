@@ -1,32 +1,7 @@
-﻿@{
+@model Ecommerce.Models.HomeViewModel
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<!doctype html>
-<html lang="en">
-
-
-<!-- Mirrored from risingtheme.com/html/demo-suruchi-v1/suruchi/index-2.html by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 01 Jan 2025 10:16:39 GMT -->
-<head>
-    <meta charset="utf-8">
-    <title>Suruchi - Fashion eCommerce HTML Template</title>
-    <meta name="description" content="Morden Bootstrap HTML5 Template">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.ico">
-
-    <!-- ======= All CSS Plugins here ======== -->
-    <link rel="stylesheet" href="assets/css/plugins/swiper-bundle.min.css">
-    <link rel="stylesheet" href="assets/css/plugins/glightbox.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap" rel="stylesheet">
-
-    <!-- Plugin css -->
-    <link rel="stylesheet" href="assets/css/vendor/bootstrap.min.css">
-
-    <!-- Custom Style CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
-
-</head>
-
-<body>
 
     <!-- Start preloader -->
     <div id="preloader">
@@ -73,6 +48,44 @@
         <section class="hero__slider--section color-scheme-2">
             <div class="hero__slider--inner hero__slider--activation swiper">
                 <div class="hero__slider--wrapper swiper-wrapper">
+@if (Model?.Banners != null && Model.Banners.Any())
+{
+    foreach (var banner in Model.Banners)
+    {
+        var bgStyle = !string.IsNullOrEmpty(banner.ImageUrl) 
+            ? $"background-image: url('{banner.ImageUrl}'); background-size: cover; background-position: center;" 
+            : "";
+                    <div class="swiper-slide">
+                        <div class="hero__slider--items home2__slider--bg" style="@bgStyle">
+                            <div class="container-fluid">
+                                <div class="hero__slider--items__inner hero__slider--bg2__inner">
+                                    <div class="row row-cols-1">
+                                        <div class="col">
+                                            <div class="slider__content">
+                                                @if (!string.IsNullOrEmpty(banner.Subtitle))
+                                                {
+                                                    <p class="slider__content--desc desc1 text__secondary2 mb-15">@banner.Subtitle</p>
+                                                }
+                                                <h2 class="slider__content--maintitle h1">
+                                                    @banner.Title
+                                                </h2>
+                                                <a class="bg__secondary2 slider__btn primary__btn mt-3" href="@banner.TargetUrl">
+                                                    Shop Now
+                                                    <svg class="primary__btn--arrow__icon" xmlns="http://www.w3.org/2000/svg" width="20.2" height="12.2" viewBox="0 0 6.2 6.2">
+                                                        <path d="M7.1,4l-.546.546L8.716,6.713H4v.775H8.716L6.554,9.654,7.1,10.2,9.233,8.067,10.2,7.1Z" transform="translate(-4 -4)" fill="currentColor"></path>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+    }
+}
+else
+{
                     <div class="swiper-slide ">
                         <div class="hero__slider--items home2__slider--bg">
                             <div class="container-fluid">
@@ -85,12 +98,8 @@
                                                     New Collection <br>
                                                     Summer Sale
                                                 </h2>
-                                                <p class="slider__content--desc desc2 d-sm-2-none mb-40">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do <br> eiusmod tempor incididunt ut labore et dolore magna</p>
-                                                <a class="bg__secondary2 slider__btn primary__btn" href="shop.html">
+                                                <a class="bg__secondary2 slider__btn primary__btn" href="/Shop">
                                                     Show Collection
-                                                    <svg class="primary__btn--arrow__icon" xmlns="http://www.w3.org/2000/svg" width="20.2" height="12.2" viewBox="0 0 6.2 6.2">
-                                                        <path d="M7.1,4l-.546.546L8.716,6.713H4v.775H8.716L6.554,9.654,7.1,10.2,9.233,8.067,10.2,7.1Z" transform="translate(-4 -4)" fill="currentColor"></path>
-                                                    </svg>
                                                 </a>
                                             </div>
                                         </div>
@@ -99,1007 +108,88 @@
                             </div>
                         </div>
                     </div>
-                    <div class="swiper-slide ">
-                        <div class="hero__slider--items home2__slider--bg two">
-                            <div class="container-fluid">
-                                <div class="hero__slider--items__inner hero__slider--bg2__inner">
-                                    <div class="slider__content">
-                                        <p class="slider__content--desc desc1 text__secondary2 mb-15"> Big Offer 50% off</p>
-                                        <h2 class="slider__content--maintitle h1">
-                                            New Collection <br>
-                                            Summer Sale
-                                        </h2>
-                                        <p class="slider__content--desc desc2 d-sm-2-none mb-40">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do <br> eiusmod tempor incididunt ut labore et dolore magna</p>
-                                        <a class="bg__secondary2 slider__btn primary__btn" href="shop.html">
-                                            Show Collection
-                                            <svg class="primary__btn--arrow__icon" xmlns="http://www.w3.org/2000/svg" width="20.2" height="12.2" viewBox="0 0 6.2 6.2">
-                                                <path d="M7.1,4l-.546.546L8.716,6.713H4v.775H8.716L6.554,9.654,7.1,10.2,9.233,8.067,10.2,7.1Z" transform="translate(-4 -4)" fill="currentColor"></path>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="swiper-slide ">
-                        <div class="hero__slider--items home2__slider--bg three">
-                            <div class="container-fluid">
-                                <div class="hero__slider--items__inner hero__slider--bg2__inner">
-                                    <div class="slider__content">
-                                        <p class="slider__content--desc desc1 text__secondary2 mb-15"> Big Offer 50% off</p>
-                                        <h2 class="slider__content--maintitle h1">
-                                            New Collection <br>
-                                            Summer Sale
-                                        </h2>
-                                        <p class="slider__content--desc desc2 d-sm-2-none mb-40">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do <br> eiusmod tempor incididunt ut labore et dolore magna</p>
-                                        <a class="bg__secondary2 slider__btn primary__btn" href="shop.html">
-                                            Show Collection
-                                            <svg class="primary__btn--arrow__icon" xmlns="http://www.w3.org/2000/svg" width="20.2" height="12.2" viewBox="0 0 6.2 6.2">
-                                                <path d="M7.1,4l-.546.546L8.716,6.713H4v.775H8.716L6.554,9.654,7.1,10.2,9.233,8.067,10.2,7.1Z" transform="translate(-4 -4)" fill="currentColor"></path>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+}
                 </div>
                 <div class="swiper__nav--btn swiper-button-next"></div>
                 <div class="swiper__nav--btn swiper-button-prev"></div>
             </div>
         </section>
         <!-- End slider section -->
-        <!-- Start banner section -->
+
+        <!-- Start banner section (Categories) -->
         <section class="banner__section banner__style2 section--padding color-scheme-2">
             <div class="section__heading text-center mb-35">
                 <h2 class="section__heading--maintitle style2">Shop by Categories</h2>
             </div>
             <div class="container-fluid">
-                <div class="row mb--n28">
-                    <div class="col-lg-4 col-md-order mb-28">
-                        <div class="banner__items position__relative">
-                            <a class="banner__items--thumbnail " href="shop.html">
-                                <img class="banner__items--thumbnail__img" src="assets/img/banner/banner7.png" alt="banner-img">
+                <div class="row row-cols-xl-4 row-cols-lg-3 row-cols-md-2 row-cols-1 g-4">
+@if (Model?.FeaturedCategories != null && Model.FeaturedCategories.Any())
+{
+    foreach (var cat in Model.FeaturedCategories)
+    {
+        var imgUrl = !string.IsNullOrEmpty(cat.ImageUrl) ? cat.ImageUrl : "/assets/img/banner/banner7.png";
+                    <div class="col">
+                        <div class="banner__items position__relative rounded overflow-hidden shadow-sm">
+                            <a class="banner__items--thumbnail d-block" href="/Shop?category=@cat.CategoryId">
+                                <img class="banner__items--thumbnail__img w-100" src="@imgUrl" alt="@cat.CategoryName" style="height: 240px; object-fit: cover;">
                                 <div class="banner__items--content style2">
-                                    <h3 class="banner__items--content__title style2">
-                                        NEW <br>
-                                        ACCESSORIES
+                                    <h3 class="banner__items--content__title style2 text-uppercase">
+                                        @cat.CategoryName
                                     </h3>
                                     <span class="banner__items--content__link style2">SHOP NOW</span>
                                 </div>
                             </a>
                         </div>
                     </div>
-                    <div class="col-lg-8">
-                        <div class="banner__style2--top__sidebar d-flex">
-                            <div class="banner__items position__relative mr-30 mb-28">
-                                <a class="banner__items--thumbnail" href="shop.html">
-                                    <img class="banner__items--thumbnail__img banner__img--max__height" src="assets/img/banner/banner8.png" alt="banner-img">
-                                    <div class="banner__items--content style2">
-                                        <h3 class="banner__items--content__title style2">
-                                            NEW <br>
-                                            ACCESSORIES
-                                        </h3>
-                                        <span class="banner__items--content__link style2">SHOP NOW</span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="banner__items position__relative mb-28">
-                                <a class="banner__items--thumbnail" href="shop.html">
-                                    <img class="banner__items--thumbnail__img" src="assets/img/banner/banner9.png" alt="banner-img">
-                                    <div class="banner__items--content style2">
-                                        <h3 class="banner__items--content__title style2">
-                                            TRENDING <br>
-                                            NOW
-                                        </h3>
-                                        <span class="banner__items--content__link style2">SHOP NOW</span>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="row row-cols-sm-2 row-cols-1">
-                            <div class="col mb-28">
-                                <div class="banner__items position__relative">
-                                    <a class="banner__items--thumbnail" href="shop.html">
-                                        <img class="banner__items--thumbnail__img banner__img--max__height" src="assets/img/banner/banner10.png" alt="banner-img">
-                                        <div class="banner__items--content style2">
-                                            <h3 class="banner__items--content__title style2">
-                                                TOP <br>
-                                                SELLER
-                                            </h3>
-                                            <span class="banner__items--content__link style2">SHOP NOW</span>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="col mb-28">
-                                <div class="banner__items position__relative">
-                                    <a class="banner__items--thumbnail" href="shop.html">
-                                        <img class="banner__items--thumbnail__img banner__img--max__height" src="assets/img/banner/banner11.png" alt="banner-img">
-                                        <div class="banner__items--content style2 right">
-                                            <h3 class="banner__items--content__title style2">
-                                                TOP <br>
-                                                DECORATION
-                                            </h3>
-                                            <span class="banner__items--content__link style2">SHOP NOW</span>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    }
+}
+else
+{
+                    <div class="col-12 text-center py-4 text-muted">No featured categories configured yet.</div>
+}
                 </div>
             </div>
         </section>
         <!-- End banner section -->
+
         <!-- Start product section -->
         <section class="product__section section--padding color-scheme-2 pt-0">
             <div class="container-fluid">
                 <div class="section__heading text-center mb-35">
-                    <h2 class="section__heading--maintitle style2">Summer Collection</h2>
+                    <h2 class="section__heading--maintitle style2">Featured Products</h2>
                 </div>
                 <div class="product__section--inner">
                     <div class="row row-cols-xl-5 row-cols-lg-4 row-cols-md-3 row-cols-2 mb--n30">
+@if (Model?.FeaturedProducts != null && Model.FeaturedProducts.Any())
+{
+    foreach (var prod in Model.FeaturedProducts)
+    {
+        var imgUrl = !string.IsNullOrEmpty(prod.PrimaryImage) ? prod.PrimaryImage : "/assets/img/product/product1.png";
+        var detailsUrl = !string.IsNullOrEmpty(prod.Slug) ? $"/Shop/Details/{prod.Slug}" : $"/Shop/Details/{prod.ProductId}";
                         <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product1.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product2.png" alt="product-img">
+                            <div class="product__items border rounded bg-white h-100 p-2">
+                                <div class="product__items--thumbnail position-relative overflow-hidden">
+                                    <a class="product__items--link d-block" href="@detailsUrl">
+                                        <img class="product__items--img product__primary--img rounded" src="@imgUrl" alt="@prod.ProductName" style="height: 220px; object-fit: cover; width: 100%;">
                                     </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
                                 </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Oversize Cotton Dress</a></h3>
+                                <div class="product__items--content text-center pt-2">
+                                    <span class="product__items--content__subtitle small text-muted">@prod.CategoryName</span>
+                                    <h3 class="product__items--content__title h6 mb-1 text-truncate">
+                                        <a href="@detailsUrl">@prod.ProductName</a>
+                                    </h3>
                                     <div class="product__items--price">
-                                        <span class="current__price">$110</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$78</span>
+                                        <span class="current__price fw-bold text-success">$@prod.Price.ToString("F2")</span>
                                     </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
                                 </div>
                             </div>
                         </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product3.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product4.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Boxy Denim Jacket</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$78</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$105</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product5.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product6.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Quilted Shoulder Bag</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$112</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$120</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product7.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product8.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">High Ankle Jeans</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$98</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$105</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product9.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product10.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Square Shoulder Bag</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$80</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$120</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product11.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product12.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Light Denim Jacket</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$86</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$98</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product13.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product14.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Wool-blend Jacket</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$67</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$92</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product2.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product1.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">OSmock Mini Dresss</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$65</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$70</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product3.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product4.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Western denim shirt</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$90</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$118</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col mb-30">
-                            <div class="product__items ">
-                                <div class="product__items--thumbnail">
-                                    <a class="product__items--link" href="product-details.html">
-                                        <img class="product__items--img product__primary--img" src="assets/img/product/product5.png" alt="product-img">
-                                        <img class="product__items--img product__secondary--img" src="assets/img/product/product6.png" alt="product-img">
-                                    </a>
-                                    <div class="product__badge">
-                                        <span class="product__badge--items sale">Sale</span>
-                                    </div>
-                                    <a class="product__add-to__cart--btn__style2 " href="cart.html">
-                                        <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 14.706 13.534">
-                                            <g transform="translate(0 0)">
-                                                <g>
-                                                    <path data-name="Path 16787" d="M4.738,472.271h7.814a.434.434,0,0,0,.414-.328l1.723-6.316a.466.466,0,0,0-.071-.4.424.424,0,0,0-.344-.179H3.745L3.437,463.6a.435.435,0,0,0-.421-.353H.431a.451.451,0,0,0,0,.9h2.24c.054.257,1.474,6.946,1.555,7.33a1.36,1.36,0,0,0-.779,1.242,1.326,1.326,0,0,0,1.293,1.354h7.812a.452.452,0,0,0,0-.9H4.74a.451.451,0,0,1,0-.9Zm8.966-6.317-1.477,5.414H5.085l-1.149-5.414Z" transform="translate(0 -463.248)" fill="currentColor"></path>
-                                                    <path data-name="Path 16788" d="M5.5,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,5.5,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,6.793,478.352Z" transform="translate(-1.191 -466.622)" fill="currentColor"></path>
-                                                    <path data-name="Path 16789" d="M13.273,478.8a1.294,1.294,0,1,0,1.293-1.353A1.325,1.325,0,0,0,13.273,478.8Zm1.293-.451a.452.452,0,1,1-.431.451A.442.442,0,0,1,14.566,478.352Z" transform="translate(-2.875 -466.622)" fill="currentColor"></path>
-                                                </g>
-                                            </g>
-                                        </svg>
-                                        <span class="add__to--cart__text"> + Add to cart</span>
-                                    </a>
-                                    <ul class="product__items--action__style2">
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" href="wishlist.html">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="23.51" height="21.443" viewBox="0 0 512 512"><path d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.09-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"></path></svg>
-                                                <span class="visually-hidden">Wishlist</span>
-                                            </a>
-                                        </li>
-                                        <li class="product__items--action__style2--list">
-                                            <a class="product__items--action__style2--btn" data-open="modal1" href="javascript:void(0)">
-                                                <svg class="product__items--action__btn--svg" xmlns="http://www.w3.org/2000/svg" width="22.51" height="20.443" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" /><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" /></svg>
-                                                <span class="visually-hidden">Quick View</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="product__items--content text-center">
-                                    <span class="product__items--content__subtitle">Jacket, Women</span>
-                                    <h3 class="product__items--content__title h4"><a href="product-details.html">Aware organic cotton</a></h3>
-                                    <div class="product__items--price">
-                                        <span class="current__price">$55</span>
-                                        <span class="price__divided"></span>
-                                        <span class="old__price">$66</span>
-                                    </div>
-                                    <ul class="rating product__rating d-flex justify-content-center">
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-                                        <li class="rating__list">
-                                            <span class="rating__list--icon">
-                                                <svg class="rating__list--icon__svg" xmlns="http://www.w3.org/2000/svg" width="14.105" height="14.732" viewBox="0 0 10.105 9.732">
-                                                    <path data-name="star - Copy" d="M9.837,3.5,6.73,3.039,5.338.179a.335.335,0,0,0-.571,0L3.375,3.039.268,3.5a.3.3,0,0,0-.178.514L2.347,6.242,1.813,9.4a.314.314,0,0,0,.464.316L5.052,8.232,7.827,9.712A.314.314,0,0,0,8.292,9.4L7.758,6.242l2.257-2.231A.3.3,0,0,0,9.837,3.5Z" transform="translate(0 -0.018)" fill="currentColor"></path>
-                                                </svg>
-                                            </span>
-                                        </li>
-
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+    }
+}
+else
+{
+                        <div class="col-12 text-center py-4 text-muted">No featured products configured yet.</div>
+}
                     </div>
                 </div>
             </div>
@@ -2083,11 +1173,4 @@
     <script src="assets/js/vendor/bootstrap.min.js" defer="defer"></script>
     <script src="assets/js/plugins/swiper-bundle.min.js"></script>
     <script src="assets/js/plugins/glightbox.min.js"></script>
-
-    <!-- Customscript js -->
-    <script src="assets/js/script.js"></script>
-
-</body>
-
-<!-- Mirrored from risingtheme.com/html/demo-suruchi-v1/suruchi/index-2.html by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 01 Jan 2025 10:16:46 GMT -->
-</html>
+

@@ -32,6 +32,22 @@
 \i ./01_Tables/user_addresses.sql
 \echo 'user_addresses completed.'
 
+\echo '--- homepage_banners (idempotent) ---'
+\i ./01_Tables/homepage_banners.sql
+\echo 'homepage_banners completed.'
+
+\echo '--- homepage_banner_categories (idempotent) ---'
+\i ./01_Tables/homepage_banner_categories.sql
+\echo 'homepage_banner_categories completed.'
+
+\echo '--- homepage_categories (idempotent) ---'
+\i ./01_Tables/homepage_categories.sql
+\echo 'homepage_categories completed.'
+
+\echo '--- homepage_products (idempotent) ---'
+\i ./01_Tables/homepage_products.sql
+\echo 'homepage_products completed.'
+
 \echo '--- drop legacy store_settings if present ---'
 DROP PROCEDURE IF EXISTS get_store_settings;
 DROP PROCEDURE IF EXISTS update_store_settings;

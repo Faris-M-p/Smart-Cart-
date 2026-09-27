@@ -157,4 +157,21 @@ GO
 GO
 PRINT N'salesreturndetail patch successfully completed.';
 GO
+:r .\01_Tables\HomepageBanners.sql
+GO
+PRINT N'HomepageBanners patch successfully completed.';
+GO
+:r .\01_Tables\HomepageBannerCategories.sql
+GO
+PRINT N'HomepageBannerCategories patch successfully completed.';
+GO
+:r .\01_Tables\HomepageCategories.sql
+GO
+PRINT N'HomepageCategories patch successfully completed.';
+GO
+:r .\01_Tables\HomepageProducts.sql
+GO
+PRINT N'HomepageProducts patch successfully completed.';
+GO
+
 

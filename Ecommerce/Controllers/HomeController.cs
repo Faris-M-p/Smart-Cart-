@@ -1,12 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Interface;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly HomeInterface _homeInterface;
+
+        public HomeController(HomeInterface homeInterface)
         {
-            return View();
+            _homeInterface = homeInterface;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var model = await _homeInterface.GetHomePageDataAsync();
+            return View(model);
         }
 
         public IActionResult About()

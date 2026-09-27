@@ -43,5 +43,9 @@ namespace Ecommerce.DataAccess
         public DbSet<SaleDetailEntity> SaleDetails => Set<SaleDetailEntity>();
         public DbSet<SalesReturnEntity> SalesReturns => Set<SalesReturnEntity>();
         public DbSet<SalesReturnDetailEntity> SalesReturnDetails => Set<SalesReturnDetailEntity>();
+        public DbSet<HomepageBannerEntity> HomepageBanners => Set<HomepageBannerEntity>();
+        public DbSet<HomepageBannerCategoryEntity> HomepageBannerCategories => Set<HomepageBannerCategoryEntity>();
+        public DbSet<HomepageCategoryEntity> HomepageCategories => Set<HomepageCategoryEntity>();
+        public DbSet<HomepageProductEntity> HomepageProducts => Set<HomepageProductEntity>();
     }
 }

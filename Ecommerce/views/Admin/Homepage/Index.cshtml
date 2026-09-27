@@ -1,0 +1,291 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Homepage Management</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Homepage Management</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<!-- [ Main Content ] start -->
+<div class="row" data-permission-module="Homepage">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header border-bottom">
+                <ul class="nav nav-tabs card-header-tabs" id="homepageTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="banners-tab" data-bs-toggle="tab" data-bs-target="#banners-pane" type="button" role="tab" aria-controls="banners-pane" aria-selected="true">
+                            <i class="ti ti-slideshow me-1"></i> Banners
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories-pane" type="button" role="tab" aria-controls="categories-pane" aria-selected="false">
+                            <i class="ti ti-category me-1"></i> Featured Categories
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button" role="tab" aria-controls="products-pane" aria-selected="false">
+                            <i class="ti ti-box me-1"></i> Featured Products
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body">
+                <div class="tab-content" id="homepageTabsContent">
+                    <!-- ================= BANNERS TAB ================= -->
+                    <div class="tab-pane fade show active" id="banners-pane" role="tabpanel" aria-labelledby="banners-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 fw-bold">Banner Carousel List</h6>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openCreateBannerModal()" data-permission="Homepage.Edit">
+                                <i class="ti ti-plus"></i> Add New Banner
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="bannersTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 100px;">Image</th>
+                                        <th>Title &amp; Subtitle</th>
+                                        <th>Attached Categories</th>
+                                        <th>Target URL</th>
+                                        <th style="width: 100px;">Order</th>
+                                        <th style="width: 100px;">Status</th>
+                                        <th style="width: 120px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bannersTableBody">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Loading banners...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ================= FEATURED CATEGORIES TAB ================= -->
+                    <div class="tab-pane fade" id="categories-pane" role="tabpanel" aria-labelledby="categories-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0 fw-bold">Featured Categories Grid</h6>
+                                <small class="text-muted">Display selected categories on storefront home page (one category per item)</small>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openAddCategoryModal()" data-permission="Homepage.Edit">
+                                <i class="ti ti-plus"></i> Add Featured Category
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="categoriesTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 80px;">Image</th>
+                                        <th>Category Name</th>
+                                        <th style="width: 120px;">Display Order</th>
+                                        <th style="width: 100px;">Status</th>
+                                        <th style="width: 140px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoriesTableBody">
+                                    <tr><td colspan="5" class="text-center py-4 text-muted">Loading featured categories...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ================= FEATURED PRODUCTS TAB ================= -->
+                    <div class="tab-pane fade" id="products-pane" role="tabpanel" aria-labelledby="products-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0 fw-bold">Featured Products Showcase</h6>
+                                <small class="text-muted">Display selected products on storefront home page</small>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openAddProductModal()" data-permission="Homepage.Edit">
+                                <i class="ti ti-plus"></i> Add Featured Product
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="productsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 80px;">Image</th>
+                                        <th>Product Name</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th style="width: 120px;">Display Order</th>
+                                        <th style="width: 100px;">Status</th>
+                                        <th style="width: 140px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Loading featured products...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- BANNER MODAL -->
+<div class="modal fade" id="bannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="bannerForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bannerModalTitle">Add New Banner</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="bannerId" name="BannerId" value="0" />
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label required">Banner Title</label>
+                            <input type="text" class="form-control" id="bannerTitle" name="Title" required placeholder="e.g. Summer Collection Sale" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Subtitle / Sub-caption</label>
+                            <input type="text" class="form-control" id="bannerSubtitle" name="Subtitle" placeholder="e.g. Up to 50% Off Top Brands" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label required">Banner Image</label>
+                            <input type="file" class="form-control" id="bannerImageFile" name="BannerImage" accept="image/*" onchange="previewBannerImage(this)" />
+                            <div class="mt-2 text-center border p-2 rounded bg-light" id="bannerImagePreviewContainer" style="display: none;">
+                                <img id="bannerImagePreview" src="" alt="Banner Preview" style="max-height: 180px; width: auto; object-fit: contain;" class="rounded img-fluid" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label">Attached Categories (Multi-select)</label>
+                            <p class="text-muted small mb-1">Clicking this banner will navigate to Shop page filtering products by these categories.</p>
+                            <select class="form-select" id="bannerCategories" name="CategoryIds" multiple style="height: 120px;">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Custom Target URL (Optional Override)</label>
+                            <input type="text" class="form-control" id="bannerTargetUrl" name="TargetUrl" placeholder="Leave blank to auto-generate from categories" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="bannerDisplayOrder" name="DisplayOrder" value="0" min="0" />
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="bannerIsActive" name="IsActive" value="true" checked />
+                                <label class="form-check-label fw-bold" for="bannerIsActive">Is Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveBanner">Save Banner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- FEATURED CATEGORY MODAL -->
+<div class="modal fade" id="featuredCategoryModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="featuredCategoryForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="featuredCategoryModalTitle">Add Featured Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="homepageCategoryId" name="HomepageCategoryId" value="0" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Select Category</label>
+                        <select class="form-select" id="featuredCategorySelect" name="CategoryId" required>
+                            <option value="">-- Select Category --</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="featuredCategoryDisplayOrder" name="DisplayOrder" value="0" min="0" />
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="featuredCategoryIsActive" name="IsActive" value="true" checked />
+                                <label class="form-check-label fw-bold" for="featuredCategoryIsActive">Is Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveFeaturedCategory">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- FEATURED PRODUCT MODAL -->
+<div class="modal fade" id="featuredProductModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="featuredProductForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="featuredProductModalTitle">Add Featured Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="homepageProductId" name="HomepageProductId" value="0" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Select Product</label>
+                        <select class="form-select" id="featuredProductSelect" name="ProductId" required>
+                            <option value="">-- Select Product --</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="featuredProductDisplayOrder" name="DisplayOrder" value="0" min="0" />
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="featuredProductIsActive" name="IsActive" value="true" checked />
+                                <label class="form-check-label fw-bold" for="featuredProductIsActive">Is Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveFeaturedProduct">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Admin/assets/js/pages/homepage-management.js"></script>
+}

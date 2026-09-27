@@ -95,6 +95,12 @@ DI is registered in `ServiceCollectionExtensions.AddCustomServices` in `Program.
 2. Controller uses `UserAuthHelper.TryGetUserId`. If missing → 401 JSON for APIs.
 3. Dapper SPs (`AddCartItem`, `PlaceOrder`, …) enforce stock, `SellOnline`, and login.
 
+## Request flow — storefront home & homepage management
+
+1. `GET /` → `HomeController.Index` → `HomeRepository.GetHomePageDataAsync` via Dapper → queries active banners, attached categories, featured categories, featured products → Razor view `views/Home/Index.cshtml`.
+2. `GET /Admin/Homepage` → `HomepageController.Index` → `views/Admin/Homepage/Index.cshtml` (3 tabs: Banners, Featured Categories, Featured Products) + JS `homepage-management.js`.
+3. Banners / Featured Categories / Featured Products CRUD via `HomepageRepository` (EF Core `EcommerceDbContext`).
+
 ## Request flow — admin
 
 1. Path starts with `/admin` or `/api/admin`.

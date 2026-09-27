@@ -153,3 +153,19 @@
 \echo '--- sku_media ---'
 \i ./01_Tables/sku_media.sql
 \echo 'sku_media completed.'
+
+\echo '--- homepage_banners ---'
+\i ./01_Tables/homepage_banners.sql
+\echo 'homepage_banners completed.'
+
+\echo '--- homepage_banner_categories ---'
+\i ./01_Tables/homepage_banner_categories.sql
+\echo 'homepage_banner_categories completed.'
+
+\echo '--- homepage_categories ---'
+\i ./01_Tables/homepage_categories.sql
+\echo 'homepage_categories completed.'
+
+\echo '--- homepage_products ---'
+\i ./01_Tables/homepage_products.sql
+\echo 'homepage_products completed.'

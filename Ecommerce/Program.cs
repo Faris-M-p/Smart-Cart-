@@ -175,6 +175,7 @@ public static class ServiceCollectionExtensions
     {
         // IDataAccessDapper is already registered above, no need to register again
         services.AddTransient<ShopInterface, ShopRepository>();
+        services.AddTransient<HomeInterface, HomeRepository>();
         services.AddTransient<CartInterface, CartRepository>();
         services.AddTransient<WishlistInterface, WishlistRepository>();
         services.AddTransient<UserAuthInterface, UserAuthRepository>();
@@ -199,6 +200,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAdminOrderInterface, AdminOrderRepository>();
         services.AddTransient<ISaleInterface, SaleRepository>();
         services.AddTransient<ISalesReturnInterface, SalesReturnRepository>();
+        services.AddTransient<IHomepageInterface, HomepageRepository>();
         services.AddSingleton<AdminJwtTokenService>();
         services.AddSingleton<IPasswordHasher<AdminUserEntity>, PasswordHasher<AdminUserEntity>>();
         services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();

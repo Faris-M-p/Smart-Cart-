@@ -113,6 +113,16 @@ EF does **not** map `Users`, `Orders`, `Cart`, `Payments`, `Shipping`, `Ratings`
 
 **Shipping** PK `ShippingId`: OrderId, ShippingAddress, ShippingDate, EstimatedDeliveryDate, ShippingStatus, cancelled.
 
+### Homepage Management
+
+**homepage_banners** (PK `id_homepage_banner` / `ID_HomepageBanner`): `title`, `subtitle`, `image_url`, `target_url`, `display_order`, `is_active`, timestamps, cancelled. Admin hero banner slides.
+
+**homepage_banner_categories** (PK `id_homepage_banner_category` / `ID_HomepageBannerCategory`): `fk_banner`, `fk_category`. Multi-category filter attachments for banner clicks.
+
+**homepage_categories** (PK `id_homepage_category` / `ID_HomepageCategory`): `fk_category` → categories, `display_order`, `is_active`, timestamps, cancelled. Featured categories for homepage grid.
+
+**homepage_products** (PK `id_homepage_product` / `ID_HomepageProduct`): `fk_product` → products, `display_order`, `is_active`, timestamps, cancelled. Featured products for homepage showcase.
+
 ### Present in create scripts, little or no app use
 
 | Table | Status |

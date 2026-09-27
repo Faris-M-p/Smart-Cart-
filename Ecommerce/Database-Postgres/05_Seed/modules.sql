@@ -19,7 +19,8 @@ FROM (VALUES
     ('SalesReturns',     'Sales Returns',    126),
     ('Billing',          'Billing',          130),
     ('Employees',        'Employees',        140),
-    ('UserRoles',        'User Roles',       150)
+    ('UserRoles',        'User Roles',       150),
+    ('Homepage',         'Homepage',         160)
 ) AS s(modulename, displayname, displayorder)
 WHERE NOT EXISTS (
     SELECT 1 FROM modules m WHERE m.modulename = s.modulename

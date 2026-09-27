@@ -64,7 +64,9 @@ FROM (VALUES
     ('UserRoles',       'View',        'UserRoles.View',        10),
     ('UserRoles',       'Create',      'UserRoles.Create',      20),
     ('UserRoles',       'Edit',        'UserRoles.Edit',        30),
-    ('UserRoles',       'Delete',      'UserRoles.Delete',      40)
+    ('UserRoles',       'Delete',      'UserRoles.Delete',      40),
+    ('Homepage',        'View',        'Homepage.View',         10),
+    ('Homepage',        'Edit',        'Homepage.Edit',         20)
 ) AS s(modulename, permissionname, permissioncode, displayorder)
 INNER JOIN modules m ON m.modulename = s.modulename
 WHERE NOT EXISTS (
