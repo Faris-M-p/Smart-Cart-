@@ -28,11 +28,6 @@ namespace Ecommerce.Repository
                 },
                 new[] { "p_result", "p_result2", "p_result3" });
 
-            var items = (await multi.ReadAsync<CartLine>()).ToList();
-            var summary = await multi.ReadFirstOrDefaultAsync<CheckoutSummary>() ?? new CheckoutSummary();
-            var customer = await multi.ReadFirstOrDefaultAsync<CheckoutCustomer>() ?? new CheckoutCustomer();
-            var addresses = multi.IsConsumed ? new List<UserAddress>() : (await multi.ReadAsync<UserAddress>()).ToList();
-
             return new CheckoutPage
             {
                 Source = productVariantId > 0 ? "buynow" : "cart",
@@ -96,6 +91,44 @@ namespace Ecommerce.Repository
                     UserId = userId,
                     OrderId = input.OrderId,
                     Reason = (input.Reason ?? string.Empty).Trim()
+                }) ?? StatusFail();
+        }
+
+        public async Task<List<UserAddress>> GetUserAddressesAsync(int userId)
+        {
+            return await _dapper.GetListByProcedure<UserAddress, object>(
+                "GetUserAddresses",
+                new { UserId = userId });
+        }
+
+        public async Task<CommonResponse> SaveUserAddressAsync(int userId, SaveAddressInput input)
+        {
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                "SaveUserAddress",
+                new
+                {
+                    UserId = userId,
+                    AddressId = input.AddressId,
+                    AddressType = (input.AddressType ?? "Home").Trim(),
+                    ReceiverName = (input.ReceiverName ?? string.Empty).Trim(),
+                    Phone = (input.Phone ?? string.Empty).Trim(),
+                    AddressLine = (input.AddressLine ?? string.Empty).Trim(),
+                    City = (input.City ?? string.Empty).Trim(),
+                    Pincode = (input.Pincode ?? string.Empty).Trim(),
+                    Latitude = input.Latitude,
+                    Longitude = input.Longitude,
+                    IsDefault = input.IsDefault
+                }) ?? StatusFail();
+        }
+
+        public async Task<CommonResponse> DeleteUserAddressAsync(int userId, int addressId)
+        {
+            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                "DeleteUserAddress",
+                new
+                {
+                    UserId = userId,
+                    AddressId = addressId
                 }) ?? StatusFail();
         }
 

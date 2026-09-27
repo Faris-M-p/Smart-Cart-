@@ -46,14 +46,33 @@ namespace Ecommerce.Repository
             }
 
             var hash = _passwordHasher.HashPassword(new StorefrontUser { Email = email }, password);
-            return await _dapper.GetSingleByProcedure<CommonResponse, object>(
-                StoredProcedures.Auth.RegisterUser,
+            var result = await _dapper.GetSingleByProcedure<CommonResponse, object>(
+                "RegisterUser",
                 new
                 {
                     FullName = name,
                     Email = email,
                     PasswordHash = hash
                 }) ?? Fail("No response from stored procedure.");
+
+            if (!result.StatusCode || result.ResponseCode < 1)
+            {
+                return (result, null);
+            }
+
+            int userId = (int)result.ResponseCode;
+            var (token, expiresAt) = _jwtTokenService.CreateToken(userId, name, email);
+            return (result, new UserLoginData
+            {
+                AccessToken = token,
+                ExpiresAt = expiresAt,
+                User = new UserSessionData
+                {
+                    UserId = userId,
+                    Name = name,
+                    Email = email
+                }
+            });
         }
 
         public async Task<(CommonResponse Response, UserLoginData? Login)> LoginAsync(UserLoginInput input)
