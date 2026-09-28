@@ -49,7 +49,7 @@ Specific Admin back-office modules documented under `modules/`:
 - [`inventory.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/inventory.md) — Stock levels & manual inventory adjustments
 - [`order.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/order.md) — Order fulfillment, confirm, ship, deliver & cancel
 - [`employee.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/employee.md) — Employee / AdminUser management
-- [`user-role.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/user-role.md) — User Roles & Permissions matrix tree
+- [- [eports.md](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/reports.md) � Admin Reports (Sales, Orders, Products, Customers)
 
 ## Business rules (cross-cutting)
 
@@ -65,3 +65,4 @@ Specific Admin back-office modules documented under `modules/`:
 - POST `Get{Entity}List` + GET `GetById/{id}` + POST Create/Update/Delete
 - `ApiResponse<T>` wrapper on many admin JSON results
 - Helpers `*Helper.NormalizeInput` for paging
+

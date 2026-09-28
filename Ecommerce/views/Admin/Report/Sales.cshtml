@@ -1,0 +1,185 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Reports</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="javascript:void(0)">Reports</a></li>
+                    <li class="breadcrumb-item" aria-current="page">Sales Report</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<!-- [ Main Content ] start -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Sales Report</h5>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filters -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">From Date</label>
+                        <input type="date" id="fromDate" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">To Date</label>
+                        <input type="date" id="toDate" class="form-control">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="button" id="btnGenerate" class="btn btn-primary w-100">
+                            <i class="ti ti-search me-1"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row mb-4" id="summarySection" style="display:none!important">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white mb-0">
+                            <div class="card-body">
+                                <h6 class="text-white-50 mb-1">Total Orders</h6>
+                                <h2 class="text-white mb-0" id="lblTotalOrders">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white mb-0">
+                            <div class="card-body">
+                                <h6 class="text-white-50 mb-1">Total Sales</h6>
+                                <h2 class="text-white mb-0" id="lblTotalSales">₹0.00</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" id="tablesSection" style="display:none!important">
+                    <!-- Payment Method Summary -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="fw-semibold mb-2">Payment Method Summary</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr><th>Method</th><th>Count</th><th>Total</th></tr>
+                                </thead>
+                                <tbody id="tbPayment"><tr><td colspan="3" class="text-center text-muted">No data</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Order Status Summary -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="fw-semibold mb-2">Order Status Summary</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr><th>Status</th><th>Count</th><th>Total</th></tr>
+                                </thead>
+                                <tbody id="tbStatus"><tr><td colspan="3" class="text-center text-muted">No data</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Daily Sales -->
+                    <div class="col-12">
+                        <h6 class="fw-semibold mb-2">Daily Sales Breakdown</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr><th>Date</th><th>Orders</th><th>Total Sales</th></tr>
+                                </thead>
+                                <tbody id="tbDaily"><tr><td colspan="3" class="text-center text-muted">No data</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading / Error -->
+                <div id="loadingMsg" class="text-center py-4" style="display:none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Loading report...</p>
+                </div>
+                <div id="errorMsg" class="alert alert-danger" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ Main Content ] end -->
+
+<script>
+    document.getElementById('btnGenerate').addEventListener('click', loadReport);
+
+    function fmt(n) { return '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    function loadReport() {
+        const fromDate = document.getElementById('fromDate').value || null;
+        const toDate   = document.getElementById('toDate').value || null;
+
+        document.getElementById('summarySection').style.display = 'none';
+        document.getElementById('tablesSection').style.display  = 'none';
+        document.getElementById('errorMsg').style.display       = 'none';
+        document.getElementById('loadingMsg').style.display     = 'block';
+
+        fetch('/Admin/Report/GetSalesReport', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fromDate, toDate })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(result) {
+            document.getElementById('loadingMsg').style.display = 'none';
+
+            if (!result || !result.success) {
+                document.getElementById('errorMsg').innerText = (result && result.message) || 'Failed to load report.';
+                document.getElementById('errorMsg').style.display = 'block';
+                return;
+            }
+
+            var d = result.data;
+
+            // Cards
+            document.getElementById('lblTotalOrders').innerText = d.totalOrders || 0;
+            document.getElementById('lblTotalSales').innerText  = fmt(d.totalSales);
+            document.getElementById('summarySection').style.display = '';
+            document.getElementById('tablesSection').style.display  = '';
+
+            // Payment method table
+            var pm = (d.paymentMethodSummary || []);
+            document.getElementById('tbPayment').innerHTML = pm.length
+                ? pm.map(function(x){ return '<tr><td>' + (x.method||'-') + '</td><td>' + x.count + '</td><td>' + fmt(x.total) + '</td></tr>'; }).join('')
+                : '<tr><td colspan="3" class="text-center text-muted">No data</td></tr>';
+
+            // Status table
+            var ss = (d.orderStatusSummary || []);
+            document.getElementById('tbStatus').innerHTML = ss.length
+                ? ss.map(function(x){ return '<tr><td>' + (x.status||'-') + '</td><td>' + x.count + '</td><td>' + fmt(x.total) + '</td></tr>'; }).join('')
+                : '<tr><td colspan="3" class="text-center text-muted">No data</td></tr>';
+
+            // Daily table
+            var dl = (d.dailySales || []);
+            document.getElementById('tbDaily').innerHTML = dl.length
+                ? dl.map(function(x){ return '<tr><td>' + (x.date||'-') + '</td><td>' + x.count + '</td><td>' + fmt(x.total) + '</td></tr>'; }).join('')
+                : '<tr><td colspan="3" class="text-center text-muted">No data</td></tr>';
+        })
+        .catch(function(err) {
+            document.getElementById('loadingMsg').style.display = 'none';
+            document.getElementById('errorMsg').innerText = 'Request error: ' + err;
+            document.getElementById('errorMsg').style.display = 'block';
+        });
+    }
+</script>
