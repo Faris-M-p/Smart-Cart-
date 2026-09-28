@@ -5,6 +5,7 @@ namespace Ecommerce.Interface.Admin
 {
     public interface IReportInterface
     {
+        Task<DashboardStats> GetDashboardStatsAsync();
         Task<SalesReportSummary> GetSalesReportAsync(SalesReportInput input);
         Task<TableOutput<OrderReportItem>> GetOrderReportAsync(OrderReportInput input);
         Task<TableOutput<ProductReportItem>> GetProductReportAsync(ProductReportInput input);

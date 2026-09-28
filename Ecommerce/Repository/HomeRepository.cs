@@ -21,14 +21,14 @@ namespace Ecommerce.Repository
                 // 1. Banners
                 const string sqlBanners = @"
                     SELECT 
-                        b.id_homepage_banner AS BannerId,
+                        b.id_banner AS BannerId,
                         COALESCE(b.title, '') AS Title,
-                        COALESCE(b.subtitle, '') AS Subtitle,
-                        COALESCE(b.image_url, '') AS ImageUrl,
-                        COALESCE(b.target_url, '') AS TargetUrl
+                        '' AS Subtitle,
+                        COALESCE(b.imageurl, '') AS ImageUrl,
+                        '' AS TargetUrl
                     FROM homepage_banners b
-                    WHERE b.is_active = true AND b.cancelled = false
-                    ORDER BY b.display_order, b.id_homepage_banner;";
+                    WHERE b.isactive = true AND b.cancelled = false
+                    ORDER BY b.displayorder, b.id_banner;";
 
                 var banners = await _dapper.GetListByQuery<HomeBannerDto>(sqlBanners);
 
@@ -70,11 +70,11 @@ namespace Ecommerce.Repository
                     SELECT 
                         c.id_category AS CategoryId,
                         COALESCE(c.name, '') AS CategoryName,
-                        COALESCE(c.image_url, '') AS ImageUrl
+                        COALESCE(c.imageurl, '') AS ImageUrl
                     FROM homepage_categories hc
-                    JOIN categories c ON hc.fk_category = c.id_category
-                    WHERE hc.is_active = true AND hc.cancelled = false AND c.is_active = true AND c.cancelled = false
-                    ORDER BY hc.display_order, hc.id_homepage_category;";
+                    JOIN category c ON hc.fk_category = c.id_category
+                    WHERE hc.isactive = true AND hc.cancelled = false AND c.isactive = true AND c.cancelled = false
+                    ORDER BY hc.displayorder, hc.id_homepagecategory;";
 
                 result.FeaturedCategories = await _dapper.GetListByQuery<HomeCategoryDto>(sqlCategories);
 
@@ -86,20 +86,20 @@ namespace Ecommerce.Repository
                         COALESCE(p.name, '') AS ProductName,
                         COALESCE(c.name, '') AS CategoryName,
                         COALESCE((
-                            SELECT media_url FROM product_media 
-                            WHERE fk_product = p.id_product AND media_type = 'Image' AND media_url IS NOT NULL AND media_url <> ''
-                            ORDER BY is_primary DESC, display_order ASC LIMIT 1
+                            SELECT mediaurl FROM productmedia 
+                            WHERE fk_product = p.id_product AND mediatype = 'Image' AND mediaurl IS NOT NULL AND mediaurl <> ''
+                            ORDER BY isprimary DESC, displayorder ASC LIMIT 1
                         ), '') AS PrimaryImage,
                         COALESCE((
-                            SELECT MIN(pv.selling_price) FROM product_variants pv 
-                            WHERE pv.fk_product = p.id_product AND pv.is_active = true AND pv.cancelled = false
+                            SELECT MIN(pv.sellingprice) FROM productvariants pv 
+                            WHERE pv.fk_product = p.id_product AND pv.isactive = true AND pv.cancelled = false
                         ), 0) AS Price
                     FROM homepage_products hp
                     JOIN products p ON hp.fk_product = p.id_product
-                    JOIN sub_categories sc ON p.fk_sub_category = sc.id_sub_category
-                    JOIN categories c ON sc.fk_category = c.id_category
-                    WHERE hp.is_active = true AND hp.cancelled = false AND p.is_active = true AND p.cancelled = false
-                    ORDER BY hp.display_order, hp.id_homepage_product;";
+                    JOIN subcategory sc ON p.fk_subcategory = sc.id_subcategory
+                    JOIN category c ON sc.fk_category = c.id_category
+                    WHERE hp.isactive = true AND hp.cancelled = false AND p.isactive = true AND p.cancelled = false
+                    ORDER BY hp.displayorder, hp.id_homepageproduct;";
 
                 result.FeaturedProducts = await _dapper.GetListByQuery<HomeProductDto>(sqlProducts);
             }

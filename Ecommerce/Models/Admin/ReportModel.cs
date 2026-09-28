@@ -4,6 +4,32 @@ namespace Ecommerce.Models.Admin
 {
     public class ReportModel
     {
+        // ── Dashboard ─────────────────────────────────────────────────────
+        public class DashboardStats
+        {
+            public decimal TotalRevenue      { get; set; }
+            public int     TotalOrders       { get; set; }
+            public int     TotalCustomers    { get; set; }
+            public int     TotalProducts     { get; set; }
+            public decimal RevenueThisMonth  { get; set; }
+            public int     OrdersThisMonth   { get; set; }
+            public decimal RevenuePrevMonth  { get; set; }
+            public int     OrdersPrevMonth   { get; set; }
+            public int     PendingOrders     { get; set; }
+            public int     LowStockProducts  { get; set; }
+            public List<DailySummary>       Last30DaySales  { get; set; } = new();
+            public List<StatusSummary>      OrdersByStatus  { get; set; } = new();
+            public List<RecentOrderItem>    RecentOrders    { get; set; } = new();
+        }
+
+        public class RecentOrderItem
+        {
+            public string  OrderNumber   { get; set; } = string.Empty;
+            public string  CustomerName  { get; set; } = string.Empty;
+            public decimal TotalAmount   { get; set; }
+            public string  OrderStatus   { get; set; } = string.Empty;
+            public DateTime OrderDate    { get; set; }
+        }
         public class SalesReportInput
         {
             public DateTime? FromDate { get; set; }

@@ -15,6 +15,92 @@ namespace Ecommerce.Repository.Admin
             _db = db;
         }
 
+        // ─── Dashboard Stats ─────────────────────────────────────────────
+        public async Task<DashboardStats> GetDashboardStatsAsync()
+        {
+            var now        = DateTime.UtcNow;
+            var thisMonth  = new DateTime(now.Year, now.Month, 1);
+            var prevMonth  = thisMonth.AddMonths(-1);
+            var last30     = now.Date.AddDays(-29);
+
+            // Run all counts in parallel
+            var allOrdersTask      = _db.Orders.AsNoTracking().Where(o => o.Cancelled != true).ToListAsync();
+            var customersTask      = _db.Users.AsNoTracking().CountAsync(u => u.Cancelled != true && !u.IsAdmin);
+            var productsTask       = _db.Products.AsNoTracking().CountAsync(p => !p.Cancelled);
+            var pendingOrdersTask  = _db.Orders.AsNoTracking().CountAsync(o => o.Cancelled != true && o.OrderStatus == "Placed");
+
+            // Low stock: sum per variant < 5
+            var stockAggTask = _db.Stock.AsNoTracking()
+                                   .Where(s => !s.Cancelled)
+                                   .GroupBy(s => s.FK_ProductVariant)
+                                   .Select(g => new { FK_ProductVariant = g.Key, Total = g.Sum(x => x.Quantity) })
+                                   .ToListAsync();
+
+            // Recent 10 orders
+            var recentOrdersTask = (
+                from o in _db.Orders.AsNoTracking().Where(o => o.Cancelled != true)
+                join u in _db.Users.AsNoTracking() on o.FK_User equals u.ID_User into uj
+                from u in uj.DefaultIfEmpty()
+                orderby o.OrderDate descending
+                select new RecentOrderItem
+                {
+                    OrderNumber  = o.OrderNumber ?? ("SC" + o.ID_Order.ToString("D6")),
+                    CustomerName = u != null ? (u.FullName ?? u.UserName) : (o.ReceiverName ?? "Guest"),
+                    TotalAmount  = o.TotalAmount,
+                    OrderStatus  = o.OrderStatus ?? "-",
+                    OrderDate    = o.OrderDate ?? DateTime.MinValue
+                }
+            ).Take(10).ToListAsync();
+
+            await Task.WhenAll(allOrdersTask, customersTask, productsTask, pendingOrdersTask, stockAggTask, recentOrdersTask);
+
+            var allOrders   = allOrdersTask.Result;
+            var stockAgg    = stockAggTask.Result;
+            var lowStock    = stockAgg.Count(s => s.Total <= 5);
+
+            var thisMonthOrders = allOrders.Where(o => o.OrderDate.HasValue && o.OrderDate.Value >= thisMonth).ToList();
+            var prevMonthOrders = allOrders.Where(o => o.OrderDate.HasValue && o.OrderDate.Value >= prevMonth && o.OrderDate.Value < thisMonth).ToList();
+            var last30Orders    = allOrders.Where(o => o.OrderDate.HasValue && o.OrderDate.Value.Date >= last30).ToList();
+
+            return new DashboardStats
+            {
+                TotalRevenue     = allOrders.Sum(o => o.TotalAmount),
+                TotalOrders      = allOrders.Count,
+                TotalCustomers   = customersTask.Result,
+                TotalProducts    = productsTask.Result,
+                RevenueThisMonth = thisMonthOrders.Sum(o => o.TotalAmount),
+                OrdersThisMonth  = thisMonthOrders.Count,
+                RevenuePrevMonth = prevMonthOrders.Sum(o => o.TotalAmount),
+                OrdersPrevMonth  = prevMonthOrders.Count,
+                PendingOrders    = pendingOrdersTask.Result,
+                LowStockProducts = lowStock,
+
+                Last30DaySales = last30Orders
+                    .GroupBy(o => o.OrderDate!.Value.Date)
+                    .Select(g => new DailySummary
+                    {
+                        Date  = g.Key.ToString("yyyy-MM-dd"),
+                        Count = g.Count(),
+                        Total = g.Sum(o => o.TotalAmount)
+                    })
+                    .OrderBy(d => d.Date)
+                    .ToList(),
+
+                OrdersByStatus = allOrders
+                    .GroupBy(o => o.OrderStatus ?? "Unknown")
+                    .Select(g => new StatusSummary
+                    {
+                        Status = g.Key,
+                        Count  = g.Count(),
+                        Total  = g.Sum(o => o.TotalAmount)
+                    })
+                    .OrderByDescending(s => s.Count)
+                    .ToList(),
+
+                RecentOrders = recentOrdersTask.Result
+            };
+        }
+
         // ─── Sales Report ────────────────────────────────────────────────
         public async Task<SalesReportSummary> GetSalesReportAsync(SalesReportInput input)
         {

@@ -13,25 +13,20 @@
 @if (!hasAnyContent)
 {
     <!-- ============================================================
-         NO CONTENT SET BY ADMIN — Default "Go Shop" Hero Section
+         NO CONTENT SET BY ADMIN - Default "Go Shop" Hero Section
     ============================================================ -->
     <section style="min-height: 80vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #f0fdf4 100%);">
         <div class="container text-center py-5">
             <div class="mb-4">
                 <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="70" cy="70" r="70" fill="#EFF6FF"/>
-                    <!-- Bag body -->
                     <rect x="30" y="55" width="80" height="58" rx="10" fill="#3B82F6"/>
-                    <!-- Bag handle -->
                     <path d="M50 55C50 39.536 59.402 28 70 28C80.598 28 90 39.536 90 55" stroke="#2563EB" stroke-width="7" stroke-linecap="round" fill="none"/>
-                    <!-- Smile -->
                     <path d="M56 88C56 88 62 98 70 98C78 98 84 88 84 88" stroke="white" stroke-width="5" stroke-linecap="round" fill="none"/>
-                    <!-- Eyes -->
                     <circle cx="58" cy="76" r="5" fill="white"/>
                     <circle cx="82" cy="76" r="5" fill="white"/>
                     <circle cx="58" cy="76" r="2.5" fill="#1E40AF"/>
                     <circle cx="82" cy="76" r="2.5" fill="#1E40AF"/>
-                    <!-- Star top-right -->
                     <polygon points="116,20 119,29 128,29 121,35 124,44 116,38 108,44 111,35 104,29 113,29" fill="#FBBF24"/>
                 </svg>
             </div>
@@ -57,45 +52,45 @@ else
     @* ====================== HERO BANNER SLIDER ====================== *@
     @if (hasBanners)
     {
-        <section class="hero__slider--section color-scheme-2">
-            <div class="hero__slider--inner hero__slider--activation swiper">
-                <div class="hero__slider--wrapper swiper-wrapper">
+        <section class="hero__slider--section mb-5">
+            <div class="swiper hero-swiper">
+                <div class="swiper-wrapper">
                 @foreach (var banner in Model!.Banners)
                 {
-                    var imgSrc = string.IsNullOrWhiteSpace(banner.ImageUrl) ? "" :
-                                 (banner.ImageUrl.StartsWith("/") ? banner.ImageUrl : "/" + banner.ImageUrl);
+                    var imgSrc = banner.ImageUrl;
+                    if (string.IsNullOrWhiteSpace(imgSrc)) { imgSrc = ""; }
+                    else if (!imgSrc.StartsWith("/") && !imgSrc.StartsWith("http")) { imgSrc = "/" + imgSrc; }
+
                     var bgStyle = !string.IsNullOrEmpty(imgSrc)
-                        ? $"background-image: linear-gradient(rgba(0,0,0,0.40), rgba(0,0,0,0.40)), url('{imgSrc}'); background-size: cover; background-position: center;"
+                        ? $"background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('{imgSrc}') center/cover no-repeat;"
                         : "background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);";
                     var link = string.IsNullOrWhiteSpace(banner.TargetUrl) ? "/Shop" : banner.TargetUrl;
 
                     <div class="swiper-slide">
-                        <div class="hero__slider--items home2__slider--bg" style="@bgStyle; min-height: 420px;">
-                            <div class="container-fluid h-100">
-                                <div class="hero__slider--items__inner hero__slider--bg2__inner h-100 d-flex align-items-center">
-                                    <div class="slider__content" style="max-width: 600px;">
-                                        @if (!string.IsNullOrWhiteSpace(banner.Subtitle))
-                                        {
-                                            <p class="text-white fw-semibold mb-2 text-uppercase" style="letter-spacing: 1.5px; font-size: 0.9rem; opacity: 0.9;">@banner.Subtitle</p>
-                                        }
-                                        <h2 class="slider__content--maintitle h1 text-white fw-bold mb-4" style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                                            @banner.Title
-                                        </h2>
-                                        <a class="bg__secondary2 slider__btn primary__btn" href="@link">
-                                            Shop Now
-                                            <svg class="primary__btn--arrow__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="12" viewBox="0 0 6.2 6.2">
-                                                <path d="M7.1,4l-.546.546L8.716,6.713H4v.775H8.716L6.554,9.654,7.1,10.2,9.233,8.067,10.2,7.1Z" transform="translate(-4 -4)" fill="currentColor"/>
-                                            </svg>
-                                        </a>
-                                    </div>
+                        <div class="d-flex align-items-center" style="@bgStyle min-height: 60vh; height: 500px;">
+                            <div class="container-fluid px-5">
+                                <div class="slider__content" style="max-width: 600px;">
+                                    @if (!string.IsNullOrWhiteSpace(banner.Subtitle))
+                                    {
+                                        <p class="text-white fw-semibold mb-2 text-uppercase" style="letter-spacing: 1.5px; font-size: 1rem; opacity: 0.9;">@banner.Subtitle</p>
+                                    }
+                                    <h2 class="display-4 text-white fw-bold mb-4" style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                        @banner.Title
+                                    </h2>
+                                    <a class="btn btn-primary btn-lg rounded px-4 py-2 mt-2" style="background:#3b82f6; border:none;" href="@link">
+                                        Shop Now
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 }
                 </div>
-                <div class="swiper__nav--btn swiper-button-next"></div>
-                <div class="swiper__nav--btn swiper-button-prev"></div>
+                <!-- Add Pagination -->
+                <div class="swiper-pagination"></div>
+                <!-- Add Navigation -->
+                <div class="swiper-button-next text-white"></div>
+                <div class="swiper-button-prev text-white"></div>
             </div>
         </section>
     }
@@ -103,23 +98,25 @@ else
     @* ====================== FEATURED CATEGORIES ====================== *@
     @if (hasCategories)
     {
-        <section class="banner__section banner__style2 section--padding color-scheme-2">
+        <section class="banner__section mb-5 py-5">
             <div class="container-fluid">
-                <div class="section__heading text-center mb-35">
-                    <h2 class="section__heading--maintitle style2">Shop by Categories</h2>
+                <div class="section__heading text-center mb-4">
+                    <h2 class="fw-bold fs-2 mb-4">Shop by Categories</h2>
                 </div>
                 <div class="row row-cols-xl-4 row-cols-lg-3 row-cols-md-2 row-cols-1 g-4">
                 @foreach (var cat in Model!.FeaturedCategories)
                 {
-                    var imgSrc = string.IsNullOrWhiteSpace(cat.ImageUrl) ? "/assets/img/banner/banner7.png" :
-                                 (cat.ImageUrl.StartsWith("/") ? cat.ImageUrl : "/" + cat.ImageUrl);
+                    var imgSrc = cat.ImageUrl;
+                    if (string.IsNullOrWhiteSpace(imgSrc)) { imgSrc = "/assets/img/banner/banner7.png"; }
+                    else if (!imgSrc.StartsWith("/") && !imgSrc.StartsWith("http")) { imgSrc = "/" + imgSrc; }
+                    
                     <div class="col">
-                        <div class="banner__items position__relative rounded overflow-hidden shadow-sm h-100">
-                            <a class="banner__items--thumbnail d-block" href="/Shop?category=@cat.CategoryId">
-                                <img class="banner__items--thumbnail__img w-100" src="@imgSrc" alt="@cat.CategoryName" style="height: 240px; object-fit: cover;">
-                                <div class="banner__items--content style2">
-                                    <h3 class="banner__items--content__title style2 text-uppercase fw-bold">@cat.CategoryName</h3>
-                                    <span class="banner__items--content__link style2">SHOP NOW</span>
+                        <div class="position-relative rounded overflow-hidden shadow-sm h-100 banner-card bg-light">
+                            <a class="d-block position-relative h-100" href="/Shop?category=@cat.CategoryId">
+                                <img class="w-100" src="@imgSrc" alt="@cat.CategoryName" style="height: 280px; object-fit: cover;">
+                                <div class="position-absolute bottom-0 start-0 w-100 p-4" style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                                    <h3 class="text-white text-uppercase fw-bold mb-1 fs-5">@cat.CategoryName</h3>
+                                    <span class="text-white-50 fw-semibold fs-6">SHOP NOW &rarr;</span>
                                 </div>
                             </a>
                         </div>
@@ -133,31 +130,35 @@ else
     @* ====================== FEATURED PRODUCTS ====================== *@
     @if (hasProducts)
     {
-        <section class="product__section section--padding color-scheme-2 pt-0">
+        <section class="product__section mb-5 pb-5">
             <div class="container-fluid">
-                <div class="section__heading text-center mb-35">
-                    <h2 class="section__heading--maintitle style2">Featured Products</h2>
+                <div class="section__heading text-center mb-4">
+                    <h2 class="fw-bold fs-2 mb-4">Featured Products</h2>
                 </div>
                 <div class="product__section--inner">
                     <div class="row row-cols-xl-5 row-cols-lg-4 row-cols-md-3 row-cols-2 g-3">
                     @foreach (var prod in Model!.FeaturedProducts)
                     {
-                        var imgSrc = string.IsNullOrWhiteSpace(prod.PrimaryImage) ? "/assets/img/product/product1.png" :
-                                     (prod.PrimaryImage.StartsWith("/") ? prod.PrimaryImage : "/" + prod.PrimaryImage);
+                        var imgSrc = prod.PrimaryImage;
+                        if (string.IsNullOrWhiteSpace(imgSrc)) { imgSrc = "/assets/img/product/product1.png"; }
+                        else if (!imgSrc.StartsWith("/") && !imgSrc.StartsWith("http")) { imgSrc = "/" + imgSrc; }
+                        
                         var url = !string.IsNullOrWhiteSpace(prod.Slug) ? $"/Shop/Details/{prod.Slug}" : $"/Shop/Details/{prod.ProductId}";
-                        <div class="col mb-30">
-                            <div class="product__items border rounded bg-white shadow-sm h-100">
-                                <div class="product__items--thumbnail position-relative overflow-hidden rounded-top bg-light">
-                                    <a class="product__items--link d-block" href="@url">
-                                        <img class="product__items--img product__primary--img" src="@imgSrc" alt="@prod.ProductName" style="height: 220px; object-fit: cover; width: 100%;">
+                        <div class="col">
+                            <div class="border rounded bg-white shadow-sm h-100 d-flex flex-column transition-hover">
+                                <div class="position-relative overflow-hidden rounded-top bg-light text-center" style="flex-shrink: 0; min-height:200px;">
+                                    <a class="d-block" href="@url">
+                                        <img src="@imgSrc" alt="@prod.ProductName" style="height: 240px; object-fit: contain; width: 100%;">
                                     </a>
                                 </div>
-                                <div class="product__items--content text-center p-3">
-                                    <span class="small text-muted d-block mb-1 text-truncate">@prod.CategoryName</span>
-                                    <h3 class="product__items--content__title h6 mb-2 text-truncate">
-                                        <a class="text-dark" href="@url">@prod.ProductName</a>
-                                    </h3>
-                                    <span class="fw-bold text-primary fs-6">$@prod.Price.ToString("F2")</span>
+                                <div class="p-3 text-center d-flex flex-column flex-grow-1 justify-content-between">
+                                    <div>
+                                        <span class="small text-muted d-block mb-1 text-truncate">@prod.CategoryName</span>
+                                        <h3 class="h6 mb-2 text-truncate" style="line-height: 1.4;">
+                                            <a class="text-dark text-decoration-none" href="@url">@prod.ProductName</a>
+                                        </h3>
+                                    </div>
+                                    <span class="fw-bold text-primary fs-5">₹@prod.Price.ToString("F2")</span>
                                 </div>
                             </div>
                         </div>
@@ -167,22 +168,37 @@ else
             </div>
         </section>
     }
-
-    @* ====================== FALLBACK: No specific sections but hasAnyContent may be partially true ====================== *@
-    @* If some sections are missing, show a small "Browse full shop" CTA at the bottom *@
-    @if (!hasBanners && !hasCategories && !hasProducts)
-    {
-        <!-- This block won't render because hasAnyContent would be false and we'd have taken the earlier branch -->
-    }
-    else if (!hasBanners && !hasCategories)
-    {
-        <!-- only products shown, add a shop CTA below -->
-        <section class="section--padding text-center pt-0">
-            <a href="/Shop" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">
-                Browse Full Shop &rarr;
-            </a>
-        </section>
-    }
 }
-
 </main>
+
+<style>
+.banner-card { transition: transform 0.3s ease; }
+.banner-card:hover { transform: translateY(-5px); }
+.transition-hover { transition: box-shadow 0.3s ease; }
+.transition-hover:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof Swiper !== 'undefined') {
+        new Swiper('.hero-swiper', {
+            loop: true,
+            effect: 'fade',
+            autoplay: {
+                delay: 4000,
+                disableOnInteraction: false,
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+        });
+    } else {
+        console.warn("Swiper is not loaded! Make sure swiper-bundle.min.js is included in _Layout.cshtml.");
+    }
+});
+</script>

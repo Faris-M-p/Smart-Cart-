@@ -47,7 +47,7 @@ namespace Ecommerce.Repository
 
             var hash = _passwordHasher.HashPassword(new StorefrontUser { Email = email }, password);
             var result = await _dapper.GetSingleByProcedure<CommonResponse, object>(
-                "RegisterUser",
+                StoredProcedures.Auth.RegisterUser,
                 new
                 {
                     FullName = name,
