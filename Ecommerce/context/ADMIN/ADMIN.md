@@ -30,7 +30,7 @@ Billing permissions are seeded; **no Billing UI.**
 
 List pages: search + pagination + modal create/edit + soft delete reason. Images via `CommonImageService`. Empty states and toasts. Permission tree on User Role → Permissions page.
 
-Dashboard view is still Mantis sample metrics (not live SmartCart stats).
+Dashboard shows live SmartCart KPIs and charts via `DashboardRepository` / `GetSummary`.
 
 ## Current modules
 

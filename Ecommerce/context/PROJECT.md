@@ -89,7 +89,7 @@ Connection string name in config is `Ecommerse` (spelling as in code).
 | Shop, cart, wishlist, COD checkout, customer orders | IMPLEMENTED (login required for cart/wishlist/checkout) |
 | Admin catalog + inventory + purchases | IMPLEMENTED |
 | Admin orders | IMPLEMENTED (no invoice/UPI/admin-created orders) |
-| Admin dashboard numbers | PARTIALLY IMPLEMENTED (template/static page) |
+| Admin dashboard numbers | IMPLEMENTED (live KPIs + charts via GetSummary) |
 | Billing module | PLANNED (seeded permissions; no controller/UI) |
 | Guest cart/session checkout | PARTIALLY IMPLEMENTED (`SessionKey` columns exist; C# uses logged-in `UserId` only) |
 | UPI / online payment | PLANNED (`PlaceOrder` rejects UPI) |

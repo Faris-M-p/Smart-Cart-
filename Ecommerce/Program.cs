@@ -201,6 +201,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ISaleInterface, SaleRepository>();
         services.AddTransient<ISalesReturnInterface, SalesReturnRepository>();
         services.AddTransient<IHomepageInterface, HomepageRepository>();
+        services.AddTransient<IDashboardInterface, DashboardRepository>();
         services.AddSingleton<AdminJwtTokenService>();
         services.AddSingleton<IPasswordHasher<AdminUserEntity>, PasswordHasher<AdminUserEntity>>();
         services.AddTransient<IProductVariantImageRepository, ProductVariantImageRepository>();

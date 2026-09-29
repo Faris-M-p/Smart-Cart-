@@ -19,7 +19,7 @@ These appear in code comments, seed, leftover tables, or old `findings/` notes. 
 ### Orders / ops
 
 - Admin-created orders, line-item edits, tracking numbers, customer-facing shipment tracking: not implemented.
-- Dashboard live KPIs: page is template placeholders. PLANNED / PARTIAL.
+- Dashboard live KPIs: IMPLEMENTED (`GET /Admin/Dashboard/GetSummary` with charts).
 
 ### Catalog / stock (from older findings)
 

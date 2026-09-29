@@ -3,37 +3,51 @@
 ## Module Overview
 - **Area:** ADMIN (Back Office)
 - **Module Name:** Dashboard
-- **Current Status:** `PARTIALLY IMPLEMENTED`
+- **Current Status:** `IMPLEMENTED`
 
 ## Purpose & Responsibilities
-Serves as the main administrative home page displaying overall business metrics, sales overview, order statistics, catalog counts, and quick shortcuts.
+Administrative home page showing live store metrics: online orders/revenue, catalogue counts, customers, POS revenue, order trends, status mix, top products, recent orders, and low-stock alerts.
 
 ## Implemented Features
-- **Dashboard View Rendering:** `DashboardController.Index` returning Mantis admin template home page.
-- **Static Overview Widgets:** Sample metric cards (Sales, Orders, Visitors, Revenue).
+- **Dashboard view:** `DashboardController.Index` with Mantis layout cards and ApexCharts.
+- **Live summary API:** `GET /Admin/Dashboard/GetSummary` returns KPIs and chart series from EF Core aggregations.
+- **Charts:** 14-day order/revenue trend, order status donut, online vs counter sales bars, top products by quantity.
+- **Tables/lists:** recent orders, low-stock SKUs (threshold 10, same as inventory reorder default).
+- **Refresh:** client-side refresh button reloads summary JSON.
 
 ## Filters / Search / Sorting
-- N/A on current template page.
+- Fixed 14-day trend window; top 8 products; top 8 low-stock rows; latest 8 orders.
 
 ## Data
-- DTOs: Dashboard view metrics.
+- DTOs in `Models/Admin/DashboardModel.cs` (`DashboardSummary`, KPIs, trend points, recent orders, low stock).
 
 ## Database Dependencies
-- Tables: `Orders`, `Products`, `Users`, `Stock` (planned for live metrics).
-- Access: EF Core / Dapper.
+- Tables (EF): `orders`, `orderitems`, `products`, `productvariants`, `stock`, `users`, `sales`.
+- Access: EF Core via `EcommerceDbContext` (`DashboardRepository`).
 
 ## API & Data Access
-- Controller: `Controllers/Admin/DashboardController.cs` (`[Route("Admin/Dashboard")]`).
-- Permission: Protected by `[RequirePermission("Dashboard.View")]`.
+- Controller: `Controllers/Admin/DashboardController.cs`
+- Interface: `IDashboardInterface`
+- Repository: `Repository/Admin/DashboardRepository.cs`
+- Permission: `[RequirePermission("Dashboard.View")]`
+- Endpoints:
+  - `GET /Admin/Dashboard` / `Index` — page
+  - `GET /Admin/Dashboard/GetSummary` — JSON summary
 
 ## UI Rules & Conventions
-- Rendered in `views/Admin/Dashboard/Index.cshtml` using `_AdminLayout.cshtml`.
+- View: `views/Admin/Dashboard/Index.cshtml`
+- Script: `wwwroot/Admin/assets/js/pages/dashboard-smartcart.js` (page Scripts section only)
+- ApexCharts loaded from admin layout; fake `dashboard-default.js` sample metrics removed from global layout load.
 
 ## Business Rules
-- Accessible only to admin employees with `Dashboard.View` permission code.
-- **Current Status Note:** Dashboard view uses template sample numbers; live aggregation queries for real-time sales/orders are planned.
+- Online KPIs exclude cancelled orders (`cancelled != true`).
+- Pending = statuses `Placed`, `Pending`, or `Confirmed`.
+- Low stock = summed non-cancelled `stock.quantity` per SKU ≤ 10.
+- Currency display uses INR formatting on the client.
 
 ## Dependencies & Related Modules
-- `ADMIN/modules/auth.md` — Authentication gate.
-- `ADMIN/modules/order.md` — Order statistics source.
-- `ADMIN/modules/product.md` — Catalog statistics source.
+- Orders, Inventory, Products, Sales, Homepage (quick links).
+- Auth / `Dashboard.View` permission.
+
+## Notes
+- Replaces previous Mantis template placeholder numbers with live SmartCart data.
