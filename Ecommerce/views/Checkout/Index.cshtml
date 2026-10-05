@@ -35,18 +35,13 @@
             <form id="checkout-form" class="shop-checkout-form-container">
                 <p id="checkout-source" class="shop-bag-note"></p>
 
-                <!-- Hidden Selected Address Inputs for Order Placement -->
+                <!-- Hidden Trackers for current address ID & coords -->
                 <input type="hidden" id="checkout-selected-address-id" name="addressId" value="0">
-                <input type="hidden" id="checkout-selected-name" name="receiverName" value="">
-                <input type="hidden" id="checkout-selected-phone" name="phone" value="">
-                <input type="hidden" id="checkout-selected-address-line" name="addressLine" value="">
-                <input type="hidden" id="checkout-selected-city" name="city" value="">
-                <input type="hidden" id="checkout-selected-pincode" name="pincode" value="">
                 <input type="hidden" id="checkout-selected-address-type" name="addressType" value="Home">
                 <input type="hidden" id="checkout-selected-latitude" name="latitude" value="">
                 <input type="hidden" id="checkout-selected-longitude" name="longitude" value="">
 
-                <!-- 1. CHOOSE DELIVERY ADDRESS SECTION (LONG CARD SELECTION) -->
+                <!-- 1. DELIVERY ADDRESS SECTION (DIRECTLY EDITABLE & SWITCHABLE) -->
                 <div class="contact-card shop-checkout-section mb-4" data-purpose="delivery-address-section">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="d-flex align-items-center gap-2">
@@ -54,57 +49,75 @@
                             <h3 class="m-0 fw-bold">Delivery Address</h3>
                         </div>
                         <button type="button" id="btn-trigger-address-drawer" class="shop-checkout-change-btn">
-                            Change
+                            Saved Addresses
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>
                     </div>
 
-                    <!-- Sleek Long Horizontal Selected Address Card -->
-                    <div id="selected-address-card" class="shop-selected-address-card" hidden>
-                        <div class="shop-selected-badge">✓ Selected</div>
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="shop-radio-icon mt-1 flex-shrink-0">
-                                <div class="shop-radio-inner"></div>
-                            </div>
-                            <div class="flex-1 min-w-0 pr-12">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span id="selected-card-type" class="shop-address-badge type-home">HOME</span>
-                                    <span id="selected-card-default" class="shop-badge-default" hidden>Default</span>
-                                </div>
-                                <h4 id="selected-card-name" class="shop-address-name m-0 fw-bold"></h4>
-                                <p id="selected-card-phone" class="shop-address-phone m-0 text-muted small fw-semibold mt-1"></p>
-                                <p id="selected-card-line" class="shop-address-text m-0 text-secondary small mt-1"></p>
-
-                                <div class="shop-card-footer mt-3 pt-2 d-flex align-items-center justify-content-between border-top">
-                                    <span class="text-emerald-600 text-xs font-semibold d-flex align-items-center gap-1">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                        Delivery in 25-30 Mins
-                                    </span>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <button type="button" id="btn-edit-selected-address" class="shop-btn-sm-edit">Edit</button>
-                                        <button type="button" id="btn-switch-address" class="shop-btn-sm-switch">Switch</button>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Quick Address Switcher Tabs / Pills (Home, Work, Office, Other) -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label text-xs fw-bold text-muted text-uppercase m-0">Deliver To / Address Tag</label>
+                            <span id="checkout-active-tag-badge" class="badge bg-danger-subtle text-danger text-xs fw-semibold px-2 py-1 rounded-pill">Home</span>
+                        </div>
+                        <div id="checkout-address-type-selector" class="shop-address-type-selector">
+                            <button type="button" class="shop-type-pill active" data-type="Home">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                <span>Home</span>
+                            </button>
+                            <button type="button" class="shop-type-pill" data-type="Work">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                                <span>Work</span>
+                            </button>
+                            <button type="button" class="shop-type-pill" data-type="Office">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+                                <span>Office</span>
+                            </button>
+                            <button type="button" class="shop-type-pill" data-type="Other">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <span>Other</span>
+                            </button>
+                            <button type="button" id="btn-add-new-pill" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 text-xs fw-semibold">
+                                + New Address
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Empty State when no address exists -->
-                    <div id="no-address-alert" class="shop-no-address-box text-center p-4" hidden>
-                        <div class="mb-2">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><path d="M12 21.7C17.3 17 20 13 20 9a8 8 0 1 0-16 0c0 4 2.7 8 8 12.7z"/><circle cx="12" cy="9" r="3"/></svg>
+                    <!-- DIRECTLY VISIBLE & EDITABLE ADDRESS FIELDS -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="checkout-selected-name" class="form-label text-sm fw-semibold">Receiver Full Name <span class="text-danger">*</span></label>
+                            <input type="text" id="checkout-selected-name" name="receiverName" class="form-control shop-form-input" placeholder="e.g. Muhammed Faris" required>
                         </div>
-                        <h5 class="fw-bold mb-1">No delivery address saved</h5>
-                        <p class="text-muted small mb-3">Please add a delivery address to complete your order.</p>
-                        <button type="button" class="shop-bag-cta py-2 px-4 text-sm" onclick="openAddressModal(0)">+ Add Delivery Address</button>
+                        <div class="col-md-6">
+                            <label for="checkout-selected-phone" class="form-label text-sm fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                            <input type="tel" id="checkout-selected-phone" name="phone" class="form-control shop-form-input" maxlength="10" placeholder="10-digit mobile number" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="checkout-selected-address-line" class="form-label text-sm fw-semibold">Flat / House No. / Street / Area <span class="text-danger">*</span></label>
+                            <textarea id="checkout-selected-address-line" name="addressLine" class="form-control shop-form-input" rows="2" placeholder="e.g. Flat 4B, Green Valley Apartments, Mavoor Road" required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="checkout-selected-city" class="form-label text-sm fw-semibold">City / Town / District <span class="text-danger">*</span></label>
+                            <input type="text" id="checkout-selected-city" name="city" class="form-control shop-form-input" placeholder="e.g. Kozhikode" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="checkout-selected-pincode" class="form-label text-sm fw-semibold">Pincode <span class="text-danger">*</span></label>
+                            <input type="text" id="checkout-selected-pincode" name="pincode" class="form-control shop-form-input" maxlength="6" placeholder="6-digit PIN code" required>
+                        </div>
                     </div>
 
-                    <!-- Quick Add Link Row -->
-                    <div class="mt-3 d-flex align-items-center justify-content-between px-1">
-                        <span class="text-xs text-muted">Delivering to wrong place?</span>
-                        <button type="button" id="btn-open-add-modal" class="shop-checkout-add-btn">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="me-1"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Add New Address
+                    <!-- Footer Row: Save address checkbox & GPS detection -->
+                    <div class="mt-3 pt-2 d-flex align-items-center justify-content-between flex-wrap gap-2 border-top">
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" id="checkout-save-address" checked>
+                            <label class="form-check-label text-xs text-muted" for="checkout-save-address">
+                                Save / update this address for future orders
+                            </label>
+                        </div>
+                        <button type="button" id="btn-trigger-inline-location" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 text-xs py-1 px-2.5">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff4545" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+                            Use Current Location / Pin
                         </button>
                     </div>
                 </div>
@@ -123,11 +136,11 @@
                                 <small>Pay with cash when your package is delivered to your doorstep.</small>
                             </span>
                         </label>
-                        <label class="shop-checkout-pay is-disabled">
-                            <input type="radio" name="paymentMethod" value="UPI" disabled>
+                        <label class="shop-checkout-pay">
+                            <input type="radio" name="paymentMethod" value="Razorpay">
                             <span>
-                                <strong>UPI / Online Payment</strong>
-                                <small>Coming soon for this region.</small>
+                                <strong>Pay with Razorpay</strong>
+                                <small>Credit/Debit Cards, UPI, NetBanking</small>
                             </span>
                         </label>
                     </div>
@@ -353,4 +366,5 @@
     </div>
 </div>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="/js/shop-checkout.js"></script>

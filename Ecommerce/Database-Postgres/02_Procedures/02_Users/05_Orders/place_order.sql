@@ -17,6 +17,8 @@ CREATE OR REPLACE PROCEDURE place_order(
     p_city               TEXT DEFAULT NULL,
     p_pincode            TEXT DEFAULT NULL,
     p_payment_method     TEXT DEFAULT NULL,
+    p_razorpay_order_id  TEXT DEFAULT NULL,
+    p_razorpay_payment_id TEXT DEFAULT NULL,
     INOUT p_result       refcursor DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
@@ -79,14 +81,14 @@ BEGIN
     IF p_payment_method = 'UPI' THEN
         OPEN p_result FOR
         SELECT -1 AS responsecode, 0 AS statuscode,
-               'UPI will be available soon in this area. Please choose Cash on Delivery.'::TEXT AS responsemsg;
+               'UPI will be available soon in this area. Please choose Cash on Delivery or Razorpay.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
-    IF p_payment_method <> 'COD' THEN
+    IF p_payment_method NOT IN ('COD', 'Razorpay') THEN
         OPEN p_result FOR
         SELECT -1 AS responsecode, 0 AS statuscode,
-               'Please choose Cash on Delivery.'::TEXT AS responsemsg;
+               'Please choose a valid payment method.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
@@ -219,7 +221,7 @@ BEGIN
         v_total,
         'Placed',
         v_full_address,
-        'COD',
+        p_payment_method,
         FALSE,
         TRIM(p_receiver_name),
         TRIM(p_phone),
@@ -315,15 +317,19 @@ BEGIN
         paymentamount,
         paymentstatus,
         paymentmethod,
-        cancelled
+        cancelled,
+        razorpay_order_id,
+        razorpay_payment_id
     )
     VALUES (
         v_order_id,
         NOW(),
         v_total,
-        'Pending',
-        'COD',
-        FALSE
+        CASE WHEN p_payment_method = 'Razorpay' THEN 'Paid' ELSE 'Pending' END,
+        p_payment_method,
+        FALSE,
+        p_razorpay_order_id,
+        p_razorpay_payment_id
     );
 
     INSERT INTO shipping (
@@ -348,6 +354,6 @@ BEGIN
 
     OPEN p_result FOR
     SELECT v_order_id AS responsecode, 1 AS statuscode,
-           'Order placed. Pay cash on delivery.'::TEXT AS responsemsg;
+           CASE WHEN p_payment_method = 'Razorpay' THEN 'Order placed successfully.' ELSE 'Order placed. Pay cash on delivery.' END AS responsemsg;
 END;
 $$;

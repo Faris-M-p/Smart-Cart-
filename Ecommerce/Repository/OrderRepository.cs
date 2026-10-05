@@ -28,12 +28,15 @@ namespace Ecommerce.Repository
                 },
                 new[] { "p_result", "p_result2", "p_result3" });
 
+            var addresses = await GetUserAddressesAsync(userId);
+
             return new CheckoutPage
             {
                 Source = productVariantId > 0 ? "buynow" : "cart",
                 Items = multi.TableOut1 ?? new List<CartLine>(),
                 Summary = multi.TableOut2?.FirstOrDefault() ?? new CheckoutSummary(),
-                Customer = multi.TableOut3?.FirstOrDefault() ?? new CheckoutCustomer()
+                Customer = multi.TableOut3?.FirstOrDefault() ?? new CheckoutCustomer(),
+                Addresses = addresses ?? new List<UserAddress>()
             };
         }
 
@@ -51,7 +54,9 @@ namespace Ecommerce.Repository
                     AddressLine = (input.AddressLine ?? string.Empty).Trim(),
                     City = (input.City ?? string.Empty).Trim(),
                     Pincode = (input.Pincode ?? string.Empty).Trim(),
-                    PaymentMethod = string.IsNullOrWhiteSpace(input.PaymentMethod) ? "COD" : input.PaymentMethod.Trim()
+                    PaymentMethod = string.IsNullOrWhiteSpace(input.PaymentMethod) ? "COD" : input.PaymentMethod.Trim(),
+                    RazorpayOrderId = input.RazorpayOrderId,
+                    RazorpayPaymentId = input.RazorpayPaymentId
                 }) ?? StatusFail();
         }
 

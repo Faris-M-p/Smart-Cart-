@@ -757,5 +757,25 @@ body.modal-open {
     font-weight: 600;
 }
 
+.shop-modal-open {
+    display: block !important;
+    opacity: 1 !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 1060 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+.shop-modal-open .modal-dialog {
+    margin: 1.75rem auto !important;
+    transform: none !important;
+}
+
 
 

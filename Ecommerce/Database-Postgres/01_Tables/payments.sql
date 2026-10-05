@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS payments (
     cancelled       BOOLEAN NULL DEFAULT FALSE,
     cancelledon     TIMESTAMP NULL,
     cancelledreason TEXT NULL,
+    razorpay_order_id TEXT NULL,
+    razorpay_payment_id TEXT NULL,
     CONSTRAINT fk_payments_order
         FOREIGN KEY (fk_order) REFERENCES orders (id_order)
 );

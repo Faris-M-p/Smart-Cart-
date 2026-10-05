@@ -180,6 +180,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<WishlistInterface, WishlistRepository>();
         services.AddTransient<UserAuthInterface, UserAuthRepository>();
         services.AddTransient<OrderInterface, OrderRepository>();
+        services.AddTransient<IRazorpayService, RazorpayService>();
         services.AddSingleton<UserJwtTokenService>();
         services.AddSingleton<IPasswordHasher<StorefrontUser>, PasswordHasher<StorefrontUser>>();
         

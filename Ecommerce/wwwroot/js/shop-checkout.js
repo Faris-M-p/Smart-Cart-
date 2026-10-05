@@ -48,8 +48,12 @@
     var savedAddressesList = [];
     var customerProfile = {};
     var tempFetchedLocation = null;
+    var currentActiveType = "Home";
     var ALLOWED_ADDRESS_TYPES = ["Home", "Work", "Office", "Other"];
 
+    // =========================================================================
+    // MODAL OPEN / CLOSE (FAIL-SAFE STANDALONE WITH BOOTSTRAP SUPPORT)
+    // =========================================================================
     function openModal(target) {
         var modalEl = typeof target === "string" ? document.getElementById(target) : target;
         if (!modalEl) return;
@@ -60,33 +64,15 @@
                 inst.show();
                 return;
             } catch (e) {
-                console.warn("Bootstrap modal failed, fallback to standalone modal", e);
+                console.warn("Bootstrap modal exception, falling back to standalone", e);
             }
         }
 
+        modalEl.classList.add("shop-modal-open");
         modalEl.classList.add("show");
-        modalEl.style.display = "block";
         modalEl.removeAttribute("aria-hidden");
         modalEl.setAttribute("aria-modal", "true");
-
-        var backdropId = modalEl.id + "-backdrop";
-        var backdrop = document.getElementById(backdropId);
-        if (!backdrop) {
-            backdrop = document.createElement("div");
-            backdrop.id = backdropId;
-            backdrop.className = "modal-backdrop fade show";
-            if (modalEl.id === "locationFetchModal") {
-                backdrop.style.zIndex = "1055";
-                modalEl.style.zIndex = "1060";
-            }
-            document.body.appendChild(backdrop);
-
-            backdrop.addEventListener("click", function () {
-                closeModal(modalEl);
-            });
-        }
         document.body.classList.add("modal-open");
-        document.body.style.overflow = "hidden";
     }
 
     function closeModal(target) {
@@ -96,29 +82,17 @@
         if (window.bootstrap && window.bootstrap.Modal) {
             try {
                 var inst = window.bootstrap.Modal.getInstance(modalEl);
-                if (inst) {
-                    inst.hide();
-                    return;
-                }
+                if (inst) inst.hide();
             } catch (e) { }
         }
 
+        modalEl.classList.remove("shop-modal-open");
         modalEl.classList.remove("show");
-        modalEl.style.display = "none";
         modalEl.setAttribute("aria-hidden", "true");
-        if (modalEl.style.zIndex) {
-            modalEl.style.zIndex = "";
-        }
+        modalEl.removeAttribute("aria-modal");
 
-        var backdropId = modalEl.id + "-backdrop";
-        var backdrop = document.getElementById(backdropId);
-        if (backdrop && backdrop.parentNode) {
-            backdrop.parentNode.removeChild(backdrop);
-        }
-
-        if (!document.querySelector(".modal.show")) {
+        if (!document.querySelector(".modal.show, .shop-modal-open")) {
             document.body.classList.remove("modal-open");
-            document.body.style.overflow = "";
         }
     }
 
@@ -126,322 +100,240 @@
         var dismissBtn = e.target.closest('[data-bs-dismiss="modal"], .btn-close');
         if (dismissBtn) {
             var parentModal = dismissBtn.closest(".modal");
-            if (parentModal) {
-                closeModal(parentModal);
-            }
+            if (parentModal) closeModal(parentModal);
             return;
         }
 
-        var toggleBtn = e.target.closest('[data-bs-toggle="collapse"]');
-        if (toggleBtn) {
-            var targetId = toggleBtn.getAttribute("data-bs-target");
-            var targetEl = targetId ? document.querySelector(targetId) : null;
-            if (targetEl) {
-                var isCollapsed = toggleBtn.classList.contains("collapsed");
-                if (isCollapsed) {
-                    toggleBtn.classList.remove("collapsed");
-                    targetEl.classList.add("show");
-                    targetEl.style.display = "block";
-                } else {
-                    toggleBtn.classList.add("collapsed");
-                    targetEl.classList.remove("show");
-                    targetEl.style.display = "none";
-                }
-            }
+        if (e.target.classList.contains("modal") && (e.target.classList.contains("show") || e.target.classList.contains("shop-modal-open"))) {
+            closeModal(e.target);
+        }
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            var openModalEl = document.querySelector(".modal.show, .shop-modal-open");
+            if (openModalEl) closeModal(openModalEl);
         }
     });
 
     // =========================================================================
-    // 1. RENDER SAVED ADDRESSES (MAIN LONG CARD & DRAWER LIST)
+    // ADDRESS FIELD POPULATION & SYNCHRONIZATION
     // =========================================================================
-    function renderSavedAddressesGrid(addresses) {
-        var selectedCard = document.getElementById("selected-address-card");
-        var noAddrBox = document.getElementById("no-address-alert");
-        var drawerListEl = document.getElementById("drawer-addresses-list");
-
-        if (!addresses || !addresses.length) {
-            if (selectedCard) selectedCard.hidden = true;
-            if (noAddrBox) noAddrBox.hidden = false;
-            if (drawerListEl) drawerListEl.innerHTML = '<p class="text-muted text-center py-3">No saved addresses found.</p>';
-            return;
-        }
-
-        if (noAddrBox) noAddrBox.hidden = true;
-
-        // Render Select Address Drawer Cards List
-        if (drawerListEl) {
-            var selectedId = Number(document.getElementById("checkout-selected-address-id").value || 0);
-
-            drawerListEl.innerHTML = addresses.map(function (addr) {
-                var id = addr.addressId || addr.AddressId;
-                var type = escapeHtml(addr.addressType || addr.AddressType || "Home");
-                var typeClass = "type-" + type.toLowerCase();
-                var name = escapeHtml(addr.receiverName || addr.ReceiverName || "");
-                var phone = escapeHtml(addr.phone || addr.Phone || "");
-                var line = escapeHtml(addr.addressLine || addr.AddressLine || "");
-                var city = escapeHtml(addr.city || addr.City || "");
-                var pin = escapeHtml(addr.pincode || addr.Pincode || "");
-                var isDefault = !!(addr.isDefault || addr.IsDefault);
-                var isSel = (id === selectedId);
-
-                return '<div class="shop-drawer-card ' + (isSel ? 'is-selected' : '') + '" data-address-id="' + id + '">' +
-                    '<div class="shop-drawer-radio"></div>' +
-                    '<div class="flex-1 min-w-0 pr-2">' +
-                        '<div class="d-flex align-items-center gap-2 mb-1">' +
-                            '<span class="shop-address-badge ' + typeClass + '">' + type + '</span>' +
-                            (isDefault ? '<span class="shop-badge-default">Default</span>' : '') +
-                            (isSel ? '<span class="text-xs text-danger font-semibold ms-auto">Selected</span>' : '') +
-                        '</div>' +
-                        '<div class="fw-bold text-dark text-sm">' + name + ' <span class="text-muted fw-normal ms-1">' + phone + '</span></div>' +
-                        '<div class="text-muted text-xs mt-1 leading-snug">' + line + ', ' + city + ' - ' + pin + '</div>' +
-                    '</div>' +
-                    '<button type="button" class="shop-btn-card-edit" data-action="edit" data-id="' + id + '">Edit</button>' +
-                '</div>';
-            }).join("");
-
-            // Attach event handlers to drawer cards
-            drawerListEl.querySelectorAll(".shop-drawer-card").forEach(function (card) {
-                var id = Number(card.getAttribute("data-address-id"));
-                card.addEventListener("click", function (e) {
-                    var action = e.target.getAttribute("data-action");
-                    if (action === "edit") {
-                        e.stopPropagation();
-                        closeModal("selectAddressDrawer");
-                        openAddressModal(id);
-                        return;
-                    }
-                    selectSavedAddress(id);
-                    closeModal("selectAddressDrawer");
-                });
-            });
-        }
-    }
-
-    // Select an Address Card and bind to hidden checkout inputs
-    function selectSavedAddress(id) {
-        var addr = savedAddressesList.find(function (a) {
-            return (a.addressId || a.AddressId) === id;
-        });
+    function populateAddressFields(addr) {
         if (!addr) return;
 
-        var addrId = addr.addressId || addr.AddressId;
+        var id = addr.addressId || addr.AddressId || 0;
         var type = addr.addressType || addr.AddressType || "Home";
         var name = addr.receiverName || addr.ReceiverName || "";
         var phone = addr.phone || addr.Phone || "";
         var line = addr.addressLine || addr.AddressLine || "";
         var city = addr.city || addr.City || "";
         var pin = addr.pincode || addr.Pincode || "";
-        var isDefault = !!(addr.isDefault || addr.IsDefault);
+        var lat = addr.latitude || addr.Latitude || "";
+        var lon = addr.longitude || addr.Longitude || "";
 
-        document.getElementById("checkout-selected-address-id").value = addrId;
-        document.getElementById("checkout-selected-name").value = name;
-        document.getElementById("checkout-selected-phone").value = phone;
-        document.getElementById("checkout-selected-address-line").value = line;
-        document.getElementById("checkout-selected-city").value = city;
-        document.getElementById("checkout-selected-pincode").value = pin;
-        document.getElementById("checkout-selected-address-type").value = type;
-        document.getElementById("checkout-selected-latitude").value = addr.latitude || addr.Latitude || "";
-        document.getElementById("checkout-selected-longitude").value = addr.longitude || addr.Longitude || "";
+        currentActiveType = type;
 
-        // Update Main Selected Address Long Card
-        var selectedCard = document.getElementById("selected-address-card");
-        var nameEl = document.getElementById("selected-card-name");
-        var phoneEl = document.getElementById("selected-card-phone");
-        var lineEl = document.getElementById("selected-card-line");
-        var typeEl = document.getElementById("selected-card-type");
-        var defaultEl = document.getElementById("selected-card-default");
+        var elId = document.getElementById("checkout-selected-address-id");
+        var elType = document.getElementById("checkout-selected-address-type");
+        var elName = document.getElementById("checkout-selected-name");
+        var elPhone = document.getElementById("checkout-selected-phone");
+        var elLine = document.getElementById("checkout-selected-address-line");
+        var elCity = document.getElementById("checkout-selected-city");
+        var elPin = document.getElementById("checkout-selected-pincode");
+        var elLat = document.getElementById("checkout-selected-latitude");
+        var elLon = document.getElementById("checkout-selected-longitude");
 
-        if (selectedCard && nameEl && phoneEl && lineEl && typeEl) {
-            nameEl.textContent = name;
-            phoneEl.textContent = phone;
-            lineEl.textContent = line + ", " + city + " - " + pin;
-            typeEl.textContent = type.toUpperCase();
-            typeEl.className = "shop-address-badge type-" + type.toLowerCase();
-            if (defaultEl) defaultEl.hidden = !isDefault;
-            selectedCard.hidden = false;
+        if (elId) elId.value = id;
+        if (elType) elType.value = type;
+        if (elName) elName.value = name;
+        if (elPhone) elPhone.value = phone;
+        if (elLine) elLine.value = line;
+        if (elCity) elCity.value = city;
+        if (elPin) elPin.value = pin;
+        if (elLat) elLat.value = lat;
+        if (elLon) elLon.value = lon;
+
+        updateAddressPillsUI();
+        updateDeliveryPreview();
+    }
+
+    function updateAddressPillsUI() {
+        var badge = document.getElementById("checkout-active-tag-badge");
+        if (badge) {
+            badge.textContent = currentActiveType;
         }
 
-        // Update Sidebar Delivery Preview
-        var delPreview = document.getElementById("checkout-delivery-preview");
-        var previewName = document.getElementById("preview-deliver-name");
-        var previewAddr = document.getElementById("preview-deliver-address");
-        if (delPreview && previewName && previewAddr) {
-            previewName.textContent = name + " (" + type + ")";
-            previewAddr.textContent = line + ", " + city + " - " + pin;
-            delPreview.hidden = false;
-        }
+        document.querySelectorAll("#checkout-address-type-selector .shop-type-pill").forEach(function (pill) {
+            var type = pill.getAttribute("data-type") || "Home";
+            var isActive = type.toLowerCase() === currentActiveType.toLowerCase();
+            pill.classList.toggle("active", isActive);
 
-        // Highlight selected card in drawer
-        document.querySelectorAll(".shop-drawer-card").forEach(function (card) {
-            if (Number(card.getAttribute("data-address-id")) === addrId) {
-                card.classList.add("is-selected");
-            } else {
-                card.classList.remove("is-selected");
+            // Check if saved address exists for this type
+            var hasSaved = savedAddressesList.some(function (a) {
+                return (a.addressType || a.AddressType || "").toLowerCase() === type.toLowerCase();
+            });
+
+            var span = pill.querySelector("span");
+            if (span) {
+                span.textContent = type + (hasSaved ? " (Saved)" : "");
             }
         });
     }
 
-    // =========================================================================
-    // 2. ADD / EDIT ADDRESS MODAL HANDLERS
-    // =========================================================================
-    window.openAddressModal = function (id) {
-        var modalEl = document.getElementById("addressModal");
-        if (!modalEl) return;
+    function selectAddressByType(type) {
+        currentActiveType = type;
+        var elType = document.getElementById("checkout-selected-address-type");
+        if (elType) elType.value = type;
 
-        var titleEl = document.getElementById("addressModalLabel");
-        var form = document.getElementById("address-modal-form");
-        if (form) form.reset();
-
-        var existingTypes = savedAddressesList.map(function (a) {
-            return (a.addressType || a.AddressType || "").toLowerCase();
+        var existing = savedAddressesList.find(function (a) {
+            return (a.addressType || a.AddressType || "").toLowerCase() === type.toLowerCase();
         });
 
-        if (id > 0) {
-            var addr = savedAddressesList.find(function (a) { return (a.addressId || a.AddressId) === id; });
-            if (addr) {
-                var currentType = addr.addressType || addr.AddressType || "Home";
-                if (titleEl) titleEl.textContent = "Edit " + currentType + " Address";
-                document.getElementById("modal-address-id").value = id;
-                document.getElementById("modal-name").value = addr.receiverName || addr.ReceiverName || "";
-                document.getElementById("modal-phone").value = addr.phone || addr.Phone || "";
-                document.getElementById("modal-address-line").value = addr.addressLine || addr.AddressLine || "";
-                document.getElementById("modal-city").value = addr.city || addr.City || "";
-                document.getElementById("modal-pincode").value = addr.pincode || addr.Pincode || "";
-                document.getElementById("modal-latitude").value = addr.latitude || addr.Latitude || "";
-                document.getElementById("modal-longitude").value = addr.longitude || addr.Longitude || "";
-                document.getElementById("modal-address-type").value = currentType;
-                document.querySelectorAll(".shop-type-pill").forEach(function (pill) {
-                    pill.classList.toggle("active", (pill.getAttribute("data-type") || "").toLowerCase() === currentType.toLowerCase());
-                });
-                document.getElementById("modal-is-default").checked = !!(addr.isDefault || addr.IsDefault);
-            }
+        if (existing) {
+            populateAddressFields(existing);
         } else {
-            // Find first available unsaved type among Home, Work, Office, Other
-            var availableType = ALLOWED_ADDRESS_TYPES.find(function (t) {
-                return !existingTypes.includes(t.toLowerCase());
-            }) || "Home";
+            // Address not saved yet for this type: keep existing name/phone or use profile, clear location
+            var elId = document.getElementById("checkout-selected-address-id");
+            if (elId) elId.value = "0";
 
-            var existingForAvailable = savedAddressesList.find(function (a) {
-                return (a.addressType || a.AddressType || "").toLowerCase() === availableType.toLowerCase();
-            });
+            var elName = document.getElementById("checkout-selected-name");
+            var elPhone = document.getElementById("checkout-selected-phone");
+            if (elName && !elName.value) elName.value = customerProfile.fullName || customerProfile.FullName || "";
+            if (elPhone && !elPhone.value) elPhone.value = customerProfile.phone || customerProfile.Phone || "";
 
-            if (titleEl) titleEl.textContent = existingForAvailable ? ("Edit " + availableType + " Address") : ("Add " + availableType + " Address");
-            document.getElementById("modal-address-id").value = existingForAvailable ? (existingForAvailable.addressId || existingForAvailable.AddressId) : "0";
-            document.getElementById("modal-name").value = (existingForAvailable ? (existingForAvailable.receiverName || existingForAvailable.ReceiverName) : (customerProfile.fullName || customerProfile.FullName)) || "";
-            document.getElementById("modal-phone").value = (existingForAvailable ? (existingForAvailable.phone || existingForAvailable.Phone) : (customerProfile.phone || customerProfile.Phone)) || "";
-            document.getElementById("modal-address-line").value = existingForAvailable ? (existingForAvailable.addressLine || existingForAvailable.AddressLine) : "";
-            document.getElementById("modal-city").value = existingForAvailable ? (existingForAvailable.city || existingForAvailable.City) : "";
-            document.getElementById("modal-pincode").value = existingForAvailable ? (existingForAvailable.pincode || existingForAvailable.Pincode) : "";
-            document.getElementById("modal-latitude").value = existingForAvailable ? (existingForAvailable.latitude || existingForAvailable.Latitude || "") : "";
-            document.getElementById("modal-longitude").value = existingForAvailable ? (existingForAvailable.longitude || existingForAvailable.Longitude || "") : "";
-            document.getElementById("modal-address-type").value = availableType;
-            document.querySelectorAll(".shop-type-pill").forEach(function (pill) {
-                pill.classList.toggle("active", (pill.getAttribute("data-type") || "").toLowerCase() === availableType.toLowerCase());
-            });
-            document.getElementById("modal-is-default").checked = existingForAvailable ? !!(existingForAvailable.isDefault || existingForAvailable.IsDefault) : (savedAddressesList.length === 0);
+            var elLine = document.getElementById("checkout-selected-address-line");
+            var elCity = document.getElementById("checkout-selected-city");
+            var elPin = document.getElementById("checkout-selected-pincode");
+            var elLat = document.getElementById("checkout-selected-latitude");
+            var elLon = document.getElementById("checkout-selected-longitude");
+
+            if (elLine) elLine.value = "";
+            if (elCity) elCity.value = "";
+            if (elPin) elPin.value = "";
+            if (elLat) elLat.value = "";
+            if (elLon) elLon.value = "";
+
+            updateAddressPillsUI();
+            updateDeliveryPreview();
+        }
+    }
+
+    function updateDeliveryPreview() {
+        var delPreview = document.getElementById("checkout-delivery-preview");
+        var previewName = document.getElementById("preview-deliver-name");
+        var previewAddr = document.getElementById("preview-deliver-address");
+        if (!delPreview || !previewName || !previewAddr) return;
+
+        var name = (document.getElementById("checkout-selected-name")?.value || "").trim();
+        var type = document.getElementById("checkout-selected-address-type")?.value || "Home";
+        var line = (document.getElementById("checkout-selected-address-line")?.value || "").trim();
+        var city = (document.getElementById("checkout-selected-city")?.value || "").trim();
+        var pin = (document.getElementById("checkout-selected-pincode")?.value || "").trim();
+
+        if (name || line) {
+            previewName.textContent = name ? (name + " (" + type + ")") : type;
+            previewAddr.textContent = (line ? line + ", " : "") + city + (pin ? " - " + pin : "");
+            delPreview.hidden = false;
+        } else {
+            delPreview.hidden = true;
+        }
+    }
+
+    // Bind real-time input typing to preview
+    ["checkout-selected-name", "checkout-selected-phone", "checkout-selected-address-line", "checkout-selected-city", "checkout-selected-pincode"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("input", updateDeliveryPreview);
+        }
+    });
+
+    // =========================================================================
+    // SAVED ADDRESSES DRAWER / MODAL
+    // =========================================================================
+    function renderDrawerSavedAddresses() {
+        var drawerListEl = document.getElementById("drawer-addresses-list");
+        if (!drawerListEl) return;
+
+        if (!savedAddressesList || !savedAddressesList.length) {
+            drawerListEl.innerHTML = '<div class="text-center py-4 text-muted">' +
+                '<p class="mb-1">No saved addresses found.</p>' +
+                '<small>You can fill out the form fields directly on checkout.</small>' +
+            '</div>';
+            return;
         }
 
-        openModal(modalEl);
-    };
+        var currentSelectedId = Number(document.getElementById("checkout-selected-address-id")?.value || 0);
 
-    function initAddressModalEvents() {
-        // Address Type Pill Selector
-        document.querySelectorAll(".shop-type-pill").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-                document.querySelectorAll(".shop-type-pill").forEach(function (b) { b.classList.remove("active"); });
-                btn.classList.add("active");
-                var type = btn.getAttribute("data-type") || "Home";
-                document.getElementById("modal-address-type").value = type;
+        drawerListEl.innerHTML = savedAddressesList.map(function (addr) {
+            var id = addr.addressId || addr.AddressId;
+            var type = escapeHtml(addr.addressType || addr.AddressType || "Home");
+            var typeClass = "type-" + type.toLowerCase();
+            var name = escapeHtml(addr.receiverName || addr.ReceiverName || "");
+            var phone = escapeHtml(addr.phone || addr.Phone || "");
+            var line = escapeHtml(addr.addressLine || addr.AddressLine || "");
+            var city = escapeHtml(addr.city || addr.City || "");
+            var pin = escapeHtml(addr.pincode || addr.Pincode || "");
+            var isDefault = !!(addr.isDefault || addr.IsDefault);
+            var isSel = (id === currentSelectedId);
 
-                // Check if user already has an address of this type
-                var existingAddr = savedAddressesList.find(function (a) {
-                    return (a.addressType || a.AddressType || "").toLowerCase() === type.toLowerCase();
-                });
+            return '<div class="shop-drawer-card ' + (isSel ? 'is-selected' : '') + '" data-address-id="' + id + '">' +
+                '<div class="shop-drawer-radio"></div>' +
+                '<div class="flex-1 min-w-0 pr-2">' +
+                    '<div class="d-flex align-items-center gap-2 mb-1">' +
+                        '<span class="shop-address-badge ' + typeClass + '">' + type + '</span>' +
+                        (isDefault ? '<span class="shop-badge-default">Default</span>' : '') +
+                        (isSel ? '<span class="text-xs text-danger font-semibold ms-auto">Active</span>' : '') +
+                    '</div>' +
+                    '<div class="fw-bold text-dark text-sm">' + name + ' <span class="text-muted fw-normal ms-1">' + phone + '</span></div>' +
+                    '<div class="text-muted text-xs mt-1 leading-snug">' + line + ', ' + city + ' - ' + pin + '</div>' +
+                '</div>' +
+                '<div class="d-flex align-items-center gap-2 flex-shrink-0">' +
+                    '<button type="button" class="btn btn-sm btn-danger text-xs px-2.5 py-1" data-action="deliver" data-id="' + id + '">Deliver Here</button>' +
+                    '<button type="button" class="shop-btn-card-delete" data-action="delete" data-id="' + id + '" title="Delete Address">&times;</button>' +
+                '</div>' +
+            '</div>';
+        }).join("");
 
-                var titleEl = document.getElementById("addressModalLabel");
-                if (existingAddr) {
-                    document.getElementById("modal-address-id").value = existingAddr.addressId || existingAddr.AddressId;
-                    if (titleEl) titleEl.textContent = "Edit " + type + " Address";
-                    document.getElementById("modal-name").value = existingAddr.receiverName || existingAddr.ReceiverName || "";
-                    document.getElementById("modal-phone").value = existingAddr.phone || existingAddr.Phone || "";
-                    document.getElementById("modal-address-line").value = existingAddr.addressLine || existingAddr.AddressLine || "";
-                    document.getElementById("modal-city").value = existingAddr.city || existingAddr.City || "";
-                    document.getElementById("modal-pincode").value = existingAddr.pincode || existingAddr.Pincode || "";
-                    document.getElementById("modal-latitude").value = existingAddr.latitude || existingAddr.Latitude || "";
-                    document.getElementById("modal-longitude").value = existingAddr.longitude || existingAddr.Longitude || "";
-                    document.getElementById("modal-is-default").checked = !!(existingAddr.isDefault || existingAddr.IsDefault);
-                } else {
-                    document.getElementById("modal-address-id").value = "0";
-                    if (titleEl) titleEl.textContent = "Add " + type + " Address";
+        drawerListEl.querySelectorAll(".shop-drawer-card").forEach(function (card) {
+            card.addEventListener("click", function (e) {
+                var btnDeliver = e.target.closest('[data-action="deliver"]');
+                var btnDelete = e.target.closest('[data-action="delete"]');
+                var id = Number(card.getAttribute("data-address-id"));
+
+                if (btnDelete) {
+                    e.stopPropagation();
+                    if (confirm("Delete this saved address?")) {
+                        deleteSavedAddress(id);
+                    }
+                    return;
                 }
+
+                // Deliver here
+                var targetAddr = savedAddressesList.find(function (a) { return (a.addressId || a.AddressId) === id; });
+                if (targetAddr) {
+                    populateAddressFields(targetAddr);
+                }
+                closeModal("selectAddressDrawer");
             });
         });
+    }
 
-        // Save Address Modal Action
-        var btnSave = document.getElementById("btn-save-address-modal");
-        if (btnSave) {
-            btnSave.addEventListener("click", async function () {
-                var addressId = Number(document.getElementById("modal-address-id").value || 0);
-                var receiverName = (document.getElementById("modal-name").value || "").trim();
-                var phone = (document.getElementById("modal-phone").value || "").trim();
-                var addressLine = (document.getElementById("modal-address-line").value || "").trim();
-                var city = (document.getElementById("modal-city").value || "").trim();
-                var pincode = (document.getElementById("modal-pincode").value || "").trim();
-                var addressType = document.getElementById("modal-address-type").value || "Home";
-                var lat = document.getElementById("modal-latitude").value ? Number(document.getElementById("modal-latitude").value) : null;
-                var lon = document.getElementById("modal-longitude").value ? Number(document.getElementById("modal-longitude").value) : null;
-                var isDefault = document.getElementById("modal-is-default").checked;
-
-                if (!receiverName) { alert("Please enter full name."); return; }
-                if (!phone || phone.length < 10) { alert("Please enter a valid 10-digit mobile number."); return; }
-                if (!addressLine) { alert("Please enter address line."); return; }
-                if (!city) { alert("Please enter city."); return; }
-                if (!pincode || pincode.length < 6) { alert("Please enter a valid 6-digit pincode."); return; }
-
-                btnSave.disabled = true;
-
-                try {
-                    var response = await fetch("/Checkout/SaveAddress", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            addressId: addressId,
-                            addressType: addressType,
-                            receiverName: receiverName,
-                            phone: phone,
-                            addressLine: addressLine,
-                            city: city,
-                            pincode: pincode,
-                            latitude: lat,
-                            longitude: lon,
-                            isDefault: isDefault
-                        })
-                    });
-
-                    var result = await response.json();
-                    if (result.statusCode || result.StatusCode) {
-                        var savedId = result.responseCode || result.ResponseCode || addressId;
-                        closeModal("addressModal");
-
-                        // Refresh Addresses List
-                        await reloadUserAddresses(savedId);
-                    } else {
-                        alert(result.responseMsg || result.ResponseMsg || "Could not save address.");
-                    }
-                } catch (e) {
-                    alert("Error saving address. Please try again.");
-                } finally {
-                    btnSave.disabled = false;
-                }
+    async function deleteSavedAddress(addressId) {
+        try {
+            var res = await fetch("/Checkout/DeleteAddress", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(addressId)
             });
-        }
-
-        // Trigger Location Fetch Modal from Address Modal
-        var btnLocFetch = document.getElementById("btn-trigger-location-fetch");
-        if (btnLocFetch) {
-            btnLocFetch.addEventListener("click", function () {
-                openLocationFetchModal();
-            });
+            var data = await res.json();
+            if (data.statusCode || data.StatusCode) {
+                await reloadUserAddresses();
+            } else {
+                alert(data.responseMsg || "Could not delete address.");
+            }
+        } catch (e) {
+            console.error("Delete address failed", e);
         }
     }
 
@@ -451,10 +343,12 @@
             if (res.ok) {
                 var list = await res.json();
                 savedAddressesList = list || [];
-                renderSavedAddressesGrid(savedAddressesList);
-                if (savedAddressesList.length > 0) {
-                    var targetId = selectId || savedAddressesList[0].addressId || savedAddressesList[0].AddressId;
-                    selectSavedAddress(targetId);
+                renderDrawerSavedAddresses();
+                updateAddressPillsUI();
+
+                if (selectId) {
+                    var target = savedAddressesList.find(function (a) { return (a.addressId || a.AddressId) === selectId; });
+                    if (target) populateAddressFields(target);
                 }
             }
         } catch (e) {
@@ -463,7 +357,7 @@
     }
 
     // =========================================================================
-    // 3. LOCATION FETCH MODAL (LEAFLET OPENSTREETMAP INTERACTIVE MAP)
+    // LOCATION MODAL (LEAFLET OPENSTREETMAP)
     // =========================================================================
     var leafletMap = null;
     var leafletMarker = null;
@@ -485,14 +379,14 @@
         var mapContainer = document.getElementById("osm-map");
         if (!mapContainer || typeof L === "undefined") return;
 
-        var defaultLat = 11.2588; // Kozhikode default lat
-        var defaultLon = 75.7804; // Kozhikode default lon
+        var defaultLat = 11.2588;
+        var defaultLon = 75.7804;
 
         if (!leafletMap) {
             leafletMap = L.map("osm-map").setView([defaultLat, defaultLon], 14);
 
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: '&copy; OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(leafletMap);
 
@@ -556,7 +450,7 @@
                 previewCoords.textContent = "Lat: " + lat.toFixed(5) + ", Long: " + lon.toFixed(5) + " · OpenStreetMap Real-time";
             }
             if (statusText) {
-                statusText.innerHTML = '<span class="shop-dot-live">●</span> GPS Location Captured · Accurate within 5 meters';
+                statusText.innerHTML = '<span class="shop-dot-live">●</span> GPS Location Captured';
             }
             if (btnApply) btnApply.disabled = false;
         })
@@ -597,19 +491,32 @@
             btnApply.addEventListener("click", function () {
                 if (!tempFetchedLocation) return;
 
-                if (tempFetchedLocation.city) document.getElementById("modal-city").value = tempFetchedLocation.city;
-                if (tempFetchedLocation.pincode) document.getElementById("modal-pincode").value = tempFetchedLocation.pincode;
-                if (tempFetchedLocation.road && !document.getElementById("modal-address-line").value) {
-                    document.getElementById("modal-address-line").value = tempFetchedLocation.road;
+                if (tempFetchedLocation.city) {
+                    var elCity = document.getElementById("checkout-selected-city");
+                    if (elCity) elCity.value = tempFetchedLocation.city;
                 }
-                if (tempFetchedLocation.latitude) document.getElementById("modal-latitude").value = tempFetchedLocation.latitude;
-                if (tempFetchedLocation.longitude) document.getElementById("modal-longitude").value = tempFetchedLocation.longitude;
+                if (tempFetchedLocation.pincode) {
+                    var elPin = document.getElementById("checkout-selected-pincode");
+                    if (elPin) elPin.value = tempFetchedLocation.pincode;
+                }
+                if (tempFetchedLocation.road) {
+                    var elLine = document.getElementById("checkout-selected-address-line");
+                    if (elLine && !elLine.value) elLine.value = tempFetchedLocation.road;
+                }
+                if (tempFetchedLocation.latitude) {
+                    var elLat = document.getElementById("checkout-selected-latitude");
+                    if (elLat) elLat.value = tempFetchedLocation.latitude;
+                }
+                if (tempFetchedLocation.longitude) {
+                    var elLon = document.getElementById("checkout-selected-longitude");
+                    if (elLon) elLon.value = tempFetchedLocation.longitude;
+                }
 
+                updateDeliveryPreview();
                 closeModal("locationFetchModal");
             });
         }
 
-        // Search location via Nominatim API
         var btnSearch = document.getElementById("btn-loc-search");
         var inputSearch = document.getElementById("loc-search-input");
 
@@ -632,7 +539,7 @@
                     }
                     updateLocationFromCoords(lat, lon);
                 } else {
-                    alert("No matching location found. Try searching with city or landmark name.");
+                    alert("No matching location found.");
                 }
             })
             .catch(function (e) {
@@ -640,9 +547,7 @@
             });
         }
 
-        if (btnSearch) {
-            btnSearch.addEventListener("click", performLocationSearch);
-        }
+        if (btnSearch) btnSearch.addEventListener("click", performLocationSearch);
         if (inputSearch) {
             inputSearch.addEventListener("keydown", function (e) {
                 if (e.key === "Enter") {
@@ -652,7 +557,6 @@
             });
         }
 
-        // Recenter GPS button
         var btnRecenter = document.getElementById("btn-recenter-gps");
         if (btnRecenter) {
             btnRecenter.addEventListener("click", function () {
@@ -660,7 +564,6 @@
             });
         }
 
-        // Manual Location Selectors Event Listeners
         var stateSel = document.getElementById("loc-state-select");
         if (stateSel) {
             stateSel.addEventListener("change", async function () {
@@ -682,7 +585,6 @@
             });
         }
     }
-
 
     async function loadIndiaStatesForLocation() {
         var stateSel = document.getElementById("loc-state-select");
@@ -718,7 +620,7 @@
     }
 
     // =========================================================================
-    // 4. MAIN CHECKOUT INITIALIZATION & PLACE ORDER
+    // MAIN CHECKOUT INITIALIZATION & ORDER PLACEMENT
     // =========================================================================
     async function initCheckout() {
         var form = document.getElementById("checkout-form");
@@ -768,55 +670,70 @@
             document.getElementById("checkout-total").textContent = money(summary.subtotal || summary.Subtotal);
             renderItems(itemsEl, items);
 
-            // Render Addresses Grid & Drawer List
-            renderSavedAddressesGrid(savedAddressesList);
-
+            // Populate Address Fields: Default Address or First Saved Address or Customer Profile
             if (savedAddressesList.length > 0) {
                 var defaultAddr = savedAddressesList.find(function (a) { return a.isDefault || a.IsDefault; }) || savedAddressesList[0];
-                selectSavedAddress(defaultAddr.addressId || defaultAddr.AddressId);
+                populateAddressFields(defaultAddr);
+            } else {
+                // Pre-fill profile name and phone if available
+                var elName = document.getElementById("checkout-selected-name");
+                var elPhone = document.getElementById("checkout-selected-phone");
+                if (elName) elName.value = customerProfile.fullName || customerProfile.FullName || "";
+                if (elPhone) elPhone.value = customerProfile.phone || customerProfile.Phone || "";
+                updateAddressPillsUI();
+                updateDeliveryPreview();
             }
 
-            // Bind Change & Switch buttons to open Select Address Drawer
-            var btnChange = document.getElementById("btn-trigger-address-drawer");
-            if (btnChange) {
-                btnChange.addEventListener("click", function () {
+            renderDrawerSavedAddresses();
+
+            // Address Pill Click Handlers (Home, Work, Office, Other)
+            document.querySelectorAll("#checkout-address-type-selector .shop-type-pill").forEach(function (pill) {
+                pill.addEventListener("click", function () {
+                    var type = pill.getAttribute("data-type") || "Home";
+                    selectAddressByType(type);
+                });
+            });
+
+            // "+ New Address" Pill Handler
+            var btnNewPill = document.getElementById("btn-add-new-pill");
+            if (btnNewPill) {
+                btnNewPill.addEventListener("click", function () {
+                    // Pick the next available tag not yet saved
+                    var existingTypes = savedAddressesList.map(function (a) { return (a.addressType || a.AddressType || "").toLowerCase(); });
+                    var nextType = ALLOWED_ADDRESS_TYPES.find(function (t) { return !existingTypes.includes(t.toLowerCase()); }) || "Other";
+                    selectAddressByType(nextType);
+                    document.getElementById("checkout-selected-address-line")?.focus();
+                });
+            }
+
+            // Saved Addresses Drawer Trigger
+            var btnTriggerDrawer = document.getElementById("btn-trigger-address-drawer");
+            if (btnTriggerDrawer) {
+                btnTriggerDrawer.addEventListener("click", function () {
+                    renderDrawerSavedAddresses();
                     openModal("selectAddressDrawer");
                 });
             }
 
-            var btnSwitch = document.getElementById("btn-switch-address");
-            if (btnSwitch) {
-                btnSwitch.addEventListener("click", function () {
-                    openModal("selectAddressDrawer");
-                });
-            }
-
-            // Bind Edit Selected Address
-            var btnEditSel = document.getElementById("btn-edit-selected-address");
-            if (btnEditSel) {
-                btnEditSel.addEventListener("click", function () {
-                    var selectedId = Number(document.getElementById("checkout-selected-address-id").value || 0);
-                    openAddressModal(selectedId);
-                });
-            }
-
-            // Bind Add Address Buttons
-            var btnOpenAdd = document.getElementById("btn-open-add-modal");
-            if (btnOpenAdd) {
-                btnOpenAdd.addEventListener("click", function () {
-                    openAddressModal(0);
-                });
-            }
-
-            var btnDrawerAdd = document.getElementById("btn-drawer-add-new");
-            if (btnDrawerAdd) {
-                btnDrawerAdd.addEventListener("click", function () {
+            var btnDrawerAddNew = document.getElementById("btn-drawer-add-new");
+            if (btnDrawerAddNew) {
+                btnDrawerAddNew.addEventListener("click", function () {
                     closeModal("selectAddressDrawer");
-                    openAddressModal(0);
+                    var existingTypes = savedAddressesList.map(function (a) { return (a.addressType || a.AddressType || "").toLowerCase(); });
+                    var nextType = ALLOWED_ADDRESS_TYPES.find(function (t) { return !existingTypes.includes(t.toLowerCase()); }) || "Other";
+                    selectAddressByType(nextType);
+                    document.getElementById("checkout-selected-address-line")?.focus();
                 });
             }
 
-            initAddressModalEvents();
+            // GPS / Map Location Button
+            var btnInlineLoc = document.getElementById("btn-trigger-inline-location");
+            if (btnInlineLoc) {
+                btnInlineLoc.addEventListener("click", function () {
+                    openLocationFetchModal();
+                });
+            }
+
             initLocationModalEvents();
 
             if (!canPlace) {
@@ -824,125 +741,224 @@
                 document.getElementById("checkout-place").disabled = true;
             }
         } catch (error) {
-            flash(status, "Could not load checkout.", true);
+            flash(status, "Could not load checkout preview.", true);
             return;
         }
 
-        // Place Order Form Submit
+        // Place Order Form Submission
         form.addEventListener("submit", async function (event) {
             event.preventDefault();
             var button = document.getElementById("checkout-place");
 
-            var addressId = Number(document.getElementById("checkout-selected-address-id").value || 0);
-            var receiverName = document.getElementById("checkout-selected-name").value;
-            var phone = document.getElementById("checkout-selected-phone").value;
-            var addressLine = document.getElementById("checkout-selected-address-line").value;
-            var city = document.getElementById("checkout-selected-city").value;
-            var pincode = document.getElementById("checkout-selected-pincode").value;
+            var receiverName = (document.getElementById("checkout-selected-name")?.value || "").trim();
+            var phone = (document.getElementById("checkout-selected-phone")?.value || "").trim();
+            var addressLine = (document.getElementById("checkout-selected-address-line")?.value || "").trim();
+            var city = (document.getElementById("checkout-selected-city")?.value || "").trim();
+            var pincode = (document.getElementById("checkout-selected-pincode")?.value || "").trim();
+            var addressType = document.getElementById("checkout-selected-address-type")?.value || "Home";
+            var addressId = Number(document.getElementById("checkout-selected-address-id")?.value || 0);
+            var lat = document.getElementById("checkout-selected-latitude")?.value ? Number(document.getElementById("checkout-selected-latitude").value) : null;
+            var lon = document.getElementById("checkout-selected-longitude")?.value ? Number(document.getElementById("checkout-selected-longitude").value) : null;
+            var shouldSaveAddress = document.getElementById("checkout-save-address")?.checked;
 
-            if (!addressId && !receiverName) {
-                alert("Please select or add a delivery address before placing your order.");
-                openAddressModal(0);
+            if (!receiverName) {
+                alert("Please enter the receiver's full name.");
+                document.getElementById("checkout-selected-name")?.focus();
+                return;
+            }
+            if (!phone || phone.length < 10) {
+                alert("Please enter a valid 10-digit mobile number.");
+                document.getElementById("checkout-selected-phone")?.focus();
+                return;
+            }
+            if (!addressLine || addressLine.length < 5) {
+                alert("Please enter a complete delivery address (street/flat).");
+                document.getElementById("checkout-selected-address-line")?.focus();
+                return;
+            }
+            if (!city) {
+                alert("Please enter the city or district.");
+                document.getElementById("checkout-selected-city")?.focus();
+                return;
+            }
+            if (!pincode || pincode.length < 6) {
+                alert("Please enter a valid 6-digit pincode.");
+                document.getElementById("checkout-selected-pincode")?.focus();
                 return;
             }
 
-            button.disabled = true;
+            var paymentMethod = "COD";
+            var paymentRadios = document.getElementsByName("paymentMethod");
+            for (var i = 0; i < paymentRadios.length; i++) {
+                if (paymentRadios[i].checked) {
+                    paymentMethod = paymentRadios[i].value;
+                    break;
+                }
+            }
 
-            try {
-                var resultResponse = await fetch("/Checkout/Place", {
+            button.disabled = true;
+            flash(status, "");
+
+            // If user opted to save/update address, save in background
+            if (shouldSaveAddress) {
+                fetch("/Checkout/SaveAddress", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        productVariantId: buyNow ? variantId : 0,
-                        quantity: buyNow ? quantity : 1,
                         addressId: addressId,
-                        addressType: document.getElementById("checkout-selected-address-type").value || "Home",
+                        addressType: addressType,
                         receiverName: receiverName,
                         phone: phone,
                         addressLine: addressLine,
                         city: city,
                         pincode: pincode,
-                        latitude: document.getElementById("checkout-selected-latitude").value ? Number(document.getElementById("checkout-selected-latitude").value) : null,
-                        longitude: document.getElementById("checkout-selected-longitude").value ? Number(document.getElementById("checkout-selected-longitude").value) : null,
-                        saveAddress: false,
-                        paymentMethod: "COD"
+                        latitude: lat,
+                        longitude: lon,
+                        isDefault: (addressId > 0 ? (savedAddressesList.find(function(a) { return (a.addressId || a.AddressId) === addressId; })?.isDefault ?? false) : (savedAddressesList.length === 0))
                     })
-                });
+                }).catch(function(e) { console.warn("Save address background error", e); });
+            }
 
-                if (window.smartCartHandleAuth && window.smartCartHandleAuth(resultResponse)) return;
+            var orderData = {
+                productVariantId: buyNow ? variantId : 0,
+                quantity: buyNow ? quantity : 1,
+                receiverName: receiverName,
+                phone: phone,
+                addressLine: addressLine,
+                city: city,
+                pincode: pincode,
+                latitude: lat,
+                longitude: lon,
+                saveAddress: false,
+                paymentMethod: paymentMethod
+            };
 
-                var result = await resultResponse.json();
-                if (!(result.statusCode || result.StatusCode)) {
-                    flash(status, result.responseMsg || result.ResponseMsg || "Could not place the order.", true);
-                    button.disabled = false;
-                    return;
+            try {
+                if (paymentMethod === "Razorpay") {
+                    // Create Razorpay Order
+                    var rpResponse = await fetch("/api/payment/create-order", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (window.smartCartHandleAuth && window.smartCartHandleAuth(rpResponse)) return;
+                    if (!rpResponse.ok) {
+                        var errData = await rpResponse.json();
+                        flash(status, errData.message || "Failed to create payment order.", true);
+                        button.disabled = false;
+                        return;
+                    }
+
+                    var rpOrder = await rpResponse.json();
+
+                    var options = {
+                        key: rpOrder.keyId || rpOrder.KeyId,
+                        amount: rpOrder.amount || rpOrder.Amount,
+                        currency: rpOrder.currency || rpOrder.Currency,
+                        name: "SmartCart",
+                        description: "Purchase from SmartCart",
+                        order_id: rpOrder.orderId || rpOrder.OrderId,
+                        handler: async function (response) {
+                            try {
+                                var verifyPayload = {
+                                    razorpayPaymentId: response.razorpay_payment_id,
+                                    razorpayOrderId: response.razorpay_order_id,
+                                    razorpaySignature: response.razorpay_signature,
+                                    productVariantId: orderData.productVariantId,
+                                    quantity: orderData.quantity,
+                                    receiverName: orderData.receiverName,
+                                    phone: orderData.phone,
+                                    addressLine: orderData.addressLine,
+                                    city: orderData.city,
+                                    pincode: orderData.pincode
+                                };
+
+                                var verifyResponse = await fetch("/api/payment/verify-payment", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify(verifyPayload)
+                                });
+
+                                var verifyResult = await verifyResponse.json();
+                                if (verifyResult.success) {
+                                    if (window.refreshSmartCartBag) window.refreshSmartCartBag();
+                                    window.location.href = "/Checkout/Confirmation/" + verifyResult.orderId;
+                                } else {
+                                    flash(status, verifyResult.message || "Payment verification failed.", true);
+                                    button.disabled = false;
+                                }
+                            } catch (e) {
+                                flash(status, "An error occurred while finalizing payment.", true);
+                                button.disabled = false;
+                            }
+                        },
+                        modal: {
+                            ondismiss: function () {
+                                flash(status, "Payment was cancelled.", true);
+                                button.disabled = false;
+                            }
+                        },
+                        prefill: {
+                            name: receiverName,
+                            contact: phone
+                        }
+                    };
+
+                    var rzp = new Razorpay(options);
+                    rzp.on("payment.failed", function (response) {
+                        flash(status, response.error.description || "Payment failed.", true);
+                        button.disabled = false;
+                    });
+                    rzp.open();
+                } else {
+                    // Normal COD Checkout
+                    var placeResponse = await fetch("/Checkout/Place", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (window.smartCartHandleAuth && window.smartCartHandleAuth(placeResponse)) return;
+                    if (!placeResponse.ok) {
+                        flash(status, "Could not place order.", true);
+                        button.disabled = false;
+                        return;
+                    }
+
+                    var result = await placeResponse.json();
+                    if ((result.statusCode || result.StatusCode) && (result.responseCode || result.ResponseCode) > 0) {
+                        if (window.refreshSmartCartBag) window.refreshSmartCartBag();
+                        window.location.href = "/Checkout/Confirmation/" + (result.responseCode || result.ResponseCode);
+                    } else {
+                        flash(status, result.responseMsg || result.ResponseMsg || "Could not place order.", true);
+                        button.disabled = false;
+                    }
                 }
-                if (window.refreshSmartCartBag) {
-                    window.refreshSmartCartBag();
-                }
-                window.location.href = "/Checkout/Confirmation/" + (result.responseCode || result.ResponseCode);
-            } catch (error) {
-                flash(status, "Could not place the order.", true);
+            } catch (e) {
+                flash(status, "An error occurred while placing order.", true);
                 button.disabled = false;
+            }
+        });
+
+        // Payment Method Select Highlight
+        var payLabels = document.querySelectorAll(".shop-checkout-pay");
+        payLabels.forEach(function (label) {
+            var radio = label.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.addEventListener("change", function () {
+                    payLabels.forEach(function (l) { l.classList.remove("is-selected"); });
+                    if (radio.checked) {
+                        label.classList.add("is-selected");
+                    }
+                });
             }
         });
     }
 
-    async function initConfirmation() {
-        var page = document.querySelector("[data-order-id]");
-        if (!page || document.getElementById("checkout-form")) return;
-
-        var orderId = Number(page.getAttribute("data-order-id") || 0);
-        var content = document.getElementById("confirm-content");
-        var missing = document.getElementById("confirm-missing");
-        var status = document.getElementById("confirm-status");
-        if (!orderId) {
-            if (missing) missing.hidden = false;
-            return;
-        }
-
-        try {
-            var response = await fetch("/Checkout/GetOrder?orderId=" + encodeURIComponent(orderId));
-            if (window.smartCartHandleAuth && window.smartCartHandleAuth(response)) return;
-            if (!response.ok) throw new Error("missing");
-
-            var data = await response.json();
-            var order = data.order || data.Order || {};
-            var items = data.items || data.Items || [];
-            var method = (order.paymentMethod || order.PaymentMethod || "COD") === "COD"
-                ? "Cash on Delivery"
-                : (order.paymentMethod || order.PaymentMethod);
-            var payStatus = order.paymentStatus || order.PaymentStatus || "Pending";
-
-            document.getElementById("confirm-number").textContent = "Order " + (order.orderNumber || order.OrderNumber || orderId);
-            document.getElementById("confirm-meta").textContent =
-                (order.orderStatus || order.OrderStatus || "Placed") +
-                " · " + new Date(order.orderDate || order.OrderDate || Date.now()).toLocaleString("en-IN");
-            document.getElementById("confirm-pay").textContent = method + " · " + payStatus;
-            document.getElementById("confirm-address").innerHTML =
-                "<strong>Deliver to</strong><br>" +
-                escapeHtml(order.receiverName || order.ReceiverName) + "<br>" +
-                escapeHtml(order.phone || order.Phone) + "<br>" +
-                escapeHtml(order.addressLine || order.AddressLine) + "<br>" +
-                escapeHtml(order.city || order.City) + " - " + escapeHtml(order.pincode || order.Pincode);
-            document.getElementById("confirm-total").textContent = money(order.totalAmount || order.TotalAmount);
-            renderItems(document.getElementById("confirm-items"), items);
-            var orderLink = document.getElementById("confirm-order-link");
-            if (orderLink) {
-                orderLink.href = "/Orders/Details/" + encodeURIComponent(order.orderId || order.OrderId || orderId);
-            }
-            if (missing) missing.hidden = true;
-            if (content) content.hidden = false;
-            if (window.refreshSmartCartBag) {
-                window.refreshSmartCartBag();
-            }
-        } catch (error) {
-            if (content) content.hidden = true;
-            if (missing) missing.hidden = false;
-            flash(status, "Could not load this order.", true);
-        }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initCheckout);
+    } else {
+        initCheckout();
     }
-
-    initCheckout();
-    initConfirmation();
 })();

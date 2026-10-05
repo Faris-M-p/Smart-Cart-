@@ -26,6 +26,8 @@ namespace Ecommerce.Models
             public int AddressId { get; set; } = 0;
             public decimal? Latitude { get; set; }
             public decimal? Longitude { get; set; }
+            public string? RazorpayOrderId { get; set; }
+            public string? RazorpayPaymentId { get; set; }
         }
 
         public class CheckoutCustomer

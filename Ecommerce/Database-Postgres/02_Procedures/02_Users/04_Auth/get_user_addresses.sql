@@ -1,39 +1,31 @@
-CREATE OR REPLACE FUNCTION get_user_addresses(
-    p_userid INT
-)
-RETURNS TABLE (
-    AddressId       INT,
-    UserId          INT,
-    AddressType     TEXT,
-    ReceiverName    TEXT,
-    Phone           TEXT,
-    AddressLine     TEXT,
-    City            TEXT,
-    Pincode         TEXT,
-    Latitude        NUMERIC,
-    Longitude       NUMERIC,
-    IsDefault       BOOLEAN,
-    CreatedAt       TIMESTAMP
+/* =============================================================================
+   Procedure : get_user_addresses
+   Source    : GetUserAddresses (SQL Server)
+   ============================================================================= */
+
+CREATE OR REPLACE PROCEDURE get_user_addresses(
+    p_user_id      INT,
+    INOUT p_result refcursor DEFAULT 'p_result'
 )
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    RETURN QUERY
+    OPEN p_result FOR
     SELECT
-        u.addressid,
-        u.userid,
-        u.addresstype,
-        u.receivername,
-        u.phone,
-        u.addressline,
-        u.city,
-        u.pincode,
-        u.latitude,
-        u.longitude,
-        u.isdefault,
-        u.createdat
+        u.addressid     AS addressid,
+        u.userid        AS userid,
+        u.addresstype   AS addresstype,
+        u.receivername  AS receivername,
+        u.phone         AS phone,
+        u.addressline   AS addressline,
+        u.city          AS city,
+        u.pincode       AS pincode,
+        u.latitude      AS latitude,
+        u.longitude     AS longitude,
+        u.isdefault     AS isdefault,
+        u.createdat     AS createdat
     FROM useraddresses u
-    WHERE u.userid = p_userid
+    WHERE u.userid = p_user_id
       AND COALESCE(u.cancelled, FALSE) = FALSE
     ORDER BY u.isdefault DESC, u.addressid DESC;
 END;
