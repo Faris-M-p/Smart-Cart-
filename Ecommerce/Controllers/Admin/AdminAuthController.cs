@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Ecommerce.Helpers.AdminAuth;
 using Ecommerce.Interface.Admin;
 using Microsoft.AspNetCore.Authorization;
@@ -75,10 +74,7 @@ namespace Ecommerce.Controllers.Admin
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
-            var employeeIdValue = User.FindFirst(AdminAuthHelper.ClaimEmployeeId)?.Value
-                ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(employeeIdValue, out var employeeId))
+            if (!AdminAuthHelper.TryGetEmployeeId(User, out var employeeId))
             {
                 return Unauthorized(new ApiResponse<object>
                 {

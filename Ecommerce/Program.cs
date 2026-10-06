@@ -78,29 +78,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     return Task.CompletedTask;
                 }
 
-                var path = context.Request.Path.Value ?? string.Empty;
-                var isAdminPath = path.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase);
+                var isAdminPath = AdminAuthHelper.IsAdminRequestPath(context.Request.Path);
+                var cookieName = isAdminPath
+                    ? AdminAuthHelper.TokenCookieName
+                    : UserAuthHelper.TokenCookieName;
 
-                if (isAdminPath
-                    && context.Request.Cookies.TryGetValue(AdminAuthHelper.TokenCookieName, out var adminToken)
-                    && !string.IsNullOrWhiteSpace(adminToken))
+                if (context.Request.Cookies.TryGetValue(cookieName, out var token)
+                    && !string.IsNullOrWhiteSpace(token))
                 {
-                    context.Token = adminToken;
-                    return Task.CompletedTask;
-                }
-
-                if (context.Request.Cookies.TryGetValue(UserAuthHelper.TokenCookieName, out var userToken)
-                    && !string.IsNullOrWhiteSpace(userToken))
-                {
-                    context.Token = userToken;
-                    return Task.CompletedTask;
-                }
-
-                if (context.Request.Cookies.TryGetValue(AdminAuthHelper.TokenCookieName, out var fallbackAdmin)
-                    && !string.IsNullOrWhiteSpace(fallbackAdmin))
-                {
-                    context.Token = fallbackAdmin;
+                    context.Token = token;
                 }
 
                 return Task.CompletedTask;

@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+
 namespace Ecommerce.Helpers.AdminAuth
 {
     public static class AdminAuthHelper
@@ -15,6 +18,20 @@ namespace Ecommerce.Helpers.AdminAuth
         public const string UnauthorizedMessage = "Unauthorized.";
         public const string ForbiddenMessage = "You do not have permission to perform this action.";
         public const string LoginSuccessMessage = "Login successful.";
+
+        public static bool IsAdminRequestPath(PathString path)
+        {
+            var value = path.Value ?? string.Empty;
+            return value.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool TryGetEmployeeId(ClaimsPrincipal? user, out int employeeId)
+        {
+            employeeId = 0;
+            var value = user?.FindFirst(ClaimEmployeeId)?.Value;
+            return int.TryParse(value, out employeeId) && employeeId > 0;
+        }
 
         public static string NormalizeUserName(string? userName) =>
             (userName ?? string.Empty).Trim();

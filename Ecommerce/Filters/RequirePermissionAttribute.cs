@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Text.Json;
 using Ecommerce.Helpers.AdminAuth;
 using Ecommerce.Interface.Admin;
@@ -21,15 +20,8 @@ namespace Ecommerce.Filters
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var http = context.HttpContext;
-            if (http.User.Identity?.IsAuthenticated != true)
-            {
-                context.Result = Deny(http, StatusCodes.Status401Unauthorized, AdminAuthHelper.UnauthorizedMessage);
-                return;
-            }
-
-            var employeeIdValue = http.User.FindFirst(AdminAuthHelper.ClaimEmployeeId)?.Value
-                ?? http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(employeeIdValue, out var employeeId) || employeeId <= 0)
+            if (http.User.Identity?.IsAuthenticated != true
+                || !AdminAuthHelper.TryGetEmployeeId(http.User, out var employeeId))
             {
                 context.Result = Deny(http, StatusCodes.Status401Unauthorized, AdminAuthHelper.UnauthorizedMessage);
                 return;

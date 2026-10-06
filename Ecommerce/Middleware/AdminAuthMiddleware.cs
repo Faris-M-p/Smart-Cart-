@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Ecommerce.Helpers.AdminAuth;
 using Ecommerce.Interface.Admin;
 using System.Text.Json;
@@ -17,7 +16,7 @@ namespace Ecommerce.Middleware
         public async Task InvokeAsync(HttpContext context, IAdminAuthInterface adminAuth)
         {
             var path = context.Request.Path;
-            if (!IsAdminPath(path))
+            if (!AdminAuthHelper.IsAdminRequestPath(path))
             {
                 await _next(context);
                 return;
@@ -67,10 +66,7 @@ namespace Ecommerce.Middleware
                 return false;
             }
 
-            var employeeIdValue = context.User.FindFirst(AdminAuthHelper.ClaimEmployeeId)?.Value
-                ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(employeeIdValue, out var employeeId) || employeeId <= 0)
+            if (!AdminAuthHelper.TryGetEmployeeId(context.User, out var employeeId))
             {
                 return false;
             }
@@ -88,13 +84,6 @@ namespace Ecommerce.Middleware
                     Path = "/"
                 });
             }
-        }
-
-        private static bool IsAdminPath(PathString path)
-        {
-            var value = path.Value ?? string.Empty;
-            return value.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
-                || value.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsAnonymousAdminPath(PathString path)
