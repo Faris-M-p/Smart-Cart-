@@ -29,11 +29,18 @@ namespace Ecommerce.Controllers
         }
 
         [HttpGet("Checkout/Confirmation/{orderId:int}")]
-        public IActionResult Confirmation(int orderId)
+        public async Task<IActionResult> Confirmation(int orderId)
         {
             ViewBag.Title = "Order placed";
             ViewBag.OrderId = orderId;
-            return View();
+
+            if (!TryGetUserId(out var userId, out _))
+            {
+                return RedirectToAction("Login", "Account", new { returnUrl = $"/Checkout/Confirmation/{orderId}" });
+            }
+
+            var page = await _orderInterface.GetOrderAsync(userId, orderId);
+            return View(page);
         }
 
         [HttpGet("Checkout/Location/IndiaStates")]

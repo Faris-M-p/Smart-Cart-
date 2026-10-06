@@ -1,12 +1,27 @@
+@using static Ecommerce.Models.OrderModel
+@model OrderPage?
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Order placed";
-    var orderId = ViewBag.OrderId ?? 0;
+    var orderId = ViewBag.OrderId ?? Model?.Order?.OrderId ?? 0;
+    var order = Model?.Order;
+    var items = Model?.Items ?? new List<Ecommerce.Models.CartModel.CartLine>();
+    var hasOrder = order != null && order.OrderId > 0;
+    string StatusClass(string? status)
+    {
+        var value = (status ?? "").ToLowerInvariant();
+        if (value == "cancelled") return "is-cancelled";
+        if (value == "delivered") return "is-delivered";
+        if (value == "placed" || value == "pending") return "is-placed";
+        return "is-progress";
+    }
+    string PayLabel(string? method) => method == "COD" ? "Cash on Delivery" : (string.IsNullOrWhiteSpace(method) ? "COD" : method);
 }
 
 <link rel="stylesheet" href="/css/shop-bag.css">
 <link rel="stylesheet" href="/css/content-pages.css">
 <link rel="stylesheet" href="/css/shop-checkout.css">
+<link rel="stylesheet" href="/css/shop-orders.css">
 
 <section class="breadcrumb__section breadcrumb__bg">
     <div class="container">
@@ -23,28 +38,62 @@
 <section class="shop-bag-page shop-checkout-page" data-order-id="@orderId">
     <div class="container">
         <p id="confirm-status" class="shop-bag-flash" hidden></p>
-        <div id="confirm-missing" class="shop-bag-empty" hidden>
-            <h2>Order not found.</h2>
-            <p>This confirmation is only available for your own orders.</p>
-            <a class="shop-bag-cta" href="/Shop">Browse the Shop</a>
-        </div>
-
-        <div id="confirm-content" class="shop-checkout-layout" hidden>
-            <div class="contact-card">
-                <p class="shop-checkout-ok">Thank you. Your order is placed.</p>
-                <h3 id="confirm-number">Order</h3>
-                <p id="confirm-meta" class="shop-bag-note"></p>
-                <p id="confirm-pay" class="shop-bag-note"></p>
-                <div id="confirm-address" class="shop-checkout-address"></div>
+        @if (!hasOrder)
+        {
+            <div id="confirm-missing" class="shop-bag-empty">
+                <h2>Order not found.</h2>
+                <p>This confirmation is only available for your own orders.</p>
+                <a class="shop-bag-cta" href="/Shop">Browse the Shop</a>
             </div>
-            <aside class="contact-card shop-checkout-summary">
-                <h3>Items</h3>
-                <div id="confirm-items" class="shop-checkout-items"></div>
-                <p class="shop-checkout-total">Total <strong id="confirm-total">₹0</strong></p>
-                <a id="confirm-order-link" class="shop-bag-cta" href="/Orders">View this order</a>
-                <a class="shop-bag-view" href="/Orders">My orders</a>
-            </aside>
-        </div>
+        }
+        else
+        {
+            <div id="confirm-content" class="shop-checkout-layout" data-server-rendered="true">
+                <div class="contact-card">
+                    <p class="shop-checkout-ok">Thank you. Your order is placed.</p>
+                    <h3 id="confirm-number">Order @(string.IsNullOrWhiteSpace(order!.OrderNumber) ? order.OrderId.ToString() : order.OrderNumber)</h3>
+                    <p id="confirm-meta" class="shop-bag-note">
+                        <span class="shop-orders-badge @StatusClass(order.OrderStatus)">@order.OrderStatus</span>
+                        @order.OrderDate.ToLocalTime().ToString("g")
+                    </p>
+                    <p id="confirm-pay" class="shop-bag-note">@PayLabel(order.PaymentMethod) · @order.PaymentStatus</p>
+                    <div id="confirm-address" class="shop-checkout-address">
+                        <strong>Deliver to</strong><br>
+                        @order.ReceiverName<br>
+                        @order.Phone<br>
+                        @order.AddressLine<br>
+                        @order.City - @order.Pincode
+                    </div>
+                </div>
+                <aside class="contact-card shop-checkout-summary">
+                    <h3>Items</h3>
+                    <div id="confirm-items" class="shop-checkout-items">
+                        @foreach (var item in items)
+                        {
+                            var href = string.IsNullOrWhiteSpace(item.Slug) ? "/Shop" : "/Shop/Details/" + item.Slug;
+                            <article class="shop-checkout-line">
+                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.Name">
+                                }
+                                else
+                                {
+                                    <div class="shop-checkout-fallback">No image</div>
+                                }
+                                <div>
+                                    <h4><a href="@href">@item.Name</a></h4>
+                                    <p>@(string.IsNullOrWhiteSpace(item.Label) ? item.SKU : item.Label) · Qty @item.Quantity</p>
+                                </div>
+                                <strong>₹@item.LineTotal.ToString("N2")</strong>
+                            </article>
+                        }
+                    </div>
+                    <p class="shop-checkout-total">Total <strong id="confirm-total">₹@order.TotalAmount.ToString("N2")</strong></p>
+                    <a id="confirm-order-link" class="shop-bag-cta" href="/Orders/Details/@order.OrderId">View this order</a>
+                    <a class="shop-bag-view" href="/Orders">My orders</a>
+                </aside>
+            </div>
+        }
     </div>
 </section>
 

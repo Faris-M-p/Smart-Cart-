@@ -619,10 +619,126 @@
         } catch (e) { console.error(e); }
     }
 
+    function goToConfirmation(orderId) {
+        var url = "/Checkout/Confirmation/" + encodeURIComponent(orderId);
+        window.setTimeout(function () {
+            try {
+                if (window.top && window.top.location) {
+                    window.top.location.replace(url);
+                    return;
+                }
+            } catch (e) { }
+            window.location.replace(url);
+        }, 250);
+    }
+
+    function paymentLabel(method) {
+        return method === "COD" ? "Cash on Delivery" : (method || "COD");
+    }
+
+    function statusClass(status) {
+        var value = String(status || "").toLowerCase();
+        if (value === "cancelled") return "is-cancelled";
+        if (value === "delivered") return "is-delivered";
+        if (value === "placed" || value === "pending") return "is-placed";
+        return "is-progress";
+    }
+
+    async function initConfirmation() {
+        var page = document.querySelector(".shop-checkout-page[data-order-id]");
+        var content = document.getElementById("confirm-content");
+        if (!page) {
+            return false;
+        }
+        if (content && content.getAttribute("data-server-rendered") === "true") {
+            return true;
+        }
+        if (document.getElementById("checkout-form")) {
+            return false;
+        }
+
+        var orderId = Number(page.getAttribute("data-order-id") || 0);
+        var missing = document.getElementById("confirm-missing");
+        if (!orderId) {
+            if (missing) missing.hidden = false;
+            return true;
+        }
+
+        try {
+            var response = await fetch("/Checkout/GetOrder?orderId=" + encodeURIComponent(orderId), {
+                credentials: "same-origin",
+                headers: { "Accept": "application/json" }
+            });
+            if (window.smartCartHandleAuth && window.smartCartHandleAuth(response)) {
+                return true;
+            }
+            if (!response.ok) {
+                if (content) content.hidden = true;
+                if (missing) missing.hidden = false;
+                return true;
+            }
+
+            var data = await response.json();
+            var order = data.order || data.Order || {};
+            var items = data.items || data.Items || [];
+            var placedId = order.orderId || order.OrderId || orderId;
+            var status = order.orderStatus || order.OrderStatus || "Placed";
+            var method = paymentLabel(order.paymentMethod || order.PaymentMethod || "COD");
+            var payStatus = order.paymentStatus || order.PaymentStatus || "Pending";
+
+            var numberEl = document.getElementById("confirm-number");
+            var metaEl = document.getElementById("confirm-meta");
+            var payEl = document.getElementById("confirm-pay");
+            var addressEl = document.getElementById("confirm-address");
+            var totalEl = document.getElementById("confirm-total");
+            var itemsEl = document.getElementById("confirm-items");
+            var linkEl = document.getElementById("confirm-order-link");
+
+            if (numberEl) {
+                numberEl.textContent = "Order " + (order.orderNumber || order.OrderNumber || placedId);
+            }
+            if (metaEl) {
+                metaEl.innerHTML = '<span class="shop-orders-badge ' + statusClass(status) + '">' +
+                    escapeHtml(status) + "</span> " +
+                    new Date(order.orderDate || order.OrderDate || Date.now()).toLocaleString("en-IN");
+            }
+            if (payEl) {
+                payEl.textContent = method + " · " + payStatus;
+            }
+            if (addressEl) {
+                addressEl.innerHTML =
+                    "<strong>Deliver to</strong><br>" +
+                    escapeHtml(order.receiverName || order.ReceiverName) + "<br>" +
+                    escapeHtml(order.phone || order.Phone) + "<br>" +
+                    escapeHtml(order.addressLine || order.AddressLine) + "<br>" +
+                    escapeHtml(order.city || order.City) + " - " + escapeHtml(order.pincode || order.Pincode);
+            }
+            if (totalEl) {
+                totalEl.textContent = money(order.totalAmount || order.TotalAmount);
+            }
+            if (itemsEl) {
+                renderItems(itemsEl, items);
+            }
+            if (linkEl) {
+                linkEl.href = "/Orders/Details/" + placedId;
+            }
+            if (missing) missing.hidden = true;
+            if (content) content.hidden = false;
+        } catch (e) {
+            if (missing) missing.hidden = false;
+            flash(document.getElementById("confirm-status"), "Could not load this order.", true);
+        }
+        return true;
+    }
+
     // =========================================================================
     // MAIN CHECKOUT INITIALIZATION & ORDER PLACEMENT
     // =========================================================================
     async function initCheckout() {
+        if (await initConfirmation()) {
+            return;
+        }
+
         var form = document.getElementById("checkout-form");
         var content = document.getElementById("checkout-content");
         var empty = document.getElementById("checkout-empty");
@@ -895,7 +1011,7 @@
 
                                 if (placedOk) {
                                     if (window.refreshSmartCartBag) window.refreshSmartCartBag();
-                                    window.location.replace("/Checkout/Confirmation/" + placedOrderId);
+                                    goToConfirmation(placedOrderId);
                                     return;
                                 }
 
@@ -946,7 +1062,7 @@
                     var result = await placeResponse.json();
                     if ((result.statusCode || result.StatusCode) && (result.responseCode || result.ResponseCode) > 0) {
                         if (window.refreshSmartCartBag) window.refreshSmartCartBag();
-                        window.location.href = "/Checkout/Confirmation/" + (result.responseCode || result.ResponseCode);
+                        goToConfirmation(result.responseCode || result.ResponseCode);
                     } else {
                         flash(status, result.responseMsg || result.ResponseMsg || "Could not place order.", true);
                         button.disabled = false;
