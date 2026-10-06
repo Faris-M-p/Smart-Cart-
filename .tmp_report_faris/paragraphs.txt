@@ -1,0 +1,3021 @@
+2|PROJECT PROPOSAL PROFORMA[INSERT SIGNED PROJECT PROPOSAL PROFORMA HERE]
+12|ACKNOWLEDGEMENT
+13|I would like to express my sincere gratitude to everyone who supported me during the analysis, design, development and documentation of my MCA project, SmartCart – Web-Based E-Commerce Management System.
+14|I am thankful to my project guide, Mr. Yadhu Krishnan T, for the guidance, suggestions and encouragement provided throughout the project. The guidance helped me to approach the work in a structured manner, from understanding the requirements of a supermarket business to designing the database, implementing the application and preparing this report.
+15|I am grateful to Indira Gandhi National Open University and the School of Computer and Information Sciences for providing the academic framework and the opportunity to undertake this project, and to the staff of my Regional Centre / Study Centre SH College, Thevara for their academic support.
+16|I also acknowledge the official documentation and learning resources published for ASP.NET Core, PostgreSQL, Bootstrap and related technologies, which were valuable references during development.
+18|Muhammed Faris MP
+19|Enrolment No.: 2400837459
+21|ABSTRACT
+22|Small and medium supermarkets increasingly need an online channel through which customers can browse products and place orders, while the store itself still has to manage a large catalogue, frequent stock intake from suppliers and the processing of customer orders. Maintaining these activities through walk-in sales, manual registers and disconnected spreadsheets makes stock information unreliable and limits the store’s reach.
+23|SmartCart is a web-based e-commerce and management system designed for a single supermarket store (referred to in this report as SmartCart Now). It provides a customer-facing storefront and an employee administration panel within one ASP.NET Core 8 MVC application backed by a relational database. On the storefront, registered customers can browse the catalogue by category, brand and price, view product details and pack-size variants (SKUs), maintain a wishlist and a shopping cart, check out with a saved delivery address using Cash on Delivery, view their order history and cancel orders that are still in an early status.
+24|The administration panel allows store employees to manage categories, sub-categories, brands, products, SKUs, variant attributes and product media; to maintain suppliers and record purchases that create batch-wise stock; to adjust inventory; to process customer orders through confirmation, shipping, delivery or cancellation; to manage homepage banners and featured items; and to manage employees, roles and permissions. Online visibility is controlled per product and per SKU.
+25|Customer storefront operations (shop, cart, wishlist, auth, checkout and customer orders) use PostgreSQL stored procedures executed through Dapper, where business rules such as stock availability, online-sale eligibility and payment-method checks are enforced in the database. Administrative modules, including admin order processing, use Entity Framework Core (Npgsql) without migrations; the schema is created and updated through versioned PostgreSQL build and patch scripts under Database-Postgres. Customers and employees are authenticated through separate JWT cookies, passwords are hashed, and admin actions are protected by role-based, permission-level access control.
+26|Online payment, multi-store and multi-zone operation, advanced analytics, recommendations and a mobile application are not part of the current implementation; they are presented as future scope (SmartCart Then), for which the current architecture provides a foundation.
+27|Keywords: E-Commerce, Supermarket, ASP.NET Core MVC, PostgreSQL, Stored Procedures, Dapper, Entity Framework Core, Inventory Management, Role-Based Access Control, JWT.
+28|TABLE OF CONTENTS
+29|CHAPTER 1: INTRODUCTION AND PROJECT OVERVIEW11
+30|1.1 Background11
+31|1.2 E-Commerce Context11
+32|1.3 Motivation for SmartCart11
+33|1.4 Introduction to SmartCart12
+34|1.5 SmartCart Now12
+35|1.6 SmartCart Then / Future Expansion12
+36|1.7 Problem Statement13
+37|1.8 Need for the Proposed System13
+38|1.9 Objectives14
+39|1.10 Project Goals15
+40|1.11 Expected Benefits15
+41|1.12 Project Characteristics16
+42|1.13 Key Features16
+43|1.14 Project Overview Summary17
+44|CHAPTER 2: EXISTING SYSTEM, PROBLEM AND REQUIREMENTS18
+45|2.1 Existing Shopping System18
+46|2.2 Existing Manual / Traditional Processes18
+47|2.3 Limitations18
+48|2.4 Problems Identified19
+49|2.5 Challenges Faced by Small Retail Businesses19
+50|2.6 Proposed System20
+51|2.7 Proposed Solution Overview20
+52|2.8 Functional Requirements21
+53|2.9 Customer Functional Requirements22
+54|2.10 Admin Functional Requirements23
+55|2.11 Non-Functional Requirements24
+56|2.12 Hardware Requirements25
+57|2.13 Software Requirements25
+58|2.14 Functional vs Non-Functional Requirement Table26
+59|CHAPTER 3: LITERATURE REVIEW AND FEASIBILITY27
+60|3.1 Overview27
+61|3.2 E-Commerce Systems27
+62|3.3 Existing E-Commerce Platforms28
+63|3.4 General Architecture Patterns28
+64|3.5 Technology Review29
+65|3.6 ASP.NET Core29
+66|3.7 SQL Database / Stored Procedure Approach30
+67|3.8 HTML/CSS/JavaScript/Frontend Technologies30
+68|3.9 Security Concepts31
+69|3.10 Authentication and Authorization31
+70|3.11 Feasibility Study32
+71|3.12 Literature Review Summary33
+72|3.13 Gap Analysis33
+73|CHAPTER 4: PROJECT PLANNING AND METHODOLOGY34
+74|4.1 Development Approach34
+75|4.2 Project Phases34
+76|4.3 Requirement Analysis Phase35
+77|4.4 Design Phase35
+78|4.5 Development Phase35
+79|4.6 Database Development36
+80|4.7 Backend Development36
+81|4.8 Frontend Development36
+82|4.9 Testing Phase37
+83|4.10 Deployment / Release Preparation37
+84|4.11 Development Methodology38
+85|4.12 Project Schedule39
+86|4.13 PERT Chart40
+87|4.14 Project Planning Summary41
+88|CHAPTER 5: SYSTEM ANALYSIS42
+89|5.1 System Overview42
+90|5.2 Actors42
+91|5.3 Use Case Analysis43
+92|5.4 Customer Use Cases44
+93|5.5 Administrator Use Cases45
+94|5.6 Context-Level DFD46
+95|5.7 Level 0 DFD47
+96|5.8 Level 1 DFD — Customer Flow48
+97|5.9 Level 1 DFD — Admin Flow49
+98|5.10 Order Processing Data Flow50
+99|5.11 Authentication Data Flow51
+100|5.12 System Analysis Summary52
+102|CHAPTER 6: SYSTEM ARCHITECTURE AND DESIGN53
+103|6.1 Design Overview53
+104|6.2 Design Principles53
+105|6.3 System Architecture54
+106|6.4 Application Layer Structure55
+107|6.5 Backend Structure55
+108|6.6 Frontend Structure56
+109|6.7 API / Request Flow57
+110|6.8 Authentication Architecture58
+111|6.9 Customer Shopping Workflow59
+112|6.10 Order Lifecycle60
+113|6.11 System Design Summary61
+114|CHAPTER 7: DATABASE DESIGN62
+115|7.1 Database Overview62
+116|7.2 Database Technology62
+117|7.3 Database Design Principles63
+118|7.4 Normalization63
+119|7.5 Entity Relationship Diagram64
+120|7.6 Core Tables Overview65
+121|7.7 User / Authentication Tables66
+122|7.8 Product / Category Tables67
+123|7.9 Cart / Wishlist Tables68
+124|7.10 Order / Order Item Tables69
+125|7.11 Inventory / Stock Tables70
+126|7.12 Relationships and Foreign Keys71
+127|7.13 Stored Procedure Architecture72
+128|7.14 Database Design Summary73
+129|CHAPTER 8: MODULE DESIGN AND FUNCTIONAL SPECIFICATION74
+130|8.1 Module Overview74
+131|8.2 Authentication Module75
+132|8.3 Customer Registration Module76
+133|8.4 Customer Login Module77
+134|8.5 Product Catalogue Module78
+135|8.6 Product Search and Filtering79
+136|8.7 Product Details80
+137|8.8 Shopping Cart81
+138|8.9 Wishlist82
+139|8.10 Checkout83
+140|8.11 Order Placement84
+141|8.12 Order History85
+142|8.13 Customer Order Details / Tracking86
+143|8.14 Admin Authentication87
+144|8.15 Admin Dashboard88
+145|8.16 Product Management89
+146|8.17 Category Management90
+147|8.18 Order Management91
+148|8.19 Inventory / Additional Admin Features92
+149|CHAPTER 9: USER INTERFACE AND SCREENSHOTS93
+150|9.1 UI Design Overview93
+151|9.2 Navigation / Header94
+152|9.3 Home Page95
+153|9.4 Product Listing96
+154|9.5 Product Details97
+155|9.6 Search / Filter98
+156|9.7 Cart99
+157|9.8 Wishlist100
+158|9.9 Checkout101
+159|9.10 Order Confirmation102
+160|9.11 Customer Order History103
+161|9.12 Admin Dashboard104
+162|9.13 Product Management105
+163|9.14 Category / Inventory Management106
+164|9.15 Order Management107
+165|9.16 Additional Screens / Error Messages108
+166|CHAPTER 10: IMPLEMENTATION AND CODE STRUCTURE109
+167|10.1 Implementation Overview109
+168|10.2 Development Environment109
+169|10.3 Backend Implementation110
+170|10.4 Database Implementation111
+171|10.5 Authentication Implementation112
+172|10.6 API / Business Logic Implementation113
+173|10.7 Frontend Implementation114
+174|10.8 Code Organization115
+175|10.9 Implementation Summary115
+182|CHAPTER 11: TESTING AND RESULTS116
+183|11.1 Testing Strategy116
+184|11.2 Testing Types116
+185|11.3 Test Case Design117
+186|11.4 Authentication Testing118
+187|11.5 Product Testing118
+188|11.6 Cart Testing118
+189|11.7 Wishlist Testing119
+190|11.8 Order Testing119
+191|11.9 Admin Testing119
+192|11.10 Testing Summary120
+193|11.11 Test Evidence120
+194|CHAPTER 12: SECURITY, LIMITATIONS AND FUTURE SCOPE121
+195|12.1 Authentication121
+196|12.2 Authorization121
+197|12.3 Input Validation121
+198|12.4 SQL Injection Protection121
+199|12.5 Session/Token Security121
+200|12.6 Access Control121
+201|12.7 Current Limitations122
+202|12.8 FUTURE SCOPE123
+203|CHAPTER 13: CONCLUSION, BIBLIOGRAPHY AND APPENDICES124
+204|13.1 Project Conclusion124
+205|13.2 Achievements124
+206|13.3 Learning Outcomes124
+207|BIBLIOGRAPHY124
+208|APPENDICES125
+209|13.4 Appendix A — Important Screenshots125
+210|13.5 Appendix B — Database Reference125
+211|13.6 Appendix C — Important Code Snippets125
+212|13.7 Appendix D — Additional Information125
+214|LIST OF FIGURES
+215|Figure 1.1: High-Level Overview of SmartCart17
+216|Figure 4.1: Gantt Chart of SmartCart Development39
+217|Figure 4.2: PERT Network Diagram of SmartCart Development40
+218|Figure 5.1: Overall Use Case Diagram of SmartCart43
+219|Figure 5.2: Customer Use Case Diagram44
+220|Figure 5.3: Administrator Use Case Diagram45
+221|Figure 5.4: Context-Level Data Flow Diagram46
+222|Figure 5.5: Level 0 Data Flow Diagram47
+223|Figure 5.6: Level 1 DFD – Customer Flow48
+224|Figure 5.7: Level 1 DFD – Admin Flow49
+225|Figure 5.8: Order Processing Data Flow Diagram50
+226|Figure 5.9: Authentication Data Flow Diagram51
+227|Figure 6.1: SmartCart System Architecture54
+228|Figure 6.2: Request Flow for Product Browsing57
+229|Figure 6.3: Authentication and Authorisation Architecture58
+230|Figure 6.4: Customer Shopping Workflow59
+231|Figure 6.5: Order Lifecycle State Diagram60
+232|Figure 7.1: Entity Relationship Diagram of SmartCart64
+233|Figure 7.2: Stock Flow at SKU Level70
+234|Figure 7.3: Relationship Diagram of Core Tables71
+235|Figure 8.1: SmartCart Customer Registration Interface76
+236|Figure 8.2: SmartCart Customer Login Interface77
+237|Figure 8.3: SmartCart Product Listing Interface78
+238|Figure 8.4: SmartCart Product Search and Filter Interface79
+239|Figure 8.5: SmartCart Product Details Interface80
+240|Figure 8.6: SmartCart Shopping Cart Interface81
+241|Figure 8.7: SmartCart Wishlist Interface82
+242|Figure 8.8: SmartCart Checkout Interface83
+243|Figure 8.9: SmartCart Order Placement Confirmation84
+244|Figure 8.10: SmartCart Customer Order History Interface85
+245|Figure 8.11: SmartCart Customer Order Details Interface86
+246|Figure 8.12: SmartCart Admin Login Interface87
+247|Figure 8.13: SmartCart Admin Dashboard88
+248|Figure 8.14: SmartCart Admin Product Management Interface89
+249|Figure 8.15: SmartCart Admin Category Management Interface90
+250|Figure 8.16: SmartCart Admin Order Management Interface91
+251|Figure 8.17: SmartCart Admin Inventory and Purchase Interface92
+252|Figure 9.1: SmartCart Storefront – Overview93
+253|Figure 9.2: SmartCart Header and Navigation94
+254|Figure 9.3: SmartCart Home Page95
+255|Figure 9.4: SmartCart Product Listing Interface96
+256|Figure 9.5: SmartCart Product Details Interface97
+257|Figure 9.6: SmartCart Search and Filter Interface98
+258|Figure 9.7: SmartCart Cart Interface99
+259|Figure 9.8: SmartCart Wishlist Interface100
+260|Figure 9.9: SmartCart Checkout Interface101
+261|Figure 9.10: SmartCart Order Confirmation102
+262|Figure 9.11: SmartCart Customer Order History103
+263|Figure 9.12: SmartCart Admin Dashboard104
+264|Figure 9.13: SmartCart Admin Product Management105
+265|Figure 9.14: SmartCart Admin Category and Inventory Management106
+266|Figure 9.15: SmartCart Admin Order Management107
+267|Figure 9.16: SmartCart Access Denied Screen108
+268|Figure 9.17: SmartCart Validation and Feedback Messages108
+269|Figure 11.1: Sample Test Evidence120
+270|Figure 13.1: Additional SmartCart Screen125
+272|LIST OF TABLES
+273|Table 1.1: SmartCart Now vs SmartCart Then12
+274|Table 1.2: Project Characteristics16
+275|Table 2.1: Problems Identified in the Existing System19
+276|Table 2.2: Proposed Solution Components20
+277|Table 2.3: Functional Requirement Groups21
+278|Table 2.4: Customer Functional Requirements22
+279|Table 2.5: Admin Functional Requirements23
+280|Table 2.6: Non-Functional Requirements24
+281|Table 2.7: Recommended Hardware Requirements25
+282|Table 2.8: Software Requirements25
+283|Table 2.9: Consolidated Requirement Traceability26
+284|Table 3.1: Technologies Used in SmartCart29
+285|Table 3.2: Authentication vs Authorisation in SmartCart31
+286|Table 3.3: Existing System vs Proposed System33
+287|Table 4.1: Project Phases and Deliverables34
+288|Table 4.2: Development Order of Main Modules36
+289|Table 4.3: Release Checklist37
+290|Table 4.4: Characteristics of the Methodology Applied38
+291|Table 4.5: Project Activity Schedule39
+292|Table 4.6: Risk Register and Mitigation41
+293|Table 5.1: Actors of the System42
+294|Table 5.2: Customer Use Cases44
+295|Table 5.3: Administrator Use Cases45
+296|Table 5.4: Mapping of Processes to Data Stores52
+297|Table 6.1: Project Folder Structure55
+298|Table 6.2: Frontend Structure56
+299|Table 6.3: Storefront Shop Request Flow57
+300|Table 6.4: Order Status Transitions60
+301|Table 6.5: Key Design Decisions61
+302|Table 7.1: Database Table Groups65
+303|Table 7.2: User and Authentication Tables66
+304|Table 7.3: Product and Category Tables67
+305|Table 7.4: Cart and Wishlist Tables68
+306|Table 7.5: Cart and Wishlist Stored Procedures68
+307|Table 7.6: Order Tables69
+308|Table 7.7: Order Stored Procedures69
+309|Table 7.8: Purchasing and Stock Tables70
+310|Table 7.9: Principal Relationships71
+311|Table 7.10: Stored Procedures Used by the Application72
+312|Table 7.11: Tables Present but Not Used by the Current Application73
+313|Table 7.12: Database Scripts73
+314|Table 8.1: Module Inventory and Status74
+315|Table 8.2: Customer vs Employee Authentication75
+316|Table 8.3: Additional Admin Modules92
+317|Table 10.1: Development Environment109
+318|Table 10.2: Main Backend Components110
+319|Table 10.3: Examples of JSON Endpoints113
+320|Table 10.4: Conventions Followed in the Code115
+321|Table 11.1: Testing Types Applied116
+322|Table 11.2: Test Case Template and Account Test Cases117
+323|Table 11.3: Authentication, Product and Cart Test Cases118
+324|Table 11.4: Wishlist, Order and Admin Test Cases119
+325|Table 11.5: Test Summary120
+326|Table 12.1: Future Scope (SmartCart Then)123
+336|LIST OF ABBREVIATIONS
+337|API – Application Programming Interface
+338|COD – Cash on Delivery
+339|CRUD – Create, Read, Update, Delete
+340|CSS / SCSS – Cascading Style Sheets / Sassy CSS
+341|DBML – Database Markup Language
+342|DFD – Data Flow Diagram
+343|DI – Dependency Injection
+344|DTO – Data Transfer Object
+345|EF Core – Entity Framework Core
+346|ERD – Entity–Relationship Diagram
+347|IGNOU – Indira Gandhi National Open University
+348|JSON – JavaScript Object Notation
+349|JWT – JSON Web Token
+350|MCA – Master of Computer Applications
+351|MRP – Maximum Retail Price
+352|MVC – Model–View–Controller
+353|ORM – Object–Relational Mapping
+354|PERT – Program Evaluation and Review Technique
+355|POS – Point of Sale
+356|RBAC – Role-Based Access Control
+357|SKU – Stock Keeping Unit
+358|SP – Stored Procedure
+359|SQL – Structured Query Language
+360|UI – User Interface
+361|UPI – Unified Payments Interface
+364|IMPORTANT TERMINOLOGY
+365|SmartCart Now: The current, implemented single-store system.
+366|SmartCart Then: Future multi-store / multi-zone direction (not implemented).
+367|SKU: A sellable variant of a product (e.g. 1 kg pack) with its own price and stock.
+368|SellOnline: Flag deciding whether a product/SKU is visible and orderable online.
+369|Soft delete: Marking a record Cancelled instead of physically deleting it.
+370|Placeholder: Tagged block [SC-…] to be replaced with actual project evidence.
+371|PLACEHOLDER KEY
+372|Search the document for these prefixes to find items to replace:
+373|[SC-TEXT-xxx] – written information
+374|[SC-IMG-xxx] – screenshots
+375|[SC-DIAGRAM-xxx] – diagrams
+376|[SC-TABLE-xxx] – tables to verify
+377|[SC-DATA-xxx] – actual project data
+378|[SC-CODE-xxx] – code snippets
+379|[SC-TEST-xxx] – test evidence
+380|[SC-REF-xxx] – references
+381|[SC-CERT-xxx] – certificates / signatures
+382|[SC-INFO-xxx] – personal / institution details
+384|CHAPTER 1: INTRODUCTION AND PROJECT OVERVIEW
+385|1.1 Background
+386|Supermarkets sell a wide range of everyday goods — groceries, packaged food, household items and personal care products — usually in several pack sizes and from many brands. Traditionally, customers visit the store, select items physically and pay at a billing counter. Behind the counter, the store purchases goods from suppliers, records stock, monitors shelf availability and reorders items that are running low.
+387|Many small and medium stores still perform these activities with manual registers, standalone billing software or spreadsheets. Such methods are adequate for walk-in trade but provide no channel for customers who prefer to order from home, and they make it difficult to keep an accurate, up-to-date picture of stock across hundreds of items.
+388|1.2 E-Commerce Context
+389|Business-to-consumer (B2C) e-commerce allows a retailer to publish its catalogue on the web and accept orders online. For a supermarket, an e-commerce system must go beyond a simple product list: products exist in multiple variants (for example 500 g and 1 kg packs), each variant has its own price and stock, items must be hidden when they are not meant to be sold online, and orders must be fulfilled from actual stock. The online storefront and the store’s back-office therefore have to share the same catalogue and inventory data.
+390|1.3 Motivation for SmartCart
+391|The motivation for SmartCart is to provide a single, integrated system in which the store’s administrative data — catalogue, suppliers, purchases and stock — directly drives what customers see and can order online. Instead of maintaining the online catalogue separately from inventory, SmartCart uses one database so that a purchase entry increases available stock, an order reduces it, and a cancelled order restores it.
+393|1.4 Introduction to SmartCart
+394|SmartCart is a web-based e-commerce management system implemented as a single ASP.NET Core 8 MVC application with two areas: a public storefront for customers and an admin panel for store employees. Both areas share one relational database.
+395|1.5 SmartCart Now
+396|Current Architecture / SmartCart Now is a single-store supermarket system. One store operates the platform, one catalogue is maintained, stock is held for that store only and customers place Cash on Delivery orders. There is no multi-store, zone or tenant model in the running application.
+397|1.6 SmartCart Then / Future Expansion
+398|Future Architecture / SmartCart Then describes the direction in which the system may be extended: multiple stores or branches, zone-wise administration, per-location inventory, online payment and additional integrations. These items are not implemented and are discussed only as future scope (Chapter 12).
+399|Table 1.1: SmartCart Now vs SmartCart Then
+400|Aspect
+401|SmartCart Now (Current)
+402|SmartCart Then (Future Scope)
+403|Store Model
+404|Single supermarket store
+405|Multiple stores / branches on one platform
+406|Users
+407|Customers (Users) and admin employees (AdminUsers)
+408|Adds store- and zone-level administrators
+409|Administration
+410|Central admin panel with role–permission access
+411|Store-level and zone-level administration
+412|Database Scope
+413|One database; no store, zone or tenant column
+414|Store/zone-aware schema
+415|Inventory
+416|Batch stock rows per SKU for one store
+417|Stock maintained per store / location
+418|Scalability
+419|Single ASP.NET Core MVC web host
+420|Scalable, possibly service-based deployment
+421|Payment
+422|Cash on Delivery only; UPI shows “available soon”
+423|Online payment gateway and UPI
+424|Deployment
+425|Development environment (hosting to be confirmed)
+426|Production hosting for multiple stores
+427|Analytics
+428|Dashboard partially implemented
+429|Live KPIs and advanced analytics
+430|Future Integrations
+431|Location API used for supplier address forms
+432|Payment, logistics, notifications, AI, mobile app
+441|1.7 Problem Statement
+442|A supermarket that relies on walk-in trade and manual or disconnected record-keeping faces the following problems:
+443|Customers cannot view the product range, prices or availability without visiting the store.
+444|There is no channel for customers to place orders remotely and track their status.
+445|Stock is recorded manually or in separate files, so the quantity available for sale is often inaccurate.
+446|Purchases from suppliers are not linked to the stock available for sale.
+447|Products with several pack sizes and prices are difficult to manage consistently.
+448|Access to administrative functions is not controlled per employee or per task.
+449|Order processing (confirmation, dispatch, delivery, cancellation) is not recorded in a structured way.
+450|The problem addressed by this project is therefore: to design and develop a web-based system that lets a single supermarket publish its catalogue online, accept and process customer orders, and manage catalogue, purchases and stock from a secure, role-controlled administration panel using one consistent database.
+451|1.8 Need for the Proposed System
+452|The need for SmartCart arises from the gap between the store’s internal operations and its customers’ expectations. An integrated system is needed so that (i) the online catalogue reflects the actual catalogue and stock, (ii) orders are validated against available stock before they are accepted, (iii) employees work through defined permissions, and (iv) every order passes through a clear set of statuses. A database-centred design with business rules enforced close to the data was required to keep stock and orders consistent.
+454|1.9 Objectives
+455|The objectives of the SmartCart project are:
+456|To develop a customer storefront for browsing products by category, brand and price, with product detail and SKU (pack-size) selection.
+457|To provide customer registration and login with securely hashed passwords and token-based authentication.
+458|To implement a wishlist and a shopping cart that validate product availability and online-sale eligibility.
+459|To implement a checkout process using saved delivery addresses and Cash on Delivery.
+460|To allow customers to view their order history and cancel orders that are still in an early status.
+461|To develop an admin panel for managing categories, sub-categories, brands, products, SKUs, variant attributes and media.
+462|To manage suppliers and purchases so that each purchase creates batch-wise stock for the relevant SKU.
+463|To allow authorised employees to adjust inventory and to process orders through confirm, ship, deliver and cancel actions.
+464|To control online visibility of each product and SKU independently of its active status.
+465|To manage homepage banners, featured categories and featured products.
+466|To implement role-based access control with module-wise permissions for employees.
+467|To maintain the database through versioned build and patch scripts and enforce key business rules in stored procedures.
+468|To design the system so that it can later be extended towards multi-store operation (SmartCart Then).
+470|1.10 Project Goals
+471|Beyond the functional objectives, the project pursued the following goals:
+472|Consistency: one source of truth for catalogue, stock and orders.
+473|Correctness: stock deduction and restocking tied to order actions so that inventory remains accurate.
+474|Security: separate identities for customers and employees, hashed passwords and permission checks on every admin action.
+475|Maintainability: a clear folder and layer structure (controllers, interfaces, repositories, database scripts).
+476|Extensibility: a structure that can later accommodate additional stores, payment methods and integrations.
+477|1.11 Expected Benefits
+478|For customers
+479|View the store’s range, prices and pack sizes online.
+480|Maintain a wishlist and a cart and place orders from home.
+481|Track the status of orders and cancel early-stage orders.
+482|For store employees
+483|Manage the catalogue and media from one panel.
+484|Record purchases and see stock by SKU.
+485|Process orders through well-defined status transitions.
+486|For management
+487|Control which employee can perform which action.
+488|Decide which products and SKUs are sold online.
+489|Obtain a foundation for future expansion.
+491|1.12 Project Characteristics
+492|Table 1.2: Project Characteristics
+493|Characteristic
+494|Description
+495|Project category
+496|Web-based e-commerce and management application
+497|Business model
+498|Single-store supermarket (SmartCart Now)
+499|Application type
+500|Server-rendered ASP.NET Core 8 MVC application with AJAX/JSON endpoints
+501|User areas
+502|Customer storefront and employee admin panel in one web host
+503|Database
+504|Relational database (PostgreSQL) with stored procedures for storefront flows
+505|Data access
+506|Dapper + stored procedures; Entity Framework Core for selected admin modules
+507|Security
+508|JWT cookie authentication, hashed passwords, role–permission authorisation
+509|Payment
+510|Cash on Delivery
+512|1.13 Key Features
+513|Legend: ✓ Implemented   ◐ Partially implemented   → Planned / Future scope
+514|✓  Customer registration, login and logout
+515|✓  Product listing with category, brand and price filters; product details with SKU selection
+516|✓  Wishlist and shopping cart (login required)
+517|✓  Checkout with saved address and Cash on Delivery; order history and customer cancellation
+518|✓  Admin catalogue: category, sub-category, brand, product, SKU, variant axes/values, product and SKU media
+519|✓  Suppliers, purchases (batch stock) and inventory adjustment
+520|✓  Order management: confirm, ship, deliver, cancel with restock
+521|✓  Homepage management; employees; user roles and permissions
+522|✓  Admin dashboard (page present; live figures not implemented)
+523|✓  Online payment / UPI, billing and invoices, ratings and reviews
+524|→  Multi-store and multi-zone operation (SmartCart Then)
+526|1.14 Project Overview Summary
+527|SmartCart connects the customer-facing storefront with the store’s administrative operations through a single database. Administrators build the catalogue and record purchases; the storefront shows only products and SKUs that are active, not cancelled and marked for online sale; customer orders consume stock and are processed by employees; and cancellations return stock. Figure 1.1 shows the high-level overview.
+528|[SC-DIAGRAM-001]
+529|INSERT SMARTCART DIAGRAM HERE
+530|SmartCart High-Level Overview Diagram
+531|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+532|Figure 1.1: High-Level Overview of SmartCart
+533|What the diagram must show: Customer and Admin Employee as actors; Storefront and Admin Panel as the two areas of one ASP.NET Core MVC application; the shared database; main flows — browse/cart/order (customer), catalogue/purchase/stock/order processing (admin); the CountryStateCity API used by supplier forms. Label the diagram “Current Architecture / SmartCart Now”.
+534|The remainder of this report analyses the existing system and requirements (Chapter 2), reviews related technologies and feasibility (Chapter 3), and describes planning, analysis, design, database, modules, user interface, implementation, testing, security and future scope in the subsequent chapters.
+536|CHAPTER 2: EXISTING SYSTEM, PROBLEM AND REQUIREMENTS
+537|2.1 Existing Shopping System
+538|In the existing arrangement considered for this project, customers buy from the supermarket in person. They select products from the shelves and pay at the counter. Information about products, offers and availability is available only inside the store or by telephone. Orders placed by telephone, where accepted, are written down manually.
+539|2.2 Existing Manual / Traditional Processes
+540|Purchasing: goods received from suppliers are recorded against supplier invoices in registers or spreadsheets.
+541|Stock: quantities are counted periodically; the relationship between purchases, sales and current stock is not maintained automatically.
+542|Catalogue: product names, pack sizes and prices are maintained informally or only in billing software.
+543|Orders: remote orders, if any, are recorded manually and their status is communicated by phone.
+544|Access: any staff member with access to the records can change them; there is no per-task authorisation.
+545|2.3 Limitations
+546|No online presence or self-service ordering for customers.
+547|Inaccurate and delayed stock information.
+548|Duplicate data entry between purchase records, stock records and price lists.
+549|No structured order lifecycle or history.
+550|No audit of who changed what and no role-based restrictions.
+551|Difficult to scale as the product range grows.
+553|2.4 Problems Identified
+554|Table 2.1: Problems Identified in the Existing System
+555|No.
+556|Problem
+557|Impact
+558|1
+559|Catalogue not available online
+560|Customers must visit or call the store to know what is available.
+561|2
+562|Stock not linked to purchases and orders
+563|Items may be promised to customers when they are out of stock.
+564|3
+565|Variants handled informally
+566|Wrong price or pack size may be quoted or billed.
+567|4
+568|No order status tracking
+569|Customers and staff cannot see where an order stands.
+570|5
+571|Uncontrolled access to records
+572|Errors and unauthorised changes cannot be prevented.
+573|6
+574|No control over what is sold online
+575|Items unsuitable for delivery cannot be excluded selectively.
+577|2.5 Challenges Faced by Small Retail Businesses
+578|Small retailers typically have limited budgets and technical staff. They need a system that is simple for employees to use, runs on commonly available infrastructure, and does not require separate products for the online shop and the back-office. They also need flexibility: not every item is suitable for online sale, and prices and pack sizes change frequently. At the same time, they must protect customer data and prevent unauthorised changes to prices and stock.
+579|SmartCart addresses these challenges by combining storefront and administration in one application, by providing per-product and per-SKU online visibility, and by enforcing permissions for every administrative action.
+581|2.6 Proposed System
+582|The proposed system, SmartCart, is a web-based application that serves both customers and employees of a single supermarket. The storefront lets customers find products, choose a SKU, add it to the cart and place an order. The admin panel lets employees maintain all master data and process orders. Business rules that protect stock and order integrity are implemented in stored procedures so that they apply regardless of which screen triggers them.
+583|2.7 Proposed Solution Overview
+584|Table 2.2: Proposed Solution Components
+585|Component
+586|Responsibility
+587|Status
+588|Storefront
+589|Home page, shop listing and filters, product details, wishlist, cart, checkout, orders, account
+590|✓ Implemented
+591|Admin catalogue
+592|Category, sub-category, brand, product, SKU, variant axes and values, media
+593|✓ Implemented
+594|Purchasing & stock
+595|Suppliers, purchases creating stock batches, inventory adjustment
+596|✓ Implemented
+597|Order processing
+598|List, detail, confirm, ship, deliver, cancel with restock
+599|✓ Implemented
+600|Homepage management
+601|Banners, featured categories, featured products
+602|✓ Implemented
+603|Security
+604|Employees, user roles, module permissions, JWT authentication
+605|✓ Implemented
+606|Dashboard
+607|Admin landing page; live KPI figures not yet available
+608|✓ Implemented
+609|Online payment / billing
+610|Online payment, UPI collection, invoices
+611|✓ Implemented
+613|The proposed system replaces manual records with structured tables, links purchases to stock and orders, and introduces controlled, auditable workflows through defined status transitions and permissions.
+615|2.8 Functional Requirements
+616|Functional requirements describe what the system must do. They were derived from the store’s operational needs and are grouped by user area. Each requirement is given an identifier used later for traceability in testing (Chapter 11) and results.
+617|Table 2.3: Functional Requirement Groups
+618|Group
+619|Area
+620|Description
+621|FR-A
+622|Customer — Account
+623|Registration, login, logout and access to protected pages.
+624|FR-B
+625|Customer — Catalogue
+626|Home page, listing, search, filtering, sorting and product detail.
+627|FR-C
+628|Customer — Shopping
+629|Wishlist, cart, checkout and order placement.
+630|FR-D
+631|Customer — Orders
+632|Order history, order detail and cancellation.
+633|FR-E
+634|Admin — Access
+635|Employee login, permission-based menus and actions.
+636|FR-F
+637|Admin — Catalogue
+638|Categories, sub-categories, brands, products, SKUs, variants, media.
+639|FR-G
+640|Admin — Inventory
+641|Suppliers, purchases, stock and inventory adjustment.
+642|FR-H
+643|Admin — Orders
+644|Order list, detail and status actions.
+645|FR-I
+646|Admin — Content & Security
+647|Homepage content, employees, roles and permissions.
+649|The detailed customer and admin requirements are listed in Sections 2.9 and 2.10. Requirements that are not part of the current implementation are explicitly marked as planned.
+651|2.9 Customer Functional Requirements
+652|Table 2.4: Customer Functional Requirements
+653|ID
+654|Requirement
+655|Status
+656|FR-A1
+657|Register an account with name, e-mail, phone and password.
+658|✓
+659|FR-A2
+660|Log in with e-mail and password; log out.
+661|✓
+662|FR-B1
+663|Browse products on the home page and shop listing.
+664|✓
+665|FR-B2
+666|Search products by text.
+667|✓ 
+668|FR-B3
+669|Filter products by category, brand and price.
+670|✓
+671|FR-B4
+672|View product details, images and available SKUs with MRP and selling price.
+673|✓
+674|FR-C1
+675|Add or remove products in the wishlist.
+676|✓
+677|FR-C2
+678|Add SKUs to the cart, update quantity and remove items.
+679|✓
+680|FR-C3
+681|Checkout with a delivery address and Cash on Delivery.
+682|✓
+683|FR-C4
+684|Receive an order number after successful order placement.
+685|✓
+686|FR-D1
+687|View order history and order details.
+688|✓
+689|FR-D2
+690|Cancel an order while it is in an early status (Placed/Pending).
+691|✓
+692|FR-C5
+693|Pay online (card/UPI).
+694|✓
+695|FR-C6
+696|Shop as a guest without logging in.
+697|✓
+698|FR-D3
+699|Rate and review products.
+700|✓
+704|2.10 Admin Functional Requirements
+705|Table 2.5: Admin Functional Requirements
+706|ID
+707|Requirement
+708|Status
+709|FR-E1
+710|Employee login with username and password; logout; access-denied handling.
+711|✓
+712|FR-E2
+713|Show menu items and action buttons according to the employee’s permissions.
+714|✓
+715|FR-F1
+716|Create, edit, list and soft-delete categories and sub-categories (with images).
+717|✓
+718|FR-F2
+719|Manage brands.
+720|✓
+721|FR-F3
+722|Manage products, including SellOnline and active status.
+723|✓
+724|FR-F4
+725|Manage SKUs: SKU code, barcode, MRP, selling price, unit, maximum order quantity.
+726|✓
+727|FR-F5
+728|Manage variant axes and values and assign them to SKUs.
+729|✓
+730|FR-F6
+731|Upload product images/video and SKU images.
+732|✓
+733|FR-G1
+734|Manage suppliers (with state/city selection).
+735|✓
+736|FR-G2
+737|Record purchases; each line creates stock for the SKU.
+738|✓
+739|FR-G3
+740|Adjust inventory for a SKU.
+741|✓
+742|FR-H1
+743|List and view orders; confirm, mark shipped, deliver or cancel.
+744|✓
+745|FR-I1
+746|Manage homepage banners, featured categories and featured products.
+747|✓
+748|FR-I2
+749|Manage employees, user roles and role permissions.
+750|✓
+751|FR-E3
+752|Dashboard with live figures.
+753|✓
+754|FR-I3
+755|Customer management screen.
+756|✓
+757|FR-I4
+758|Reports.
+759|✓
+760|FR-H2
+761|Create orders or edit order lines from admin; billing/invoices.
+762|✓
+765|2.11 Non-Functional Requirements
+766|Table 2.6: Non-Functional Requirements
+767|Attribute
+768|Requirement
+769|How SmartCart addresses it
+770|Security
+771|Only authenticated users access protected pages; employees only perform permitted actions; passwords are not stored in plain text.
+772|Separate JWT cookies for customers and employees; ASP.NET Identity password hasher; RequirePermission filter; admin middleware on /admin and /api/admin.
+773|Performance
+774|Listing pages respond quickly for a typical supermarket catalogue.
+775|Server-side paging, searching and sorting; indexed keys and slugs; stored procedures for storefront queries.
+776|Usability
+777|Simple, consistent screens for customers and employees.
+778|Storefront layout with filters; admin template with modals, toasts, empty states and searchable selects.
+779|Maintainability
+780|Code and database are easy to understand and change.
+781|Controller–interface–repository structure; module-wise folders; build and patch scripts; project context documentation.
+782|Scalability
+783|Catalogue and orders can grow without redesign.
+784|Normalised schema; SKU-level stock; future multi-store expansion identified.
+785|Reliability / Integrity
+786|Stock and orders remain consistent.
+787|Rules in stored procedures; soft delete; unique constraints on SKU, barcode, slug and e-mail.
+788|Availability
+789|System available during store operating hours.
+790|Depends on hosting environment — see [SC-TEXT-003].
+792|Demonstration hosting: [TO BE FILLED - NOT CONFIRMED FROM PROJECT]. Default development run is local ASP.NET Core host + local PostgreSQL. No measured uptime is claimed.
+793|State where SmartCart runs for the demonstration (local machine, college server or cloud host) and any availability measures. Do not state uptime figures unless measured.
+796|2.12 Hardware Requirements
+797|Table 2.7: Recommended Hardware Requirements
+798|Item
+799|Development / Server (recommended)
+800|Client
+801|Processor
+802|Dual-core 2 GHz or higher
+803|Any modern processor
+804|Memory (RAM)
+805|8 GB or more
+806|4 GB or more
+807|Storage
+808|20 GB free space (application, database, uploads)
+809|—
+810|Network
+811|Broadband connection for package restore and APIs
+812|Internet connection
+813|Display
+814|1366 × 768 or higher
+815|Desktop, laptop or mobile browser
+817|[TO BE FILLED - NOT CONFIRMED FROM PROJECT] — record CPU, RAM, OS and disk of the development/demonstration machine.
+818|Insert the processor, RAM, storage and operating system of the machine actually used for development and testing.
+820|2.13 Software Requirements
+821|Table 2.8: Software Requirements
+822|Category
+823|Software
+824|Operating system
+825|Windows (development) [confirm version]
+826|Runtime / SDK
+827|.NET SDK 8.0 or later
+828|Framework
+829|ASP.NET Core 8 MVC with Razor views
+830|Database
+831|PostgreSQL (local development; connection key PostgresConnection)
+832|Data access
+833|Dapper 2.1.35, Npgsql 8.0.6, Npgsql.EntityFrameworkCore.PostgreSQL 8.0.11
+834|Security libraries
+835|JWT Bearer 8.0.11; ASP.NET Core Identity password hasher
+836|Front-end
+837|HTML5, CSS3, JavaScript; Bootstrap 5.3 and Mantis admin template; SCSS
+838|Build tools
+839|Node.js and npm (Bootstrap SCSS); AspNetCore.SassCompiler
+840|IDE / tools
+841|[confirm: Visual Studio / VS Code, SSMS, Git]
+842|Browser
+843|Current Chrome, Edge or Firefox
+846|2.14 Functional vs Non-Functional Requirement Table
+847|Table 2.9 consolidates the principal requirements, their type and the module that satisfies them. It is used as the traceability base for testing and for the requirement achievement summary.
+848|Table 2.9: Consolidated Requirement Traceability
+849|Req. ID
+850|Requirement
+851|Type
+852|Module
+853|Status
+854|FR-A1/A2
+855|Customer registration and login
+856|Functional
+857|Customer Account
+858|✓
+859|FR-B1–B4
+860|Browse, filter and view product details
+861|Functional
+862|Shop
+863|✓
+864|FR-C1
+865|Wishlist
+866|Functional
+867|Wishlist
+868|✓
+869|FR-C2
+870|Cart
+871|Functional
+872|Cart
+873|✓
+874|FR-C3/C4
+875|Checkout and order placement (COD)
+876|Functional
+877|Checkout / Orders
+878|✓
+879|FR-D1/D2
+880|Order history and cancellation
+881|Functional
+882|Customer Orders
+883|✓
+884|FR-E1/E2
+885|Employee login and permissions
+886|Functional
+887|Admin Auth / Roles
+888|✓
+889|FR-F1–F6
+890|Catalogue management
+891|Functional
+892|Admin Catalogue
+893|✓
+894|FR-G1–G3
+895|Suppliers, purchases, stock
+896|Functional
+897|Admin Inventory
+898|✓
+899|FR-H1
+900|Order processing
+901|Functional
+902|Admin Orders
+903|✓
+904|FR-I1/I2
+905|Homepage content; employees and roles
+906|Functional
+907|Admin Content / Security
+908|✓
+909|NFR-1
+910|Authentication and authorisation
+911|Non-functional
+912|All
+913|✓
+914|NFR-2
+915|Data integrity of stock and orders
+916|Non-functional
+917|Database / SPs
+918|✓
+919|NFR-3
+920|Paged, searchable admin lists
+921|Non-functional
+922|Admin lists
+923|✓
+924|NFR-4
+925|Maintainable layered structure
+926|Non-functional
+927|All
+928|✓
+929|FR-C5
+930|Online payment
+931|Functional
+932|Checkout
+933|✓
+935|Reviewed vs code: shop/search/cart/wishlist/COD/orders IMPLEMENTED; admin catalogue/inventory/purchases/orders/homepage/employees/roles/POS IMPLEMENTED; dashboard KPIs PARTIAL; UPI/Billing/ratings/multi-store NOT IMPLEMENTED. Search (FR-B2) is IMPLEMENTED.
+936|Confirm each ✓ status against the running application before submission. Add any requirement your guide asks you to include.
+939|CHAPTER 3: LITERATURE REVIEW AND FEASIBILITY
+940|3.1 Overview
+941|This chapter reviews the concepts and technologies relevant to SmartCart: the structure of e-commerce systems, common architectural patterns, the technologies used to build the system and the security concepts applied. It then assesses the feasibility of the project and identifies the gap that SmartCart fills.
+942|3.2 E-Commerce Systems
+943|An e-commerce system allows a seller to present products, accept orders and manage fulfilment through the internet. A typical B2C system consists of: a catalogue (products, categories, prices, images), a customer account module, a cart and checkout process, an order management module for the seller, inventory control and payment handling. For grocery and supermarket retail, additional characteristics are important:
+944|Variants and units: the same product is sold in several pack sizes or weights, each with its own price and stock.
+945|Stock accuracy: high item counts and frequent replenishment make real-time stock important.
+946|Selective online sale: some items may be sold in-store only.
+947|Local fulfilment: delivery from a nearby store, often with cash payment on delivery.
+948|SmartCart models these characteristics directly: products have SKUs with units and prices, stock is maintained per SKU, and the SellOnline flag controls online availability at both product and SKU level.
+950|3.3 Existing E-Commerce Platforms
+951|Existing approaches available to a supermarket can be grouped into three categories. (1) Hosted marketplace or delivery platforms, where the store lists its products on a third-party platform; these provide reach but limited control over data, catalogue structure and fees. (2) General-purpose e-commerce software, which provides online shop features but often requires separate back-office or inventory tools and customisation for pack-size variants and purchases. (3) Stand-alone billing or inventory software, which supports in-store operations but has no customer-facing channel.
+952|This review is limited to these general categories; no claims are made about the features, pricing or performance of specific commercial products.
+953|3.4 General Architecture Patterns
+954|Model–View–Controller (MVC): separates request handling (controllers), data (models) and presentation (views). SmartCart uses ASP.NET Core MVC with Razor views.
+955|Repository pattern: isolates data-access code behind interfaces, allowing controllers to remain thin. SmartCart uses interface + repository pairs for each module.
+956|Layered architecture: presentation, application and data layers with clear dependencies.
+957|Database-centred business rules: rules implemented in stored procedures so that they are enforced consistently at the data layer.
+958|Token-based authentication: a signed token identifies the user on each request without server-side session storage.
+959|SmartCart combines MVC, repositories and database-centred rules within a single deployable web application, which suits the size and budget of a single store.
+961|3.5 Technology Review
+962|The technologies were selected for stability, documentation quality, suitability for a data-intensive business application and the developer’s familiarity. Table 3.1 summarises the technologies actually used.
+963|Table 3.1: Technologies Used in SmartCart
+964|Layer
+965|Technology
+966|Use in SmartCart
+967|Framework
+968|ASP.NET Core 8 MVC
+969|Controllers, Razor views, routing, middleware, dependency injection
+970|Database
+971|PostgreSQL
+972|Relational storage, stored procedures, constraints
+973|Data access
+974|Dapper (micro-ORM)
+975|Executing stored procedures for storefront and admin orders
+976|Data access
+977|Entity Framework Core 8
+978|Admin catalogue, suppliers, purchases, stock, employees, roles (no migrations)
+979|Security
+980|JWT Bearer, Identity PasswordHasher
+981|Token cookies and password hashing
+982|UI
+983|Razor, HTML5, CSS3, JavaScript
+984|Storefront pages and AJAX calls
+985|UI
+986|Bootstrap 5.3, Mantis template, SCSS
+987|Admin panel layout and components
+988|Integration
+989|CountryStateCity API
+990|State and city lists on supplier forms
+992|3.6 ASP.NET Core
+993|ASP.NET Core is Microsoft’s cross-platform, open-source framework for building web applications. Its MVC model maps URLs to controller actions that return views or JSON. The request pipeline is composed of middleware components, which SmartCart uses for global exception handling, request logging and admin session enforcement. Built-in dependency injection is used to register interfaces and repositories, and the authentication framework supports JWT bearer tokens, which SmartCart reads from cookies.
+995|3.7 SQL Database / Stored Procedure Approach
+996|A relational database is appropriate for SmartCart because its data is highly structured and related: categories contain sub-categories, products belong to sub-categories and brands, SKUs belong to products, stock rows belong to SKUs and purchase lines, and orders reference customers, products and SKUs. Referential integrity, unique constraints and transactions are required to keep these relationships consistent.
+997|Stored procedures encapsulate SQL logic inside the database. In SmartCart they are used for storefront operations (shop listing, product detail, cart, wishlist, customer authentication, checkout and orders) and for admin order processing. Placing rules such as “only active, non-cancelled, SellOnline items can be ordered” and “stock must cover the ordered quantity” in procedures ensures they are applied consistently. Procedures are created with CREATE OR ALTER so that patch scripts can be re-run safely.
+998|Other admin modules use Entity Framework Core mapped to the same tables. The schema itself is not generated by EF migrations; it is maintained by versioned build and patch SQL scripts.
+999|3.8 HTML/CSS/JavaScript/Frontend Technologies
+1000|Razor views generate HTML on the server for both areas (shared layouts _Layout, _AdminLayout and _AdminAuthLayout).
+1001|Storefront styling uses custom style sheets (storefront, shop listing and bag styles).
+1002|Admin UI uses the Mantis Bootstrap template; SCSS is compiled to CSS during the .NET build using AspNetCore.SassCompiler and Bootstrap sources from npm.
+1003|JavaScript performs AJAX requests (fetch) to controller actions that return JSON, for example product lists and admin list pages.
+1004|Shared admin components include a toast notification system and an empty-state handler.
+1005|Single-page application frameworks were not used; server-rendered pages with targeted AJAX calls were considered sufficient for the project’s scope.
+1007|3.9 Security Concepts
+1008|Web applications handling customer data and business operations must address confidentiality, integrity and availability. Relevant concepts include: protecting credentials through one-way password hashing; preventing SQL injection through parameterised queries; validating all inputs on the server; restricting file uploads by type and size; avoiding disclosure of internal error details; and ensuring that users can access only the data and functions appropriate to their role.
+1009|3.10 Authentication and Authorization
+1010|Authentication establishes who the user is. SmartCart uses JSON Web Tokens (JWT): after a successful login the server issues a signed token that is stored in an HTTP cookie and validated on subsequent requests. Customers and employees are separate identities stored in different tables and use different cookies and token audiences.
+1011|Authorization determines what an authenticated user may do. SmartCart implements role-based access control for employees: each role is mapped to a set of permission codes (for example, Module.Action) grouped by module; each admin action declares the permission it requires; and the permission set is re-read from the database on the request rather than trusted from the client.
+1012|Table 3.2: Authentication vs Authorisation in SmartCart
+1013|Aspect
+1014|Customer
+1015|Admin Employee
+1016|Identity store
+1017|Users table
+1018|AdminUsers table
+1019|Login entry
+1020|/Account/Login
+1021|/admin/login
+1022|Token
+1023|JWT in customer cookie (user audience)
+1024|JWT in admin cookie (admin audience)
+1025|Authorisation
+1026|Must be logged in for cart, wishlist, checkout, orders
+1027|Role → permissions; RequirePermission on actions
+1030|3.11 Feasibility Study
+1031|Technical feasibility
+1032|The project uses mature, well-documented technologies (ASP.NET Core, PostgreSQL, Bootstrap) available at no licence cost for development. The developer had access to the required tools, and the architecture — a single web application and one database — is within the capability of one developer. The system is therefore technically feasible.
+1033|Economic feasibility
+1034|Development tools and frameworks used are free for development (.NET SDK, PostgreSQL, Node.js, open-source libraries). The main costs are the developer’s time and, for production, hosting and a domain. Because one application serves both the storefront and the back-office, the cost of separate systems is avoided.
+1035|Optional cost estimate: [TO BE FILLED - NOT CONFIRMED FROM PROJECT]. .NET SDK, PostgreSQL, Node.js and open-source libraries have no development licence fee.
+1036|If your guide requires a cost estimate, insert estimated development effort and hosting cost here. Use estimates only and label them as such.
+1038|Operational feasibility
+1039|The admin panel follows familiar patterns (lists, search, forms in modals, clear action buttons) and restricts each employee to permitted functions, which reduces training needs and errors. Customers use a conventional shopping flow. The system is operationally feasible.
+1040|Schedule feasibility
+1041|The work was divided into phases (Chapter 4) that could be completed within the MCA project period. Features beyond the core scope were deliberately deferred to future scope to keep the schedule realistic.
+1043|3.12 Literature Review Summary
+1044|The review shows that an e-commerce system for a supermarket must handle variant-level pricing and stock, selective online availability, reliable order processing and secure, role-restricted administration. MVC with repositories provides a maintainable application structure; a relational database with stored procedures provides consistency for stock and orders; and JWT-based authentication with permission-based authorisation provides the necessary security.
+1045|3.13 Gap Analysis
+1046|Table 3.3: Existing System vs Proposed System
+1047|Aspect
+1048|Existing System
+1049|Proposed SmartCart System
+1050|Customer access
+1051|In-store or telephone only
+1052|Online storefront with registration and login
+1053|Catalogue
+1054|Informal lists / billing software
+1055|Structured categories, brands, products and SKUs
+1056|Variants
+1057|Handled manually
+1058|SKU with MRP, selling price, unit and attributes
+1059|Online visibility
+1060|Not applicable
+1061|SellOnline flag per product and per SKU
+1062|Stock
+1063|Periodic manual counts
+1064|Batch stock rows from purchases and adjustments
+1065|Orders
+1066|Manual notes, no status
+1067|Order number and status lifecycle with restock on cancel
+1068|Access control
+1069|Unrestricted
+1070|Employees with roles and module permissions
+1071|Payment
+1072|Cash at counter
+1073|Cash on Delivery (online payment is future scope)
+1074|Scalability
+1075|Limited
+1076|Single-store now; multi-store identified as future scope
+1078|Validated: SmartCart adds online catalogue, SKU stock, COD orders and RBAC versus manual processes. Do not claim payment-gateway or multi-store benefits as current features.
+1079|Check that each “Existing System” entry reflects the store scenario you studied during fact finding.
+1082|CHAPTER 4: PROJECT PLANNING AND METHODOLOGY
+1083|4.1 Development Approach
+1084|SmartCart was planned as a sequence of phases, starting with requirement analysis and database design, followed by module-wise development of the storefront and the admin panel, integration, testing and documentation. Modules were developed incrementally so that each could be tested before the next was built on it — for example, the catalogue had to exist before the cart and orders could be implemented.
+1085|4.2 Project Phases
+1086|Table 4.1: Project Phases and Deliverables
+1087|Phase
+1088|Main Activities
+1089|Deliverable
+1090|1. Requirement analysis
+1091|Study of store operations, identification of actors and requirements
+1092|Requirement list, scope
+1093|2. System design
+1094|Architecture, modules, DFDs, use cases
+1095|Design diagrams
+1096|3. Database design
+1097|Tables, keys, relationships, procedures, scripts
+1098|Build and patch scripts
+1099|4. Backend development
+1100|Controllers, repositories, stored procedures, authentication
+1101|Working APIs and pages
+1102|5. Frontend development
+1103|Storefront views, admin views, scripts and styles
+1104|User interfaces
+1105|6. Integration
+1106|Connect modules; catalogue → cart → order → stock
+1107|Integrated application
+1108|7. Testing
+1109|Functional, negative and role-based testing
+1110|Test cases and results
+1111|8. Documentation
+1112|Project report and context documentation
+1113|Final report
+1115|The phases overlapped where appropriate; database scripts, for instance, were extended through patch files as new modules were developed.
+1117|4.3 Requirement Analysis Phase
+1118|The requirement analysis phase identified the two user groups — customers and store employees — and the operations each group performs. Existing manual processes for purchasing, stock and order handling were studied, and the scope of the current version was fixed as a single-store system with Cash on Delivery. Features such as online payment and multi-store operation were recorded as future scope.
+1119|Fact-finding for this report used SmartCart source code, Database-Postgres scripts, appsettings and Ecommerce/context/. Live retail-store interviews: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+1120|Describe the fact-finding techniques you actually used (observation of a store, discussion with store staff, study of existing apps, questionnaires) and the key findings. Do not include techniques you did not use.
+1122|4.4 Design Phase
+1123|In the design phase the overall architecture (single ASP.NET Core MVC application with storefront and admin areas), the module structure, the data flows and the use cases were defined. Decisions made in this phase include keeping customers and employees as separate identities, maintaining stock at SKU level, and enforcing order rules in stored procedures.
+1124|4.5 Development Phase
+1125|Development proceeded module by module. For each module the database objects were created first, then the repository and interface, then the controller actions and finally the views and scripts. Admin list pages follow a common pattern — a Razor index page plus an AJAX endpoint returning paged, searchable results — which reduced development effort for later modules.
+1127|4.6 Database Development
+1128|The database was developed through SQL scripts organised in folders: table scripts (01_Tables), stored procedures grouped by area (02_Procedures/01_Admin, 02_Users, 03_Common) and seed data (05_Seed). A full PostgreSQL build script (Database-Postgres/Database.sql via psql) creates tables, seed data and procedures; patch scripts apply incremental changes with CREATE OR REPLACE for procedures.
+1129|4.7 Backend Development
+1130|The backend consists of MVC controllers for the storefront (Controllers/) and the admin area (Controllers/Admin/), interfaces and repositories for data access, helpers for list normalisation, authentication and image handling, middleware for exceptions, request logging and admin sessions, and a permission filter. Services and repositories are registered through a dependency-injection extension method called from Program.cs.
+1131|4.8 Frontend Development
+1132|The storefront pages (Home, Shop, Cart, Wishlist, Checkout, Orders, Account) were built with Razor views and custom CSS, with JavaScript for listing, filtering and cart interactions. The admin panel was built on the Mantis Bootstrap template with one index page per module, modal forms, shared pagination, toast notifications, empty states and permission-aware buttons.
+1133|Table 4.2: Development Order of Main Modules
+1134|Order
+1135|Module group
+1136|1
+1137|Database foundation, admin authentication, roles and permissions
+1138|2
+1139|Catalogue: category, sub-category, brand, product, SKU, variants, media
+1140|3
+1141|Suppliers, purchases and stock
+1142|4
+1143|Storefront: shop, product details, customer account
+1144|5
+1145|Wishlist, cart, checkout and customer orders
+1146|6
+1147|Admin order processing; homepage management
+1149|Inferred development order: database scripts/seed → admin catalogue/auth (EF) → storefront shop/cart/wishlist/auth (Dapper) → checkout/orders → admin orders/inventory/purchases → homepage → POS sales/returns → documentation.
+1150|Adjust Table 4.2 to the order in which you actually developed the modules.
+1153|4.9 Testing Phase
+1154|Testing was carried out module-wise during development and again after integration. Test cases were designed from the requirements in Chapter 2 and the business rules implemented in the stored procedures, covering valid inputs, invalid inputs, permission restrictions and status transitions. The testing approach and test case templates are presented in Chapter 11; actual results are recorded there as evidence.
+1155|4.10 Deployment / Release Preparation
+1156|Release preparation involves restoring .NET and npm packages, building the application (which also compiles the admin SCSS), creating or patching the database with the build or patch scripts, configuring the connection string and JWT settings, and ensuring that the uploads folder is writable. Development secrets (such as the development JWT key and API keys) must be replaced for any production deployment.
+1157|Demonstration environment: [TO BE FILLED - NOT CONFIRMED FROM PROJECT]. Default config uses local host and PostgreSQL on localhost (PostgresConnection / DatabaseSettings).
+1158|State the actual environment used to run SmartCart for evaluation: machine/server, OS, database edition, URL (if hosted).
+1159|Do not state hosting details that have not been set up.
+1161|Table 4.3: Release Checklist
+1162|Step
+1163|Action
+1164|1
+1165|npm install (Bootstrap sources for admin SCSS)
+1166|2
+1167|dotnet restore and dotnet build
+1168|3
+1169|Run the database build script (new database) or patch script (existing database)
+1170|4
+1171|Configure connection string key “PostgresConnection” and JWT settings in appsettings
+1172|5
+1173|Verify seeded admin login and role permissions
+1174|6
+1175|Run the application and perform smoke tests
+1178|4.11 Development Methodology
+1179|An iterative and incremental approach is described here as the working method: the system was built in increments (modules), each passing through design, implementation and testing, and later increments reused the patterns and database foundations established by earlier ones. Requirements discovered during development — for example, the need to control online visibility per SKU — were incorporated in subsequent iterations through patch scripts.
+1180|Methodology: incremental module-wise development inside a phased academic plan (requirements → design → database → implementation → integration → testing → documentation).
+1181|Confirm that the iterative/incremental description matches how you actually worked. If you followed a different approach (e.g. Waterfall with feedback, or Agile sprints), replace this section.
+1182|Include iteration lengths or sprint details only if they are real.
+1184|Table 4.4: Characteristics of the Methodology Applied
+1185|Characteristic
+1186|Application in SmartCart
+1187|Incremental delivery
+1188|Modules delivered one after another on a shared foundation
+1189|Early database design
+1190|Core tables designed first; extended through patches
+1191|Continuous testing
+1192|Each module tested before integration
+1193|Documentation alongside development
+1194|Context files (project, architecture, database, rules, future) kept in the repository
+1195|Controlled scope
+1196|Unfinished items moved explicitly to “planned / future scope”
+1198|This approach suited a single-developer academic project in which requirements were refined while building, and it kept the implemented scope clearly separated from future work.
+1200|4.12 Project Schedule
+1201|Table 4.5 lists the project activities with their dependencies. Actual start and end dates must be entered from your project records [SC-INFO-009]; the Gantt chart in Figure 4.1 should be prepared from those dates.
+1202|Table 4.5: Project Activity Schedule
+1203|ID
+1204|Activity
+1205|Depends on
+1206|Start
+1207|End
+1208|Duration
+1209|A
+1210|Requirement analysis
+1211|—
+1215|B
+1216|System design
+1217|A
+1221|C
+1222|Database design and scripts
+1223|B
+1227|D
+1228|Admin authentication and security
+1229|C
+1233|E
+1234|Admin catalogue and inventory
+1235|C, D
+1239|F
+1240|Storefront and customer account
+1241|E
+1245|G
+1246|Cart, wishlist, checkout, orders
+1247|F
+1251|H
+1252|Admin orders and homepage
+1253|G
+1257|I
+1258|Integration and testing
+1259|H
+1263|J
+1264|Documentation
+1265|I
+1270|[SC-DIAGRAM-002]
+1271|INSERT SMARTCART DIAGRAM HERE
+1272|Gantt Chart of SmartCart Development
+1273|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1274|Figure 4.1: Gantt Chart of SmartCart Development
+1275|What the diagram must show: Activities A–J from Table 4.5 on the vertical axis and calendar weeks/months on the horizontal axis, using your actual dates; mark milestones (database ready, storefront ready, testing complete, report submission).
+1277|4.13 PERT Chart
+1278|The Program Evaluation and Review Technique (PERT) chart represents activities as a network, showing their dependencies and the critical path. It is derived from the dependency column of Table 4.5.
+1279|[SC-DIAGRAM-003]
+1280|INSERT SMARTCART DIAGRAM HERE
+1281|PERT Network Diagram of SmartCart Development
+1282|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1283|Figure 4.2: PERT Network Diagram of SmartCart Development
+1284|What the diagram must show: Nodes (events) numbered in sequence; arrows for activities A–J labelled with their durations (optimistic, most likely, pessimistic or expected time if calculated); the critical path highlighted. Use actual durations from Table 4.5.
+1285|PERT time estimates: [TO BE FILLED - NOT CONFIRMED FROM PROJECT] (use personal schedule / SC-INFO-009).
+1286|If PERT expected times are shown, insert the optimistic (o), most likely (m) and pessimistic (p) estimates and te = (o + 4m + p) / 6 for each activity.
+1289|4.14 Project Planning Summary
+1290|The project was organised into eight phases and ten scheduled activities. Planning emphasised building the database and security foundation first, then the catalogue and inventory on which the storefront depends, and finally the customer purchasing and order-processing flows. Risks were identified and mitigated as shown in Table 4.6.
+1291|Table 4.6: Risk Register and Mitigation
+1292|Risk
+1293|Likelihood
+1294|Impact
+1295|Mitigation
+1296|Scope growth beyond project period
+1297|Medium
+1298|High
+1299|Fixed single-store scope; deferred features to future scope
+1300|Stock inconsistency between orders and inventory
+1301|Medium
+1302|High
+1303|Stock checks and deduction in stored procedures; restock on cancel
+1304|Unauthorised admin actions
+1305|Low
+1306|High
+1307|Role–permission model; permission re-read per request
+1308|Schema changes breaking existing data
+1309|Medium
+1310|Medium
+1311|Re-runnable patch scripts with existence checks
+1312|Upload of unsafe or oversized files
+1313|Medium
+1314|Medium
+1315|Allowed extensions and size limits in image service
+1316|Loss of development data
+1317|Low
+1318|High
+1319|Version control and database scripts [confirm backup practice]
+1320|Technology learning curve
+1321|Medium
+1322|Medium
+1323|Use of official documentation; incremental development
+1325|Verified risk themes: stock consistency (SP deduction/restock); auth (hash+JWT); permission misuse (RequirePermission); PostgreSQL availability; local upload storage. Probability scores: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+1326|Keep only risks you actually considered; add any real issues faced during development and how they were handled.
+1329|CHAPTER 5: SYSTEM ANALYSIS
+1330|5.1 System Overview
+1331|System analysis examines how SmartCart’s users interact with the system and how data moves between processes and data stores. SmartCart has two interacting sub-systems: the storefront, through which customers find products and place orders, and the admin panel, through which employees maintain the catalogue and stock and process orders. Both operate on the same database, so actions in one sub-system are immediately reflected in the other.
+1332|5.2 Actors
+1333|Table 5.1: Actors of the System
+1334|Actor
+1335|Type
+1336|Description
+1337|Status
+1338|Customer
+1339|Primary
+1340|Registered shopper stored in the Users table; browses, maintains wishlist and cart, places and cancels orders.
+1341|Current
+1342|Admin Employee
+1343|Primary
+1344|Store staff stored in AdminUsers with a user role; performs actions allowed by the role’s permissions.
+1345|Current
+1346|System Administrator
+1347|Primary (role)
+1348|Employee with the seeded Admin system role holding all permissions; manages employees, roles and permissions.
+1349|Current
+1350|Visitor (guest)
+1351|Secondary
+1352|Unauthenticated user who can browse the shop but must log in to use cart, wishlist or checkout.
+1353|Current
+1354|CountryStateCity API
+1355|External system
+1356|Supplies state and city lists for supplier forms.
+1357|Current
+1358|Store / Zone Administrator
+1359|Primary
+1360|Would manage a specific store or zone.
+1361|Future (SmartCart Then)
+1362|Payment Gateway
+1363|External system
+1364|Would process online payments.
+1365|Future (SmartCart Then)
+1367|Only the actors marked “Current” exist in the implemented system. The future actors are listed to show where SmartCart Then would extend the analysis.
+1369|5.3 Use Case Analysis
+1370|Use case analysis captures the goals each actor achieves through the system. Figure 5.1 presents the overall use case diagram combining customer and employee use cases; Sections 5.4 and 5.5 detail each actor’s use cases.
+1371|[SC-DIAGRAM-004]
+1372|INSERT SMARTCART DIAGRAM HERE
+1373|Overall Use Case Diagram of SmartCart
+1374|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1375|Figure 5.1: Overall Use Case Diagram of SmartCart
+1376|What the diagram must show: System boundary “SmartCart (Current – Single Store)”; actors Customer, Admin Employee and CountryStateCity API; main use cases: Register, Login, Browse/Filter Products, View Product Details, Manage Wishlist, Manage Cart, Checkout (COD), View/Cancel Orders; Manage Catalogue, Manage Suppliers & Purchases, Adjust Inventory, Process Orders, Manage Homepage, Manage Employees/Roles/Permissions. Show «include» for Login where required.
+1378|5.4 Customer Use Cases
+1379|Table 5.2: Customer Use Cases
+1380|UC ID
+1381|Use case
+1382|Pre-condition
+1383|Outcome
+1384|UC-C1
+1385|Register
+1386|E-mail not already registered
+1387|Customer account created
+1388|UC-C2
+1389|Login / Logout
+1390|Account exists
+1391|Customer cookie issued / cleared
+1392|UC-C3
+1393|Browse and filter products
+1394|—
+1395|List of online-sellable products
+1396|UC-C4
+1397|View product details
+1398|Product is active and SellOnline
+1399|Product, SKUs and media shown
+1400|UC-C5
+1401|Manage wishlist
+1402|Logged in
+1403|Product added / removed
+1404|UC-C6
+1405|Manage cart
+1406|Logged in; SKU sellable and in stock
+1407|Cart updated
+1408|UC-C7
+1409|Checkout (COD)
+1410|Cart not empty; valid address
+1411|Order placed with order number
+1412|UC-C8
+1413|View orders
+1414|Logged in
+1415|Order list and details
+1416|UC-C9
+1417|Cancel order
+1418|Order in early status
+1419|Order cancelled; stock restored
+1421|[SC-DIAGRAM-005]
+1422|INSERT SMARTCART DIAGRAM HERE
+1423|Customer Use Case Diagram
+1424|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1425|Figure 5.2: Customer Use Case Diagram
+1426|What the diagram must show: Actor Customer with use cases UC-C1 to UC-C9; «include» Login for wishlist, cart, checkout and orders; «extend» Cancel Order from View Orders.
+1428|5.5 Administrator Use Cases
+1429|Table 5.3: Administrator Use Cases
+1430|UC ID
+1431|Use case
+1432|Permission required
+1433|UC-A1
+1434|Login / Logout, access denied handling
+1435|— (authentication)
+1436|UC-A2
+1437|Manage categories and sub-categories
+1438|Categories / SubCategories permissions
+1439|UC-A3
+1440|Manage brands
+1441|Brands permissions
+1442|UC-A4
+1443|Manage products, SKUs, variants and media
+1444|Products permissions
+1445|UC-A5
+1446|Manage suppliers
+1447|Suppliers permissions
+1448|UC-A6
+1449|Record purchases (creates stock)
+1450|Purchases permissions
+1451|UC-A7
+1452|Adjust inventory
+1453|Stock / inventory permission [verify code]
+1454|UC-A8
+1455|Process orders (confirm, ship, deliver, cancel)
+1456|Orders permissions
+1457|UC-A9
+1458|Manage homepage content
+1459|Homepage permission [verify code]
+1460|UC-A10
+1461|Manage employees, roles and permissions
+1462|Employees / UserRoles permissions
+1464|[SC-DIAGRAM-006]
+1465|INSERT SMARTCART DIAGRAM HERE
+1466|Administrator Use Case Diagram
+1467|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1468|Figure 5.3: Administrator Use Case Diagram
+1469|What the diagram must show: Actor Admin Employee (generalised by System Administrator); use cases UC-A1 to UC-A10; note that each use case is available only if the employee’s role holds the corresponding permission.
+1471|5.6 Context-Level DFD
+1472|The context-level data flow diagram treats SmartCart as a single process and shows its data exchanges with external entities.
+1473|[SC-DIAGRAM-007]
+1474|INSERT SMARTCART DIAGRAM HERE
+1475|Context-Level Data Flow Diagram
+1476|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1477|Figure 5.4: Context-Level Data Flow Diagram
+1478|What the diagram must show: Single process “0 SmartCart System”. External entities: Customer (registration/login data, product queries, cart and order requests → ; ← product information, cart, order confirmation and status), Admin Employee (catalogue, supplier, purchase, stock, order actions, role data → ; ← lists, reports of records, order details), CountryStateCity API (← state/city lists).
+1479|Notation: Use Gane–Sarson or Yourdon–DeMarco notation consistently across all DFDs in this chapter.
+1481|5.7 Level 0 DFD
+1482|The Level 0 DFD decomposes SmartCart into its major processes and the data stores they use. Data store names correspond to actual database tables.
+1483|[SC-DIAGRAM-008]
+1484|INSERT SMARTCART DIAGRAM HERE
+1485|Level 0 Data Flow Diagram
+1486|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1487|Figure 5.5: Level 0 Data Flow Diagram
+1488|What the diagram must show: Processes: 1.0 Authentication (Users, AdminUsers); 2.0 Catalogue Management (Category, SubCategory, Brand, Products, ProductVariants, ProductMedia, SkuMedia); 3.0 Purchasing & Stock (Supplier, Purchase, PurchaseDetail, Stock); 4.0 Shopping (Wishlist, Cart); 5.0 Order Processing (Orders, OrderItems, Payments, Shipping, Stock); 6.0 Access Control (UserRoles, Modules, Permissions, UserRolePermissions); 7.0 Homepage Content (homepage tables). Show flows to/from Customer and Admin Employee.
+1490|5.8 Level 1 DFD — Customer Flow
+1491|This diagram expands the customer-facing processes from registration to order cancellation.
+1492|[SC-DIAGRAM-009]
+1493|INSERT SMARTCART DIAGRAM HERE
+1494|Level 1 DFD – Customer Flow
+1495|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1496|Figure 5.6: Level 1 DFD – Customer Flow
+1497|What the diagram must show: Processes: 1.1 Register/Login → Users; 4.1 Browse & Filter (reads Products, ProductVariants, Stock, media); 4.2 Manage Wishlist → Wishlist, WishlistItems; 4.3 Manage Cart → Cart, CartItems (checks SellOnline and stock); 5.1 Checkout Preview (reads CartItems, UserAddresses); 5.2 Place Order → Orders, OrderItems, Payments, Shipping, deducts Stock, clears cart; 5.3 View/Cancel Orders (cancel restores Stock).
+1499|5.9 Level 1 DFD — Admin Flow
+1500|This diagram expands the administrative processes used by employees.
+1501|[SC-DIAGRAM-010]
+1502|INSERT SMARTCART DIAGRAM HERE
+1503|Level 1 DFD – Admin Flow
+1504|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1505|Figure 5.7: Level 1 DFD – Admin Flow
+1506|What the diagram must show: Processes: 1.2 Employee Login (AdminUsers) with 6.1 Permission Check (UserRolePermissions, Permissions); 2.1 Maintain Categories/Brands; 2.2 Maintain Products & SKUs; 2.3 Upload Media (ProductMedia, SkuMedia, uploads folder); 3.1 Maintain Suppliers (CountryStateCity API); 3.2 Record Purchase → Purchase, PurchaseDetail, Stock; 3.3 Adjust Inventory → Stock; 5.4 Process Orders → Orders, Payments, Shipping, Stock; 7.1 Maintain Homepage.
+1508|5.10 Order Processing Data Flow
+1509|Order processing spans both sub-systems: the customer creates the order and the employee moves it through its statuses. Stock is deducted when the order is placed and restored if it is cancelled.
+1510|[SC-DIAGRAM-011]
+1511|INSERT SMARTCART DIAGRAM HERE
+1512|Order Processing Data Flow Diagram
+1513|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1514|Figure 5.8: Order Processing Data Flow Diagram
+1515|What the diagram must show: Customer → Place Order (validate address, COD, SellOnline, stock) → Orders/OrderItems/Payments/Shipping and Stock deduction; Admin → Confirm (Placed/Pending → Confirmed); Mark Shipped (Confirmed → Shipped); Deliver (Confirmed/Shipped → Delivered, payment collected); Cancel (Placed/Pending/Confirmed → Cancelled, restock). Customer cancel limited to early statuses.
+1517|5.11 Authentication Data Flow
+1518|Customers and employees authenticate through separate flows and receive separate cookies. Admin requests are additionally checked for permissions on every protected action.
+1519|[SC-DIAGRAM-012]
+1520|INSERT SMARTCART DIAGRAM HERE
+1521|Authentication Data Flow Diagram
+1522|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1523|Figure 5.9: Authentication Data Flow Diagram
+1524|What the diagram must show: Customer: credentials → GetUserByEmail → verify hash → issue user JWT cookie → subsequent requests read user cookie. Employee: credentials → AdminUsers lookup → verify hash → issue admin JWT cookie → AdminAuthMiddleware validates session on /admin and /api/admin → RequirePermission loads permissions from database → allow or access denied.
+1526|5.12 System Analysis Summary
+1527|The analysis identified two current primary actors — the customer and the admin employee — and a supporting external service, together with future actors that belong to SmartCart Then. The use cases cover the full customer purchasing cycle and the store’s administrative operations. The DFDs show that all processes share a single database, that orders both consume and restore stock, and that authentication and authorisation are applied separately to customers and employees.
+1528|Table 5.4: Mapping of Processes to Data Stores
+1529|Process
+1530|Main data stores (tables)
+1531|Authentication
+1532|Users, AdminUsers
+1533|Access control
+1534|UserRoles, Modules, Permissions, UserRolePermissions
+1535|Catalogue
+1536|Category, SubCategory, Brand, Products, ProductVariants, Variants, VariantValues, ProductVariantAttributes
+1537|Media
+1538|ProductMedia, SkuMedia (files in wwwroot/uploads)
+1539|Purchasing & stock
+1540|Supplier, Purchase, PurchaseDetail, Stock
+1541|Shopping
+1542|Wishlist, WishlistItems, Cart, CartItems, UserAddresses
+1543|Orders
+1544|Orders, OrderItems, Payments, Shipping
+1545|Homepage content
+1546|homepage_banners, homepage_banner_categories, homepage_categories, homepage_products
+1548|These findings form the basis for the architecture and design in Chapter 6 and the database design in Chapter 7.
+1550|CHAPTER 6: SYSTEM ARCHITECTURE AND DESIGN
+1551|6.1 Design Overview
+1552|The design of SmartCart translates the requirements and analysis into an application structure. The system is designed as one ASP.NET Core 8 MVC web application containing both the storefront and the admin panel, with a single relational database. This design suits a single store: it is simple to deploy and maintain, and it keeps customer and administrative data consistent. This chapter describes Current Architecture / SmartCart Now; future architecture is addressed only in Chapter 12.
+1553|6.2 Design Principles
+1554|Separation of concerns: controllers handle requests, repositories handle data access, views handle presentation.
+1555|Thin controllers: controllers validate input, call a repository and return a view or JSON.
+1556|Programming to interfaces: each repository implements an interface registered for dependency injection.
+1557|Rules close to the data: stock, online-sale and order-status rules are enforced in stored procedures.
+1558|Separate identities: customers and employees have different tables, cookies and token audiences.
+1559|Least privilege: every admin action requires an explicit permission.
+1560|Soft delete: master records are cancelled (Cancelled flag) rather than physically deleted.
+1561|Re-runnable scripts: schema changes are delivered by patch scripts that can be applied repeatedly.
+1563|6.3 System Architecture
+1564|Figure 6.1 shows the layered architecture. The browser renders Razor pages and calls controller actions; controllers use interfaces implemented by repositories; repositories access the database either through Dapper and stored procedures or through Entity Framework Core, depending on the module.
+1565|[SC-DIAGRAM-013]
+1566|INSERT SMARTCART DIAGRAM HERE
+1567|SmartCart System Architecture (Current Architecture / SmartCart Now)
+1568|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1569|Figure 6.1: SmartCart System Architecture
+1570|What the diagram must show: Layers from top: Browser (Storefront pages with custom CSS/JS; Admin panel on Mantis/Bootstrap) → ASP.NET Core pipeline (GlobalExceptionMiddleware, RequestLoggingMiddleware, JWT authentication, AdminAuthMiddleware) → MVC Controllers (Controllers/, Controllers/Admin/, RequirePermission filter) → Interfaces + Repositories → Data access (Dapper + stored procedures | EF Core EcommerceDbContext) → PostgreSQL database; side components: wwwroot/uploads (media files), CountryStateCity API, Logs/DatabaseTrace.txt.
+1572|6.4 Application Layer Structure
+1573|Table 6.1: Project Folder Structure
+1574|Folder
+1575|Responsibility
+1576|Controllers/, Controllers/Admin/
+1577|MVC controllers for storefront and admin
+1578|Interface/, Interface/Admin/
+1579|Repository abstractions
+1580|Repository/, Repository/Admin/
+1581|Data access implementations
+1582|Models/, Models/Admin/, Models/Entities/
+1583|DTOs, view models and EF entities
+1584|Helpers/
+1585|List normalisation, authentication helpers, JWT services, image handling
+1586|DataAccess/
+1587|DataAccessDapper and EcommerceDbContext
+1588|Filters/
+1589|RequirePermissionAttribute
+1590|Middleware/
+1591|Global exception, request logging, admin session
+1592|views/
+1593|Razor views and shared layouts
+1594|Database/
+1595|Table scripts, procedures, seed data, build/patch entry points
+1596|wwwroot/
+1597|Static assets, admin template, compiled CSS, uploads
+1599|6.5 Backend Structure
+1600|The backend is organised by area. Storefront repositories depend on IDataAccessDapper and call stored procedures. Admin catalogue, supplier, purchase, stock, employee, role and admin-login repositories depend on EcommerceDbContext. The admin order repository is an exception and uses Dapper with dedicated procedures. All services and repositories are registered in an extension method (AddCustomServices) invoked from Program.cs. Admin lists return a standard ApiResponse containing a paged TableOutput, driven by PageIndex, PageSize and SearchText inputs.
+1602|6.6 Frontend Structure
+1603|The frontend is server-rendered with Razor. Two visual systems are used: a custom storefront and the Mantis Bootstrap admin template.
+1604|Table 6.2: Frontend Structure
+1605|Area
+1606|Layout
+1607|Pages / assets
+1608|Storefront
+1609|_Layout.cshtml
+1610|Home, Shop (listing and details), Cart, Wishlist, Checkout, Orders, Account; storefront.css, shop-listing.css, shop-bag.css; scripts under wwwroot/js
+1611|Admin panel
+1612|_AdminLayout.cshtml (sidebar with permission attributes)
+1613|One Index.cshtml per module with modal forms and AJAX; Mantis assets; style.scss compiled to style.css
+1614|Admin login
+1615|_AdminAuthLayout.cshtml
+1616|views/Admin/Login/Index.cshtml
+1617|Shared components
+1618|_AdminLayout
+1619|Toast notifications (toast.js), empty state (empty-state.js, _EmptyState.cshtml), pagination, searchable selects, admin-permissions.js
+1621|Storefront interactions such as loading products, applying filters and updating the cart are performed through JSON endpoints of MVC actions, so pages update without full reloads where appropriate. Admin buttons are shown or hidden according to the employee’s permissions, while the server still enforces the same permissions.
+1622|Storefront: Razor views (Home, Shop, Cart, Wishlist, Checkout, Orders, Account); CSS storefront/shop-listing/shop-bag; JS shop-listing.js, shop-details.js, shop-checkout.js, shop-bag.js. Admin: Mantis Bootstrap under wwwroot/Admin (SCSS via AspNetCore.SassCompiler + npm Bootstrap); toast/empty-state scripts; views/Admin/*. Uploads: wwwroot/uploads/.
+1623|List the actual JavaScript files and Razor views per module (e.g. from wwwroot/js and views/Admin/*) if your guide requires a file-level description.
+1624|Suggested format: table with File, Module, Purpose.
+1627|6.7 API / Request Flow
+1628|SmartCart does not have a separate API project; JSON endpoints are MVC actions within the same application. The storefront shop request flow is as follows:
+1629|Table 6.3: Storefront Shop Request Flow
+1630|Step
+1631|Request
+1632|Handled by
+1633|Data source
+1634|1
+1635|GET /Shop
+1636|ShopController.Index
+1637|Razor view
+1638|2
+1639|POST /Shop/GetProducts
+1640|ShopRepository.GetProductListAsync
+1641|SP GetProducts
+1642|3
+1643|GET /Shop/GetFilters
+1644|Shop filters action
+1645|SP GetShopFilters
+1646|4
+1647|GET /Shop/Details/{slug}
+1648|Product details page
+1649|Razor view
+1650|5
+1651|GET /Shop/GetProduct/{slug}
+1652|Product data action
+1653|SP GetProductDetails
+1655|[SC-DIAGRAM-014]
+1656|INSERT SMARTCART DIAGRAM HERE
+1657|Request Flow (Sequence) – Browse Products
+1658|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1659|Figure 6.2: Request Flow for Product Browsing
+1660|What the diagram must show: Sequence: Browser → ShopController → ShopRepository → DataAccessDapper → PostgreSQL (get_products) → JSON product list → browser renders cards. Include the admin variant: Browser → AdminAuthMiddleware → Controller with RequirePermission → Repository (EF Core) → database.
+1662|6.8 Authentication Architecture
+1663|Both customers and employees receive JWTs stored in HTTP cookies. Token validation accepts the configured issuer and both audiences (admin and user). For paths under /admin and /api/admin the admin cookie is preferred; for other paths the user cookie is preferred with the admin cookie as fallback. The AdminAuthMiddleware requires a valid employee session on admin paths except login and access-denied, and the RequirePermission attribute checks the employee’s current permissions loaded from the database.
+1664|[SC-DIAGRAM-015]
+1665|INSERT SMARTCART DIAGRAM HERE
+1666|Authentication and Authorisation Architecture
+1667|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1668|Figure 6.3: Authentication and Authorisation Architecture
+1669|What the diagram must show: Two login paths: POST /Account/Login → GetUserByEmail + password hash verification → UserJwtTokenService → user cookie; POST /api/admin/auth/login → AdminAuthRepository (AdminUsers + hash) → AdminJwtTokenService → admin cookie. Show JwtBearer OnMessageReceived reading cookies, AdminAuthMiddleware and RequirePermission → IAdminAuthInterface.GetCurrentAsync → permissions.
+1671|6.9 Customer Shopping Workflow
+1672|The customer shopping workflow begins with browsing and ends with an order that the store can process. Login is required for the wishlist, cart, checkout and orders; if the customer is not logged in, the JSON endpoints return an unauthorised response and the customer is directed to log in.
+1673|[SC-DIAGRAM-016]
+1674|INSERT SMARTCART DIAGRAM HERE
+1675|Customer Shopping Workflow (Activity Diagram)
+1676|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1677|Figure 6.4: Customer Shopping Workflow
+1678|What the diagram must show: Start → Browse/Filter → View Product → Select SKU → [logged in?] → Add to Cart (AddCartItem checks active, SellOnline, stock, max order quantity) → View Cart / update quantity → Checkout Preview → Select/enter address → Choose payment (COD; UPI returns “available soon”) → PlaceOrder → Order number SC… → View Orders → [early status?] Cancel → End.
+1680|6.10 Order Lifecycle
+1681|Orders move through a defined set of statuses. Transitions are enforced by stored procedures, so an invalid transition is rejected regardless of the screen used.
+1682|Table 6.4: Order Status Transitions
+1683|From status
+1684|Action
+1685|To status
+1686|Performed by
+1687|Stock effect
+1688|— (new)
+1689|Place order
+1690|Placed
+1691|Customer
+1692|Deducted
+1693|Placed / Pending
+1694|Confirm
+1695|Confirmed
+1696|Admin
+1697|—
+1698|Confirmed
+1699|Mark shipped
+1700|Shipped
+1701|Admin
+1702|—
+1703|Confirmed / Shipped
+1704|Deliver
+1705|Delivered (payment collected)
+1706|Admin
+1707|—
+1708|Placed / Pending / Confirmed
+1709|Cancel
+1710|Cancelled
+1711|Admin
+1712|Restored
+1713|Placed / Pending
+1714|Cancel
+1715|Cancelled
+1716|Customer
+1717|Restored
+1719|[SC-DIAGRAM-017]
+1720|INSERT SMARTCART DIAGRAM HERE
+1721|Order Lifecycle State Diagram
+1722|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+1723|Figure 6.5: Order Lifecycle State Diagram
+1724|What the diagram must show: States Placed, Pending [verify initial status value], Confirmed, Shipped, Delivered, Cancelled; transitions and actors exactly as in Table 6.4; note that cancellation is not allowed after Shipped.
+1726|6.11 System Design Summary
+1727|SmartCart’s current design is a layered, single-application architecture in which the storefront and admin panel share one database. Controllers are thin, data access is encapsulated in repositories, and critical rules for stock and order status reside in stored procedures. Authentication is separated for customers and employees, and every admin action is protected by permission checks. The order lifecycle is explicit and reversible up to shipment.
+1728|Table 6.5: Key Design Decisions
+1729|Decision
+1730|Reason
+1731|Single MVC application for storefront and admin
+1732|Simpler deployment and shared data for one store
+1733|Separate customer and employee identities
+1734|Isolation of privileges and cookies
+1735|SKU-level stock in batch rows
+1736|Accurate stock per pack size; traceability to purchases
+1737|SellOnline at product and SKU level
+1738|Store decides what is sold online
+1739|Rules in stored procedures
+1740|Consistent enforcement of stock and status rules
+1741|Hybrid data access (Dapper + EF Core)
+1742|Stored procedures for transactional customer flows; EF Core for admin CRUD
+1743|Build and patch scripts
+1744|Controlled, repeatable schema changes without EF migrations
+1745|Soft delete
+1746|Preserve history and references
+1748|These decisions provide a stable base for the current single-store system and identify the points that would change in a multi-store design (store keys on inventory and orders, store-scoped roles).
+1750|CHAPTER 7: DATABASE DESIGN
+1751|7.1 Database Overview
+1752|The SmartCart database stores all catalogue, inventory, customer, order and security data for the store. It is organised into functional table groups: identity and access control, catalogue and variant attributes, media, purchasing and stock, cart and wishlist, orders with payments and shipping, and homepage content. A small number of tables exist in the scripts for future or legacy use but are not used by the current application; these are identified separately.
+1753|The schema is documented in a DBML file that can be imported into dbdiagram.io to regenerate the ER diagram, and it is created by SQL scripts rather than by Entity Framework migrations.
+1754|7.2 Database Technology
+1755|SmartCart uses a relational database management system. The current implementation uses PostgreSQL, accessed through Npgsql, Dapper and EF Core’s PostgreSQL provider. The connection string key in configuration is “PostgresConnection”. Storefront and customer-order logic use PostgreSQL stored procedures; most admin modules use Entity Framework Core. No user-defined SQL functions were found under Database-Postgres scripts.
+1756|CONFIRMED FROM PROJECT: The running application uses PostgreSQL. Program.cs registers UseNpgsql with connection string PostgresConnection; Ecommerce.csproj references Npgsql and Npgsql.EntityFrameworkCore.PostgreSQL; health check postgres_dapper is registered. Schema and procedures for the current stack are maintained under Ecommerce/Database-Postgres. Legacy SQL Server scripts under Ecommerce/Database/ remain for historical reference but are not wired in Program.cs.
+1757|Final demonstration database engine: PostgreSQL (Database-Postgres/Database.sql via psql). Sections 7.2, 10.4 and software requirements are aligned to this implementation.
+1758|Exact PostgreSQL version for demonstration: [TO BE FILLED - NOT CONFIRMED FROM PROJECT] (record SELECT version();).
+1761|7.3 Database Design Principles
+1762|Naming: newer tables use ID_{Entity} primary keys and FK_{Entity} foreign keys (e.g. ID_Product, FK_SubCategory); older storefront/order tables keep legacy keys (UserId, OrderId, CartId, PaymentId, ShippingId).
+1763|Soft delete: most tables carry Cancelled, CancelledOn and CancelledReason; queries exclude cancelled rows.
+1764|Online visibility: SellOnline (default 0) on Products and ProductVariants; storefront shows only rows that are active, not cancelled and SellOnline = 1.
+1765|SKU-level stock: quantities are stored as rows in Stock keyed by FK_ProductVariant; available quantity is the sum of non-cancelled rows.
+1766|Snapshots: OrderItems store product name, SKU, variant label and prices at the time of ordering.
+1767|Uniqueness: unique product slug, SKU, barcode, customer e-mail, admin user name, permission code and module name.
+1768|7.4 Normalization
+1769|The schema is normalised to third normal form for master data. Categories, sub-categories, brands, products and SKUs are held in separate tables, so each fact is stored once. Variant axes (e.g. Size) and their values are stored independently and linked to SKUs through ProductVariantAttributes, which removes repeating groups. The role–permission relationship is resolved through the UserRolePermissions associative table.
+1770|Controlled denormalisation is used where history must be preserved: order lines copy product name, SKU and prices, and the order stores the delivery address fields, so that later catalogue or address changes do not alter past orders.
+1772|7.5 Entity Relationship Diagram
+1773|Figure 7.1 presents the ER diagram of the tables used by the current application. It can be generated directly from the project’s DBML file.
+1774|[SC-DIAGRAM-018]
+1775|INSERT SMARTCART DIAGRAM HERE
+1776|Entity Relationship Diagram of SmartCart
+1777|Recommended size: full page width; landscape page may be used  |  Tool: draw.io / Visio / dbdiagram.io
+1778|Figure 7.1: Entity Relationship Diagram of SmartCart
+1779|What the diagram must show: All current tables grouped by colour: Identity & Access (Users, UserAddresses, AdminUsers, UserRoles, Modules, Permissions, UserRolePermissions); Catalogue (Category, SubCategory, Brand, Products, ProductVariants, Variants, VariantValues, ProductVariantAttributes); Media (ProductMedia, SkuMedia); Purchasing & Stock (Supplier, Purchase, PurchaseDetail, Stock); Shopping (Cart, CartItems, Wishlist, WishlistItems); Orders (Orders, OrderItems, Payments, Shipping); Homepage tables. Show PKs, FKs and cardinalities.
+1781|7.6 Core Tables Overview
+1782|Table 7.1: Database Table Groups
+1783|Group
+1784|Tables
+1785|Count
+1786|Used by current app
+1787|Identity & access
+1788|Users, UserAddresses, AdminUsers, UserRoles, Modules, Permissions, UserRolePermissions
+1789|7
+1790|Yes
+1791|Catalogue & attributes
+1792|Category, SubCategory, Brand, Products, ProductVariants, Variants, VariantValues, ProductVariantAttributes
+1793|8
+1794|Yes
+1795|Media
+1796|ProductMedia, SkuMedia
+1797|2
+1798|Yes
+1799|Purchasing & stock
+1800|Supplier, Purchase, PurchaseDetail, Stock
+1801|4
+1802|Yes
+1803|Cart & wishlist
+1804|Cart, CartItems, Wishlist, WishlistItems
+1805|4
+1806|Yes
+1807|Orders
+1808|Orders, OrderItems, Payments, Shipping
+1809|4
+1810|Yes
+1811|Homepage content
+1812|homepage_banners, homepage_banner_categories, homepage_categories, homepage_products
+1813|4
+1814|Yes
+1815|Legacy media
+1816|ProductImages, ProductVariantImages
+1817|2
+1818|Legacy / partial
+1819|Schema only
+1820|ProductStatus, AuditLogs, Ratings, Sales, SalesDetail, SalesReturn, SalesReturnDetail
+1821|7
+1822|No (future)
+1824|In total the scripts define 42 tables, of which 33 are used by the current application. The following sections describe the principal groups; column-level definitions are given in Appendix B.
+1825|CONFIRMED FROM PROJECT: Database-Postgres/01_Tables defines 42 physical tables (users, useraddresses, category, subcategory, brand, products, productvariants, variants, variantvalues, productvariantattributes, productmedia, skumedia, productimages, productvariantimages, productstatus, supplier, purchase, purchasedetail, stock, cart, cartitems, wishlist, wishlistitems, orders, orderitems, payments, shipping, sales, salesdetail, salesreturn, salesreturndetail, adminusers, userroles, modules, permissions, userrolepermissions, homepage_banners, homepage_banner_categories, homepage_categories, homepage_products, ratings, auditlogs). Live use focuses on identity, catalogue, media, purchasing/stock, shopping bags, orders, POS sales and homepage; ratings, auditlogs, productstatus and legacy productimages have little or no active UI wiring.
+1826|Script-based count is 42 tables. Live INFORMATION_SCHEMA count on the demo database: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+1829|7.7 User / Authentication Tables
+1830|Table 7.2: User and Authentication Tables
+1831|Table
+1832|Primary key
+1833|Foreign keys
+1834|Purpose / important columns
+1835|Users
+1836|UserId
+1837|—
+1838|Storefront customers: UserName, FullName, Email (unique), PhoneNumber, PasswordHash, IsAdmin (unused), timestamps, Cancelled
+1839|UserAddresses
+1840|AddressId
+1841|UserId → Users
+1842|Saved delivery addresses: AddressType (Home/Work/Office/Other), ReceiverName, Phone, AddressLine, City, Pincode, Latitude, Longitude, IsDefault
+1843|AdminUsers
+1844|ID_AdminUser
+1845|FK_UserRole → UserRoles
+1846|Employees: UserName (unique), PasswordHash, FullName, Email, PhoneNumber, ProfileImageUrl, IsActive
+1847|UserRoles
+1848|ID_UserRole
+1849|—
+1850|Roles: RoleName (unique), Description, IsSystemRole, IsActive
+1851|Modules
+1852|ID_Module
+1853|—
+1854|Security modules: ModuleName (unique), DisplayName, DisplayOrder
+1855|Permissions
+1856|ID_Permission
+1857|FK_Module → Modules
+1858|Actions: PermissionName, PermissionCode (unique), DisplayOrder
+1859|UserRolePermissions
+1860|ID_UserRolePermission
+1861|FK_UserRole, FK_Permission
+1862|Role–permission matrix; unique (FK_UserRole, FK_Permission)
+1864|Customers and employees are deliberately stored in different tables. The IsAdmin column in Users is not used for admin authentication.
+1865|users (PK id_user): username, fullname, passwordhash, email (unique ux_users_email), phonenumber, isadmin, createdat, updatedat, cancelled…. useraddresses (PK addressid): userid→users, addresstype, receivername, phone, addressline, city, pincode, latitude, longitude, isdefault, createdat, cancelled…. adminusers (PK id_adminuser): fk_userrole→userroles, username unique, passwordhash, fullname, email, phonenumber, profileimageurl, isactive, cancelled…. userroles; modules; permissions; userrolepermissions (unique role+permission). Seed includes Billing.* permissions without a Billing controller.
+1866|Column types follow Database-Postgres CREATE TABLE scripts (IDENTITY INT, TEXT, BOOLEAN, NUMERIC, TIMESTAMP). See also SC-DATA-010.
+1867|Permission codes are seeded from Database-Postgres seed scripts (Category.*, Product.*, Order.*, Inventory.*, Homepage.*, Employee.*, UserRole.*, Billing.* without Billing UI).
+1870|7.8 Product / Category Tables
+1871|Table 7.3: Product and Category Tables
+1872|Table
+1873|Primary key
+1874|Foreign keys
+1875|Purpose / important columns
+1876|Category
+1877|ID_Category
+1878|—
+1879|Top-level categories: Name, Description, ImageUrl, IsActive
+1880|SubCategory
+1881|ID_SubCategory
+1882|FK_Category → Category
+1883|Sub-categories: Name, Description, ImageUrl, IsActive
+1884|Brand
+1885|ID_Brand
+1886|—
+1887|Brands: BrandName, Description, ImageUrl, IsActive
+1888|Products
+1889|ID_Product
+1890|FK_SubCategory, FK_Brand (nullable)
+1891|Product header: Name, Slug (unique), Description, IsActive, SellOnline, timestamps
+1892|ProductVariants
+1893|ID_ProductVariant
+1894|FK_Product → Products
+1895|SKU: SKU (unique), Barcode (unique), VariantLabel, MRP, SellingPrice, UnitOfMeasure, UnitValue, IsDefault, MaxOrderQty, IsActive, SellOnline
+1896|Variants
+1897|ID_Variant
+1898|—
+1899|Variant axes (e.g. Size, Colour): Name (unique), DisplayOrder
+1900|VariantValues
+1901|ID_VariantValue
+1902|FK_Variant → Variants
+1903|Axis values; unique (FK_Variant, Name)
+1904|ProductVariantAttributes
+1905|ID_ProductVariantAttribute
+1906|FK_ProductVariant, FK_Variant, FK_VariantValue
+1907|Assigns one value per axis to a SKU; unique (FK_ProductVariant, FK_Variant)
+1908|ProductMedia
+1909|ID_ProductMedia
+1910|FK_Product → Products
+1911|Product images/video: MediaType, MediaUrl, DisplayOrder, IsPrimary
+1912|SkuMedia
+1913|ID_SkuMedia
+1914|FK_ProductSKU → ProductVariants
+1915|SKU images: MediaUrl, DisplayOrder, IsPrimary
+1917|category (PK id_category): name, description, isactive, imageurl, cancelled…. subcategory (PK id_subcategory, fk_category). brand (PK id_brand, brandname…). products (PK id_product): fk_subcategory, fk_brand, name, slug unique, description, isactive, sellonline, cancelled…. productvariants (PK id_productvariant): fk_product, sku unique, barcode unique nullable, variantlabel, mrp, sellingprice, maxorderqty, isactive, sellonline…. variants / variantvalues / productvariantattributes. Media: productmedia, skumedia. supplier for purchasing.
+1918|Insert data types and constraints, or reference Appendix B. Confirm whether SKU images are written to SkuMedia only or also to the legacy ProductVariantImages table.
+1921|7.9 Cart / Wishlist Tables
+1922|Table 7.4: Cart and Wishlist Tables
+1923|Table
+1924|Primary key
+1925|Foreign keys
+1926|Purpose / important columns
+1927|Cart
+1928|CartId
+1929|UserId → Users
+1930|Cart header per customer; SessionKey (unique, nullable) reserved for guest carts; CreatedAt, Cancelled
+1931|CartItems
+1932|CartItemId
+1933|CartId → Cart; ProductId → Products; ProductVariantId → ProductVariants
+1934|Cart lines: Quantity, Price, CreatedAt, Cancelled
+1935|Wishlist
+1936|WishlistId
+1937|UserId → Users
+1938|Wishlist header per customer; SessionKey reserved; Cancelled
+1939|WishlistItems
+1940|WishlistItemId
+1941|WishlistId → Wishlist; ProductId → Products
+1942|Wishlisted products; Cancelled
+1944|The cart holds SKU-level lines because price and stock differ by SKU, whereas the wishlist holds products. The application currently passes only the logged-in UserId to the cart and wishlist procedures; the SessionKey columns are not used (guest shopping is future scope).
+1945|Table 7.5: Cart and Wishlist Stored Procedures
+1946|Area
+1947|Procedures
+1948|Cart
+1949|GetCart, GetBagCounts, AddCartItem, UpdateCartItem, RemoveCartItem, ClearCart
+1950|Wishlist
+1951|GetWishlist, GetWishlistStatus, ToggleWishlist, RemoveWishlistItem
+1953|cart (PK id_cart): fk_user, sessionkey nullable UUID, createdat. cartitems (PK id_cartitem): fk_cart, fk_product, fk_productvariant, quantity, price. wishlist (PK id_wishlist): fk_user, sessionkey, cancelled…. wishlistitems (PK id_wishlistitem): fk_wishlist, fk_product, cancelled…. Storefront APIs require logged-in UserId; guest/session merge is not implemented.
+1954|Insert data types and constraints, or reference Appendix B.
+1955|Optionally add the validation messages returned by AddCartItem (e.g. out of stock, not sold online).
+1958|7.10 Order / Order Item Tables
+1959|Table 7.6: Order Tables
+1960|Table
+1961|Primary key
+1962|Foreign keys
+1963|Purpose / important columns
+1964|Orders
+1965|OrderId
+1966|UserId → Users
+1967|Order header: OrderNumber, OrderDate, TotalAmount, OrderStatus, ShippingAddress, ReceiverName, Phone, AddressLine, City, Pincode, PaymentMethod, Cancelled, CancelledReason
+1968|OrderItems
+1969|ID_OrderItem
+1970|FK_Order → Orders; FK_Product; FK_ProductVariant
+1971|Line snapshot: ProductName, SKU, VariantLabel, Quantity, UnitPrice, TotalPrice
+1972|Payments
+1973|PaymentId
+1974|OrderId → Orders
+1975|PaymentDate, PaymentAmount, PaymentStatus, PaymentMethod; created by PlaceOrder and updated on delivery
+1976|Shipping
+1977|ShippingId
+1978|OrderId → Orders
+1979|ShippingAddress, ShippingDate, EstimatedDeliveryDate, ShippingStatus
+1981|Table 7.7: Order Stored Procedures
+1982|Area
+1983|Procedures
+1984|Customer
+1985|GetCheckoutPreview, PlaceOrder, GetOrders, GetOrder, CancelOrder
+1986|Admin
+1987|GetAdminOrders, GetAdminOrder, AdminConfirmOrder, AdminUpdateOrderStatus, AdminDeliverOrder, AdminCancelOrder
+1989|The order number is generated as “SC” followed by the padded order identifier. PlaceOrder accepts Cash on Delivery only; a UPI request returns an “available soon” message.
+1990|orders (PK id_order): fk_user, orderdate, totalamount, orderstatus, shippingaddress, paymentmethod, cancelled…, ordernumber, receivername, phone, addressline, city, pincode. orderitems (PK id_orderitem): fk_order, fk_product, fk_productvariant, productname, variantlabel, sku, unitprice, quantity, linetotal. payments and shipping link to the order as defined in payments.sql and shipping.sql. place_order writes these for COD and deducts stock.
+1991|Insert data types, the exact list of OrderStatus / PaymentStatus / ShippingStatus values used in the procedures, and the order-number format example.
+1994|7.11 Inventory / Stock Tables
+1995|Table 7.8: Purchasing and Stock Tables
+1996|Table
+1997|Primary key
+1998|Foreign keys
+1999|Purpose / important columns
+2000|Supplier
+2001|ID_Supplier
+2002|—
+2003|Name, CompanyName, Email (unique), Phone, State, District, City, Address, Pincode, IsActive
+2004|Purchase
+2005|ID_Purchase
+2006|FK_Supplier → Supplier
+2007|Purchase header: PurchaseDate, InvoiceNumber, TotalAmount, Notes, EnterBy, cancellation fields
+2008|PurchaseDetail
+2009|ID_PurchaseDetail
+2010|FK_Purchase; FK_ProductVariant
+2011|Purchase lines: Quantity, PurchasePrice, MRP, ExpiryDate
+2012|Stock
+2013|ID_Stock
+2014|FK_PurchaseDetail; FK_ProductVariant
+2015|Stock batch rows: Quantity, CreatedOn, EnterBy, Cancelled
+2017|Each purchase line inserts a stock batch for its SKU. Inventory adjustments insert an additional Stock row. The quantity available for sale is the sum of Quantity over non-cancelled Stock rows of the SKU. PlaceOrder deducts stock and the cancel procedures restore it, always at SKU level.
+2018|[SC-DIAGRAM-020]
+2019|INSERT SMARTCART DIAGRAM HERE
+2020|Stock Flow Diagram
+2021|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+2022|Figure 7.2: Stock Flow at SKU Level
+2023|What the diagram must show: Purchase → PurchaseDetail → Stock (+); Inventory adjustment → Stock (+/−); PlaceOrder → Stock (−); Cancel order → Stock (+); Available = Σ Stock.Quantity (not cancelled) per SKU.
+2024|VERIFIED FROM CODE: InventoryRepository.AdjustStockAsync inserts stock with fk_purchasedetail = 0, fk_productvariant = SKU, quantity = AdjustBy. Purchases insert stock batches via purchasedetail. Available qty = SUM(non-cancelled stock.quantity) per SKU. Runtime FK behaviour for fk_purchasedetail = 0: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+2025|Inventory adjustment may insert FK_PurchaseDetail = 0 while the column is declared with a foreign key. Confirm how the live database handles this and describe it here.
+2028|7.12 Relationships and Foreign Keys
+2029|Table 7.9: Principal Relationships
+2030|Parent
+2031|Child
+2032|Cardinality
+2033|Foreign key
+2034|Category
+2035|SubCategory
+2036|1 : N
+2037|SubCategory.FK_Category
+2038|SubCategory
+2039|Products
+2040|1 : N
+2041|Products.FK_SubCategory
+2042|Brand
+2043|Products
+2044|1 : N (optional)
+2045|Products.FK_Brand
+2046|Products
+2047|ProductVariants
+2048|1 : N
+2049|ProductVariants.FK_Product
+2050|ProductVariants
+2051|ProductVariantAttributes
+2052|1 : N
+2053|FK_ProductVariant
+2054|Variants
+2055|VariantValues
+2056|1 : N
+2057|VariantValues.FK_Variant
+2058|Supplier
+2059|Purchase
+2060|1 : N
+2061|Purchase.FK_Supplier
+2062|Purchase
+2063|PurchaseDetail
+2064|1 : N
+2065|PurchaseDetail.FK_Purchase
+2066|ProductVariants
+2067|Stock
+2068|1 : N
+2069|Stock.FK_ProductVariant
+2070|Users
+2071|Orders
+2072|1 : N
+2073|Orders.UserId
+2074|Orders
+2075|OrderItems / Payments / Shipping
+2076|1 : N
+2077|FK_Order / OrderId
+2078|Users
+2079|Cart, Wishlist, UserAddresses
+2080|1 : N
+2081|UserId
+2082|UserRoles
+2083|AdminUsers
+2084|1 : N
+2085|AdminUsers.FK_UserRole
+2086|UserRoles ↔ Permissions
+2087|UserRolePermissions
+2088|M : N
+2089|FK_UserRole, FK_Permission
+2091|[SC-DIAGRAM-019]
+2092|INSERT SMARTCART DIAGRAM HERE
+2093|Relationship Diagram of Core Tables
+2094|Recommended size: full text width (≈6.0 in), height up to 4 in  |  Tool: draw.io / Visio / dbdiagram.io
+2095|Figure 7.3: Relationship Diagram of Core Tables
+2096|What the diagram must show: Simplified diagram of the relationships in Table 7.9 only (catalogue → SKU → stock → order lines; customer → cart/wishlist/orders; role → permissions).
+2098|7.13 Stored Procedure Architecture
+2099|Stored procedures are grouped by area in the Database/02_Procedures folder and are applied by module-wise patch files using CREATE OR ALTER, so they can be re-applied safely. Procedures are named by action (for example GetProducts, PlaceOrder, AdminDeliverOrder) and return a common response shape (StatusCode, ResponseCode, ResponseMsg) interpreted by the repositories.
+2100|Table 7.10: Stored Procedures Used by the Application
+2101|Area
+2102|Procedures
+2103|Shop
+2104|GetProducts, GetProductDetails, GetShopFilters
+2105|Customer auth
+2106|RegisterUser, GetUserByEmail, GetUserById
+2107|Cart / Wishlist
+2108|AddCartItem, UpdateCartItem, RemoveCartItem, ClearCart, GetCart, GetBagCounts; ToggleWishlist, GetWishlist, GetWishlistStatus, RemoveWishlistItem
+2109|Customer orders
+2110|GetCheckoutPreview, PlaceOrder, GetOrders, GetOrder, CancelOrder
+2111|Admin orders
+2112|GetAdminOrders, GetAdminOrder, AdminConfirmOrder, AdminUpdateOrderStatus, AdminDeliverOrder, AdminCancelOrder
+2114|Older admin procedures with the prefix “Pro” (e.g. ProCategoryListSelect) exist in the scripts but are not called by the current admin repositories, which use EF Core.
+2115|Sample place_order (PostgreSQL): CREATE OR REPLACE PROCEDURE place_order(... INOUT p_result refcursor) LANGUAGE plpgsql — validates user, address, phone, pincode; rejects UPI; accepts COD; checks stock/SellOnline; writes orders/orderitems/payments/shipping; deducts stock. File: Database-Postgres/02_Procedures/02_Users/05_Orders/place_order.sql.
+2116|Procedure name: PlaceOrder (recommended) or AddCartItem
+2117|Procedure purpose: validate cart, address, payment method and stock; create order, lines, payment and shipping; deduct stock.
+2118|Code extract: Database-Postgres/02_Procedures/02_Users/05_Orders/place_order.sql (validation and COD/UPI branch). Attach full listing in Appendix if required.
+2119|Explanation: ____________________________________________
+2122|7.14 Database Design Summary
+2123|The SmartCart database is a normalised relational schema organised into functional groups, with SKU-level stock, order snapshots and a role–permission security model. Business rules for online sale, stock and order status are enforced in stored procedures, while soft-delete columns preserve history. The schema is maintained through re-runnable build and patch scripts.
+2124|Table 7.11: Tables Present but Not Used by the Current Application
+2125|Table(s)
+2126|Status
+2127|Note
+2128|Ratings
+2129|Schema only
+2130|No rating or review user interface; future scope
+2131|AuditLogs
+2132|Schema only
+2133|No application writes found
+2134|ProductStatus
+2135|Schema only
+2136|Not used by the product module
+2137|Sales, SalesDetail, SalesReturn, SalesReturnDetail
+2138|Schema only
+2139|Point-of-sale counter sales and returns; future scope
+2140|ProductImages
+2141|Legacy
+2142|Replaced by ProductMedia
+2143|ProductVariantImages
+2144|Legacy / partial
+2145|SkuMedia is the live SKU media table
+2147|Table 7.12: Database Scripts
+2148|Script
+2149|Purpose
+2150|RunDatabase.bat → Database.sql
+2151|Full build: create database, tables, patches, seed and all procedures
+2152|RunPatch.bat → Database-Patch.sql
+2153|Incremental: table patches (existence checks), seed patch, procedure patches
+2154|05_Seed
+2155|Modules, permissions, Admin role, role permissions, development admin user, optional sample catalogue
+2158|CHAPTER 8: MODULE DESIGN AND FUNCTIONAL SPECIFICATION
+2159|8.1 Module Overview
+2160|SmartCart is divided into customer (storefront) modules and admin modules. Each module is described in this chapter by purpose, actors, inputs, processing, outputs, business rules and database interaction. The implementation status of every module is shown in Table 8.1.
+2161|Table 8.1: Module Inventory and Status
+2162|Area
+2163|Module
+2164|Data access
+2165|Status
+2166|Customer
+2167|Registration / Login
+2168|Dapper + SP
+2169|✓ Implemented
+2170|Customer
+2171|Home page
+2172|Dapper
+2173|✓ Implemented
+2174|Customer
+2175|Shop listing, filters, product details
+2176|Dapper + SP
+2177|✓ Implemented
+2178|Customer
+2179|Wishlist
+2180|Dapper + SP
+2181|✓ Implemented
+2182|Customer
+2183|Cart
+2184|Dapper + SP
+2185|✓ Implemented
+2186|Customer
+2187|Checkout and orders
+2188|Dapper + SP
+2189|✓ Implemented
+2190|Admin
+2191|Authentication
+2192|EF Core
+2193|✓ Implemented
+2194|Admin
+2195|Dashboard
+2196|—
+2197|◐ Partial (static)
+2198|Admin
+2199|Category, sub-category, brand
+2200|EF Core
+2201|✓ Implemented
+2202|Admin
+2203|Product, SKU, variants, media
+2204|EF Core
+2205|✓ Implemented
+2206|Admin
+2207|Homepage management
+2208|EF Core
+2209|✓ Implemented
+2210|Admin
+2211|Suppliers, purchases, inventory
+2212|EF Core
+2213|✓ Implemented
+2214|Admin
+2215|Order management
+2216|Dapper + SP
+2217|✓ Implemented
+2218|Admin
+2219|Employees, roles, permissions
+2220|EF Core
+2221|✓ Implemented
+2222|Admin
+2223|Customer management, reports, billing
+2224|—
+2225|→ Planned
+2227|Re-checked Controllers: Account/Shop/Cart/Wishlist/Checkout/Orders IMPLEMENTED; Admin Auth/Category/SubCategory/Brand/Product/ProductVariant/Variant/VariantValue/Supplier/Purchase/Inventory/Order/Homepage/Employee/UserRole/Sale/SalesReturn IMPLEMENTED; Dashboard PARTIAL; Billing NOT IMPLEMENTED; Ratings NOT IMPLEMENTED.
+2228|Re-check each status against the running application before submission.
+2231|8.2 Authentication Module
+2232|The authentication module provides separate login mechanisms for customers and admin employees.
+2233|Purpose
+2234|Identify customers and employees and issue signed tokens that authorise subsequent requests.
+2235|Actors
+2236|Customer, Admin Employee
+2237|Inputs
+2238|Customer: e-mail and password. Employee: user name and password.
+2239|Processing
+2240|Look up the account (GetUserByEmail for customers; AdminUsers via EF Core for employees); verify the password with the Identity password hasher; generate a JWT with the relevant audience; write it to the respective cookie.
+2241|Outputs
+2242|Authenticated session (cookie); error message on failure; logout clears the cookie.
+2243|Business rules
+2244|Customers and employees are separate identities. Cancelled or inactive accounts cannot log in [verify]. Admin paths require a valid admin session except login and access-denied pages.
+2245|Database
+2246|Users; AdminUsers, UserRoles, UserRolePermissions, Permissions, Modules
+2247|Endpoints
+2248|POST /Account/Login, /Account/Register; POST /api/admin/auth/login, GET /api/admin/auth/me, logout
+2250|Table 8.2: Customer vs Employee Authentication
+2251|Item
+2252|Customer
+2253|Employee
+2254|Token service
+2255|UserJwtTokenService
+2256|AdminJwtTokenService
+2257|Cookie
+2258|UserAuthHelper.TokenCookieName
+2259|AdminAuthHelper.TokenCookieName
+2260|Audience
+2261|UserAudience (SmartCartUser)
+2262|Admin Audience
+2263|Guard
+2264|Login required for bag, checkout, orders
+2265|AdminAuthMiddleware + RequirePermission
+2268|8.3 Customer Registration Module
+2269|Purpose
+2270|Create a customer account for the storefront.
+2271|Actors
+2272|Visitor
+2273|Inputs
+2274|Full name, user name, e-mail, phone number, password [confirm exact form fields].
+2275|Processing
+2276|Validate the model; hash the password; call RegisterUser.
+2277|Outputs
+2278|Account created and customer directed to log in / logged in [verify]; validation messages on error.
+2279|Business rules
+2280|E-mail must be unique (unique index on Users.Email). Password is never stored in plain text.
+2281|Database
+2282|Users (RegisterUser)
+2284|[SC-IMG-001]
+2285|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2286|Customer Registration Page
+2287|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2288|Figure 8.1: SmartCart Customer Registration Interface
+2289|Description: Registration form with all input fields and the submit button; optionally show a validation message.
+2291|8.4 Customer Login Module
+2292|Purpose
+2293|Authenticate a registered customer.
+2294|Actors
+2295|Customer
+2296|Inputs
+2297|E-mail, password.
+2298|Processing
+2299|GetUserByEmail → verify hash → UserJwtTokenService → cookie.
+2300|Outputs
+2301|Customer logged in; header shows account and bag counts (GetBagCounts).
+2302|Business rules
+2303|Invalid credentials produce a generic error message without revealing which field is wrong [verify].
+2304|Database
+2305|Users
+2307|[SC-IMG-002]
+2308|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2309|Customer Login Page
+2310|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2311|Figure 8.2: SmartCart Customer Login Interface
+2312|Description: Login form with e-mail and password fields and link to registration.
+2314|8.5 Product Catalogue Module
+2315|Purpose
+2316|Present online-sellable products to customers.
+2317|Actors
+2318|Visitor, Customer
+2319|Inputs
+2320|Page index, page size, category/sub-category, brand, price range, sort option.
+2321|Processing
+2322|ShopController posts the filter model to ShopRepository.GetProductListAsync, which executes GetProducts.
+2323|Outputs
+2324|Paged list of product cards with image, name, price and availability.
+2325|Business rules
+2326|Only products and SKUs that are active, not cancelled and SellOnline = 1 are listed. Price and stock are derived from SKUs and summed stock.
+2327|Database
+2328|Products, ProductVariants, Stock, ProductMedia, SkuMedia, SubCategory, Category, Brand
+2330|[SC-IMG-003]
+2331|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2332|Shop Product Listing
+2333|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2334|Figure 8.3: SmartCart Product Listing Interface
+2335|Description: Product grid with several product cards, category navigation and paging.
+2337|8.6 Product Search and Filtering
+2338|Purpose
+2339|Narrow the product list to what the customer is looking for.
+2340|Actors
+2341|Visitor, Customer
+2342|Inputs
+2343|Category, brand, price range, sort order; search text [verify].
+2344|Processing
+2345|GetShopFilters supplies the available filter values; the selected values are sent with GetProducts.
+2346|Outputs
+2347|Filtered and sorted product list; filter panel reflecting current selections.
+2348|Business rules
+2349|Filter values are derived only from sellable products. Unused shop inputs (ratings, gender) are not applied.
+2350|Database
+2351|GetShopFilters, GetProducts
+2353|[SC-IMG-004]
+2354|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2355|Search and Filter Panel
+2356|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2357|Figure 8.4: SmartCart Product Search and Filter Interface
+2358|Description: Listing with category, brand and price filters applied and the result updated.
+2360|8.7 Product Details
+2361|Purpose
+2362|Show complete information about one product and its SKUs.
+2363|Actors
+2364|Visitor, Customer
+2365|Inputs
+2366|Product slug from the URL; SKU selection.
+2367|Processing
+2368|Details page loads, then GET /Shop/GetProduct/{slug} executes GetProductDetails.
+2369|Outputs
+2370|Name, description, images/video, SKU options with MRP and selling price, availability, add-to-cart and wishlist actions.
+2371|Business rules
+2372|Only sellable SKUs are offered; quantity limited by stock and MaxOrderQty.
+2373|Database
+2374|Products, ProductVariants, ProductVariantAttributes, ProductMedia, SkuMedia, Stock
+2376|[SC-IMG-005]
+2377|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2378|Product Details Page
+2379|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2380|Figure 8.5: SmartCart Product Details Interface
+2381|Description: Product page with image gallery, SKU selector, price and Add to Cart / wishlist buttons.
+2383|8.8 Shopping Cart
+2384|Purpose
+2385|Hold SKUs selected by the customer before checkout.
+2386|Actors
+2387|Customer (logged in)
+2388|Inputs
+2389|SKU, quantity; update and remove actions.
+2390|Processing
+2391|AddCartItem, UpdateCartItem, RemoveCartItem, ClearCart and GetCart through Dapper; unauthenticated calls return HTTP 401 JSON.
+2392|Outputs
+2393|Cart lines with price and totals; updated bag count.
+2394|Business rules
+2395|SKU must be active, not cancelled and SellOnline; quantity must not exceed available stock or MaxOrderQty.
+2396|Database
+2397|Cart, CartItems, ProductVariants, Stock
+2402|Figure 8.6: SmartCart Shopping Cart Interface
+2403|Description: Cart with at least two items, quantity controls, line totals and cart total.
+2405|8.9 Wishlist
+2406|Purpose
+2407|Let customers save products for later.
+2408|Actors
+2409|Customer (logged in)
+2410|Inputs
+2411|Product; toggle or remove action.
+2412|Processing
+2413|ToggleWishlist adds or removes; GetWishlistStatus marks wishlisted products; GetWishlist lists them.
+2414|Outputs
+2415|Wishlist page; heart/wishlist indicator on products; bag counts.
+2416|Business rules
+2417|Wishlist holds products (not SKUs); login required.
+2418|Database
+2419|Wishlist, WishlistItems, Products
+2426|Figure 8.7: SmartCart Wishlist Interface
+2427|Description: Wishlist with saved products and actions to view or remove them.
+2429|8.10 Checkout
+2430|Purpose
+2431|Confirm cart contents, delivery address and payment method before placing the order.
+2432|Actors
+2433|Customer
+2434|Inputs
+2435|Delivery address (saved or new: receiver name, phone, address line, city, pincode); payment method.
+2436|Processing
+2437|GetCheckoutPreview returns the cart summary and addresses.
+2438|Outputs
+2439|Checkout summary with totals and address selection.
+2440|Business rules
+2441|Only Cash on Delivery is accepted; UPI shows “available soon”. Address, phone and pincode formats are validated.
+2442|Database
+2443|CartItems, UserAddresses, ProductVariants, Stock
+2448|Figure 8.8: SmartCart Checkout Interface
+2449|Description: Checkout with address selection and Cash on Delivery selected.
+2451|8.11 Order Placement
+2452|Purpose
+2453|Convert the cart into an order.
+2454|Actors
+2455|Customer
+2456|Inputs
+2457|Confirmed checkout data.
+2458|Processing
+2459|PlaceOrder validates stock and eligibility, inserts Orders, OrderItems, Payments and Shipping, deducts stock and clears the cart.
+2460|Outputs
+2461|Order number (“SC” + padded ID) and confirmation message.
+2462|Business rules
+2463|Entire order is rejected if any line fails validation [verify transaction behaviour].
+2464|Database
+2465|Orders, OrderItems, Payments, Shipping, Stock, Cart, CartItems
+2467|[SC-IMG-009]
+2468|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2469|Order Placed Confirmation
+2470|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2471|Figure 8.9: SmartCart Order Placement Confirmation
+2472|Description: Screen or message shown after successful placement, including the order number.
+2474|8.12 Order History
+2475|Purpose
+2476|Show the customer’s past and current orders.
+2477|Actors
+2478|Customer
+2479|Inputs
+2480|Logged-in customer ID; optional paging.
+2481|Processing
+2482|GetOrders returns the customer’s orders.
+2483|Outputs
+2484|List with order number, date, amount and status.
+2485|Business rules
+2486|Customers see only their own orders.
+2487|Database
+2488|Orders, OrderItems
+2494|Figure 8.10: SmartCart Customer Order History Interface
+2495|Description: Order list showing orders in different statuses.
+2497|8.13 Customer Order Details / Tracking
+2498|Purpose
+2499|Show details of one order and allow cancellation where permitted.
+2500|Actors
+2501|Customer
+2502|Inputs
+2503|Order ID; cancel request with reason [verify].
+2504|Processing
+2505|GetOrder returns header, lines, payment and shipping status; CancelOrder cancels and restocks.
+2506|Outputs
+2507|Order detail with current status; cancelled order after cancellation.
+2508|Business rules
+2509|Customer may cancel only while the order is Placed/Pending. Status tracking is shown as the current status; shipment tracking numbers are not implemented (future scope).
+2510|Database
+2511|Orders, OrderItems, Payments, Shipping, Stock
+2513|[SC-IMG-011]
+2514|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2515|Order Details Page
+2516|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2517|Figure 8.11: SmartCart Customer Order Details Interface
+2518|Description: Order detail with items, totals, status and the Cancel option for an early-status order.
+2520|8.14 Admin Authentication
+2521|Purpose
+2522|Authenticate store employees for the admin panel.
+2523|Actors
+2524|Admin Employee
+2525|Inputs
+2526|User name, password.
+2527|Processing
+2528|AdminAuthRepository verifies credentials; AdminJwtTokenService issues the admin cookie; AdminAuthMiddleware protects /admin and /api/admin.
+2529|Outputs
+2530|Admin session; menu filtered by permissions; access-denied page when a permission is missing.
+2531|Business rules
+2532|Inactive or cancelled employees cannot log in [verify]. Permissions are loaded from the database on each protected request.
+2533|Database
+2534|AdminUsers, UserRoles, UserRolePermissions, Permissions
+2540|Figure 8.12: SmartCart Admin Login Interface
+2541|Description: Admin login screen (/admin/login).
+2543|8.15 Admin Dashboard
+2544|Purpose
+2545|Landing page of the admin panel.
+2546|Actors
+2547|Admin Employee
+2548|Inputs
+2549|—
+2550|Processing
+2551|Renders the dashboard view within the admin layout.
+2552|Outputs
+2553|Dashboard page with navigation to permitted modules.
+2554|Business rules
+2555|Requires Dashboard permission [verify].
+2556|Status
+2557|◐ Partially implemented — the page uses template placeholders; live KPI figures (sales, orders, stock alerts) are planned.
+2562|Figure 8.13: SmartCart Admin Dashboard
+2563|Description: Dashboard with sidebar; if figures are placeholders, state this in the caption or description.
+2565|8.16 Product Management
+2566|Purpose
+2567|Maintain products, SKUs, variant attributes and media.
+2568|Actors
+2569|Admin Employee with Products permissions
+2570|Inputs
+2571|Product: sub-category, brand, name, slug, description, IsActive, SellOnline. SKU: SKU, barcode, label, MRP, selling price, unit, MaxOrderQty, SellOnline, attributes. Media files.
+2572|Processing
+2573|EF Core repositories; paged AJAX list; CommonImageService for uploads.
+2574|Outputs
+2575|Product list, product/SKU forms, media gallery.
+2576|Business rules
+2577|Unique slug, SKU and barcode; images jpg/jpeg/png/webp ≤ 2 MB; one product video mp4/webm ≤ 20 MB; max 5 product media; soft delete.
+2578|Database
+2579|Products, ProductVariants, Variants, VariantValues, ProductVariantAttributes, ProductMedia, SkuMedia
+2585|Figure 8.14: SmartCart Admin Product Management Interface
+2586|Description: Product list with status columns, or the product form with SKU and media sections.
+2588|8.17 Category Management
+2589|Purpose
+2590|Maintain the category hierarchy and brands.
+2591|Actors
+2592|Admin Employee with Categories / SubCategories / Brands permissions
+2593|Inputs
+2594|Name, description, image, IsActive; parent category for sub-categories.
+2595|Processing
+2596|EF Core CRUD; paged, searchable list with image thumbnails; modal forms.
+2597|Outputs
+2598|Category, sub-category and brand lists.
+2599|Business rules
+2600|Soft delete via Cancelled; sub-category must belong to an existing category.
+2601|Database
+2602|Category, SubCategory, Brand
+2607|Figure 8.15: SmartCart Admin Category Management Interface
+2608|Description: Category list with images, search and paging; optionally the Add/Edit modal.
+2610|8.18 Order Management
+2611|Purpose
+2612|Process customer orders.
+2613|Actors
+2614|Admin Employee with Orders permissions
+2615|Inputs
+2616|Order filters; actions confirm, mark shipped, deliver, cancel (with reason).
+2617|Processing
+2618|AdminOrderRepository (Dapper) calls GetAdminOrders, GetAdminOrder, AdminConfirmOrder, AdminUpdateOrderStatus, AdminDeliverOrder, AdminCancelOrder.
+2619|Outputs
+2620|Order list and detail with available actions.
+2621|Business rules
+2622|Transitions as in Table 6.4; deliver marks payment collected; cancel restocks; admin cannot create orders or edit lines.
+2623|Database
+2624|Orders, OrderItems, Payments, Shipping, Stock
+2629|Figure 8.16: SmartCart Admin Order Management Interface
+2630|Description: Order list with status filter, or order detail with action buttons.
+2632|8.19 Inventory / Additional Admin Features
+2633|Table 8.3: Additional Admin Modules
+2634|Module
+2635|Main functions
+2636|Status
+2637|Suppliers
+2638|Create/edit suppliers with state/city from the CountryStateCity API
+2639|✓
+2640|Purchases
+2641|Record purchase header and lines; each line creates a stock batch
+2642|✓
+2643|Inventory adjustment
+2644|Adjust stock of a SKU by inserting a stock row
+2645|✓
+2646|Brands; variant axes and values
+2647|Maintain brands and attribute axes/values for SKUs
+2648|✓
+2649|Homepage management
+2650|Banners (with category links), featured categories, featured products
+2651|✓
+2652|Employees
+2653|Create/edit employees and assign a role
+2654|✓
+2655|User roles and permissions
+2656|Create roles and assign module permissions
+2657|✓
+2658|Customer management
+2659|View/manage customers from admin
+2660|✓
+2661|Reports; billing and invoices
+2662|Sales/stock reports; billing module (permissions seeded only)
+2663|✓
+2668|Figure 8.17: SmartCart Admin Inventory and Purchase Interface
+2669|Description: Purchase entry with supplier and lines, or the inventory adjustment screen showing stock by SKU.
+2671|CHAPTER 9: USER INTERFACE AND SCREENSHOTS
+2672|9.1 UI Design Overview
+2673|SmartCart has two user interfaces. The storefront is designed for customers: a clean product-focused layout with category navigation, filters, product cards and a bag (cart and wishlist) indicator. The admin panel is designed for employees: a sidebar menu filtered by permissions, list pages with search and paging, modal forms, toast notifications and empty-state messages. This chapter presents the screens in the order in which users normally encounter them.
+2674|[SC-IMG-018]
+2675|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2676|Storefront Home Page (overview)
+2677|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2678|Figure 9.1: SmartCart Storefront – Overview
+2679|Description: Full-page view of the storefront to introduce the overall look and layout.
+2680|Screenshot requirements: full browser window; include header, banner and first product section.
+2682|9.2 Navigation / Header
+2683|The storefront header provides access to the main areas of the shop and shows the customer’s session state and bag counts.
+2684|The main functions shown on this screen are:
+2685|Store logo and link to the home page
+2686|Navigation to the shop and categories
+2687|Login/Register or account menu
+2688|Wishlist and cart indicators with counts
+2690|[SC-IMG-019]
+2691|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2692|Storefront Header and Navigation
+2693|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2694|Figure 9.2: SmartCart Header and Navigation
+2695|Description: Close-up of the header with navigation and bag counts for a logged-in customer.
+2696|Screenshot requirements: crop to header area; width 6 in.
+2698|9.3 Home Page
+2699|The home page is the main entry point of the storefront. Its content is managed from the admin Homepage Management module.
+2700|The main functions shown on this screen are:
+2701|Banner slider (homepage banners, optionally linked to categories)
+2702|Featured categories grid
+2703|Featured products showcase
+2704|Links into the shop listing
+2708|Figure 9.3: SmartCart Home Page
+2709|Description: Home page showing banners, featured categories and featured products.
+2710|Screenshot requirements: full browser window; realistic supermarket sample data.
+2712|9.4 Product Listing
+2713|The shop listing presents online-sellable products as cards with paging.
+2714|The main functions shown on this screen are:
+2715|Product cards with image, name and price
+2716|Paging through results
+2717|Sorting options
+2718|Navigation to product details
+2722|Figure 9.4: SmartCart Product Listing Interface
+2723|Description: Customer-facing product listing including product cards, product information, category/filter controls and navigation.
+2724|Screenshot requirements: full browser window; at least 8 products visible.
+2726|9.5 Product Details
+2727|The product details page shows full information about a product and lets the customer choose the SKU (pack size) to buy.
+2728|The main functions shown on this screen are:
+2729|Image/video gallery
+2730|SKU selector with MRP and selling price
+2731|Availability and quantity selection
+2732|Add to cart and add to wishlist
+2736|Figure 9.5: SmartCart Product Details Interface
+2737|Description: Product page with a SKU selected and prices visible.
+2738|Screenshot requirements: full browser window.
+2740|9.6 Search / Filter
+2741|Filters allow the customer to narrow the listing by category, brand and price. The available filter values are supplied by the server.
+2742|The main functions shown on this screen are:
+2743|Category and sub-category filter
+2744|Brand filter
+2745|Price range filter   
+2746|Clear/reset filters
+2750|Figure 9.6: SmartCart Search and Filter Interface
+2751|Description: Listing with one or more filters applied and the reduced result set.
+2752|Screenshot requirements: show the filter panel and the results together.
+2754|9.7 Cart
+2755|The cart page lists the SKUs selected by the customer and allows quantities to be changed before checkout.
+2756|The main functions shown on this screen are:
+2757|Cart lines with product, SKU label, price and quantity
+2758|Quantity update and remove
+2759|Cart total
+2760|Proceed to checkout
+2764|[SC-IMG-024]
+2765|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2766|Cart Page
+2767|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2768|Figure 9.7: SmartCart Cart Interface
+2769|Description: Cart with two or more items and totals.
+2770|Screenshot requirements: full browser window.
+2772|9.8 Wishlist
+2773|The wishlist shows products the customer has saved for later.
+2774|The main functions shown on this screen are:
+2775|List of wishlisted products
+2776|Navigate to product details
+2777|Remove from wishlist
+2782|Figure 9.8: SmartCart Wishlist Interface
+2783|Description: Wishlist with at least two products.
+2784|Screenshot requirements: full browser window.
+2786|9.9 Checkout
+2787|The checkout page summarises the order and collects the delivery address and payment method.
+2788|The main functions shown on this screen are:
+2789|Saved address selection or new address entry
+2790|Order summary and total
+2791|Payment method: Cash on Delivery
+2792|Place order
+2796|Figure 9.9: SmartCart Checkout Interface
+2797|Description: Checkout with address and Cash on Delivery selected.
+2798|Screenshot requirements: full browser window; mask any real personal data.
+2800|9.10 Order Confirmation
+2801|After successful placement the customer is informed that the order has been placed and is given the order number.
+2802|CONFIRMED FROM PROJECT: Dedicated page GET /Checkout/Confirmation/{orderId} (CheckoutController.Confirmation; view title "Order placed") shows the placed order for the customer.
+2803|Dedicated confirmation page: views/Checkout/Confirmation.cshtml at route Checkout/Confirmation/{orderId}.
+2805|[SC-IMG-027]
+2806|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2807|Order Confirmation
+2808|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2809|Figure 9.10: SmartCart Order Confirmation
+2810|Description: Confirmation page or message showing the generated order number (SC…).
+2811|Screenshot requirements: show the order number clearly.
+2813|9.11 Customer Order History
+2814|Customers can view all their orders and open the details of each order.
+2815|The main functions shown on this screen are:
+2816|List of orders with number, date, amount and status
+2817|Open order details
+2818|Cancel early-status orders
+2820|[SC-IMG-028]
+2821|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2822|Customer Order History
+2823|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2824|Figure 9.11: SmartCart Customer Order History
+2825|Description: Orders in different statuses (e.g. Placed, Confirmed, Delivered, Cancelled).
+2826|Screenshot requirements: full browser window.
+2828|9.12 Admin Dashboard
+2829|The dashboard is the landing page of the admin panel. The sidebar shows only the modules the employee is permitted to use.
+2830|The main functions shown on this screen are:
+2831|Sidebar navigation filtered by permissions
+2832|Header with employee menu
+2833|Dashboard area (live figures planned)
+2835|[SC-IMG-029]
+2836|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2837|Admin Dashboard
+2838|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2839|Figure 9.12: SmartCart Admin Dashboard
+2840|Description: Dashboard after login as the Admin role.
+2841|Screenshot requirements: full browser window.
+2843|9.13 Product Management
+2844|Product management lists products with their status and gives access to SKU and media management.
+2845|The main functions shown on this screen are:
+2846|Paged, searchable product list
+2847|Add/edit product form
+2848|SellOnline and Active flags
+2849|SKU and media management
+2851|[SC-IMG-030]
+2852|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2853|Admin Product Management
+2854|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2855|Figure 9.13: SmartCart Admin Product Management
+2856|Description: Product list or product form with SKU and media sections.
+2857|Screenshot requirements: full browser window.
+2859|9.14 Category / Inventory Management
+2860|Category management maintains the catalogue hierarchy; inventory screens record purchases and stock adjustments.
+2861|The main functions shown on this screen are:
+2862|Category/sub-category/brand lists with images
+2863|Purchase entry with supplier and lines
+2864|Inventory adjustment by SKU
+2866|[SC-IMG-031]
+2867|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2868|Category or Inventory Management
+2869|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2870|Figure 9.14: SmartCart Admin Category and Inventory Management
+2871|Description: Either the category list or the inventory/purchase screen (use Appendix A for the other).
+2872|Screenshot requirements: full browser window.
+2874|9.15 Order Management
+2875|Order management lets employees view orders and move them through the order lifecycle.
+2876|The main functions shown on this screen are:
+2877|Order list with status filter
+2878|Order detail with lines and address
+2879|Confirm, Mark Shipped, Deliver, Cancel actions
+2881|[SC-IMG-032]
+2882|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2883|Admin Order Management
+2884|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2885|Figure 9.15: SmartCart Admin Order Management
+2886|Description: Order detail showing available action buttons.
+2887|Screenshot requirements: full browser window.
+2889|9.16 Additional Screens / Error Messages
+2890|This section presents supporting screens that demonstrate validation, permissions and feedback components.
+2891|[SC-IMG-033]
+2892|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2893|Access Denied / Permission Screen
+2894|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2895|Figure 9.16: SmartCart Access Denied Screen
+2896|Description: Shown when an employee opens a module without the required permission.
+2897|[SC-IMG-034]
+2898|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+2899|Validation, Toast and Empty-State Messages
+2900|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+2901|Figure 9.17: SmartCart Validation and Feedback Messages
+2902|Description: Examples: out-of-stock or not-sold-online message when adding to cart; UPI “available soon” message; success toast; empty list state.
+2903|Additional screenshots (roles and permissions matrix, employees, suppliers, SKU and variant screens, homepage management) can be placed in Appendix A without changing chapter numbering.
+2905|CHAPTER 10: IMPLEMENTATION AND CODE STRUCTURE
+2906|10.1 Implementation Overview
+2907|SmartCart is implemented as the ASP.NET Core 8 MVC project “Ecommerce”. Program.cs configures services, authentication, middleware and a single conventional route {controller=Home}/{action=Index}/{id?}; admin controllers use attribute routes such as Admin/Product and api/admin/auth. Static files, the admin template and uploaded media are served from wwwroot.
+2908|10.2 Development Environment
+2909|Table 10.1: Development Environment
+2910|Item
+2911|Details
+2912|Framework
+2913|.NET 8 (net8.0 web SDK)
+2914|Packages
+2915|Dapper 2.1.35; Npgsql 8.0.6; Npgsql.EntityFrameworkCore.PostgreSQL 8.0.11; JWT Bearer 8.0.11; AspNetCore.SassCompiler
+2916|Database
+2917|PostgreSQL (default local configuration via PostgresConnection)
+2918|Front-end build
+2919|Node.js + npm (Bootstrap 5.3 SCSS sources)
+2920|IDE and tools
+2921|Tools: .NET SDK 8; IDE [TO BE FILLED - NOT CONFIRMED FROM PROJECT]; PostgreSQL client [TO BE FILLED - NOT CONFIRMED FROM PROJECT]; browser [TO BE FILLED - NOT CONFIRMED FROM PROJECT]; Git (repository present).
+2922|Configuration
+2923|appsettings.json: connection string “PostgresConnection”, JwtSettings (Issuer, Audience, UserAudience, key), CountryStateCity API key
+2925|Development secrets in appsettings.json are for local development only and must be replaced by secure configuration for any production deployment.
+2927|10.3 Backend Implementation
+2928|Controllers are kept thin: they validate the model state, call a repository method and return a view or JSON. Admin list actions accept a normalised input (PageIndex, PageSize, SearchText and sort) prepared by helper classes (for example CategoryHelper, ProductHelper, ShopHelper) and return ApiResponse<TableOutput<T>>.
+2929|Table 10.2: Main Backend Components
+2930|Component
+2931|Role
+2932|ServiceCollectionExtensions.AddCustomServices
+2933|Registers interfaces, repositories and helpers for dependency injection
+2934|DataAccessDapper
+2935|Creates connections (wrapped by TraceDbConnection) and executes stored procedures
+2936|EcommerceDbContext
+2937|EF Core context for admin modules; EFDbCommandInterceptor attached
+2938|UserJwtTokenService / AdminJwtTokenService
+2939|Generate customer and admin JWTs
+2940|UserAuthHelper / AdminAuthHelper
+2941|Cookie names and current-user helpers (e.g. TryGetUserId)
+2942|RequirePermissionAttribute
+2943|Action filter enforcing Module.Action permissions
+2944|GlobalExceptionMiddleware, RequestLoggingMiddleware, AdminAuthMiddleware
+2945|Pipeline-level error handling, logging and admin session enforcement
+2946|CommonImageService
+2947|Validates and stores uploaded images and videos
+2948|DatabaseTraceLogger
+2949|Writes database call traces to Logs/DatabaseTrace.txt with sensitive parameters masked
+2951|Repositories for the storefront (for example ShopRepository) use Dapper, while admin catalogue repositories use EF Core; AdminOrderRepository uses Dapper. Existing modules are not switched between the two approaches without a design decision.
+2953|10.4 Database Implementation
+2954|The database is implemented through SQL scripts in the Database folder. The full build (RunDatabase.bat → Database.sql) creates the database if necessary, creates tables, applies table patches, seeds modules, permissions, roles and the development admin user, and creates all procedures. The incremental patch (RunPatch.bat → Database-Patch.sql) applies only safe, re-runnable changes. New columns are added to the existing table script used by the patch, guarded by COL_LENGTH checks, rather than in one-off files.
+2955|Every database call is traced: an EF Core interceptor and a wrapped SQL connection record timestamp, module, query type, procedure name, parameters (with passwords and tokens masked), status and duration.
+2956|Wired procedures (StoredProcedures.cs): get_products, get_shop_filters, get_product_details, get_bag_counts, get_cart, add_cart_item, update_cart_item, remove_cart_item, clear_cart, get_wishlist, get_wishlist_status, toggle_wishlist, remove_wishlist_item, register_user, get_user_by_email, get_user_by_id, get_checkout_preview, place_order, get_order, get_orders, cancel_order.
+2957|Procedure name: ______________ (e.g. AddCartItem)
+2958|Procedure purpose: ______________
+2959|Illustrative constant: public const string PlaceOrder = "place_order"; (Models/StoredProcedures.cs).
+2960|Explanation: ______________
+2962|Optional redacted sample from Logs/DatabaseTrace.txt: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+2963|Paste one or two lines from Logs/DatabaseTrace.txt (mask any personal data) to demonstrate the trace format.
+2966|10.5 Authentication Implementation
+2967|Customer registration hashes the password with the ASP.NET Core Identity password hasher and calls RegisterUser. Customer login retrieves the account with GetUserByEmail, verifies the hash and generates a token with UserJwtTokenService, which is written to the customer cookie. Admin login is handled by POST /api/admin/auth/login through AdminAuthRepository and AdminJwtTokenService. The JwtBearer OnMessageReceived event reads the token from the appropriate cookie; token validation accepts the configured issuer and both audiences.
+2968|For admin requests, AdminAuthMiddleware rejects requests without a valid employee session (except login and access-denied), and RequirePermission loads the current employee’s permissions through IAdminAuthInterface.GetCurrentAsync before allowing the action.
+2969|Customer: get_user_by_email + IPasswordHasher + UserJwtTokenService → cookie smartcart.user.token. Admin: AdminAuthRepository on adminusers + AdminJwtTokenService → smartcart.admin.token. See UserAuthRepository.cs and AdminAuthRepository.cs.
+2970|Suggested extract: the RequirePermission attribute usage on an admin action and the core of the permission check, or the login action issuing the cookie.
+2971|See Repository/UserAuthRepository.cs and Repository/Admin/AdminAuthRepository.cs (ASP.NET Core Identity PasswordHasher).
+2972|Explanation: ______________
+2975|10.6 API / Business Logic Implementation
+2976|Business logic is divided between the application and the database. The application layer performs model validation, authentication, permission checks, image validation and response shaping. The database layer performs the rules that must be atomic with data changes: online-sale eligibility, stock availability, order creation, stock deduction and restocking, and status transitions. Repositories translate the procedures’ StatusCode, ResponseCode and ResponseMsg into a CommonResponse for the controller.
+2977|Table 10.3: Examples of JSON Endpoints
+2978|Area
+2979|Endpoint (examples)
+2980|Behaviour
+2981|Shop
+2982|POST /Shop/GetProducts; GET /Shop/GetFilters; GET /Shop/GetProduct/{slug}
+2983|Return product data for rendering
+2984|Cart
+2985|Cart add / update / remove actions [confirm exact routes]
+2986|401 JSON when not logged in; rule messages from SPs
+2987|Admin lists
+2988|POST Admin/{Module}/Get{Entity}List
+2989|Paged, searchable TableOutput
+2990|Admin auth
+2991|POST /api/admin/auth/login; GET /api/admin/auth/me
+2992|Issue cookie; return current employee
+2994|CartRepository.AddCartItemAsync → StoredProcedures.Cart.AddCartItem (add_cart_item) via IDataAccessDapper; stock/SellOnline enforced inside the procedure.
+2995|Suggested extract: a controller action calling a repository and returning JSON (e.g. cart add), or the repository method executing PlaceOrder via Dapper.
+2996|See Repository/UserAuthRepository.cs and Repository/Admin/AdminAuthRepository.cs (ASP.NET Core Identity PasswordHasher).
+2997|Explanation: ______________
+3000|10.7 Frontend Implementation
+3001|Storefront pages are Razor views rendered with _Layout.cshtml. JavaScript under wwwroot/js loads product lists and filters and performs cart and wishlist actions through fetch calls, updating the page from the JSON response. Admin pages use _AdminLayout.cshtml; each module has an Index.cshtml with a list table, modal forms and a script that calls the module’s list and save endpoints. Shared scripts provide toast notifications (showSuccess, showError, showWarning, showInfo), empty-state rendering with retry and reset actions, and admin-permissions.js to show or hide buttons.
+3002|Admin styles are written in SCSS (wwwroot/Admin/assets/scss/style.scss), which imports Bootstrap sources and custom components (toast, empty state) and is compiled to style.css during the .NET build.
+3003|wwwroot/js/shop-listing.js collects searchName and filters, POSTs to /Shop/GetProducts, and renders product cards on the listing page.
+3004|Suggested extract: the JavaScript function that loads the product list or adds an item to the cart, including handling of a 401 response.
+3005|See Repository/UserAuthRepository.cs and Repository/Admin/AdminAuthRepository.cs (ASP.NET Core Identity PasswordHasher).
+3006|Explanation: ______________
+3009|10.8 Code Organization
+3010|Code is organised by area and responsibility so that storefront and admin concerns remain separate even when they use the same tables.
+3011|Table 10.4: Conventions Followed in the Code
+3012|Convention
+3013|Rule
+3014|Storefront placement
+3015|Controllers/, Repository/, Interface/, views/{Controller}/
+3016|Admin placement
+3017|Controllers/Admin/, Repository/Admin/, Interface/Admin/, views/Admin/{Module}/, Models/Admin/
+3018|Interface naming
+3019|Storefront interfaces without “I” prefix (e.g. ShopInterface); admin with prefix (e.g. ICategoryInterface)
+3020|SQL placement
+3021|Database/01_Tables, 02_Procedures/01_Admin | 02_Users | 03_Common, 05_Seed
+3022|Validation
+3023|DataAnnotations on input models; CommonResponse from repositories/SPs
+3024|Images
+3025|CommonImageService rules; list thumbnails via shared cell style
+3026|Documentation
+3027|context/ folder updated in the same task as code and schema changes
+3029|10.9 Implementation Summary
+3030|The implementation realises the design using ASP.NET Core MVC, repositories, Dapper with stored procedures and EF Core. Authentication and authorisation are implemented as cookies, middleware and an action filter; database behaviour is traceable through a dedicated log; and the database is reproducible from scripts. Code extracts in this chapter are limited to short illustrative snippets; further extracts may be placed in Appendix C.
+3032|CHAPTER 11: TESTING AND RESULTS
+3033|11.1 Testing Strategy
+3034|Testing verified that SmartCart meets the functional requirements of Chapter 2 and enforces its business rules. Test cases were derived from the requirements, the use cases and the rules implemented in the stored procedures and permission checks. Both positive cases (valid inputs) and negative cases (invalid inputs, unauthorised access, invalid status transitions) were included.
+3035|Important: the Actual Result, Status and Evidence columns in this chapter are left blank intentionally. They must be completed only with results actually observed while executing the tests.
+3036|11.2 Testing Types
+3037|Table 11.1: Testing Types Applied
+3038|Type
+3039|Purpose in SmartCart
+3040|Performed
+3041|Unit testing
+3042|Test individual methods/helpers in isolation
+3043|Automated tests: see confirmation note in this section.
+3044|Integration testing
+3045|Controller → repository → procedure → database
+3046|Manual
+3047|Functional (black-box) testing
+3048|Verify requirements through the UI
+3049|Manual
+3050|Database testing
+3051|Execute procedures with valid/invalid inputs; verify stock and status changes
+3052|Manual
+3053|Security testing
+3054|Login, permission denial, access without cookie
+3055|Manual
+3056|UI / usability testing
+3057|Layout, messages and navigation on desktop and mobile widths
+3058|Manual
+3060|Automated test suite: [TO BE FILLED - NOT CONFIRMED FROM PROJECT]. Chapter 11 cases are for manual execution. No automated test project was verified for this fill.
+3061|State whether an automated unit/integration test project exists. If not, record “Not performed – manual testing only”.
+3063|ASP.NET Core 8 MVC Ecommerce against PostgreSQL database smartcart (PostgresConnection). Browser(s) used: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+3064|Insert the machine, OS, browser(s) and versions, database edition and sample data used during testing.
+3067|11.3 Test Case Design
+3068|Each test case records its identifier, module, input, expected result, actual result, status and evidence reference. Evidence references point to screenshots in Section 11.11 or Appendix A.
+3069|Table 11.2: Test Case Template and Account Test Cases
+3070|Test Case ID
+3071|Module
+3072|Input
+3073|Expected Result
+3074|Actual Result
+3075|Status
+3076|Evidence
+3077|TC-01
+3078|Registration
+3079|Valid new customer details
+3080|Account created
+3084|TC-02
+3085|Registration
+3086|E-mail already registered
+3087|Registration rejected with message
+3091|TC-03
+3092|Registration
+3093|Required field empty
+3094|Validation message shown
+3098|TC-04
+3099|Customer login
+3100|Valid e-mail and password
+3101|Logged in; cookie set
+3105|TC-05
+3106|Customer login
+3107|Wrong password
+3108|Login rejected with error
+3112|TC-06
+3113|Logout
+3114|Click logout
+3115|Session cleared
+3120|Actual Result / Status for TC-01..TC-06: [TO BE FILLED AFTER TEST EXECUTION]. Attach evidence to SC-IMG placeholders after testing.
+3121|Execute TC-01 to TC-06 and fill Actual Result, Status (Pass/Fail) and Evidence (screenshot ID).
+3124|11.4 Authentication Testing
+3125|Authentication tests also cover protection of customer-only features and the admin area.
+3126|11.5 Product Testing
+3127|11.6 Cart Testing
+3128|Table 11.3: Authentication, Product and Cart Test Cases
+3129|Test Case ID
+3130|Module
+3131|Input
+3132|Expected Result
+3133|Actual Result
+3134|Status
+3135|Evidence
+3136|TC-07
+3137|Auth
+3138|Call cart endpoint without login
+3139|401 / redirect to login
+3143|TC-08
+3144|Auth
+3145|Open /admin without admin session
+3146|Redirect to admin login
+3150|TC-09
+3151|Product
+3152|Product with SellOnline = 0
+3153|Not shown on storefront
+3157|TC-10
+3158|Product
+3159|Filter by category and brand
+3160|Only matching products listed
+3164|TC-11
+3165|Product
+3166|Open product details by slug
+3167|Details and SKUs shown
+3171|TC-12
+3172|Cart
+3173|Add in-stock SKU
+3174|Item added; count updated
+3178|TC-13
+3179|Cart
+3180|Quantity above stock / MaxOrderQty
+3181|Rejected with message
+3185|TC-14
+3186|Cart
+3187|Update and remove item
+3188|Cart and total updated
+3193|Actual Result / Status: [TO BE FILLED AFTER TEST EXECUTION].
+3194|Execute TC-07 to TC-14 and record actual results and evidence.
+3197|11.7 Wishlist Testing
+3198|11.8 Order Testing
+3199|11.9 Admin Testing
+3200|Table 11.4: Wishlist, Order and Admin Test Cases
+3201|Test Case ID
+3202|Module
+3203|Input
+3204|Expected Result
+3205|Actual Result
+3206|Status
+3207|Evidence
+3208|TC-15
+3209|Wishlist
+3210|Toggle product
+3211|Added, then removed
+3215|TC-16
+3216|Checkout
+3217|Place COD order
+3218|Order created; number SC…; stock deducted
+3222|TC-17
+3223|Checkout
+3224|Select UPI
+3225|“Available soon” message; no order
+3229|TC-18
+3230|Checkout
+3231|Invalid pincode/phone
+3232|Validation message
+3236|TC-19
+3237|Orders
+3238|Customer cancels Placed order
+3239|Cancelled; stock restored
+3243|TC-20
+3244|Orders
+3245|Customer cancels Confirmed order
+3246|Rejected
+3250|TC-21
+3251|Admin orders
+3252|Confirm → Ship → Deliver
+3253|Statuses change; payment collected
+3257|TC-22
+3258|Admin orders
+3259|Cancel a Shipped order
+3260|Rejected
+3264|TC-23
+3265|Admin catalogue
+3266|Duplicate SKU or slug
+3267|Rejected
+3271|TC-24
+3272|Admin media
+3273|Upload 3 MB image / .exe
+3274|Rejected
+3278|TC-25
+3279|Purchases
+3280|Save purchase line
+3281|Stock increases for SKU
+3285|TC-26
+3286|Permissions
+3287|Role without Products.Edit edits product
+3288|Access denied
+3293|Actual Result / Status: [TO BE FILLED AFTER TEST EXECUTION].
+3294|Execute TC-15 to TC-26 and record actual results and evidence. Confirm the exact permission code used in TC-26.
+3297|11.10 Testing Summary
+3298|Table 11.5: Test Summary
+3299|Module group
+3300|Test cases
+3301|Passed
+3302|Failed
+3303|Remarks
+3304|Account & authentication
+3305|TC-01–TC-08
+3309|Product & filters
+3310|TC-09–TC-11
+3314|Cart & wishlist
+3315|TC-12–TC-15
+3319|Checkout & orders
+3320|TC-16–TC-22
+3324|Admin catalogue, media, purchases, permissions
+3325|TC-23–TC-26
+3329|Total
+3330|26
+3335|Pass/fail counts and defects: [TO BE FILLED AFTER TEST EXECUTION]. Do not invent results.
+3336|Fill the counts from the executed tests. List any defects found, their fix and re-test result. Do not report results that were not observed.
+3338|11.11 Test Evidence
+3339|[SC-IMG-035]
+3340|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+3341|Test Evidence Screenshots
+3342|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+3343|Figure 11.1: Sample Test Evidence
+3344|Description: Screenshots of selected test executions (e.g. TC-13 stock rejection, TC-17 UPI message, TC-26 access denied). Add more evidence in Appendix A.
+3345|Performance figures: [TO BE FILLED - NOT CONFIRMED FROM PROJECT]. Do not invent numbers.
+3346|If response times were measured (e.g. durations in DatabaseTrace.txt), insert the measured values and conditions. Otherwise state “Not measured”.
+3349|CHAPTER 12: SECURITY, LIMITATIONS AND FUTURE SCOPE
+3350|12.1 Authentication
+3351|Customers and employees authenticate separately against the Users and AdminUsers tables. Passwords are hashed with the ASP.NET Core Identity password hasher and are never stored in plain text.
+3352|12.2 Authorization
+3353|Employee authorisation is role-based: roles map to permission codes grouped by module, and admin actions declare [RequirePermission("Module.Action")]. Permissions are re-read from the database on the request, so client-side button hiding is not relied upon.
+3354|12.3 Input Validation
+3355|Input models use DataAnnotations; stored procedures validate business inputs such as address, phone and pincode formats, quantities and status transitions. Uploads are limited to jpg/jpeg/png/webp images up to 2 MB and one mp4/webm product video up to 20 MB.
+3356|12.4 SQL Injection Protection
+3357|Database access uses parameterised stored-procedure calls through Dapper and parameterised queries generated by EF Core; user input is not concatenated into SQL statements.
+3358|12.5 Session/Token Security
+3359|JWTs are signed and validated for issuer and audience, and are stored in separate cookies for customers and employees. Database trace logging masks password and token parameters.
+3360|12.6 Access Control
+3361|AdminAuthMiddleware protects all /admin and /api/admin paths; customer-only features require a logged-in customer; customers can access only their own cart, wishlist and orders. GlobalExceptionMiddleware prevents unhandled errors from exposing internal details [verify production behaviour].
+3362|VERIFIED: JWT Bearer (issuer SmartCart, audiences SmartCartAdmin/SmartCartUser, lifetime, key length ≥32, ClockSkew=Zero); cookie smartcart.user.token (HttpOnly); smartcart.admin.token (HttpOnly=false); UseHttpsRedirection; UseHsts outside Development; AdminAuthMiddleware; RequirePermission; Identity password hasher; SafeReturnUrl guard. Token expiry JwtSettings.ExpiryMinutes=60. Anti-forgery/account lockout: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+3363|Confirm and describe: cookie flags (HttpOnly, Secure, SameSite), token lifetime/expiry, HTTPS enforcement, anti-forgery tokens on forms, account lockout. Claim only what is configured.
+3366|12.7 Current Limitations
+3367|Current limitations of the implemented system
+3368|?  Single-store model only; no store, zone or tenant separation.
+3369|?  Cash on Delivery is the only payment method.
+3370|?  Login is required for cart, wishlist and checkout (no guest shopping).
+3371|?  Admin dashboard shows template content rather than live figures.
+3372|?  Admins cannot create orders or edit order lines; no shipment tracking numbers.
+3373|?  Development configuration holds a development JWT key and API key; secure secret storage is needed for production.
+3374|?  Some legacy tables and unused “Pro*” procedures remain in the scripts.
+3375|Not-yet-implemented features (partially present in the codebase)
+3376|◐  Guest cart/wishlist: SessionKey columns exist; merge-on-login not implemented.
+3377|◐  Billing module: permissions seeded; no controller, screen or menu.
+3378|◐  Ratings and reviews: table exists; no user interface or API.
+3379|◐  Point-of-sale sales and returns: tables exist; no application use.
+3380|◐  Audit logging: table exists; no application writes.
+3381|Future enhancements
+3382|Enhancements that are neither implemented nor partially present — such as multi-store operation, online payment, analytics, recommendations and a mobile application — are described in Section 12.8 as future scope.
+3383|Code-verified limitations: dashboard KPIs are template placeholders; UPI rejected as available soon; Billing permissions without UI; no guest cart; ratings table without live API; no customer invoice PDF module.
+3384|Add any limitation discovered during testing or demonstration.
+3387|12.8 FUTURE SCOPE
+3388|The following enhancements describe Future Architecture / SmartCart Then. None of them is implemented in the current version.
+3389|Table 12.1: Future Scope (SmartCart Then)
+3390|Enhancement
+3391|Description
+3392|Foundation in current system
+3393|Multi-store
+3394|Several stores/branches on one platform with store-specific catalogue availability and orders
+3395|Single-store schema; would require store keys
+3396|Multi-zone
+3397|Zone-wise administration and delivery areas
+3398|Role–permission model can be extended
+3399|Scalable architecture
+3400|Separation into services, caching and load-balanced hosting
+3401|Layered repositories and SP-based rules
+3402|Real payment gateway / UPI
+3403|Online payment with verification and refunds
+3404|Payments table; UPI option returns “available soon”
+3405|Billing and invoices
+3406|Invoice generation and printing
+3407|Billing permissions seeded
+3408|Mobile application
+3409|Native or hybrid app for customers
+3410|JSON endpoints could be formalised as an API
+3411|AI recommendations
+3412|Personalised product suggestions
+3413|Order and wishlist history available
+3414|Advanced analytics
+3415|Live dashboard KPIs, sales and stock reports
+3416|Dashboard page and trace logs exist
+3417|Shipping integrations
+3418|Courier/logistics integration and tracking numbers
+3419|Shipping table with status fields
+3420|Reviews / ratings
+3421|Customer ratings and reviews
+3422|Ratings table exists
+3423|Other integrations
+3424|SMS/e-mail notifications, guest checkout, POS counter sales
+3425|SessionKey columns; Sales tables
+3427|Future (SmartCart Then): multi-store/zone, online payments, billing/invoices, live analytics, ratings, guest checkout, mobile clients. Not present in the current single-store PostgreSQL implementation.
+3428|If any of these items is implemented before submission, move it to the relevant chapter with evidence and mark it as implemented.
+3431|CHAPTER 13: CONCLUSION, BIBLIOGRAPHY AND APPENDICES
+3432|13.1 Project Conclusion
+3433|SmartCart delivers a single-store supermarket e-commerce and management system in which the storefront and the admin panel share one database. Customers can browse, filter, save, add to cart, check out with Cash on Delivery and manage their orders; employees can maintain the catalogue, suppliers, purchases and stock, process orders and manage access through roles and permissions.
+3434|13.2 Achievements
+3435|SKU-level catalogue and batch stock linked to purchases and orders
+3436|Rules for online sale, stock and order status enforced in stored procedures
+3437|Separate customer and employee authentication with permission-based admin access
+3438|Reproducible database through build and patch scripts
+3439|13.3 Learning Outcomes
+3440|The project provided practical experience in requirement analysis, relational database design, stored procedures, ASP.NET Core MVC, authentication and authorisation, and documentation of a complete software project. [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+3441|BIBLIOGRAPHY
+3442|[1] Microsoft. ASP.NET Core documentation. https://learn.microsoft.com/aspnet/core
+3443|[2] Microsoft. Entity Framework Core documentation. https://learn.microsoft.com/ef/core
+3444|[3] Microsoft. PostgreSQL technical documentation. https://www.postgresql.org/docs/
+3445|[4] Dapper contributors. Dapper – a simple object mapper for .NET. https://github.com/DapperLib/Dapper
+3446|[5] Jones, M., Bradley, J. and Sakimura, N. (2015). JSON Web Token (JWT), RFC 7519. IETF.
+3447|[6] Bootstrap. Bootstrap 5.3 documentation. https://getbootstrap.com/docs/5.3
+3448|[7] Mozilla. MDN Web Docs (HTML, CSS, JavaScript). https://developer.mozilla.org
+3449|[8] OWASP Foundation. OWASP Top 10. https://owasp.org/www-project-top-ten
+3450|[9] Pressman, R. S. and Maxim, B. R. Software Engineering: A Practitioner’s Approach. McGraw-Hill.
+3451|[10] Elmasri, R. and Navathe, S. B. Fundamentals of Database Systems. Pearson.
+3452|Core references aligned to stack: ASP.NET Core, PostgreSQL, Dapper, EF Core, JWT Bearer, Bootstrap. Add IGNOU MCA guidelines/textbooks actually used: [TO BE FILLED - NOT CONFIRMED FROM PROJECT].
+3453|Add access dates for web references and edition/year for books; add the Mantis admin template and CountryStateCity API sources; remove any reference not actually used.
+3456|APPENDICES
+3457|Additional project evidence can be inserted here without changing the main chapter structure.
+3458|13.4 Appendix A — Important Screenshots
+3459|[SC-IMG-036]
+3460|INSERT ACTUAL SMARTCART SCREENSHOT HERE
+3461|Additional Screenshot (Appendix A)
+3462|Recommended width: 5.8–6.2 in  |  Aspect ratio: 16:9  |  Format: PNG, full browser window
+3463|Figure 13.1: Additional SmartCart Screen
+3464|Description: Suggested: roles and permission matrix, employees, suppliers, SKU/variant screens, homepage management. Copy this block for more screenshots.
+3465|13.5 Appendix B — Database Reference
+3466|Source of truth: Ecommerce/Database-Postgres/01_Tables/*.sql (42 tables). Principal PKs: users.id_user, adminusers.id_adminuser, category.id_category, products.id_product, productvariants.id_productvariant, stock.id_stock, orders.id_order, cart.id_cart, wishlist.id_wishlist. Soft-delete cancelled/cancelledon/cancelledreason on most masters. sellonline on products and productvariants (default false).
+3467|For each table: column, data type, null/not null, default, key/constraint, description. Source: database scripts or DBML file. Insert as tables; continue on additional pages as needed.
+3469|13.6 Appendix C — Important Code Snippets
+3470|See Filters/RequirePermissionAttribute.cs, Middleware/AdminAuthMiddleware.cs, and DataAccess/DataAccessDapper.cs for PostgreSQL CALL handling.
+3471|Insert further short extracts (max 15–20 lines each) with a one-line explanation, e.g. image validation, admin list pattern, cancel-order procedure.
+3473|13.7 Appendix D — Additional Information
+3474|No further institutional data found in the repository. Personal/guide details remain under SC-INFO / SC-CERT placeholders.
+3475|Insert the user manual, seed login details for the examiner (development only), installation steps or any document required by your Regional Centre.

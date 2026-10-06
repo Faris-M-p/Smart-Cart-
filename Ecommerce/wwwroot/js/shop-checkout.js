@@ -741,6 +741,7 @@
                 document.getElementById("checkout-place").disabled = true;
             }
         } catch (error) {
+            console.error(error);
             flash(status, "Could not load checkout preview.", true);
             return;
         }
@@ -859,6 +860,7 @@
                         name: "SmartCart",
                         description: "Purchase from SmartCart",
                         order_id: rpOrder.orderId || rpOrder.OrderId,
+                        redirect: false,
                         handler: async function (response) {
                             try {
                                 var verifyPayload = {
@@ -876,20 +878,35 @@
 
                                 var verifyResponse = await fetch("/api/payment/verify-payment", {
                                     method: "POST",
-                                    headers: { "Content-Type": "application/json" },
+                                    credentials: "same-origin",
+                                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
                                     body: JSON.stringify(verifyPayload)
                                 });
 
-                                var verifyResult = await verifyResponse.json();
-                                if (verifyResult.success) {
-                                    if (window.refreshSmartCartBag) window.refreshSmartCartBag();
-                                    window.location.href = "/Checkout/Confirmation/" + verifyResult.orderId;
-                                } else {
-                                    flash(status, verifyResult.message || "Payment verification failed.", true);
-                                    button.disabled = false;
+                                var verifyResult = {};
+                                try {
+                                    verifyResult = await verifyResponse.json();
+                                } catch (parseErr) {
+                                    verifyResult = {};
                                 }
+
+                                var placedOrderId = verifyResult.orderId || verifyResult.OrderId;
+                                var placedOk = verifyResponse.ok && (verifyResult.success === true || verifyResult.Success === true) && placedOrderId;
+
+                                if (placedOk) {
+                                    if (window.refreshSmartCartBag) window.refreshSmartCartBag();
+                                    window.location.replace("/Checkout/Confirmation/" + placedOrderId);
+                                    return;
+                                }
+
+                                var failMsg = verifyResult.message || verifyResult.Message || "Payment succeeded but the order could not be saved. Please contact support with your payment id.";
+                                flash(status, failMsg, true);
+                                alert(failMsg);
+                                button.disabled = false;
                             } catch (e) {
-                                flash(status, "An error occurred while finalizing payment.", true);
+                                console.error(e);
+                                flash(status, "Payment succeeded but the order could not be finalized.", true);
+                                alert("Payment succeeded but the order could not be finalized. Please check My Orders or contact support.");
                                 button.disabled = false;
                             }
                         },

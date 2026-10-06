@@ -23,6 +23,9 @@
 \i ./05_Seed/super_market_catalog.sql
 \echo 'super_market_catalog patch successfully completed.'
 
+\i ./05_Seed/complete_dummy_data.sql
+\echo 'complete_dummy_data patch successfully completed.'
+
 /* Development electronics sample (commented — convert from SQL Server before use):
    -- \i ./05_Seed/dev_sample_catalog.sql
 */

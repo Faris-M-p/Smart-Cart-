@@ -34,6 +34,9 @@ namespace Ecommerce.Models
             public const string RegisterUser = "register_user";
             public const string GetUserByEmail = "get_user_by_email";
             public const string GetUserById = "get_user_by_id";
+            public const string GetUserAddresses = "get_user_addresses";
+            public const string SaveUserAddress = "save_user_address";
+            public const string DeleteUserAddress = "delete_user_address";
         }
 
         public static class Shop

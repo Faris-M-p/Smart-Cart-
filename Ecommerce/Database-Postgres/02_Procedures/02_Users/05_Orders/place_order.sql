@@ -80,16 +80,22 @@ BEGIN
     p_payment_method := upper(TRIM(COALESCE(p_payment_method, '')));
     IF p_payment_method = 'UPI' THEN
         OPEN p_result FOR
-        SELECT -1 AS responsecode, 0 AS statuscode,
+        SELECT -1 AS responsecode, FALSE AS statuscode,
                'UPI will be available soon in this area. Please choose Cash on Delivery or Razorpay.'::TEXT AS responsemsg;
         RETURN;
     END IF;
 
-    IF p_payment_method NOT IN ('COD', 'Razorpay') THEN
+    IF p_payment_method NOT IN ('COD', 'RAZORPAY') THEN
         OPEN p_result FOR
-        SELECT -1 AS responsecode, 0 AS statuscode,
+        SELECT -1 AS responsecode, FALSE AS statuscode,
                'Please choose a valid payment method.'::TEXT AS responsemsg;
         RETURN;
+    END IF;
+
+    IF p_payment_method = 'RAZORPAY' THEN
+        p_payment_method := 'Razorpay';
+    ELSE
+        p_payment_method := 'COD';
     END IF;
 
     IF COALESCE(p_quantity, 0) < 1 THEN
@@ -353,7 +359,7 @@ BEGIN
     END IF;
 
     OPEN p_result FOR
-    SELECT v_order_id AS responsecode, 1 AS statuscode,
+    SELECT v_order_id AS responsecode, TRUE AS statuscode,
            CASE WHEN p_payment_method = 'Razorpay' THEN 'Order placed successfully.' ELSE 'Order placed. Pay cash on delivery.' END AS responsemsg;
 END;
 $$;

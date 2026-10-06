@@ -28,7 +28,15 @@ namespace Ecommerce.Repository
                 },
                 new[] { "p_result", "p_result2", "p_result3" });
 
-            var addresses = await GetUserAddressesAsync(userId);
+            List<UserAddress> addresses;
+            try
+            {
+                addresses = await GetUserAddressesAsync(userId) ?? new List<UserAddress>();
+            }
+            catch
+            {
+                addresses = new List<UserAddress>();
+            }
 
             return new CheckoutPage
             {
@@ -36,7 +44,7 @@ namespace Ecommerce.Repository
                 Items = multi.TableOut1 ?? new List<CartLine>(),
                 Summary = multi.TableOut2?.FirstOrDefault() ?? new CheckoutSummary(),
                 Customer = multi.TableOut3?.FirstOrDefault() ?? new CheckoutCustomer(),
-                Addresses = addresses ?? new List<UserAddress>()
+                Addresses = addresses
             };
         }
 
@@ -102,14 +110,14 @@ namespace Ecommerce.Repository
         public async Task<List<UserAddress>> GetUserAddressesAsync(int userId)
         {
             return await _dapper.GetListByProcedure<UserAddress, object>(
-                "GetUserAddresses",
+                StoredProcedures.Auth.GetUserAddresses,
                 new { UserId = userId });
         }
 
         public async Task<CommonResponse> SaveUserAddressAsync(int userId, SaveAddressInput input)
         {
             return await _dapper.GetSingleByProcedure<CommonResponse, object>(
-                "SaveUserAddress",
+                StoredProcedures.Auth.SaveUserAddress,
                 new
                 {
                     UserId = userId,
@@ -129,7 +137,7 @@ namespace Ecommerce.Repository
         public async Task<CommonResponse> DeleteUserAddressAsync(int userId, int addressId)
         {
             return await _dapper.GetSingleByProcedure<CommonResponse, object>(
-                "DeleteUserAddress",
+                StoredProcedures.Auth.DeleteUserAddress,
                 new
                 {
                     UserId = userId,

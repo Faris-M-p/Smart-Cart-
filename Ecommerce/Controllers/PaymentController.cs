@@ -109,12 +109,16 @@ namespace Ecommerce.Controllers
 
                 var result = await _orderInterface.PlaceOrderAsync(userId, placeOrderInput);
 
-                if (result.StatusCode && result.ResponseCode > 0)
+                if (result != null && result.ResponseCode > 0)
                 {
                     return Ok(new { success = true, orderId = result.ResponseCode, message = result.ResponseMsg });
                 }
-                
-                return BadRequest(new { success = false, message = result.ResponseMsg });
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result?.ResponseMsg ?? "Could not place the order after payment."
+                });
             }
             catch (Exception)
             {

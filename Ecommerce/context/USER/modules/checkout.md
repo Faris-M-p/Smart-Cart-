@@ -23,11 +23,11 @@ Handles order review, Flipkart-style saved delivery address selection, modal-bas
 
 ## Database Dependencies
 - Tables: `Orders`, `OrderItems`, `Payments`, `Shipping`, `Cart`, `CartItems`, `Stock`, `ProductVariants`, `UserAddresses`.
-- Stored Procedures: `GetCheckoutPreview`, `PlaceOrder`, `GetUserAddresses`, `SaveUserAddress`, `DeleteUserAddress`.
+- Stored Procedures: `get_checkout_preview`, `place_order`, `get_user_addresses`, `save_user_address`, `delete_user_address`.
 
 ## API & Data Access
 - Controller: `Controllers/CheckoutController.cs` (`Index`, `Preview`, `Place`, `Confirmation`, `GetAddresses`, `SaveAddress`, `DeleteAddress`, `GetIndiaStates`, `GetIndiaCitiesForState`).
-- Repository: `OrderRepository.cs` via `IDataAccessDapper`.
+- Repository: `OrderRepository.cs` via `IDataAccessDapper` calling PostgreSQL procedures `get_checkout_preview`, `place_order`, `get_user_addresses`, `save_user_address`, `delete_user_address`.
 
 ## UI Rules & Conventions
 - Checkout page: `views/Checkout/Index.cshtml`.
