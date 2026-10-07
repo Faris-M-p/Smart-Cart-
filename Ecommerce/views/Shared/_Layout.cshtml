@@ -4,7 +4,15 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width" />
-    <title>@ViewBag.Title</title>
+    @{
+        var pageTitle = ViewBag.Title as string;
+        var documentTitle = string.IsNullOrWhiteSpace(pageTitle) || string.Equals(pageTitle, "SmartCart", StringComparison.OrdinalIgnoreCase)
+            ? "SmartCart"
+            : pageTitle + " | SmartCart";
+    }
+    <title>@documentTitle</title>
+    <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="shortcut icon" href="/assets/img/favicon.svg" type="image/svg+xml">
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Theme and Vendor CSS -->
@@ -81,7 +89,7 @@
                             </a>
                         </div>
                         <div class="main__logo">
-                            <a class="main__logo--link" asp-controller="Home" asp-action="Index"><img class="main__logo--img" src="/assets/img/logo/nav-log.png" alt="SmartCart"></a>
+                            <a class="main__logo--link" asp-controller="Home" asp-action="Index"><img class="main__logo--img" src="/assets/img/logo/smartcart-logo.svg" alt="SmartCart"></a>
                         </div>
                         <div class="header__search--widget header__sticky--none d-none d-lg-block">
                             <form class="d-flex header__search--form" action="#">
@@ -269,7 +277,7 @@
                 <div class="offcanvas__inner">
                     <div class="offcanvas__logo">
                         <a class="offcanvas__logo_link" asp-controller="Home" asp-action="Index">
-                            <img src="/assets/img/logo/nav-log.png" alt="SmartCart" width="158" height="36">
+                            <img src="/assets/img/logo/smartcart-logo.svg" alt="SmartCart" width="180" height="40">
                         </a>
                         <button class="offcanvas__close--btn" data-offcanvas>close</button>
                     </div>
@@ -553,6 +561,9 @@
                             </button>
                         </h2>
                         <div class="footer__widget--inner">
+                            <a class="d-inline-block mb-3" asp-controller="Home" asp-action="Index">
+                                <img src="/assets/img/logo/smartcart-logo-white.svg" alt="SmartCart" width="170" height="38">
+                            </a>
                             <p class="footer__widget--desc text-ofwhite mb-20">SmartCart is a dummy neighbourhood storefront for groceries, household goods, and everyday electronics. Browse real catalog SKUs, pick variants, and check stock before you shop.</p>
                             <div class="footer__social">
                                 <h4 class="social__title text-ofwhite mb-15">Follow Us</h4>

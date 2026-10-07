@@ -14,6 +14,7 @@ namespace Ecommerce.Controllers
 
         public async Task<IActionResult> Index()
         {
+            ViewBag.Title = "SmartCart";
             var model = await _homeInterface.GetHomePageDataAsync();
             return View(model);
         }

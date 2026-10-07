@@ -66,13 +66,20 @@ body.pos-page .pc-container .pc-content {
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  background: var(--pos-primary);
+  background: transparent;
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 12px;
+  overflow: hidden;
+}
+
+.pos-brand-mark img {
+  width: 28px;
+  height: 28px;
+  display: block;
 }
 
 .pos-brand-title {

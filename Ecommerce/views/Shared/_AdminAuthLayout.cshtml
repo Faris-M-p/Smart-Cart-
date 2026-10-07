@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>SmartCart Admin</title>
+  <title>@(string.IsNullOrWhiteSpace(ViewBag.Title as string) ? "SmartCart Admin" : ViewBag.Title + " | SmartCart Admin")</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <link rel="icon" href="/Admin/assets/images/favicon.svg" type="image/x-icon">
+  <link rel="icon" href="/Admin/assets/images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
   <link rel="stylesheet" href="/Admin/assets/fonts/tabler-icons.min.css">
   <link rel="stylesheet" href="/Admin/assets/fonts/feather.css">
@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/Admin/assets/fonts/material.css">
   <link rel="stylesheet" href="/Admin/assets/css/style.css" id="main-style-link">
   <link rel="stylesheet" href="/Admin/assets/css/style-preset.css">
+  <link rel="stylesheet" href="/Admin/assets/css/smartcart-brand.css?v=brand-1">
   <script src="/Admin/assets/js/common/admin-auth.js"></script>
   <script src="/Admin/assets/js/common/admin-permissions.js"></script>
   <script>window.adminAuth && window.adminAuth.guardLoginPage();</script>

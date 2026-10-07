@@ -1,0 +1,21 @@
+/* SmartCart brand overrides for admin shell */
+.pc-sidebar .m-header .b-brand,
+.navbar-brand.b-brand {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.pc-sidebar .m-header .logo-lg,
+.navbar-brand .logo-lg,
+.smartcart-admin-login-logo img {
+  height: 36px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+}
+
+.auth-form .smartcart-admin-login-logo img {
+  height: 48px;
+  max-width: 220px;
+}

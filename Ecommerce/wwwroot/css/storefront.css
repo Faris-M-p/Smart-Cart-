@@ -120,8 +120,24 @@ ul {
     gap: 16px;
 }
 
+.main__logo--link {
+    display: inline-flex;
+    align-items: center;
+}
+
 .main__logo--img {
-    max-height: 40px;
+    display: block;
+    height: 42px;
+    width: auto;
+    max-width: 210px;
+    object-fit: contain;
+}
+
+.offcanvas__logo_link img {
+    height: 40px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
 }
 
 .header__search--form {
