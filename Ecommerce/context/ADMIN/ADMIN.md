@@ -6,7 +6,7 @@ Employee back office for catalog, purchasing, stock, customer-order fulfillment,
 
 ## Architecture
 
-`Controllers/Admin/*`, `views/Admin/*`, layout `_AdminLayout.cshtml`. Sidebar groups: Dashboard; Catalog (Category, SubCategory, Brand, Products, SKUs, Variants, Variant values); Purchase (Supplier, Purchase, Inventory); Orders; Administration (Employees, User Roles).
+`Controllers/Admin/*`, `views/Admin/*`, layout `_AdminLayout.cshtml`. Sidebar groups: Dashboard; Catalog (Category, SubCategory, Brand, Products, SKUs, Variants, Variant values); Purchase (Supplier, Purchase, Inventory); Orders; Ratings & Reviews; Administration (Employees, User Roles).
 
 **Catalog / purchase / stock / employees / roles / admin login: EF Core.**  
 **Orders: Dapper + SPs.**
@@ -49,6 +49,7 @@ Specific Admin back-office modules documented under `modules/`:
 - [`inventory.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/inventory.md) — Stock levels & manual inventory adjustments
 - [`order.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/order.md) — Order fulfillment, confirm, ship, deliver & cancel
 - [`employee.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/employee.md) — Employee / AdminUser management
+- [`review.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/review.md) - Customer ratings & reviews moderation (order-item based reviews; `Ratings.View` / `Ratings.Delete`)
 - [- [eports.md](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/ADMIN/modules/reports.md) � Admin Reports (Sales, Orders, Products, Customers)
 
 ## Business rules (cross-cutting)

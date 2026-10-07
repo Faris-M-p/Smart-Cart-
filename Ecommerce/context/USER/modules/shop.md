@@ -32,7 +32,7 @@ Provides catalog browsing, product search, filter sidebar, pagination, product d
 
 ## UI Rules & Conventions
 - Listing page: `views/Shop/Index.cshtml` with AJAX fetch and dynamic pagination.
-- Details page: `views/Shop/Details.cshtml` with media gallery and interactive variant selector.
+- Details page: `views/Shop/Details.cshtml` with media gallery and interactive variant selector, a rating summary under the product name and the **read-only** Ratings & Reviews section (no write form; customers review purchased items from My Orders → Order Details — see `USER/modules/reviews.md`).
 
 ## Business Rules
 - Only displays products where `IsActive = 1`, `SellOnline = 1`, and `Cancelled = 0`.

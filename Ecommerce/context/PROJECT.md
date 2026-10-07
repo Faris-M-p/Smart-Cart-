@@ -93,7 +93,7 @@ Connection string name in config is `Ecommerse` (spelling as in code).
 | Billing module | PLANNED (seeded permissions; no controller/UI) |
 | Guest cart/session checkout | PARTIALLY IMPLEMENTED (`SessionKey` columns exist; C# uses logged-in `UserId` only) |
 | UPI / online payment | PLANNED (`PlaceOrder` rejects UPI) |
-| Ratings / reviews | NOT a live feature (`Ratings` table exists; shop input fields `Ratings`/`Gender` are not passed to `GetProducts`) |
+| Ratings / reviews | IMPLEMENTED, **order-item based (Flipkart style)**: customers add/edit/delete one review per purchased order item from My Orders → Order Details within 7 days of delivery (`/Reviews/Order|Submit|Update|Delete`); Product Details shows ratings read-only (Verified Purchase = linked order item); admin moderation page with `Ratings.View` / `Ratings.Delete`. Uses the existing `ratings` table + nullable `fk_order`/`fk_orderitem`; no review title — table has no column. Shop input fields `Ratings`/`Gender` are still not passed to `GetProducts` (no rating filter/sort on the listing) |
 | Store-wide Settings | Removed; do not reintroduce |
 
 ## Relationship between User and Admin

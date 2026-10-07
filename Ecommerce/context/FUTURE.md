@@ -29,9 +29,9 @@ These appear in code comments, seed, leftover tables, or old `findings/` notes. 
 
 `Cart.SessionKey` and `WishList.SessionKey` exist. Storefront C# requires login. Guest merge-on-login is **not** implemented.
 
-### Ratings and customers admin
+### Ratings follow-ups and customers admin
 
-`Ratings` table; shop DTO `Ratings`/`Gender` unused. Permission UI group mentions Customers/Ratings modules that are **not** in `Modules.sql`. PLANNED at most.
+Ratings & Reviews itself is **implemented** as order-item based reviews with a 7-day window (see `USER/modules/reviews.md`, `ADMIN/modules/review.md`). Still not built: a configurable review window (currently a constant 7 days in the procedures), a dedicated `deliveredon` column on `orders` (the window uses the `Delivered` shipping row's `shippingdate`), review titles (would need a schema change), rating filter/sort or rating badge on the shop listing (`Ratings`/`Gender` shop DTO fields remain unused), helpful-votes, review images, admin replies, `updatedat` on edits. A separate **Customers** admin module (list/manage storefront users) is **not** implemented; the "Customers" permission group label only hosts `Ratings` for now. PLANNED at most.
 
 ### Settings / multi-store / zones
 

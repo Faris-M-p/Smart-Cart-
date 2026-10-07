@@ -1,0 +1,383 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- [ breadcrumb ] start -->
+<div class="page-header">
+    <div class="page-block">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <div class="page-header-title">
+                    <h5 class="m-b-10">Ratings &amp; Reviews</h5>
+                </div>
+                <ul class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="javascript: void(0)">Ratings &amp; Reviews</a></li>
+                    <li class="breadcrumb-item" aria-current="page">List</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ breadcrumb ] end -->
+
+<!-- [ Main Content ] start -->
+<div class="row" data-permission-module="Ratings">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Customer Reviews</h5>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                        <i class="ti ti-filter"></i> Filter
+                    </button>
+
+                    <div class="flex-grow-1 mx-3 search-input">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="ti ti-search"></i>
+                            </span>
+                            <input type="text" id="searchText" class="form-control" placeholder="Search product, customer, email or review text...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapse mb-3" id="filterCollapse">
+                    <div class="card-body px-0 pt-0">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">Rating</label>
+                                <select id="filterRating" class="form-select">
+                                    <option value="0">All ratings</option>
+                                    <option value="5">5 stars</option>
+                                    <option value="4">4 stars</option>
+                                    <option value="3">3 stars</option>
+                                    <option value="2">2 stars</option>
+                                    <option value="1">1 star</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">Status</label>
+                                <select id="filterStatus" class="form-select">
+                                    <option value="Active" selected>Active</option>
+                                    <option value="Removed">Removed</option>
+                                    <option value="All">All</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="loadReviews(1)">
+                                        <i class="ti ti-check"></i> Apply
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                                        <i class="ti ti-refresh"></i> Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="table align-middle mb-0 admin-master-list-table" id="reviewTable">
+                            <thead>
+                                <tr>
+                                    <th class="col-name">Product</th>
+                                    <th class="col-customer">Customer</th>
+                                    <th class="col-rating">Rating</th>
+                                    <th class="col-review">Review</th>
+                                    <th class="col-date">Date</th>
+                                    <th class="col-status">Status</th>
+                                    <th class="col-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top pagination-wrapper">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Show</span>
+                        <select id="pageSize" class="form-select form-select-sm" style="width: auto;" onchange="handlePageSizeChange()">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="text-muted small">per page</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="paginationInfo" class="text-muted small"></span>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0" id="pagination">
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ Main Content ] end -->
+
+<div class="modal fade" id="removeReviewModal" tabindex="-1" aria-labelledby="removeReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removeReviewModalLabel">Remove Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Remove this review from the storefront? The customer will be able to submit a new review for the product.</p>
+                <div class="mb-3">
+                    <label for="removeReason" class="form-label">Reason</label>
+                    <textarea class="form-control" id="removeReason" rows="3" maxlength="255" placeholder="Optional (for example: inappropriate language)"></textarea>
+                </div>
+                <input type="hidden" id="removeReviewId" value="0">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" data-action="Delete" onclick="confirmRemoveReview()">Remove Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 10;
+    let paginationInstance = null;
+    let searchTimeout = null;
+
+    const TABLE_BODY_ID = 'reviewTableBody';
+    const TABLE_COLUMN_COUNT = 7;
+
+    const API = {
+        getList: '/Admin/Review/GetReviewList',
+        remove: '/Admin/Review/Remove'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        paginationInstance = new Pagination({
+            containerId: 'pagination',
+            infoId: 'paginationInfo',
+            onPageChange: loadReviews
+        });
+
+        document.getElementById('searchText').addEventListener('input', handleSearch);
+        loadReviews();
+    });
+
+    function handleSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            loadReviews(1);
+        }, 500);
+    }
+
+    function handlePageSizeChange() {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 10;
+        loadReviews(1);
+    }
+
+    function resetFilters() {
+        document.getElementById('filterRating').value = '0';
+        document.getElementById('filterStatus').value = 'Active';
+        document.getElementById('searchText').value = '';
+        loadReviews(1);
+    }
+
+    async function loadReviews(page = 1) {
+        currentPage = page;
+
+        const input = {
+            searchText: document.getElementById('searchText').value || '',
+            rating: parseInt(document.getElementById('filterRating').value, 10) || 0,
+            status: document.getElementById('filterStatus').value || 'Active',
+            pageIndex: currentPage,
+            pageSize: pageSize
+        };
+
+        const listing = window.emptyState;
+        listing.showListingLoader(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+
+        try {
+            const response = await fetch(API.getList, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(input)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result?.success === false) {
+                listing.handleListingError(
+                    'Review List Load',
+                    { url: API.getList, method: 'POST', payload: input, response, result },
+                    TABLE_BODY_ID,
+                    TABLE_COLUMN_COUNT
+                );
+                return;
+            }
+
+            const data = result?.data;
+
+            if (!data?.tableData?.length) {
+                listing.showListingEmpty(TABLE_BODY_ID, TABLE_COLUMN_COUNT);
+                return;
+            }
+
+            displayReviews(data.tableData);
+
+            if (paginationInstance && data.tableSettings) {
+                paginationInstance.render(data.tableSettings);
+            }
+        } catch (error) {
+            listing.handleListingError(
+                'Review List Load',
+                { url: API.getList, method: 'POST', payload: input, error },
+                TABLE_BODY_ID,
+                TABLE_COLUMN_COUNT
+            );
+        } finally {
+            listing.endListingLoad(TABLE_BODY_ID);
+        }
+    }
+
+    function displayReviews(reviews) {
+        const tableBody = document.getElementById(TABLE_BODY_ID);
+        tableBody.innerHTML = reviews.map(review => createReviewRow(review)).join('');
+        initTableTooltips(tableBody);
+    }
+
+    function createReviewRow(review) {
+        const reviewId = review.reviewId;
+        const removed = !!review.removed;
+        const rating = Number(review.rating || 0);
+        const text = review.review || '';
+        const slug = review.productSlug || '';
+        const productCell = slug
+            ? `<a href="/Shop/Details/${encodeURIComponent(slug)}" target="_blank" rel="noopener" class="list-entity-name" title="${escapeAttr(review.productName)}">${escapeHtml(review.productName)}</a>`
+            : `<span class="list-entity-name" title="${escapeAttr(review.productName)}">${escapeHtml(review.productName)}</span>`;
+
+        const statusBadge = removed
+            ? `<span class="badge bg-danger" title="${escapeAttr(review.removedReason || '')}" data-bs-toggle="tooltip" data-bs-placement="top">Removed</span>`
+            : `<span class="badge bg-success">Active</span>`;
+
+        return `
+            <tr>
+                <td class="col-name">
+                    <div class="list-entity-text">
+                        ${productCell}
+                        <span class="list-entity-sub">#${reviewId}</span>
+                    </div>
+                </td>
+                <td class="col-customer">
+                    <div class="list-entity-text">
+                        <span class="list-entity-name" title="${escapeAttr(review.customerName)}">${escapeHtml(review.customerName || '—')}</span>
+                        <span class="list-entity-sub" title="${escapeAttr(review.customerEmail)}">${escapeHtml(review.customerEmail || '')}</span>
+                    </div>
+                </td>
+                <td class="col-rating">
+                    <div class="list-entity-text">
+                        <span class="list-entity-name" style="color:#f5a623;letter-spacing:1px" title="${rating} / 5">${'★'.repeat(rating)}${'☆'.repeat(Math.max(0, 5 - rating))}</span>
+                        ${review.isVerifiedPurchase ? `<span class="list-entity-sub text-success">Verified Purchase${review.orderNumber ? ' · ' + escapeHtml(review.orderNumber) : ''}</span>` : '<span class="list-entity-sub">Sample review (no order)</span>'}
+                    </div>
+                </td>
+                <td class="col-review" style="max-width: 320px; white-space: normal; overflow-wrap: anywhere;">${text ? escapeHtml(text) : '<span class="text-muted">—</span>'}</td>
+                <td class="col-date">${escapeHtml(formatDate(review.createdAt))}</td>
+                <td class="col-status">${statusBadge}</td>
+                <td class="col-actions">
+                    <div class="table-actions">
+                        ${removed ? '' : `
+                            <button type="button" class="btn-action" data-action="Delete" onclick="openRemoveModal(${reviewId})" title="Remove review" data-bs-toggle="tooltip" data-bs-placement="top">
+                                <i class="ti ti-trash"></i>
+                            </button>`}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    function formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function openRemoveModal(reviewId) {
+        document.getElementById('removeReviewId').value = String(reviewId);
+        document.getElementById('removeReason').value = '';
+        new bootstrap.Modal(document.getElementById('removeReviewModal')).show();
+    }
+
+    async function confirmRemoveReview() {
+        const reviewId = parseInt(document.getElementById('removeReviewId').value, 10);
+        const reason = document.getElementById('removeReason').value.trim();
+        const payload = { reviewId, reason };
+
+        try {
+            const response = await fetch(API.remove, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok || !(result.statusCode || result.StatusCode)) {
+                handleApiError?.('failure', 'Review Remove', { url: API.remove, method: 'POST', payload, response, result });
+                showError('Error', result.responseMsg || result.ResponseMsg || result.message || 'Could not remove the review.');
+                return;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('removeReviewModal'))?.hide();
+            showSuccess('Success', result.responseMsg || result.ResponseMsg || 'Review removed.');
+            loadReviews(currentPage);
+        } catch (error) {
+            handleApiError?.('crash', 'Review Remove', { url: API.remove, method: 'POST', payload, error });
+            showError('Error', 'Something went wrong. Please try again.');
+        }
+    }
+
+    function initTableTooltips(root) {
+        if (!root || typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+        root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (existing) existing.dispose();
+            new bootstrap.Tooltip(el);
+        });
+    }
+
+    function escapeAttr(text) {
+        if (text == null || text === '') return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function escapeHtml(text) {
+        if (text == null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>

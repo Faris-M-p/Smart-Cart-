@@ -5,6 +5,7 @@
 }
 
 <link rel="stylesheet" href="/css/shop-details.css">
+<link rel="stylesheet" href="/css/shop-reviews.css">
 
 <section class="shop-page shop-details-page" data-product-slug="@slug">
     <section class="breadcrumb__section breadcrumb__bg">
@@ -39,6 +40,10 @@
                     <div class="shop-details-info">
                         <p id="details-meta" class="product__items--content__subtitle"></p>
                         <h1 id="details-name" class="shop-details-name"></h1>
+                        <a id="details-rating" class="shop-details-rating" href="#reviews" hidden aria-label="View ratings and reviews">
+                            <span id="details-rating-badge" class="shop-details-rating-badge"></span>
+                            <span id="details-rating-text" class="shop-details-rating-text"></span>
+                        </a>
                         <div class="product__items--price shop-details-price">
                             <span id="details-price" class="current__price"></span>
                             <span id="details-mrp" class="old__price" hidden></span>
@@ -61,17 +66,42 @@
                     </div>
                 </div>
 
-                <section class="shop-reviews" aria-labelledby="reviews-heading">
+                <section class="shop-reviews" id="reviews" aria-labelledby="reviews-heading">
                     <h2 id="reviews-heading">Ratings and Reviews</h2>
-                    <div class="shop-reviews-summary">
-                        <div class="shop-reviews-score">
-                            <strong id="reviews-average">4.4</strong>
-                            <span class="shop-reviews-stars" aria-hidden="true">★★★★☆</span>
-                            <p id="reviews-count">Based on 3 reviews</p>
-                        </div>
-                        <p class="shop-reviews-hint">Reviews can be submitted after the product is purchased and delivered. Submission will be enabled in a later phase.</p>
+
+                    <p id="reviews-status" class="shop-reviews-status">Loading reviews...</p>
+                    <div id="reviews-error" class="shop-reviews-error" hidden>
+                        <span id="reviews-error-text">Could not load reviews.</span>
+                        <button id="reviews-retry" class="shop-review-btn shop-review-btn-ghost" type="button">Try again</button>
                     </div>
-                    <div id="reviews-list" class="shop-reviews-list"></div>
+
+                    <div id="reviews-body" hidden>
+                        <div class="shop-reviews-summary">
+                            <div class="shop-reviews-score">
+                                <strong id="reviews-average">0.0</strong>
+                                <span id="reviews-average-stars" class="shop-reviews-stars" aria-hidden="true">☆☆☆☆☆</span>
+                                <p id="reviews-count"></p>
+                            </div>
+                            <div id="reviews-breakdown" class="shop-reviews-breakdown"></div>
+                            <div class="shop-reviews-cta">
+                                <p class="shop-reviews-hint">
+                                    Reviews come from customers who bought this product.
+                                    Bought it? <a href="/Orders">Rate it from My Orders</a> within 7 days of delivery.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div id="reviews-empty" class="shop-reviews-empty" hidden>
+                            <strong>No reviews yet</strong>
+                            <span>Be the first customer to review this product.</span>
+                        </div>
+                        <div id="reviews-list" class="shop-reviews-list"></div>
+                        <div id="reviews-pager" class="shop-reviews-pager" hidden>
+                            <button id="reviews-prev" class="shop-review-btn shop-review-btn-ghost" type="button">Previous</button>
+                            <span id="reviews-page-info"></span>
+                            <button id="reviews-next" class="shop-review-btn shop-review-btn-ghost" type="button">Next</button>
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>

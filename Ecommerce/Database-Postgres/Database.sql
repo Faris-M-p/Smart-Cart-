@@ -119,6 +119,10 @@ WHERE NOT EXISTS (
 \i ./02_Procedures/02_Users/05_Orders/Patch.sql
 \echo 'Users / Orders patch module successfully completed.'
 
+\echo '--- Users / Reviews ---'
+\i ./02_Procedures/02_Users/06_Reviews/Patch.sql
+\echo 'Users / Reviews patch module successfully completed.'
+
 \echo '--- Common / Stock ---'
 \i ./02_Procedures/03_Common/01_Stock/Patch.sql
 \echo 'Common / Stock patch module successfully completed.'

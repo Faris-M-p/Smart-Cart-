@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/css/content-pages.css">
 <link rel="stylesheet" href="/css/shop-checkout.css">
 <link rel="stylesheet" href="/css/shop-orders.css">
+<link rel="stylesheet" href="/css/shop-reviews.css?v=20261007b">
 
 <section class="breadcrumb__section breadcrumb__bg">
     <div class="container">
@@ -53,4 +54,66 @@
     </div>
 </section>
 
-<script src="/js/shop-orders.js"></script>
+<!-- Add / edit review (opened from a purchased item of this order) -->
+<div class="modal shop-review-modal" id="reviewModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="review-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content shop-modal-content" id="review-form" novalidate>
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="review-modal-title">Rate this product</h5>
+                <button type="button" class="btn-close" data-review-close aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="shop-review-modal__product">
+                    <strong id="review-modal-product"></strong>
+                    <span id="review-modal-variant"></span>
+                </div>
+                <div class="shop-review-field">
+                    <span id="review-rating-label" class="shop-review-label">Your rating</span>
+                    <div id="review-rating-input" class="shop-review-stars-input" role="radiogroup" aria-labelledby="review-rating-label">
+                        <button type="button" class="shop-review-star" data-value="1" role="radio" aria-checked="false" aria-label="1 star">★</button>
+                        <button type="button" class="shop-review-star" data-value="2" role="radio" aria-checked="false" aria-label="2 stars">★</button>
+                        <button type="button" class="shop-review-star" data-value="3" role="radio" aria-checked="false" aria-label="3 stars">★</button>
+                        <button type="button" class="shop-review-star" data-value="4" role="radio" aria-checked="false" aria-label="4 stars">★</button>
+                        <button type="button" class="shop-review-star" data-value="5" role="radio" aria-checked="false" aria-label="5 stars">★</button>
+                        <span id="review-rating-hint" class="shop-review-rating-hint"></span>
+                    </div>
+                </div>
+                <div class="shop-review-field">
+                    <label class="shop-review-label" for="review-text">Your review <span class="shop-review-optional">(optional)</span></label>
+                    <textarea id="review-text" class="shop-review-textarea" rows="4" maxlength="1000" placeholder="Share what you liked or didn't like about this product"></textarea>
+                    <span id="review-text-count" class="shop-review-counter">0 / 1000</span>
+                </div>
+                <p id="review-form-note" class="shop-review-form-note" role="alert" hidden></p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="shop-review-btn shop-review-btn-ghost" data-review-close>Cancel</button>
+                <button type="submit" id="review-submit" class="shop-review-btn shop-review-btn-primary">Submit review</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete confirmation -->
+<div class="modal shop-review-modal" id="reviewDeleteModal" tabindex="-1" role="alertdialog" aria-modal="true" aria-labelledby="review-delete-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shop-modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="review-delete-title">Delete Review?</h5>
+                <button type="button" class="btn-close" data-review-close aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="shop-review-modal__text">Are you sure you want to delete your review?</p>
+                <p id="review-delete-note" class="shop-review-form-note" role="alert" hidden></p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="shop-review-btn shop-review-btn-ghost" data-review-close>Cancel</button>
+                <button type="button" id="review-delete-confirm" class="shop-review-btn shop-review-btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="/js/shop-orders.js?v=20261007b"></script>
+    <script src="/js/shop-order-reviews.js?v=20261007b"></script>
+}

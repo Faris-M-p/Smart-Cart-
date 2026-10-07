@@ -457,6 +457,7 @@ WHERE r.rolename = 'Manager'
       'SalesReturns.View', 'SalesReturns.Create',
       'Billing.View', 'Billing.Create', 'Billing.Print',
       'Homepage.View', 'Homepage.Edit',
+      'Ratings.View', 'Ratings.Delete',
       'Products.View', 'Categories.View', 'Suppliers.View'
   )
   AND NOT EXISTS (

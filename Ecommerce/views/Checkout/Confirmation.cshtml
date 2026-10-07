@@ -5,7 +5,7 @@
     ViewBag.Title = "Order placed";
     var orderId = ViewBag.OrderId ?? Model?.Order?.OrderId ?? 0;
     var order = Model?.Order;
-    var items = Model?.Items ?? new List<Ecommerce.Models.CartModel.CartLine>();
+    IEnumerable<Ecommerce.Models.CartModel.CartLine> items = (IEnumerable<Ecommerce.Models.CartModel.CartLine>?)Model?.Items ?? new List<Ecommerce.Models.CartModel.CartLine>();
     var hasOrder = order != null && order.OrderId > 0;
     string StatusClass(string? status)
     {

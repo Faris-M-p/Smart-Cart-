@@ -48,6 +48,10 @@
 \i ./01_Tables/homepage_products.sql
 \echo 'homepage_products completed.'
 
+\echo '--- ratings (idempotent: order-item based reviews) ---'
+\i ./01_Tables/ratings.sql
+\echo 'ratings completed.'
+
 \echo '--- drop legacy store_settings if present ---'
 DROP PROCEDURE IF EXISTS get_store_settings;
 DROP PROCEDURE IF EXISTS update_store_settings;

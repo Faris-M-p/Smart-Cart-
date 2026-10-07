@@ -39,6 +39,15 @@ namespace Ecommerce.Models
             public const string DeleteUserAddress = "delete_user_address";
         }
 
+        public static class Review
+        {
+            public const string GetProductReviews = "get_product_reviews";
+            public const string GetOrderItemReviews = "get_order_item_reviews";
+            public const string SubmitOrderItemReview = "submit_order_item_review";
+            public const string UpdateOrderItemReview = "update_order_item_review";
+            public const string DeleteOrderItemReview = "delete_order_item_review";
+        }
+
         public static class Shop
         {
             public const string GetProducts = "get_products";

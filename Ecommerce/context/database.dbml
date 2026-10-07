@@ -536,6 +536,8 @@ Table Ratings {
   RatingId int [pk, increment]
   ProductId int [not null]
   UserId int [not null]
+  OrderId int [null, note: 'fk_order; NULL for legacy sample ratings']
+  OrderItemId int [null, note: 'fk_orderitem; one active review per order item (partial unique index ux_ratings_orderitem_active)']
   RatingValue decimal(2,1) [not null]
   Review nvarchar(max)
   CreatedAt datetime [default: `getdate()`]
@@ -543,7 +545,7 @@ Table Ratings {
   CancelledOn datetime
   CancelledReason nvarchar(255)
 
-  Note: 'Product reviews and ratings table'
+  Note: 'Product reviews and ratings table (order-item based reviews, 7-day window after delivery)'
 }
 
 Table Sales {
@@ -646,6 +648,8 @@ Ref: Shipping.OrderId > Orders.OrderId
 // Ratings
 Ref: Ratings.ProductId > Products.ID_Product
 Ref: Ratings.UserId > Users.UserId
+Ref: Ratings.OrderId > Orders.OrderId
+Ref: Ratings.OrderItemId > OrderItems.ID_OrderItem
 
 // Homepage Management
 Table homepage_banners {

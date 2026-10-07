@@ -70,7 +70,7 @@ namespace Ecommerce.Repository
 
         public async Task<OrderPage?> GetOrderAsync(int userId, int orderId)
         {
-            var multi = await _dapper.GetMultipleListsByProcedure<OrderHeader, CartLine, object>(
+            var multi = await _dapper.GetMultipleListsByProcedure<OrderHeader, OrderLine, object>(
                 StoredProcedures.Order.GetOrder,
                 new { UserId = userId, OrderId = orderId },
                 new[] { "p_result", "p_result2" });
@@ -84,7 +84,7 @@ namespace Ecommerce.Repository
             return new OrderPage
             {
                 Order = header,
-                Items = multi.TableOut2 ?? new List<CartLine>()
+                Items = multi.TableOut2 ?? new List<OrderLine>()
             };
         }
 

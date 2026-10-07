@@ -334,6 +334,14 @@ namespace Ecommerce.Models.Entities
 
         [Column("cancelledreason")]
         public string? CancelledReason { get; set; }
+
+        /// <summary>Order the review was written for (NULL for older sample reviews).</summary>
+        [Column("fk_order")]
+        public int? FK_Order { get; set; }
+
+        /// <summary>Purchased order item the review belongs to (NULL for older sample reviews).</summary>
+        [Column("fk_orderitem")]
+        public int? FK_OrderItem { get; set; }
     }
 
     /// <summary>Maps to Database-Postgres/01_Tables/audit_logs.sql (auditlogs).</summary>

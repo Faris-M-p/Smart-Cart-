@@ -132,7 +132,7 @@ Admin entities typically set `Cancelled = 1` instead of hard delete. Storefront 
 
 - Do not switch an existing module from EF to Dapper or the reverse without an explicit product decision.
 - Do not use `Orders.Create` as “admin placed this order” — permission exists in seed; **no admin create-order UI**.
-- Do not treat Billing, Ratings, AuditLogs, ProductStatus, or leftover `ProductImages` as live features unless you implement and document them.
+- Do not treat Billing, AuditLogs, ProductStatus, or leftover `ProductImages` as live features unless you implement and document them. (Ratings & Reviews **is** live and **order-item based**: reuse the `ratings` table and the `get_product_reviews` / `get_order_item_reviews` / `submit|update|delete_order_item_review` procedures; one review per order item, 7-day window after delivery enforced in the procedures, no write form on the product page; never trust a client-supplied user id, order, order item or product id for reviews without re-validating them in the DB.)
 - Do not auto-run `dotnet build` / `dotnet run` unless the user asks; they often apply SQL with `RunPatch.bat` themselves.
 
 ## Folder conventions for new code

@@ -16,7 +16,7 @@ Data access: **Dapper + stored procedures** only (`ShopRepository`, `CartReposit
 - Cookie JWT (`UserAuthHelper`); audience `JwtSettings.UserAudience`
 - Register hashes password then `RegisterUser`
 - Shop listing/detail **does not** require login
-- Cart, wishlist mutate, checkout, order list/cancel **require** a customer `UserId` from JWT; otherwise 401
+- Cart, wishlist mutate, checkout, order list/cancel, review order status/submit/edit/delete **require** a customer `UserId` from JWT; otherwise 401 (reading product reviews is public). Reviews are written per purchased order item from Order Details, within 7 days of delivery
 
 There is no customer role/permission matrix. `Users.IsAdmin` is unused by the admin panel.
 
@@ -42,6 +42,7 @@ Specific User storefront modules documented under `modules/`:
 - [`wishlist.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/wishlist.md) — Product wishlist operations
 - [`checkout.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/checkout.md) — COD order checkout & address entry
 - [`orders.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/orders.md) — Customer order history & cancellation
+- [`reviews.md`](file:///d:/Faris/Work%20Area/Smart-Cart-/Ecommerce/context/USER/modules/reviews.md) — Order-item based ratings & reviews (written from Order Details, shown read-only on the product page)
 
 ## Business rules (cross-cutting)
 

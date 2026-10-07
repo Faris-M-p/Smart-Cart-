@@ -25,6 +25,7 @@
     { test: /^\/admin\/sale(\/|$)/i, permission: 'Sales.View' },
     { test: /^\/admin\/order(\/|$)/i, permission: 'Orders.View' },
     { test: /^\/admin\/inventory(\/|$)/i, permission: 'Stock.View' },
+    { test: /^\/admin\/review(\/|$)/i, permission: 'Ratings.View' },
     { test: /^\/admin\/employees(\/|$)/i, permission: 'Employees.View' },
     { test: /^\/admin\/employee(\/|$)/i, permission: 'Employees.View' },
     { test: /^\/admin\/user-roles\/\d+\/permissions\/?$/i, permission: 'UserRoles.Edit' },
@@ -47,6 +48,7 @@
     { path: '/Admin/SalesReturn', permission: 'SalesReturns.View' },
     { path: '/Admin/Order', permission: 'Orders.View' },
     { path: '/Admin/Inventory', permission: 'Stock.View' },
+    { path: '/Admin/Review', permission: 'Ratings.View' },
     { path: '/admin/employees', permission: 'Employees.View' },
     { path: '/Admin/UserRole', permission: 'UserRoles.View' }
   ];

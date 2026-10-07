@@ -20,29 +20,12 @@
     const addCart = document.getElementById("details-add-cart");
     const wishBtn = document.getElementById("details-wishlist");
 
-    const dummyReviews = [
-        {
-            name: "Anita Sharma",
-            rating: 5,
-            date: "12 Aug 2026",
-            title: "Fresh and as described",
-            text: "Quality matched the listing. Packing was neat and delivery was on time."
-        },
-        {
-            name: "Rahul Menon",
-            rating: 4,
-            date: "3 Aug 2026",
-            title: "Good value",
-            text: "Price was fair and the product was fine. Would buy again from this brand."
-        },
-        {
-            name: "Sneha Iyer",
-            rating: 4,
-            date: "21 Jul 2026",
-            title: "Satisfied overall",
-            text: "Description was accurate. Dummy review for UI testing only."
-        }
-    ];
+    const REVIEW_PAGE_SIZE = 10;
+
+    const reviewState = {
+        pageIndex: 1,
+        data: null
+    };
 
     const state = {
         product: null,
@@ -231,23 +214,190 @@
         });
     }
 
-    function renderReviews() {
-        var list = document.getElementById("reviews-list");
-        if (!list) {
+    /* ------------------------------------------------------------------
+       Ratings & reviews — READ ONLY on this page (data from /Reviews/Get).
+       Reviews are written from My Orders > Order details, per purchased
+       order item, so there is no review form here.
+       ------------------------------------------------------------------ */
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function plural(count, word) {
+        return count + " " + word + (count === 1 ? "" : "s");
+    }
+
+    function formatReviewDate(value) {
+        if (!value) {
+            return "";
+        }
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return "";
+        }
+        return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function renderTopRating(summary) {
+        var link = byId("details-rating");
+        var badge = byId("details-rating-badge");
+        var text = byId("details-rating-text");
+        if (!link || !badge || !text) {
             return;
         }
 
-        list.innerHTML = dummyReviews.map(function (review) {
-            return '<article class="shop-review-card">' +
+        var total = Number(summary.totalRatings || 0);
+        var reviews = Number(summary.totalReviews || 0);
+        if (total > 0) {
+            badge.textContent = Number(summary.averageRating || 0).toFixed(1) + " ★";
+            badge.hidden = false;
+            text.textContent = plural(total, "Rating") + " | " + plural(reviews, "Review");
+        } else {
+            badge.hidden = true;
+            text.textContent = "No ratings yet";
+        }
+        link.hidden = false;
+    }
+
+    function renderReviewSummary(data) {
+        var summary = data.summary || {};
+        var total = Number(summary.totalRatings || 0);
+        var reviews = Number(summary.totalReviews || 0);
+        var average = Number(summary.averageRating || 0);
+
+        byId("reviews-average").textContent = total > 0 ? average.toFixed(1) : "0.0";
+        byId("reviews-average-stars").textContent = stars(total > 0 ? Math.round(average) : 0);
+        byId("reviews-count").textContent = total > 0
+            ? plural(total, "rating") + " · " + plural(reviews, "review")
+            : "No ratings yet";
+
+        byId("reviews-breakdown").innerHTML = (data.distribution || []).map(function (row) {
+            var percent = Math.max(0, Math.min(100, Number(row.percentage || 0)));
+            var count = Number(row.ratingCount || 0);
+            return '<div class="shop-reviews-bar-row" title="' + escapeHtml(plural(count, "rating")) + '">' +
+                '<span class="shop-reviews-bar-label">' + Number(row.stars) + " ★</span>" +
+                '<span class="shop-reviews-bar"><span class="shop-reviews-bar-fill" style="width:' + percent + '%"></span></span>' +
+                '<span class="shop-reviews-bar-pct">' + percent + "%</span>" +
+                "</div>";
+        }).join("");
+
+        renderTopRating(summary);
+    }
+
+    function renderReviewList(data) {
+        var list = byId("reviews-list");
+        var empty = byId("reviews-empty");
+        var reviews = data.reviews || [];
+        var total = Number((data.summary || {}).totalRatings || 0);
+
+        empty.hidden = total > 0;
+
+        list.innerHTML = reviews.map(function (review) {
+            var rating = Number(review.rating || 0);
+            var date = formatReviewDate(review.createdAt);
+            var body = review.review ? "<p>" + escapeHtml(review.review) + "</p>" : "";
+            var mine = !!review.isMine;
+            var orderId = Number(review.myOrderId || 0);
+            return '<article class="shop-review-card' + (mine ? " is-mine" : "") + '">' +
                 '<div class="shop-review-head">' +
-                    "<strong>" + escapeHtml(review.name) + "</strong>" +
-                    '<span class="shop-reviews-stars">' + stars(review.rating) + "</span>" +
-                    '<span class="shop-review-date">' + escapeHtml(review.date) + "</span>" +
+                    "<strong>" + escapeHtml(review.reviewerName || "Customer") + "</strong>" +
+                    (mine ? '<span class="shop-review-you">You</span>' : "") +
+                    '<span class="shop-reviews-stars" role="img" aria-label="' + rating + ' out of 5 stars">' + stars(rating) + "</span>" +
+                    (review.isVerifiedPurchase ? '<span class="shop-review-verified">✔ Verified Purchase</span>' : "") +
+                    (date ? '<span class="shop-review-date">' + escapeHtml(date) + "</span>" : "") +
                 "</div>" +
-                '<h3 class="shop-review-title">' + escapeHtml(review.title) + "</h3>" +
-                "<p>" + escapeHtml(review.text) + "</p>" +
+                body +
+                (mine && orderId > 0
+                    ? '<a class="shop-review-link" href="/Orders/Details/' + orderId + '">View in your order</a>'
+                    : "") +
                 "</article>";
         }).join("");
+
+        var pager = byId("reviews-pager");
+        var totalPages = Number(data.totalPages || 0);
+        var pageIndex = Number(data.pageIndex || 1);
+        pager.hidden = totalPages <= 1;
+        byId("reviews-page-info").textContent = "Page " + pageIndex + " of " + Math.max(totalPages, 1);
+        byId("reviews-prev").disabled = pageIndex <= 1;
+        byId("reviews-next").disabled = pageIndex >= totalPages;
+    }
+
+    function renderReviews(data) {
+        reviewState.data = data;
+        reviewState.pageIndex = Number(data.pageIndex || 1);
+
+        renderReviewSummary(data);
+        renderReviewList(data);
+    }
+
+    function showReviewsError(message) {
+        byId("reviews-status").hidden = true;
+        byId("reviews-error-text").textContent = message || "Could not load reviews.";
+        byId("reviews-error").hidden = false;
+        if (!reviewState.data) {
+            byId("reviews-body").hidden = true;
+        }
+    }
+
+    async function loadReviews(pageIndex) {
+        var id = productId();
+        if (!id || !byId("reviews-body")) {
+            return;
+        }
+
+        var body = byId("reviews-body");
+        var firstLoad = !reviewState.data;
+        byId("reviews-error").hidden = true;
+        byId("reviews-status").hidden = !firstLoad;
+        body.classList.toggle("is-loading", !firstLoad);
+
+        try {
+            var url = "/Reviews/Get?productId=" + encodeURIComponent(id) +
+                "&pageIndex=" + encodeURIComponent(pageIndex || 1) +
+                "&pageSize=" + REVIEW_PAGE_SIZE;
+            var response = await fetch(url);
+            if (response.status === 404) {
+                showReviewsError("Reviews are not available for this product.");
+                return;
+            }
+            if (!response.ok) {
+                throw new Error("reviews failed");
+            }
+
+            var data = await response.json();
+            byId("reviews-status").hidden = true;
+            body.hidden = false;
+            renderReviews(data);
+        } catch (error) {
+            showReviewsError("Could not load reviews. Please check your connection and try again.");
+        } finally {
+            body.classList.remove("is-loading");
+        }
+    }
+
+    function bindReviews() {
+        var retry = byId("reviews-retry");
+        if (!retry) {
+            return;
+        }
+
+        retry.addEventListener("click", function () {
+            loadReviews(reviewState.pageIndex);
+        });
+        byId("reviews-prev").addEventListener("click", function () {
+            loadReviews(reviewState.pageIndex - 1).then(scrollToReviews);
+        });
+        byId("reviews-next").addEventListener("click", function () {
+            loadReviews(reviewState.pageIndex + 1).then(scrollToReviews);
+        });
+    }
+
+    function scrollToReviews() {
+        var section = byId("reviews");
+        if (section) {
+            section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
     }
 
     function currentImages() {
@@ -395,7 +545,7 @@
 
         var selected = data.skus.find(function (sku) { return skuId(sku) === selectedId; }) || data.skus[0] || null;
         applySku(selected, true);
-        renderReviews();
+        loadReviews(1);
 
         if (statusEl) statusEl.hidden = true;
         if (contentEl) contentEl.hidden = false;
@@ -567,5 +717,6 @@
     }
 
     bindActions();
+    bindReviews();
     loadProduct();
 })();

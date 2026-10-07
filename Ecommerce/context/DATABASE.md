@@ -38,7 +38,7 @@ This DBML file is the database diagram source for SmartCart and can be opened or
 | Most admin modules | EF Core mapped in `EcommerceDbContext` |
 | Images | Files on disk; URLs in media tables |
 
-EF does **not** map `Users`, `Orders`, `Cart`, `Payments`, `Shipping`, `Ratings`. Those are SP/Dapper (or unused).
+EF does **not** map `Users`, `Orders`, `Cart`, `Payments`, `Shipping`. Those are SP/Dapper (or unused). `Ratings` is SP/Dapper on the storefront and maps via `RatingEntity` (`DbSet<RatingEntity> Ratings`) only for the admin moderation screen.
 
 ## Naming conventions
 
@@ -127,7 +127,6 @@ EF does **not** map `Users`, `Orders`, `Cart`, `Payments`, `Shipping`, `Ratings`
 
 | Table | Status |
 | --- | --- |
-| Ratings | Table + unused shop DTO fields. No rating UI/API. |
 | AuditLogs | Created. No app writes found. |
 | ProductStatus | Created. Not used by current product module. |
 | StoreSettings | **Removed** from scripts; Patch drops leftover table/procs if present. |
@@ -166,6 +165,10 @@ AdminUsers n—1 UserRoles 1—n UserRolePermissions n—1 Permissions n—1 Mod
 
 `GetCheckoutPreview`, `PlaceOrder`, `GetOrder`, `GetOrders`, `CancelOrder`.
 
+### Users / Reviews (`02_Users/06_Reviews`)
+
+Order-item based reviews (one per `orderitems` row, 7 days after delivery). Procedures: `get_product_reviews` (cursors: summary, star distribution, review page; Verified Purchase = `fk_orderitem IS NOT NULL`), `get_order_item_reviews(p_user_id, p_order_id)` (per-item status for Order Details: eligibility, `reviewexpireson`, `daysleft`, `canadd/edit/deletereview`, `reviewstatus` = NotEligible / CanReview / Reviewed / Locked / Expired), `submit_order_item_review`, `update_order_item_review`, `delete_order_item_review` — all on the existing `ratings` table (`id_rating`, `fk_product`, `fk_user`, **`fk_order`**, **`fk_orderitem`** (both nullable, FKs), `ratingvalue numeric(2,1)`, `review`, `createdat`, `cancelled`, `cancelledon`, `cancelledreason`; no title/updatedat column). Indexes: `ux_ratings_orderitem_active` (unique partial on `fk_orderitem` where active), `ix_ratings_product_active`. Delivery date = `shipping.shippingdate` of the non-cancelled `Delivered` row (fallback `orders.orderdate`); window = + 7 days vs `LOCALTIMESTAMP`. Duplicate protection: `pg_advisory_xact_lock`, `EXISTS` check, unique index (`unique_violation` → `-2`). Response codes: `>0` id, `-1` validation, `-2` already reviewed, `-3` order not delivered, `-4` review not found, `-5` not the caller's order/item or ids mismatch, `-6` review window over / locked / legacy review. The 20 seeded legacy ratings keep `fk_order`/`fk_orderitem` NULL. The old product-based `submit/update/delete_product_review` procs are dropped by `06_Reviews/Patch.sql`. Admin moderation uses EF (`AdminReviewRepository`) on the same table.
+
 ### Admin / Orders (used)
 
 `GetAdminOrders`, `GetAdminOrder`, `AdminConfirmOrder`, `AdminUpdateOrderStatus`, `AdminDeliverOrder`, `AdminCancelOrder`.
@@ -196,4 +199,4 @@ No user-defined SQL functions were found under `Database/`.
 
 Modules, Permissions, UserRoles, UserRolePermissions (Admin role gets all remaining permissions), AdminUsers (dev admin), optional SuperMarketCatalog / DevSampleCatalog.
 
-**Billing** module and permissions are seeded. **Customers** and **Ratings** appear only as permission-tree group labels in C# if those modules exist in DB; they are **not** seeded in `Modules.sql`.
+**Billing** module and permissions are seeded. The **Ratings** module (`Ratings.View`, `Ratings.Delete`) is seeded in `modules.sql` / `permissions.sql` and granted to the Manager role in `complete_dummy_data.sql`. **Customers** is still only a permission-tree group label.

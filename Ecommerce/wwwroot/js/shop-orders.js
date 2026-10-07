@@ -51,7 +51,11 @@
             var image = item.imageUrl || item.ImageUrl;
             var name = escapeHtml(item.name || item.Name);
             var href = detailsUrl(item);
-            return '<article class="shop-checkout-line">' +
+            var orderItemId = Number(item.orderItemId || item.OrderItemId || 0);
+            var productId = Number(item.productId || item.ProductId || 0);
+            // The review block under each item is filled by shop-order-reviews.js (server decides eligibility).
+            return '<div class="shop-order-item" data-order-item-id="' + orderItemId + '" data-product-id="' + productId + '">' +
+                '<article class="shop-checkout-line">' +
                 (image
                     ? '<img src="' + escapeHtml(image) + '" alt="' + name + '">'
                     : '<div class="shop-checkout-fallback">No image</div>') +
@@ -61,7 +65,9 @@
                         " · Qty " + (item.quantity || item.Quantity) + "</p>" +
                 "</div>" +
                 "<strong>" + money(item.lineTotal ?? item.LineTotal ?? ((item.price || item.Price) * (item.quantity || item.Quantity))) + "</strong>" +
-            "</article>";
+                "</article>" +
+                '<div class="shop-order-review" data-review-slot></div>' +
+            "</div>";
         }).join("");
     }
 
@@ -243,6 +249,12 @@
         fillOrder(await response.json());
         if (missing) missing.hidden = true;
         if (content) content.hidden = false;
+
+        // Let the review block (shop-order-reviews.js) load the per-item review status.
+        document.dispatchEvent(new CustomEvent("smartcart:order-loaded", { detail: { orderId: orderId } }));
+        if (typeof window.smartCartLoadOrderReviews === "function") {
+            window.smartCartLoadOrderReviews(orderId);
+        }
     }
 
     async function initDetails() {

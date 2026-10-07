@@ -94,10 +94,16 @@ namespace Ecommerce.Models
             public string Reason { get; set; } = string.Empty;
         }
 
+        /// <summary>A purchased line of an order: the cart line plus its order item id (used for reviews).</summary>
+        public class OrderLine : CartLine
+        {
+            public int OrderItemId { get; set; }
+        }
+
         public class OrderPage
         {
             public OrderHeader Order { get; set; } = new();
-            public List<CartLine> Items { get; set; } = new();
+            public List<OrderLine> Items { get; set; } = new();
         }
     }
 }

@@ -164,6 +164,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<HomeInterface, HomeRepository>();
         services.AddTransient<CartInterface, CartRepository>();
         services.AddTransient<WishlistInterface, WishlistRepository>();
+        services.AddTransient<ReviewInterface, ReviewRepository>();
         services.AddTransient<UserAuthInterface, UserAuthRepository>();
         services.AddTransient<OrderInterface, OrderRepository>();
         services.AddTransient<IRazorpayService, RazorpayService>();
@@ -185,6 +186,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IEmployeeInterface, EmployeeRepository>();
         services.AddTransient<IAdminAuthInterface, AdminAuthRepository>();
         services.AddTransient<IAdminOrderInterface, AdminOrderRepository>();
+        services.AddTransient<IAdminReviewInterface, AdminReviewRepository>();
         services.AddTransient<ISaleInterface, SaleRepository>();
         services.AddTransient<ISalesReturnInterface, SalesReturnRepository>();
         services.AddTransient<IHomepageInterface, HomepageRepository>();
