@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="Sign in to the Metis admin dashboard.">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+
+    <title>Sign in &middot; Metis</title>
+
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body data-page="login">
+    <div class="auth-layout">
+        <main class="auth-main">
+            <div class="auth-topbar">
+                <a class="auth-brand" href="./index.html">
+                    <img src="./assets/images/logo.svg" alt="">
+                    <span>Metis</span>
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                    <i class="bi bi-sun-fill theme-icon-light"></i>
+                    <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+                </button>
+            </div>
+
+            <div class="auth-body" x-data="loginForm()">
+                <div class="auth-heading">
+                    <h1>Sign in</h1>
+                    <p>Use your work email to access the dashboard.</p>
+                </div>
+
+                <div class="alert alert-danger py-2 px-3 small" role="alert" x-show="failed" x-cloak>
+                    That email and password combination is not recognised.
+                </div>
+
+                <form class="auth-form" @submit.prevent="submit" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label" for="login-email">Email address</label>
+                        <input type="email" class="form-control" id="login-email" autocomplete="username"
+                               x-model="form.email" :class="fieldClass('email')" placeholder="you@company.com" required>
+                        <div class="invalid-feedback" x-text="errors.email"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-label-row">
+                            <label class="form-label" for="login-password">Password</label>
+                            <a href="./forgot-password.html">Forgot?</a>
+                        </div>
+                        <div class="auth-password">
+                            <input :type="showPassword ? 'text' : 'password'" class="form-control" id="login-password"
+                                   autocomplete="current-password" x-model="form.password"
+                                   :class="fieldClass('password')" placeholder="Enter your password" required>
+                            <button type="button" class="auth-password-toggle" @click="togglePassword"
+                                    :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                                <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                            </button>
+                            <div class="invalid-feedback" x-text="errors.password"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="login-remember" x-model="form.remember">
+                        <label class="form-check-label small" for="login-remember">Keep me signed in for 30 days</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" :disabled="submitting">
+                        <span class="spinner-border spinner-border-sm me-2" x-show="submitting" x-cloak aria-hidden="true"></span>
+                        <span x-text="submitting ? 'Signing in\u2026' : 'Sign in'">Sign in</span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">or</div>
+
+                <div class="auth-social">
+                    <button type="button" class="btn btn-outline-secondary">
+                        <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.35 11.1H12v3.2h5.35c-.23 1.5-1.72 4.4-5.35 4.4a6.2 6.2 0 0 1 0-12.4c1.77 0 2.96.76 3.64 1.4l2.48-2.4A9.5 9.5 0 0 0 12 2.5a9.5 9.5 0 1 0 0 19c5.48 0 9.11-3.85 9.11-9.28 0-.62-.07-1.1-.16-1.12z"/></svg>
+                        Google
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary">
+                        <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38l-.01-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg>
+                        GitHub
+                    </button>
+                </div>
+
+                <p class="auth-footnote">New here? <a href="./register.html">Create an account</a></p>
+            </div>
+
+            <p class="auth-legal">Demo template &mdash; no credentials are checked and nothing is sent anywhere.</p>
+        </main>
+
+        <aside class="auth-aside">
+            <div class="auth-aside-inner">
+                <p class="auth-quote">Everything the admin layer needs, and nothing it doesn't.</p>
+                <ul class="auth-points">
+                    <li><i class="bi bi-check"></i><span>30 pages built on Bootstrap 5.3 &mdash; no jQuery, no globals, no build-time surprises.</span></li>
+                    <li><i class="bi bi-check"></i><span>Zero third-party runtime requests. Fonts, icons and charts are all self-hosted, so it runs offline and behind a strict CSP.</span></li>
+                    <li><i class="bi bi-check"></i><span>Light and dark themes that are each designed, not colour-flipped.</span></li>
+                    <li><i class="bi bi-check"></i><span>Every page is smoke-tested in a real browser on each commit.</span></li>
+                </ul>
+                <dl class="auth-stats">
+                    <div><dt>30</dt><dd>Pages</dd></div>
+                    <div><dt>0</dt><dd>CDN calls</dd></div>
+                    <div><dt>MIT</dt><dd>Licence</dd></div>
+                </dl>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module" src="./scripts/auth.js"></script>
+</body>
+</html>

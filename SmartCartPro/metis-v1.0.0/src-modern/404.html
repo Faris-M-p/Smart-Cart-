@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="The page you were looking for does not exist.">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+
+    <title>Page not found &middot; Metis</title>
+
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body data-page="404">
+    <div class="error-layout">
+        <header class="error-topbar d-flex align-items-center justify-content-between">
+            <a class="auth-brand" href="./index.html">
+                <img src="./assets/images/logo.svg" alt="">
+                <span>Metis</span>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                <i class="bi bi-sun-fill theme-icon-light"></i>
+                <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+            </button>
+        </header>
+
+        <main class="error-body">
+            <div class="error-inner">
+                <p class="error-status"><i class="bi bi-exclamation-circle"></i>Error 404</p>
+                <p class="error-code">404</p>
+                <h1 class="error-title">We can't find that page</h1>
+                <p class="error-text">
+                    The link may be out of date, or the page may have been moved or renamed.
+                    Nothing is wrong with your account.
+                </p>
+                <div class="error-actions">
+                    <a href="./index.html" class="btn btn-primary"><i class="bi bi-house me-1"></i>Go to dashboard</a>
+                    <button type="button" class="btn btn-outline-secondary" data-go-back>
+                        <i class="bi bi-arrow-left me-1"></i>Go back
+                    </button>
+                </div>
+                <div class="error-links">
+                    <h2>Try one of these</h2>
+                    <ul>
+                        <li><a href="./index.html"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+                        <li><a href="./analytics.html"><i class="bi bi-graph-up"></i>Analytics</a></li>
+                        <li><a href="./users.html"><i class="bi bi-people"></i>Users</a></li>
+                        <li><a href="./orders.html"><i class="bi bi-bag-check"></i>Orders</a></li>
+                        <li><a href="./settings.html"><i class="bi bi-gear"></i>Settings</a></li>
+                        <li><a href="./help.html"><i class="bi bi-question-circle"></i>Help &amp; support</a></li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer class="error-footer">Still stuck? <a href="./help.html">Contact support</a> and quote the page you were trying to reach.</footer>
+    </div>
+
+    <script type="module" src="./scripts/auth.js"></script>
+</body>
+</html>

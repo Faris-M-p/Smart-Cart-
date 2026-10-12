@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "SmartCart Admin Platform";
+}
+
+<div class="container py-4">
+    <h1 class="display-6">SmartCart Admin</h1>
+    <p class="lead">Multi-company platform foundation (Phase 2). Existing MCA monolith under <code>Ecommerce/</code> is unchanged.</p>
+    <div class="list-group">
+        <a class="list-group-item list-group-item-action" asp-area="SuperAdmin" asp-controller="Home" asp-action="Index">
+            Super Admin portal (menu shell)
+        </a>
+        <a class="list-group-item list-group-item-action" asp-area="Company" asp-controller="Home" asp-action="Index">
+            Company Admin portal (menu shell)
+        </a>
+    </div>
+    <p class="mt-3 small text-muted">Next: Metis theme integration, Super Admin auth, company provisioning. Do not commit real connection strings.</p>
+</div>

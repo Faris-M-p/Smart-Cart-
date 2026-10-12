@@ -1,0 +1,31 @@
+// ==========================================================================
+// Footer Layout Styles
+// ==========================================================================
+
+.admin-footer {
+  margin-left: var(--sidebar-width);
+  padding: 1rem 0;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Footer links should remain readable inside the muted paragraph wrapper
+  // and clearly indicate they are interactive (underline + emphasis color).
+  a {
+    color: var(--bs-primary-text-emphasis);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+
+    &:hover,
+    &:focus {
+      color: var(--bs-primary);
+    }
+  }
+}
+
+// Mobile: no sidebar margin
+@media (max-width: 991.98px) {
+  .admin-footer {
+    margin-left: 0;
+  }
+} 

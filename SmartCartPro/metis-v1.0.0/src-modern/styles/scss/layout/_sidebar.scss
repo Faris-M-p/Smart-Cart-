@@ -1,0 +1,30 @@
+// ==========================================================================
+// Sidebar Layout Styles
+// ==========================================================================
+
+.admin-sidebar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--header-height));
+  background: var(--bs-body-bg);
+  border-right: 1px solid var(--bs-border-color);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: $zindex-fixed + 5; // 1035 - above fixed header, below modals
+}
+
+// Mobile: sidebar hidden off-screen, slides in as overlay
+@media (max-width: 991.98px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    z-index: $zindex-modal-backdrop + 1; // 1041 - above backdrop, below modal
+    box-shadow: none;
+
+    &.show {
+      transform: translateX(0);
+      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    }
+  }
+}

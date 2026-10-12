@@ -1,0 +1,225 @@
+// ==========================================================================
+// Card Components
+// ==========================================================================
+//
+// Cards are flat. A 1px border defines the panel; there is no drop shadow and
+// no hover lift. On a dashboard almost everything is a card, so shadowing them
+// makes the whole page appear to hover a few pixels off the background and
+// destroys any real sense of depth — the shadow stops meaning "this floats."
+//
+// ==========================================================================
+
+.card {
+  background-color: var(--surface-panel);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--border-radius);
+  box-shadow: none;
+
+  .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--bs-border-color);
+    padding-block: 0.875rem;
+    font-weight: 600;
+  }
+
+  .card-footer {
+    background-color: transparent;
+    border-top: 1px solid var(--bs-border-color);
+  }
+
+  // Card titles are section labels, not page headings — keep them close to body
+  // size and let weight do the work.
+  .card-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 0;
+  }
+}
+
+// Interactive cards — the ones that are actually a link or a button — get a
+// border and background response rather than a lift.
+.card-interactive {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--bs-border-color-translucent);
+    background-color: var(--surface-hover);
+  }
+}
+
+// --------------------------------------------------------------------------
+// Stats cards
+// --------------------------------------------------------------------------
+// The number is the content; everything else is annotation. The label goes
+// small/uppercase/tracked, the value goes large with tabular figures so digits
+// stay column-aligned as they animate, and the icon recedes to a neutral glyph.
+.stats-card {
+  .card-body {
+    padding: 1.125rem 1.25rem;
+
+    @media (min-width: 992px) {
+      padding: 1.25rem 1.375rem;
+    }
+  }
+
+  // Label — the markup uses `<p class="h6 text-muted">`, so it has to be
+  // overridden here rather than in each of the 21 pages.
+  .card-body p.h6 {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted) !important;
+    margin-bottom: 0.375rem;
+  }
+
+  // Value
+  .card-body .h3 {
+    font-size: 1.625rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    color: var(--ink-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  // Delta
+  .card-body small {
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Icon. The old treatment was a pastel `bg-*-subtle` tile in four different
+  // hues across four adjacent cards — the strongest single "generated template"
+  // tell on the dashboard. Neutralised to one recessive surface; the utility
+  // classes stay in the markup but are overridden here.
+  .stats-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    background-color: var(--surface-sunken) !important;
+    color: var(--ink-secondary) !important;
+    border: 1px solid var(--bs-border-color);
+
+    @media (min-width: 992px) {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.0625rem;
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
+// Activity feed
+// --------------------------------------------------------------------------
+// A panel that takes its height from the row rather than from its own content.
+//
+// Put it on a card sitting beside a fixed-height chart: `height: 0` keeps the
+// card out of the flex line's height calculation, so the line is sized by the
+// chart alone, and `min-height: 100%` then stretches the card back to that line
+// height. The result is that the two columns stay exactly level no matter how
+// many rows the panel holds — no magic number tied to the chart's height, and
+// nothing to re-tune when that height changes.
+//
+// Below `lg` the columns stack, so the constraint is lifted and the panel simply
+// takes its natural height.
+@media (min-width: 992px) {
+  .card-fill-row {
+    height: 0;
+    min-height: 100%;
+  }
+}
+
+// Scoped to the class rather than `:has(> .activity-feed)`: if `:has()` were
+// unsupported the body would not become a flex column, the feed would not
+// scroll, and the content would spill straight out of the height-capped card.
+.card-fill-row > .card-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.activity-feed {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+
+  // Fade the last few pixels so a part-visible row reads as "there is more
+  // below" rather than as a clipping bug.
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
+
+  // Thin scrollbar, matching the sidebar's. A default-width bar inside a card
+  // reads as a rendering accident rather than an affordance.
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-border-color) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--bs-border-color);
+    border-radius: 4px;
+  }
+
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: var(--border-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8125rem;
+      margin-right: 0.75rem;
+      flex-shrink: 0;
+      background-color: var(--surface-sunken) !important;
+      color: var(--ink-secondary) !important;
+    }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+
+      p {
+        margin-bottom: 0.125rem;
+        font-size: 0.8125rem;
+        line-height: 1.45;
+        color: var(--ink-primary);
+      }
+
+      // One line, always. A wrapped meta line makes rows different heights, which
+      // is obvious the moment they are stacked in a scrolling list.
+      small {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--ink-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="Unlock your session.">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+
+    <title>Locked &middot; Metis</title>
+
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body data-page="lock-screen">
+    <div class="auth-layout">
+        <main class="auth-main">
+            <div class="auth-topbar">
+                <a class="auth-brand" href="./index.html">
+                    <img src="./assets/images/logo.svg" alt="">
+                    <span>Metis</span>
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                    <i class="bi bi-sun-fill theme-icon-light"></i>
+                    <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+                </button>
+            </div>
+
+            <div class="auth-body" x-data="lockScreenForm()">
+                <div class="text-center">
+                    <div class="auth-avatar"><i class="bi bi-lock"></i></div>
+                    <div class="auth-heading">
+                        <h1>Screen locked</h1>
+                        <p>Signed in as <strong>john@example.com</strong>. Enter your password to pick up where you left off.</p>
+                    </div>
+                </div>
+
+                <form class="auth-form" @submit.prevent="submit" novalidate>
+                    <div class="mb-4">
+                        <label class="form-label visually-hidden" for="lock-password">Password</label>
+                        <div class="auth-password">
+                            <input :type="showPassword ? 'text' : 'password'" class="form-control" id="lock-password"
+                                   autocomplete="current-password" x-model="form.password"
+                                   :class="error ? 'is-invalid' : ''" placeholder="Password" required autofocus>
+                            <button type="button" class="auth-password-toggle" @click="togglePassword"
+                                    :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                                <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                            </button>
+                            <div class="invalid-feedback" x-text="error"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" :disabled="submitting">
+                        <span class="spinner-border spinner-border-sm me-2" x-show="submitting" x-cloak aria-hidden="true"></span>
+                        <span x-text="submitting ? 'Unlocking\u2026' : 'Unlock'">Unlock</span>
+                    </button>
+                </form>
+
+                <p class="auth-footnote">Not you? <a href="./login.html">Sign in as someone else</a></p>
+            </div>
+
+            <p class="auth-legal">Demo template &mdash; any password unlocks.</p>
+        </main>
+
+        <aside class="auth-aside">
+            <div class="auth-aside-inner">
+                <p class="auth-quote">Everything the admin layer needs, and nothing it doesn't.</p>
+                <ul class="auth-points">
+                    <li><i class="bi bi-check"></i><span>30 pages built on Bootstrap 5.3 &mdash; no jQuery, no globals, no build-time surprises.</span></li>
+                    <li><i class="bi bi-check"></i><span>Zero third-party runtime requests. Fonts, icons and charts are all self-hosted, so it runs offline and behind a strict CSP.</span></li>
+                    <li><i class="bi bi-check"></i><span>Light and dark themes that are each designed, not colour-flipped.</span></li>
+                    <li><i class="bi bi-check"></i><span>Every page is smoke-tested in a real browser on each commit.</span></li>
+                </ul>
+                <dl class="auth-stats">
+                    <div><dt>30</dt><dd>Pages</dd></div>
+                    <div><dt>0</dt><dd>CDN calls</dd></div>
+                    <div><dt>MIT</dt><dd>Licence</dd></div>
+                </dl>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module" src="./scripts/auth.js"></script>
+</body>
+</html>

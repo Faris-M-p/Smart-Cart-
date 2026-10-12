@@ -1,0 +1,15 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var menus = ViewData["Menus"] as string[] ?? Array.Empty<string>();
+}
+<div class="container py-4">
+    <h1 class="mb-3">@ViewData["Title"]</h1>
+    <p class="text-muted">Phase 2 foundation — menu shell only. Auth and provisioning screens come next.</p>
+    <p class="small">UI foundation: integrate Metis (Bootstrap 5) assets under <code>wwwroot</code> in a later step. Do not copy secrets into views.</p>
+    <ul class="list-group">
+        @foreach (var item in menus)
+        {
+            <li class="list-group-item">@item</li>
+        }
+    </ul>
+</div>

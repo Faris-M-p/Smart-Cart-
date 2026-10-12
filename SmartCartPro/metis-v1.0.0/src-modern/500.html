@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="Something went wrong on our end.">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+
+    <title>Server error &middot; Metis</title>
+
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body data-page="500">
+    <div class="error-layout">
+        <header class="error-topbar d-flex align-items-center justify-content-between">
+            <a class="auth-brand" href="./index.html">
+                <img src="./assets/images/logo.svg" alt="">
+                <span>Metis</span>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                <i class="bi bi-sun-fill theme-icon-light"></i>
+                <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+            </button>
+        </header>
+
+        <main class="error-body">
+            <div class="error-inner">
+                <p class="error-status"><i class="bi bi-exclamation-triangle"></i>Error 500</p>
+                <p class="error-code">500</p>
+                <h1 class="error-title">Something broke on our end</h1>
+                <p class="error-text">
+                    This one is not your fault. The error has been logged and the team has been paged.
+                    Trying again in a moment usually works.
+                </p>
+                <div class="error-actions">
+                    <button type="button" class="btn btn-primary" data-reload>
+                        <i class="bi bi-arrow-clockwise me-1"></i>Try again
+                    </button>
+                    <a href="./index.html" class="btn btn-outline-secondary"><i class="bi bi-house me-1"></i>Go to dashboard</a>
+                </div>
+                <p class="error-meta"><i class="bi bi-clock-history"></i>Reference <strong>ERR-8F32C1</strong></p>
+            </div>
+        </main>
+
+        <footer class="error-footer">If this keeps happening, <a href="./help.html">open a ticket</a> and include the reference above.</footer>
+    </div>
+
+    <script type="module" src="./scripts/auth.js"></script>
+</body>
+</html>

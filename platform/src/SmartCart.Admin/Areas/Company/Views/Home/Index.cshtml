@@ -1,0 +1,14 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var menus = ViewData["Menus"] as string[] ?? Array.Empty<string>();
+}
+<div class="container py-4">
+    <h1 class="mb-3">@ViewData["Title"]</h1>
+    <p class="text-muted">Phase 2 foundation — company menu shell. Module and permission filtering will hide items server-side.</p>
+    <ul class="list-group">
+        @foreach (var item in menus)
+        {
+            <li class="list-group-item">@item</li>
+        }
+    </ul>
+</div>

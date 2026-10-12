@@ -1,0 +1,47 @@
+// ==========================================================================
+// Dark Theme
+// ==========================================================================
+//
+// Selected, not flipped. The app ground is the darkest surface and panels sit
+// one step *above* it — the inverse of the light theme's relationship, which is
+// what makes a dark UI read as layered instead of muddy.
+//
+// ==========================================================================
+
+[data-bs-theme="dark"] {
+  --bs-body-bg: var(--surface-app);
+  --bs-body-color: var(--ink-primary);
+  --bs-secondary-color: var(--ink-secondary);
+  --bs-tertiary-color: var(--ink-muted);
+  --bs-border-color: #{$gray-800};
+  --bs-border-color-translucent: #{$gray-700};
+  --bs-emphasis-color: #{$gray-50};
+  --bs-secondary-bg: var(--surface-sunken);
+  --bs-tertiary-bg: var(--surface-sunken);
+
+  .admin-header .navbar {
+    background-color: var(--surface-panel) !important;
+    backdrop-filter: none;
+    border-bottom-color: var(--bs-border-color);
+  }
+
+  .admin-sidebar {
+    background-color: var(--surface-panel);
+    border-right-color: var(--bs-border-color);
+  }
+
+  .card {
+    // Fully opaque. The old rule used rgba(30,41,59,0.7), so every card blended
+    // with whatever sat behind it and no two cards matched.
+    background-color: var(--surface-panel);
+    border-color: var(--bs-border-color);
+  }
+
+  // Slightly lifted panel surface for the sunken/inset elements so they stay
+  // distinguishable against a near-black ground.
+  .stats-card .stats-icon,
+  .activity-feed .activity-icon {
+    background-color: #{$gray-800} !important;
+    color: var(--ink-secondary) !important;
+  }
+}

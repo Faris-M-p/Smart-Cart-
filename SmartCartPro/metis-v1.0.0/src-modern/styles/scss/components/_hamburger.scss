@@ -1,0 +1,60 @@
+// ==========================================================================
+// Hamburger Menu Button
+// Desktop: absolutely positioned at the sidebar's right edge inside header
+// Mobile: normal flow inside header navbar
+// ==========================================================================
+
+.hamburger-menu {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--bs-secondary-color);
+  transition: background-color 0.15s ease-in-out;
+  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    background-color: rgba(var(--bs-secondary-rgb), 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  i {
+    font-size: 1.2rem;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  // Rotate icon when sidebar is collapsed (desktop)
+  &.is-active i {
+    transform: rotate(180deg);
+  }
+}
+
+// Desktop: pin hamburger at sidebar's right edge
+@media (min-width: 992px) {
+  .admin-header .hamburger-menu {
+    position: absolute;
+    left: calc(var(--sidebar-width) - 40px - 0.5rem);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  // Override :active transform so vertical centering isn't lost
+  .admin-header .hamburger-menu:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+}

@@ -1,0 +1,173 @@
+// ==========================================================================
+// Error pages — 404, 500, maintenance
+// ==========================================================================
+//
+// Deliberately not an illustration. A big friendly graphic is the thing every
+// template does, it doubles the page weight, and it tells the user nothing. The
+// status code is set as a typographic element, the sentence below it explains
+// what actually happened, and the actions are real routes out.
+//
+// ==========================================================================
+
+.error-layout {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface-app);
+}
+
+.error-topbar {
+  padding: 1.25rem 1.5rem;
+
+  @media (min-width: 992px) {
+    padding: 1.5rem 2.5rem;
+  }
+}
+
+.error-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem 4rem;
+  text-align: center;
+}
+
+.error-inner {
+  max-width: 32rem;
+}
+
+.error-code {
+  font-size: clamp(4rem, 14vw, 7rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-primary);
+  margin-bottom: 1rem;
+
+  // A hairline under the number ties it to the panel language used elsewhere
+  // instead of leaving it floating in space.
+  &::after {
+    content: "";
+    display: block;
+    width: 3rem;
+    height: 2px;
+    background-color: var(--bs-primary);
+    margin: 1.25rem auto 0;
+    border-radius: 2px;
+  }
+}
+
+.error-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--surface-panel);
+  border-radius: 999px;
+  padding: 0.3125rem 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.error-title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-primary);
+  margin-bottom: 0.625rem;
+}
+
+.error-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-secondary);
+  margin-bottom: 1.75rem;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+// Suggested destinations — a plain bordered list, not cards.
+.error-links {
+  border-top: 1px solid var(--bs-border-color);
+  padding-top: 1.5rem;
+  text-align: left;
+
+  h2 {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.25rem;
+
+    @media (min-width: 576px) {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem 1rem;
+    }
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.875rem;
+    color: var(--ink-secondary);
+    text-decoration: none;
+
+    i {
+      color: var(--ink-muted);
+      font-size: 0.9375rem;
+    }
+
+    &:hover {
+      background-color: var(--surface-hover);
+      color: var(--ink-primary);
+    }
+  }
+}
+
+// Maintenance: a status line rather than an error code.
+.error-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  background-color: var(--surface-panel);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 0.5rem 0.75rem;
+}
+
+.error-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  text-align: center;
+}

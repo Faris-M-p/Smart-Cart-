@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="Create a Metis admin dashboard account.">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+
+    <title>Create account &middot; Metis</title>
+
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body data-page="register">
+    <div class="auth-layout">
+        <main class="auth-main">
+            <div class="auth-topbar">
+                <a class="auth-brand" href="./index.html">
+                    <img src="./assets/images/logo.svg" alt="">
+                    <span>Metis</span>
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                    <i class="bi bi-sun-fill theme-icon-light"></i>
+                    <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+                </button>
+            </div>
+
+            <div class="auth-body" x-data="registerForm()">
+                <div class="auth-heading">
+                    <h1>Create your account</h1>
+                    <p>Free while the workspace is in trial. No card needed.</p>
+                </div>
+
+                <form class="auth-form" @submit.prevent="submit" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label" for="register-name">Full name</label>
+                        <input type="text" class="form-control" id="register-name" autocomplete="name"
+                               x-model="form.name" :class="fieldClass('name')" placeholder="Ada Lovelace" required>
+                        <div class="invalid-feedback" x-text="errors.name"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="register-email">Work email</label>
+                        <input type="email" class="form-control" id="register-email" autocomplete="username"
+                               x-model="form.email" :class="fieldClass('email')" placeholder="you@company.com" required>
+                        <div class="invalid-feedback" x-text="errors.email"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="register-password">Password</label>
+                        <div class="auth-password">
+                            <input :type="showPassword ? 'text' : 'password'" class="form-control" id="register-password"
+                                   autocomplete="new-password" x-model="form.password"
+                                   :class="fieldClass('password')" placeholder="At least 8 characters" required>
+                            <button type="button" class="auth-password-toggle" @click="togglePassword"
+                                    :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                                <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                            </button>
+                            <div class="invalid-feedback" x-text="errors.password"></div>
+                        </div>
+                        <div class="auth-strength" aria-hidden="true">
+                            <span :class="segmentClass(0)"></span>
+                            <span :class="segmentClass(1)"></span>
+                            <span :class="segmentClass(2)"></span>
+                            <span :class="segmentClass(3)"></span>
+                        </div>
+                        <div class="form-text d-flex justify-content-between">
+                            <span>Mix upper and lower case, a number and a symbol.</span>
+                            <span x-text="form.password ? strength.text : ''" aria-live="polite"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="register-terms"
+                               x-model="form.terms" :class="fieldClass('terms')">
+                        <label class="form-check-label small" for="register-terms">
+                            I agree to the <a href="#">terms of service</a> and <a href="#">privacy policy</a>.
+                        </label>
+                        <div class="invalid-feedback d-block" x-show="errors.terms" x-cloak x-text="errors.terms"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" :disabled="submitting">
+                        <span class="spinner-border spinner-border-sm me-2" x-show="submitting" x-cloak aria-hidden="true"></span>
+                        <span x-text="submitting ? 'Creating account\u2026' : 'Create account'">Create account</span>
+                    </button>
+                </form>
+
+                <p class="auth-footnote">Already have an account? <a href="./login.html">Sign in</a></p>
+            </div>
+
+            <p class="auth-legal">Demo template &mdash; no account is created and nothing is sent anywhere.</p>
+        </main>
+
+        <aside class="auth-aside">
+            <div class="auth-aside-inner">
+                <p class="auth-quote">Everything the admin layer needs, and nothing it doesn't.</p>
+                <ul class="auth-points">
+                    <li><i class="bi bi-check"></i><span>30 pages built on Bootstrap 5.3 &mdash; no jQuery, no globals, no build-time surprises.</span></li>
+                    <li><i class="bi bi-check"></i><span>Zero third-party runtime requests. Fonts, icons and charts are all self-hosted, so it runs offline and behind a strict CSP.</span></li>
+                    <li><i class="bi bi-check"></i><span>Light and dark themes that are each designed, not colour-flipped.</span></li>
+                    <li><i class="bi bi-check"></i><span>Every page is smoke-tested in a real browser on each commit.</span></li>
+                </ul>
+                <dl class="auth-stats">
+                    <div><dt>30</dt><dd>Pages</dd></div>
+                    <div><dt>0</dt><dd>CDN calls</dd></div>
+                    <div><dt>MIT</dt><dd>Licence</dd></div>
+                </dl>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module" src="./scripts/auth.js"></script>
+</body>
+</html>

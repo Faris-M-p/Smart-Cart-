@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="description" content="Confirm your identity with a verification code.">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+
+    <title>Two-step verification &middot; Metis</title>
+
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body data-page="two-factor">
+    <div class="auth-layout">
+        <main class="auth-main">
+            <div class="auth-topbar">
+                <a class="auth-brand" href="./index.html">
+                    <img src="./assets/images/logo.svg" alt="">
+                    <span>Metis</span>
+                </a>
+                <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-sm btn-link text-decoration-none" href="./login.html"><i class="bi bi-arrow-left me-1"></i>Back to sign in</a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                    <i class="bi bi-sun-fill theme-icon-light"></i>
+                    <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+                </button>
+                </div>
+            </div>
+
+            <div class="auth-body" x-data="twoFactorForm()">
+                <div class="auth-heading">
+                    <h1>Two-step verification</h1>
+                    <p>Enter the 6-digit code from your authenticator app.</p>
+                </div>
+
+                <form class="auth-form" @submit.prevent="submit" novalidate>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">Verification code</legend>
+                        <!-- Six explicit inputs rather than an x-for: `x-ref` is a static
+                             attribute and cannot be bound per-iteration, and re-rendering a
+                             keyed loop on every keystroke fought with the focus management. -->
+                        <div class="auth-code" @paste="onPaste">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control"
+                                   x-ref="digit0" aria-label="Digit 1" autocomplete="one-time-code"
+                                   :value="digits[0]" @input="onInput(0, $event)" @keydown="onKeydown(0, $event)">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control"
+                                   x-ref="digit1" aria-label="Digit 2" autocomplete="off"
+                                   :value="digits[1]" @input="onInput(1, $event)" @keydown="onKeydown(1, $event)">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control"
+                                   x-ref="digit2" aria-label="Digit 3" autocomplete="off"
+                                   :value="digits[2]" @input="onInput(2, $event)" @keydown="onKeydown(2, $event)">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control"
+                                   x-ref="digit3" aria-label="Digit 4" autocomplete="off"
+                                   :value="digits[3]" @input="onInput(3, $event)" @keydown="onKeydown(3, $event)">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control"
+                                   x-ref="digit4" aria-label="Digit 5" autocomplete="off"
+                                   :value="digits[4]" @input="onInput(4, $event)" @keydown="onKeydown(4, $event)">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control"
+                                   x-ref="digit5" aria-label="Digit 6" autocomplete="off"
+                                   :value="digits[5]" @input="onInput(5, $event)" @keydown="onKeydown(5, $event)">
+                        </div>
+                        <div class="form-text text-danger" x-show="error" x-cloak x-text="error" aria-live="polite"></div>
+                    </fieldset>
+
+                    <button type="submit" class="btn btn-primary w-100 mb-3" :disabled="submitting || !complete">
+                        <span class="spinner-border spinner-border-sm me-2" x-show="submitting" x-cloak aria-hidden="true"></span>
+                        <span x-text="submitting ? 'Verifying\u2026' : 'Verify'">Verify</span>
+                    </button>
+
+                    <button type="button" class="btn btn-link w-100 text-decoration-none" @click="resend" :disabled="cooldown > 0">
+                        <span x-show="cooldown > 0" x-cloak>Resend code in <span x-text="cooldown"></span>s</span>
+                        <span x-show="cooldown <= 0">Resend code</span>
+                    </button>
+                </form>
+
+                <p class="auth-footnote">Lost your device? <a href="#">Use a recovery code</a></p>
+            </div>
+
+            <p class="auth-legal">Demo template &mdash; any 6 digits are accepted.</p>
+        </main>
+
+        <aside class="auth-aside">
+            <div class="auth-aside-inner">
+                <p class="auth-quote">A second factor stops a stolen password from becoming a stolen account.</p>
+                <ul class="auth-points">
+                    <li><i class="bi bi-check"></i><span>Codes rotate every 30 seconds and are accepted once.</span></li>
+                    <li><i class="bi bi-check"></i><span>Recovery codes let you back in if you lose the device.</span></li>
+                    <li><i class="bi bi-check"></i><span>Every verification attempt is written to the audit log.</span></li>
+                </ul>
+                <dl class="auth-stats">
+                    <div><dt>30s</dt><dd>Rotation</dd></div>
+                    <div><dt>6</dt><dd>Digits</dd></div>
+                    <div><dt>10</dt><dd>Backup codes</dd></div>
+                </dl>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module" src="./scripts/auth.js"></script>
+</body>
+</html>

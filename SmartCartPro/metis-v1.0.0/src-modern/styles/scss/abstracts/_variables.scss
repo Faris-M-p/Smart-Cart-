@@ -1,0 +1,265 @@
+// ==========================================================================
+// Design Tokens — Bootstrap 5 Overrides
+// ==========================================================================
+//
+// Direction: "refined neutral". The rules that keep it coherent:
+//
+//   1. Structure comes from 1px hairline borders, not drop shadows. Shadows are
+//      reserved for things that genuinely float above the page — dropdowns,
+//      modals, popovers, the mobile sidebar. A static card never has one.
+//   2. The accent is an interaction signal, not decoration. It marks primary
+//      actions, the active nav item and focus rings. It does not tint icon
+//      tiles, headings or backgrounds.
+//   3. The neutral ramp carries the UI. Semantic hues appear only where they
+//      mean something (a status, a delta, a validation state).
+//
+// ==========================================================================
+
+// --------------------------------------------------------------------------
+// Neutral ramp — Zinc
+// --------------------------------------------------------------------------
+// Zinc rather than Slate: Slate carries a blue cast that reads as "tinted grey"
+// next to a blue accent, which is what made the old palette feel synthetic.
+// Zinc is near-achromatic, so the accent is the only chroma on a default screen.
+$gray-50:  #fafafa;
+$gray-100: #f4f4f5;
+$gray-200: #e4e4e7;
+$gray-300: #d4d4d8;
+$gray-400: #a1a1aa;
+$gray-500: #71717a;
+$gray-600: #52525b;
+$gray-700: #3f3f46;
+$gray-800: #27272a;
+$gray-900: #18181b;
+$gray-950: #09090b;
+
+// --------------------------------------------------------------------------
+// Brand + semantic colors
+// --------------------------------------------------------------------------
+// All 600-step: dark enough to hold 4.5:1 against white for text, saturated
+// enough to stay legible as a 2px chart line.
+$primary:   #2563eb;  // Blue 600  — the single accent
+$secondary: #52525b;  // Zinc 600
+$success:   #16a34a;  // Green 600
+$info:      #0891b2;  // Cyan 600
+$warning:   #d97706;  // Amber 600
+$danger:    #dc2626;  // Red 600
+$light:     $gray-50;
+$dark:      $gray-900;
+
+// Extended palette — used by charts and the showcase pages only.
+$purple: #7c3aed;
+$pink:   #db2777;
+$indigo: #4f46e5;
+$teal:   #0d9488;
+$orange: #ea580c;
+
+// --------------------------------------------------------------------------
+// Typography
+// --------------------------------------------------------------------------
+$font-family-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-family-monospace: "Fira Code", "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+$font-size-base: 0.875rem;  // 14px — the admin-UI standard; was an odd 0.9rem
+$line-height-base: 1.5;
+
+// A tighter scale with real weight contrast. The old scale topped out at 36px,
+// which made every page title shout; headings now sit closer to body copy and
+// earn emphasis from weight and color instead of size.
+$h1-font-size: 1.75rem;   // 28px
+$h2-font-size: 1.5rem;    // 24px
+$h3-font-size: 1.25rem;   // 20px
+$h4-font-size: 1.0625rem; // 17px
+$h5-font-size: 0.9375rem; // 15px
+$h6-font-size: 0.8125rem; // 13px
+
+$headings-font-weight: 600;
+$headings-line-height: 1.3;
+
+// --------------------------------------------------------------------------
+// Spacing
+// --------------------------------------------------------------------------
+$spacer: 1rem;
+$spacers: (
+  0: 0,
+  1: $spacer * 0.25,  // 4px
+  2: $spacer * 0.5,   // 8px
+  3: $spacer * 0.75,  // 12px
+  4: $spacer,         // 16px
+  5: $spacer * 1.25,  // 20px
+  6: $spacer * 1.5,   // 24px
+  7: $spacer * 1.75,  // 28px
+  8: $spacer * 2,     // 32px
+  9: $spacer * 2.25,  // 36px
+  10: $spacer * 2.5,  // 40px
+  11: $spacer * 3,    // 48px
+  12: $spacer * 3.5,  // 56px
+);
+
+// --------------------------------------------------------------------------
+// Border radius
+// --------------------------------------------------------------------------
+// Halved from the old scale. 12px on a card plus 16px on an inner tile reads as
+// a consumer app; 8px reads as a tool.
+$border-radius:     0.5rem;    // 8px
+$border-radius-sm:  0.375rem;  // 6px
+$border-radius-lg:  0.625rem;  // 10px
+$border-radius-xl:  0.75rem;   // 12px
+$border-radius-2xl: 1rem;      // 16px
+
+$border-color: $gray-200;
+
+// --------------------------------------------------------------------------
+// Shadows
+// --------------------------------------------------------------------------
+// Only for genuinely floating surfaces. Tighter and less opaque than the old
+// set, which used 0.1 alpha at a 6px blur on every card.
+$box-shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.04);
+$box-shadow:    0 1px 3px rgba(9, 9, 11, 0.06), 0 1px 2px rgba(9, 9, 11, 0.04);
+$box-shadow-lg: 0 8px 24px rgba(9, 9, 11, 0.08), 0 2px 6px rgba(9, 9, 11, 0.04);
+$box-shadow-xl: 0 16px 40px rgba(9, 9, 11, 0.12), 0 4px 10px rgba(9, 9, 11, 0.05);
+
+// --------------------------------------------------------------------------
+// Layout
+// --------------------------------------------------------------------------
+$sidebar-width: 240px;
+$sidebar-mini-width: 64px;
+$header-height: 56px;   // was 64px — reclaims vertical space for content
+$footer-height: 56px;
+
+// --------------------------------------------------------------------------
+// Transitions
+// --------------------------------------------------------------------------
+// Faster across the board. 300ms on a hover state feels sluggish in a tool that
+// is used all day.
+$transition-base: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-fast: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+// --------------------------------------------------------------------------
+// Z-index scale
+// --------------------------------------------------------------------------
+$zindex-dropdown: 1000;
+$zindex-sticky: 1020;
+$zindex-fixed: 1030;
+$zindex-modal-backdrop: 1040;
+$zindex-modal: 1050;
+$zindex-popover: 1060;
+$zindex-tooltip: 1070;
+$zindex-toast: 1080;
+
+// --------------------------------------------------------------------------
+// Components
+// --------------------------------------------------------------------------
+$navbar-padding-y: 0.5rem;
+$navbar-brand-font-size: 1rem;
+
+$card-border-width: 1px;
+$card-border-color: $border-color;
+$card-border-radius: $border-radius;
+$card-box-shadow: none;      // structure comes from the border
+$card-cap-bg: transparent;
+
+$btn-border-radius: $border-radius-sm;
+$btn-border-radius-sm: 0.3125rem;
+$btn-border-radius-lg: $border-radius;
+$btn-padding-y: 0.4375rem;
+$btn-padding-x: 0.875rem;
+$btn-font-weight: 500;
+$btn-focus-width: 2px;
+
+$input-border-radius: $border-radius-sm;
+$input-padding-y: 0.4375rem;
+$input-padding-x: 0.75rem;
+$input-border-color: $gray-300;
+$input-focus-border-color: $primary;
+$input-focus-width: 2px;
+// NOTE: form-select arrow padding is overridden directly in components/_forms.scss
+// rather than via $form-select-indicator-padding, because the Sass-variable
+// approach was not reliably propagating during dev HMR.
+
+$dropdown-border-color: $border-color;
+$dropdown-border-radius: $border-radius;
+$dropdown-box-shadow: $box-shadow-lg;   // a dropdown genuinely floats
+$dropdown-link-active-bg: $gray-100;
+$dropdown-link-active-color: $gray-900;
+
+$modal-content-border-color: $border-color;
+$modal-content-border-radius: $border-radius-lg;
+$modal-content-box-shadow-xs: $box-shadow-xl;
+$modal-content-box-shadow-sm-up: $box-shadow-xl;
+
+$table-border-color: $border-color;
+$table-cell-padding-y: 0.625rem;
+$table-cell-padding-x: 0.75rem;
+
+$badge-font-weight: 500;
+$badge-border-radius: $border-radius-sm;
+
+// Dark theme variables
+$dark-bg: $gray-950;
+$dark-color: $gray-100;
+$dark-text-muted: $gray-400;
+$dark-border-color: $gray-800;
+$dark-primary: $primary;
+
+// --------------------------------------------------------------------------
+// Runtime custom properties
+// --------------------------------------------------------------------------
+:root {
+  --sidebar-width: #{$sidebar-width};
+  --sidebar-mini-width: #{$sidebar-mini-width};
+  --header-height: #{$header-height};
+  --footer-height: #{$footer-height};
+
+  --transition-base: #{$transition-base};
+  --transition-fast: #{$transition-fast};
+  --transition-slow: #{$transition-slow};
+
+  --border-radius: #{$border-radius};
+  --border-radius-sm: #{$border-radius-sm};
+  --border-radius-lg: #{$border-radius-lg};
+
+  --box-shadow: #{$box-shadow};
+  --box-shadow-sm: #{$box-shadow-sm};
+  --box-shadow-lg: #{$box-shadow-lg};
+
+  // Surface roles. The app background is one step down from panels so that a
+  // flat, borderless panel still reads as a distinct surface.
+  --surface-app: #{$gray-50};
+  --surface-panel: #ffffff;
+  --surface-sunken: #{$gray-100};
+  --surface-hover: #{$gray-100};
+
+  // Ink roles.
+  --ink-primary: #{$gray-900};
+  --ink-secondary: #{$gray-600};
+  --ink-muted: #{$gray-500};
+
+  // Text-emphasis tokens. Bootstrap 5.3 auto-computes these, but its defaults
+  // land too light against white for our 600-step base colors. Pinned to the
+  // 700-step equivalents, all of which clear 4.5:1 for normal text.
+  --bs-primary-text-emphasis: #1d4ed8;  // Blue 700
+  --bs-success-text-emphasis: #15803d;  // Green 700
+  --bs-danger-text-emphasis:  #b91c1c;  // Red 700
+  --bs-warning-text-emphasis: #b45309;  // Amber 700
+  --bs-info-text-emphasis:    #0e7490;  // Cyan 700
+}
+
+[data-bs-theme="dark"] {
+  --surface-app: #{$gray-950};
+  --surface-panel: #{$gray-900};
+  --surface-sunken: #{$gray-950};
+  --surface-hover: #{$gray-800};
+
+  --ink-primary: #{$gray-100};
+  --ink-secondary: #{$gray-400};
+  --ink-muted: #{$gray-500};
+
+  // Lighter against a dark ground — 300-step equivalents.
+  --bs-primary-text-emphasis: #93c5fd;  // Blue 300
+  --bs-success-text-emphasis: #86efac;  // Green 300
+  --bs-danger-text-emphasis:  #fca5a5;  // Red 300
+  --bs-warning-text-emphasis: #fcd34d;  // Amber 300
+  --bs-info-text-emphasis:    #67e8f9;  // Cyan 300
+}

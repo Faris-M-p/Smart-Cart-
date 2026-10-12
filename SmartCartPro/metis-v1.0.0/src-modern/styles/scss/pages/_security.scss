@@ -1,0 +1,213 @@
+// ==========================================================================
+// Security Page Styles
+// ==========================================================================
+
+.security-page {
+  .security-layout {
+    @include page-layout();
+  }
+
+  .security-sidebar {
+    @include page-sidebar();
+  }
+
+  .security-nav {
+    .nav-link {
+      @include page-nav-link();
+    }
+  }
+
+  .security-section {
+    background: var(--bs-body-bg);
+    border-radius: var(--bs-border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--bs-border-color);
+
+    > h5 {
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+
+    > p {
+      color: var(--bs-secondary-color);
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  .security-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .security-info {
+      flex: 1;
+      min-width: 0;
+
+      h6 {
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+      }
+
+      small {
+        color: var(--bs-secondary-color);
+        display: block;
+      }
+    }
+  }
+
+  // Inline status pill used inside .security-item (e.g. "Enabled" / "Disabled")
+  .security-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    border-radius: 50rem;
+    background-color: var(--bs-secondary-bg-subtle);
+    color: var(--bs-secondary-text-emphasis);
+    border: 1px solid var(--bs-secondary-border-subtle);
+
+    &.enabled {
+      background-color: var(--bs-success-bg-subtle);
+      color: var(--bs-success-text-emphasis);
+      border-color: var(--bs-success-border-subtle);
+    }
+
+    &.disabled {
+      background-color: var(--bs-secondary-bg-subtle);
+      color: var(--bs-secondary-text-emphasis);
+      border-color: var(--bs-secondary-border-subtle);
+    }
+  }
+
+  // Session row (Sessions tab)
+  .session-item {
+    padding: 1rem;
+    background: var(--bs-secondary-bg-subtle);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    margin-bottom: 0.75rem;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  // Activity row (Security Activity tab)
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      background-color: var(--bs-secondary-bg-subtle);
+      color: var(--bs-secondary-text-emphasis);
+
+      &.success {
+        background-color: var(--bs-success-bg-subtle);
+        color: var(--bs-success-text-emphasis);
+      }
+
+      &.info {
+        background-color: var(--bs-info-bg-subtle);
+        color: var(--bs-info-text-emphasis);
+      }
+
+      &.warning {
+        background-color: var(--bs-warning-bg-subtle);
+        color: var(--bs-warning-text-emphasis);
+      }
+
+      &.danger {
+        background-color: var(--bs-danger-bg-subtle);
+        color: var(--bs-danger-text-emphasis);
+      }
+    }
+  }
+
+  // Two-factor setup helpers (kept for forward use)
+  .two-factor-setup {
+    .qr-code-container {
+      text-align: center;
+      padding: 2rem;
+      background: var(--bs-secondary-bg-subtle);
+      border: 1px solid var(--bs-border-color);
+      border-radius: var(--bs-border-radius);
+      margin-bottom: 1.5rem;
+
+      .qr-placeholder {
+        width: 200px;
+        height: 200px;
+        background: var(--bs-body-bg);
+        border: 2px dashed var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: var(--bs-secondary-color);
+        font-size: 3rem;
+      }
+
+      .qr-instructions {
+        color: var(--bs-secondary-color);
+        font-size: 0.875rem;
+      }
+    }
+
+    .backup-codes {
+      background: var(--bs-info-bg-subtle);
+      border: 1px solid var(--bs-info-border-subtle);
+      border-radius: var(--bs-border-radius);
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+
+      .backup-codes-title {
+        color: var(--bs-info-text-emphasis);
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .codes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+
+        .backup-code {
+          font-family: monospace;
+          background: var(--bs-body-bg);
+          border: 1px solid var(--bs-border-color);
+          border-radius: var(--bs-border-radius-sm);
+          padding: 0.5rem;
+          text-align: center;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+// ==========================================================================
+// Project utilities
+// ==========================================================================
+
+// Alpine's x-cloak attribute is removed once a component initialises. Without a
+// rule to hide it in the meantime the attribute does nothing, so every element
+// behind an `x-show`/`x-if` renders for one frame before Alpine tears it back
+// down — on the auth pages that meant the error alerts and the "check your
+// inbox" panel both flashed on load.
+[x-cloak] {
+  display: none !important;
+}
+
+// Tabular figures. Any number that sits in a column, animates, or is compared
+// against the number above it should not reflow as its digits change.
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}

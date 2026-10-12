@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  # Dependencies rot even when nobody pushes — a weekly run surfaces newly
+  # disclosed advisories against the committed lockfile.
+  schedule:
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, build and smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Non-blocking for now: the codebase predates Prettier and ~80 files have
+      # never been formatted. Run `npm run format` as its own commit, then drop
+      # `continue-on-error` so drift actually fails the build.
+      - name: Check formatting
+        run: npm run format:check
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+
+      # Playwright is deliberately not a devDependency: this template is
+      # downloaded and built by end users, and it would add a large install to
+      # every `npm install`. CI installs it here, without touching package.json
+      # or the lockfile.
+      #
+      # `npx playwright install` on its own fetches only the *browser* — it does
+      # not put the `playwright` package into node_modules, so the test's
+      # `require('playwright')` still threw MODULE_NOT_FOUND. That is why this
+      # job had been failing since the smoke test landed in v3.5.0. Installing
+      # the package first also guarantees the browser build matches it, which
+      # `playwright@latest` did not.
+      - name: Install Playwright (Chromium)
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+
+      - name: Smoke-test every built page
+        run: node scripts/smoke-test.mjs
+        env:
+          PLAYWRIGHT_PATH: playwright
+
+      # The smoke test proves a page loads; it cannot see a widget that renders
+      # but does nothing. This drives the auth forms for real.
+      - name: Drive the auth flows
+        run: node scripts/auth-interaction-test.mjs
+        env:
+          PLAYWRIGHT_PATH: playwright
+
+      - name: Upload build output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist-modern
+          path: dist-modern
+          retention-days: 7
+
+  audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Fails the job on high/critical advisories. Runs separately from the
+      # build so a new advisory does not mask a genuine build regression.
+      - name: npm audit
+        run: npm audit --audit-level=high

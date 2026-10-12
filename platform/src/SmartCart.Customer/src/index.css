@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sc-bg: #f7f7f5;
+  --sc-fg: #1a1a1a;
+  --sc-brand: #c62828;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--sc-bg);
+  color: var(--sc-fg);
+}

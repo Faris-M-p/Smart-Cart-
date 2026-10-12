@@ -1,0 +1,33 @@
+// ==========================================================================
+// Icon Components - Modern Icon Styling
+// ==========================================================================
+
+// Icon size utilities
+.icon-sm { font-size: 0.875rem; }
+.icon-md { font-size: 1rem; }
+.icon-lg { font-size: 1.25rem; }
+.icon-xl { font-size: 1.5rem; }
+
+// Icon animations
+.icon-spin { animation: spin 1s linear infinite; }
+.icon-pulse { animation: pulse 2s ease-in-out infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+// Context-specific styling
+.navbar .bi { font-size: 1.125rem; }
+.sidebar-nav .bi { font-size: 1rem; width: 1.25rem; }
+// Icon-to-label gap only when the icon precedes other content. Icon-only
+// buttons (the icon is the last/only child) get no trailing margin, so the
+// glyph stays centered instead of being nudged left.
+.btn .bi { font-size: 0.875rem; }
+.btn .bi:not(:last-child) { margin-right: 0.375rem; }
+.stats-icon .bi { font-size: 1.25rem; } 
