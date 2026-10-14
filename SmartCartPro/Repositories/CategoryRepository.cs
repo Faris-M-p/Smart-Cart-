@@ -15,10 +15,10 @@ public class CategoryRepository : ICategoryRepository
     }
 
     public Task<Category?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        _db.Categories.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        _db.Categories.AsNoTracking().FirstOrDefaultAsync(x => x.IdCategory == id, cancellationToken);
 
     public async Task<IReadOnlyList<Category>> ListAsync(CancellationToken cancellationToken = default) =>
-        await _db.Categories.AsNoTracking().OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        await _db.Categories.AsNoTracking().OrderBy(x => x.CategoryName).ToListAsync(cancellationToken);
 
     public Task AddAsync(Category category, CancellationToken cancellationToken = default)
     {

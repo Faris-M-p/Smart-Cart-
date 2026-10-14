@@ -3,10 +3,9 @@
     ViewData["Title"] = "Products";
 }
 <h1>Products</h1>
-<p class="text-muted">Loaded through IProductService → IProductRepository (EF Core).</p>
 <ul>
 @foreach (var item in Model)
 {
-    <li>@item.Name (@item.Slug)</li>
+    <li>@item.ProductName (@item.ProductCode)</li>
 }
 </ul>

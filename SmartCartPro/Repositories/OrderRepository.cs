@@ -15,10 +15,10 @@ public class OrderRepository : IOrderRepository
     }
 
     public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        _db.Orders.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        _db.Orders.AsNoTracking().FirstOrDefaultAsync(x => x.IdOnlineOrder == id, cancellationToken);
 
     public async Task<IReadOnlyList<Order>> ListAsync(CancellationToken cancellationToken = default) =>
-        await _db.Orders.AsNoTracking().OrderByDescending(x => x.CreatedAt).ToListAsync(cancellationToken);
+        await _db.Orders.AsNoTracking().OrderByDescending(x => x.OrderDate).ToListAsync(cancellationToken);
 
     public Task AddAsync(Order order, CancellationToken cancellationToken = default)
     {

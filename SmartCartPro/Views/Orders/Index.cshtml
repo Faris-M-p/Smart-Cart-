@@ -3,10 +3,9 @@
     ViewData["Title"] = "Orders";
 }
 <h1>Orders</h1>
-<p class="text-muted">Loaded through IOrderService → IOrderRepository (EF Core).</p>
 <ul>
 @foreach (var item in Model)
 {
-    <li>@item.OrderNumber — @item.Status — @item.TotalAmount</li>
+    <li>@item.OrderNumber — @item.Status — @item.TotalAmount (store fk_store=@item.FkStore)</li>
 }
 </ul>

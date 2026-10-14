@@ -3,10 +3,9 @@
     ViewData["Title"] = "Categories";
 }
 <h1>Categories</h1>
-<p class="text-muted">Loaded through ICategoryService → ICategoryRepository (EF Core).</p>
 <ul>
 @foreach (var item in Model)
 {
-    <li>@item.Name (@item.Slug)</li>
+    <li>@item.CategoryName</li>
 }
 </ul>
