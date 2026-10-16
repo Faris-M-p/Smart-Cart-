@@ -70,6 +70,7 @@ for %%F in (
     "02_Seed\001_DefaultRoles.sql"
     "02_Seed\002_DefaultPermissions.sql"
     "02_Seed\003_DefaultSettings.sql"
+    "02_Seed\004_PlatformSuperAdmin.sql"
 ) do (
     echo Applying %%~F
     "%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d "%SC_PGDATABASE%" -v ON_ERROR_STOP=1 -f "%%~F"

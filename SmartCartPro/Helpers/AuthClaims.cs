@@ -13,6 +13,7 @@ public static class AuthClaims
     public const string StoreCode = "store_code";
     public const string StoreName = "store_name";
     public const string MustChangePassword = "must_change_password";
+    public const string IsPlatformSuperAdmin = "is_platform_super_admin";
 
     public static int? GetUserId(ClaimsPrincipal? user)
     {
@@ -34,4 +35,7 @@ public static class AuthClaims
 
     public static string? GetStoreName(ClaimsPrincipal? user) =>
         user?.FindFirstValue(StoreName);
+
+    public static bool IsPlatformSuperAdminUser(ClaimsPrincipal? user) =>
+        user?.FindFirstValue(IsPlatformSuperAdmin) == "1";
 }

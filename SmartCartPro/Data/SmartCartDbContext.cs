@@ -18,6 +18,7 @@ public class SmartCartDbContext : DbContext
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserStoreAccess> UserStoreAccess => Set<UserStoreAccess>();
+    public DbSet<AuthOtpChallenge> AuthOtpChallenges => Set<AuthOtpChallenge>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Product> Products => Set<Product>();
@@ -226,6 +227,7 @@ public class SmartCartDbContext : DbContext
             e.Property(x => x.EmployeeCode).HasColumnName("employeecode");
             e.Property(x => x.IsActive).HasColumnName("isactive");
             e.Property(x => x.MustChangePassword).HasColumnName("mustchangepassword");
+            e.Property(x => x.IsPlatformSuperAdmin).HasColumnName("is_platform_super_admin");
             e.Property(x => x.LastLoginAt).HasColumnName("lastloginat");
             e.Property(x => x.CreatedAt).HasColumnName("createdat");
             e.Property(x => x.UpdatedAt).HasColumnName("updatedat");
@@ -234,6 +236,27 @@ public class SmartCartDbContext : DbContext
             e.Property(x => x.CancelledReason).HasColumnName("cancelledreason");
             e.HasIndex(x => x.UserName).IsUnique();
             e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<AuthOtpChallenge>(e =>
+        {
+            e.ToTable("auth_otp_challenges");
+            e.HasKey(x => x.IdAuthOtpChallenge);
+            e.Property(x => x.IdAuthOtpChallenge).HasColumnName("id_authotpchallenge");
+            e.Property(x => x.ChallengeToken).HasColumnName("challengetoken").IsRequired();
+            e.Property(x => x.FkUser).HasColumnName("fk_user").IsRequired();
+            e.Property(x => x.OtpHash).HasColumnName("otphash").IsRequired();
+            e.Property(x => x.RememberMe).HasColumnName("rememberme");
+            e.Property(x => x.AttemptCount).HasColumnName("attemptcount");
+            e.Property(x => x.MaxAttempts).HasColumnName("maxattempts");
+            e.Property(x => x.ExpiresAt).HasColumnName("expiresat");
+            e.Property(x => x.ConsumedAt).HasColumnName("consumedat");
+            e.Property(x => x.CreatedAt).HasColumnName("createdat");
+            e.HasIndex(x => x.ChallengeToken).IsUnique();
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.FkUser)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<UserStoreAccess>(e =>

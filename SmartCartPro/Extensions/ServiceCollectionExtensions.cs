@@ -61,8 +61,11 @@ public static class ServiceCollectionExtensions
     {
         services.AddHttpContextAccessor();
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
+        services.Configure<OtpSettings>(configuration.GetSection(OtpSettings.SectionName));
         services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddSingleton<AuthJwtTokenService>();
+        services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAuthService, AuthService>();
         return services;

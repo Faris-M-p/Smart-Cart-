@@ -8,6 +8,7 @@
 |---------|------|---------|
 | V001 | `V001__InitialSchema.sql` | Full initial schema |
 | V002 | `V002__CompanyStoreRelationships.sql` | Reserved / no-op marker for future composite integrity |
+| V003 | `V003__PlatformSuperAdminOtp.sql` | `users.is_platform_super_admin` + `auth_otp_challenges` |
 
 ## Rules
 

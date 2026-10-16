@@ -6,43 +6,29 @@
 - **Current Status:** `IMPLEMENTED`
 
 ## Purpose & Responsibilities
-Employee authentication against `users` (Identity `PasswordHasher`), JWT in HttpOnly cookie, store context via `fk_store` claim from `user_store_access`, change password, logout.
-
-There is **no** Auth Register endpoint or view. Company onboarding belongs to Super Admin (`super-admin.md`).
+Shared employee + platform Super Admin sign-in on `/Auth/Login`. Store admins get JWT after password. Platform Super Admin (`is_platform_super_admin`) gets email OTP, then JWT with platform claim. No public register.
 
 ## Implemented Features
-- **Login:** Username/email + password; preferred store from `user_store_access`; JWT cookie `smartcartpro.auth.token`
-- **Change password:** Authenticated; re-issues JWT; clears `mustchangepassword`
-- **Logout / LogoutGet:** `ClearAuthCookie()` then redirect to Login
-- **Cookie API on service:** `SetAuthCookie` / `ClearAuthCookie`
-- **Global authorize:** MVC requires authenticated user; Auth login/forgot use `[AllowAnonymous]`
-- **Store claims:** JWT includes `fk_store`, `fk_company`, `store_code`, `store_name`, `id_user`
-
-## Filters / Search / Sorting
-- N/A
+- **Login (shared):** password verify; store admin → cookie; Super Admin → OTP email → `/Auth/VerifyOtp`
+- **OTP:** random 6-digit, hashed in `auth_otp_challenges`, 5 min expiry, attempt limit, SMTP send (`SmtpSettings`)
+- **Resend OTP:** invalidates prior open challenges, sends new code
+- **Change password / Logout**
+- **Seed:** `02_Seed/004_PlatformSuperAdmin.sql` — `Muhdfarismp@gmail.com` / `Admin@123` (dev)
 
 ## Data
-- Entities: `User`, `UserStoreAccess`, `Company`, `Store` (read via joins)
-- Models: `LoginInput`, `ChangePasswordInput`, `AuthSessionResult`, `AuthUserStoreInfo`
-- Helpers: `AuthClaims`
+- `users.is_platform_super_admin`
+- `auth_otp_challenges`
+- Models: `LoginInput`, `VerifyOtpInput`, `ChangePasswordInput`, `AuthSessionResult`
+- Claims: `is_platform_super_admin`, `fk_store`, …
 
-## Database Dependencies
-- Tables: `users`, `user_store_access`, `store`, `company`
-- Access: EF Core via `AuthRepository` / `AuthService`
-
-## API & Data Access
-- Controller: `Controllers/AuthController.cs` (Login, ChangePassword, Forgot/Reset, Logout — **no Register**)
-- Views: `Views/Auth/Login`, `ChangePassword`, `ForgotPassword`, `ResetPassword`
-
-## UI Rules & Conventions
-- Brand: SmartCart; Metis auth chrome
-- Layout header shows store name from `fk_store` claims
+## Config
+- `JwtSettings`, `SmtpSettings` (Host/Port/UserName/Password/FromEmail), `OtpSettings`
 
 ## Business Rules
-- Inactive / cancelled users cannot authenticate
-- Passwords stored as ASP.NET Identity hashes only
-- Login requires active `user_store_access` for `fk_store` claim
+- Super Admin login identifier is email (seed username = email)
+- Store admin still needs `user_store_access`
+- Super Admin session has no store (`fk_store=0`, badge “Super Admin”)
+- Do not hardcode OTP; SMTP must be configured to complete Super Admin login
 
-## Dependencies & Related Modules
-- `super-admin.md` — future company registration
-- `employee.md`, `roles.md`, `stores.md`
+## Dependencies
+- `super-admin.md`

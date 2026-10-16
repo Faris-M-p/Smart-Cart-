@@ -14,4 +14,12 @@ public interface IAuthRepository
     Task<AuthUserStoreInfo?> GetPreferredStoreAsync(int idUser, CancellationToken cancellationToken = default);
 
     Task<AuthUserStoreInfo?> GetStoreAccessAsync(int idUser, int fkStore, CancellationToken cancellationToken = default);
+
+    Task AddOtpChallengeAsync(AuthOtpChallenge challenge, CancellationToken cancellationToken = default);
+
+    Task<AuthOtpChallenge?> GetOtpChallengeAsync(string challengeToken, CancellationToken cancellationToken = default);
+
+    Task UpdateOtpChallengeAsync(AuthOtpChallenge challenge, CancellationToken cancellationToken = default);
+
+    Task InvalidateOpenOtpChallengesAsync(int idUser, CancellationToken cancellationToken = default);
 }

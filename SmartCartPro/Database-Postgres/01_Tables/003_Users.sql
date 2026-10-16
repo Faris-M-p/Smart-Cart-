@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     employeecode    TEXT NULL,
     isactive        BOOLEAN NOT NULL DEFAULT TRUE,
     mustchangepassword BOOLEAN NOT NULL DEFAULT TRUE,
+    is_platform_super_admin BOOLEAN NOT NULL DEFAULT FALSE,
     lastloginat     TIMESTAMP NULL,
     createdat       TIMESTAMP NOT NULL DEFAULT NOW(),
     updatedat       TIMESTAMP NULL,
@@ -24,3 +25,6 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS ix_users_isactive ON users (isactive) WHERE cancelled = FALSE;
+CREATE INDEX IF NOT EXISTS ix_users_platform_super_admin
+    ON users (is_platform_super_admin)
+    WHERE cancelled = FALSE AND is_platform_super_admin = TRUE;

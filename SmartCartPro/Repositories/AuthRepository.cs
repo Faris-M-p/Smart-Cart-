@@ -85,4 +85,43 @@ public class AuthRepository : IAuthRepository
                 IsDefault = a.IsDefault
             }).FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task AddOtpChallengeAsync(AuthOtpChallenge challenge, CancellationToken cancellationToken = default)
+    {
+        _db.AuthOtpChallenges.Add(challenge);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<AuthOtpChallenge?> GetOtpChallengeAsync(
+        string challengeToken,
+        CancellationToken cancellationToken = default) =>
+        _db.AuthOtpChallenges.FirstOrDefaultAsync(
+            c => c.ChallengeToken == challengeToken,
+            cancellationToken);
+
+    public async Task UpdateOtpChallengeAsync(AuthOtpChallenge challenge, CancellationToken cancellationToken = default)
+    {
+        _db.AuthOtpChallenges.Update(challenge);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task InvalidateOpenOtpChallengesAsync(int idUser, CancellationToken cancellationToken = default)
+    {
+        var open = await _db.AuthOtpChallenges
+            .Where(c => c.FkUser == idUser && c.ConsumedAt == null && c.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync(cancellationToken);
+
+        if (open.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        foreach (var item in open)
+        {
+            item.ExpiresAt = now;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+    }
 }

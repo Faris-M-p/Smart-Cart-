@@ -3,7 +3,7 @@
 ## Module Overview
 - **Area:** ADMIN (platform management within the same MVC host)
 - **Module Name:** Super Admin
-- **Current Status:** `PLANNED` — **do not implement until explicitly requested**
+- **Current Status:** `PARTIALLY IMPLEMENTED` — shared login + email OTP auth done; company/license/package wizard still **PLANNED**
 - **Source:** Product functional description held for analysis (2026-04-16). This file is the working spec + gap analysis against SmartCartPro as it exists today.
 
 ## Purpose & Responsibilities
@@ -18,7 +18,7 @@ Normal company Admin and Store Admin must **never** see or call Super Admin plat
 |-------------|----------|
 | Host | Same ASP.NET Core MVC Admin app (`SmartCartPro`) — no separate Super Admin website |
 | Users | Reuse `users` — **no** `SuperAdminUsers` table |
-| Auth | Password hash + email OTP for Super Admin login route (e.g. `/platform-access`) |
+| Auth | Same `/Auth/Login` as store admin; Super Admin → email OTP (`/Auth/VerifyOtp`); SMTP in `SmtpSettings` |
 | Schema | SQL scripts only (`Database-Postgres/`) — **no** EF migrations |
 | Layers | Controller → Service → Repository (`*/Interfaces/`); thin controllers; typed exceptions via `AppExceptionHandler` |
 | Secrets | No hardcoded Super Admin password in source; one-time secure seed/bootstrap |

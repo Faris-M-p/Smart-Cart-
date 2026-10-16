@@ -2,7 +2,8 @@
 @{
     ViewData["MetisMode"] = "admin";
     var title = ViewData["Title"] as string ?? "SmartCart Pro";
-    var storeName = AuthClaims.GetStoreName(User) ?? "Store";
+    var isPlatform = AuthClaims.IsPlatformSuperAdminUser(User);
+    var storeName = isPlatform ? "Platform" : (AuthClaims.GetStoreName(User) ?? "Store");
     var fkStore = AuthClaims.GetFkStore(User);
     string Nav(string ctrl, string act = "Index") =>
         string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), ctrl, StringComparison.OrdinalIgnoreCase)
@@ -40,7 +41,7 @@
                 </div>
             </div>
             <div class="navbar-nav flex-row align-items-center">
-                <span class="badge text-bg-light border me-2 d-none d-lg-inline" title="fk_store=@fkStore">Store: @storeName</span>
+                <span class="badge text-bg-light border me-2 d-none d-lg-inline" title="@(isPlatform ? "platform" : $"fk_store={fkStore}")">@(isPlatform ? "Super Admin" : $"Store: {storeName}")</span>
                 <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="ChangePassword">Password</a>
                 <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="LogoutGet">Sign out</a>
             </div>

@@ -128,6 +128,9 @@
 \echo Creating 042_PatchHistory.sql
 \ir ./042_PatchHistory.sql
 
+\echo Creating 043_AuthOtpChallenges.sql
+\ir ./043_AuthOtpChallenges.sql
+
 -- Wire sales.fk_cashsession after cash_sessions exists
 DO $$
 BEGIN

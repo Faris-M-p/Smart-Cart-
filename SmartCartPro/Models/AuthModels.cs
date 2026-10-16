@@ -15,6 +15,19 @@ public sealed class LoginInput
     public bool RememberMe { get; set; }
 }
 
+public sealed class VerifyOtpInput
+{
+    [Required]
+    public string ChallengeToken { get; set; } = string.Empty;
+
+    [Required]
+    [Display(Name = "One-time code")]
+    [StringLength(8, MinimumLength = 4)]
+    public string Code { get; set; } = string.Empty;
+
+    public string? ReturnUrl { get; set; }
+}
+
 public sealed class ChangePasswordInput
 {
     [Required]
@@ -42,6 +55,10 @@ public sealed class AuthSessionResult
     public string? Token { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public bool MustChangePassword { get; set; }
+    public bool RequiresOtp { get; set; }
+    public string? OtpChallengeToken { get; set; }
+    public string? MaskedEmail { get; set; }
+    public bool IsPlatformSuperAdmin { get; set; }
     public int Fk_Store { get; set; }
     public int Fk_Company { get; set; }
     public string? StoreName { get; set; }

@@ -12,6 +12,8 @@ public class User
     public string? EmployeeCode { get; set; }
     public bool IsActive { get; set; } = true;
     public bool MustChangePassword { get; set; } = true;
+    /// <summary>SQL <c>is_platform_super_admin</c> — platform Super Admin (OTP login). Not company SUPER_ADMIN.</summary>
+    public bool IsPlatformSuperAdmin { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

@@ -6,7 +6,10 @@ using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
-/// <summary>Employee authentication: login, change password, logout. Company registration is Super Admin only.</summary>
+/// <summary>
+/// Shared login for store admins and platform Super Admin.
+/// Super Admin password success → email OTP screen; store admin → JWT cookie.
+/// </summary>
 public class AuthController : Controller
 {
     private readonly IAuthService _authService;
@@ -41,7 +44,23 @@ public class AuthController : Controller
         }
 
         var result = await _authService.LoginAsync(input, cancellationToken);
-        if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
+        if (!result.Success)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign-in failed.");
+            return View(input);
+        }
+
+        if (result.RequiresOtp && !string.IsNullOrWhiteSpace(result.OtpChallengeToken))
+        {
+            TempData["OtpMaskedEmail"] = result.MaskedEmail;
+            return RedirectToAction(nameof(VerifyOtp), new
+            {
+                challengeToken = result.OtpChallengeToken,
+                returnUrl
+            });
+        }
+
+        if (string.IsNullOrWhiteSpace(result.Token))
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign-in failed.");
             return View(input);
@@ -55,6 +74,79 @@ public class AuthController : Controller
         }
 
         return RedirectToLocal(returnUrl);
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult VerifyOtp(string challengeToken, string? returnUrl = null)
+    {
+        if (string.IsNullOrWhiteSpace(challengeToken))
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        ViewData["ReturnUrl"] = returnUrl;
+        ViewData["MaskedEmail"] = TempData["OtpMaskedEmail"] as string ?? "your email";
+        TempData.Keep("OtpMaskedEmail");
+
+        return View(new VerifyOtpInput
+        {
+            ChallengeToken = challengeToken,
+            ReturnUrl = returnUrl
+        });
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> VerifyOtp(VerifyOtpInput input, CancellationToken cancellationToken)
+    {
+        ViewData["MaskedEmail"] = TempData["OtpMaskedEmail"] as string ?? "your email";
+        TempData.Keep("OtpMaskedEmail");
+        ViewData["ReturnUrl"] = input.ReturnUrl;
+
+        if (!ModelState.IsValid)
+        {
+            return View(input);
+        }
+
+        var result = await _authService.VerifyOtpAsync(input, cancellationToken);
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Verification failed.");
+            return View(input);
+        }
+
+        _authService.SetAuthCookie(result.Token, result.ExpiresAt, rememberMe: false);
+        TempData.Remove("OtpMaskedEmail");
+
+        if (result.MustChangePassword)
+        {
+            return RedirectToAction(nameof(ChangePassword));
+        }
+
+        return RedirectToLocal(input.ReturnUrl);
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResendOtp(string challengeToken, string? returnUrl, CancellationToken cancellationToken)
+    {
+        var result = await _authService.ResendOtpAsync(challengeToken, cancellationToken);
+        if (!result.Success || string.IsNullOrWhiteSpace(result.OtpChallengeToken))
+        {
+            TempData["OtpError"] = result.ErrorMessage ?? "Could not resend the code.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        TempData["OtpMaskedEmail"] = result.MaskedEmail;
+        TempData["OtpInfo"] = "A new verification code was sent.";
+        return RedirectToAction(nameof(VerifyOtp), new
+        {
+            challengeToken = result.OtpChallengeToken,
+            returnUrl
+        });
     }
 
     [HttpGet]

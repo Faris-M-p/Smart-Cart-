@@ -27,7 +27,8 @@ public class AuthJwtTokenService
         string storeCode,
         string storeName,
         bool mustChangePassword,
-        bool rememberMe)
+        bool rememberMe,
+        bool isPlatformSuperAdmin = false)
     {
         var minutes = rememberMe
             ? Math.Max(_settings.ExpiryMinutes, 60 * 24 * 14)
@@ -49,6 +50,7 @@ public class AuthJwtTokenService
             new(AuthClaims.StoreCode, storeCode),
             new(AuthClaims.StoreName, storeName),
             new(AuthClaims.MustChangePassword, mustChangePassword ? "1" : "0"),
+            new(AuthClaims.IsPlatformSuperAdmin, isPlatformSuperAdmin ? "1" : "0"),
             new("username", userName)
         };
 

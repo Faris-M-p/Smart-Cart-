@@ -7,12 +7,14 @@
 | `001_DefaultRoles.sql` | System roles (SUPER_ADMIN, STORE_MANAGER, …) |
 | `002_DefaultPermissions.sql` | Modules, permissions, SUPER_ADMIN grants |
 | `003_DefaultSettings.sql` | Company-level default settings |
+| `004_PlatformSuperAdmin.sql` | Platform Super Admin (`Muhdfarismp@gmail.com`) — OTP login; change password in non-dev |
 
 Seeds are **idempotent** (`WHERE NOT EXISTS`) and contain **no** fake customers, sales, or payments.
 
 ## First company / store / administrator
 
-Do **not** seed a production admin with a known password.
+Company store admins are provisioned by **platform Super Admin** (not public register).  
+Do **not** treat the platform Super Admin seed password as a production secret forever — rotate after first deploy.
 
 Recommended bootstrap (application or one-time ops script, in a single transaction):
 
