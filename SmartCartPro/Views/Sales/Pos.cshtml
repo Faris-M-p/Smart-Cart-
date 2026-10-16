@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "POS Billing";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">POS Billing</h1>
+        <p class="text-muted mb-0">Point of sale for the active store — UI shell with sample cart.</p>
+    </div>
+    <span class="badge text-bg-light border">Cash session: Open</span>
+</div>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <label class="form-label">Scan barcode / search product</label>
+                <input class="form-control form-control-lg" placeholder="Scan or type product…" />
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <table class="table align-middle mb-0">
+                    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                    <tbody>
+                        <tr><td>Wireless Mouse</td><td>1</td><td>₹ 799</td><td>₹ 799</td></tr>
+                        <tr><td>Ceramic Mug</td><td>2</td><td>₹ 249</td><td>₹ 498</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Customer</label>
+                    <input class="form-control" placeholder="Walk-in / phone / name" />
+                </div>
+                <dl class="row mb-3">
+                    <dt class="col-6">Subtotal</dt><dd class="col-6 text-end">₹ 1,297</dd>
+                    <dt class="col-6">Tax</dt><dd class="col-6 text-end">₹ 65</dd>
+                    <dt class="col-6 fs-5">Total</dt><dd class="col-6 text-end fs-5 fw-semibold">₹ 1,362</dd>
+                </dl>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-success btn-lg">Pay cash</button>
+                    <button type="button" class="btn btn-outline-primary">UPI / Card</button>
+                    <button type="button" class="btn btn-outline-secondary">Hold bill</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

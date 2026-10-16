@@ -23,7 +23,8 @@ public class OrderService : IOrderService
     {
         if (order.CreatedAt == default)
         {
-            order.CreatedAt = DateTimeOffset.UtcNow;
+            order.CreatedAt = DateTime.UtcNow;
+            order.OrderDate = DateTime.UtcNow;
         }
 
         await _orders.AddAsync(order, cancellationToken);

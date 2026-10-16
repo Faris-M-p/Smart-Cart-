@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Customer report";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Customer report", Subtitle: "Purchase activity by customer (sample)", ActionText: "", ActionUrl: ""))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <table class="table mb-0">
+            <thead><tr><th>Customer</th><th>Orders</th><th>Total spend</th><th>Last purchase</th></tr></thead>
+            <tbody>
+                <tr><td>Ravi Kumar</td><td>12</td><td>₹ 28,400</td><td>2026-10-14</td></tr>
+                <tr><td>Anita S.</td><td>5</td><td>₹ 9,120</td><td>2026-10-12</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>

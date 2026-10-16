@@ -1,0 +1,30 @@
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Register";
+}
+<div class="auth-body">
+    <div class="auth-heading">
+        <h1>Create account</h1>
+        <p>First company administrator setup (preview).</p>
+    </div>
+    <form class="auth-form" asp-controller="Auth" asp-action="Login" method="get">
+        <div class="mb-3">
+            <label class="form-label" for="reg-name">Full name</label>
+            <input type="text" class="form-control" id="reg-name" placeholder="Your name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="reg-email">Work email</label>
+            <input type="email" class="form-control" id="reg-email" placeholder="you@company.com" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="reg-company">Company name</label>
+            <input type="text" class="form-control" id="reg-company" placeholder="Acme Retail" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="reg-password">Password</label>
+            <input type="password" class="form-control" id="reg-password" />
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Continue</button>
+    </form>
+    <p class="auth-footnote">Already registered? <a asp-controller="Auth" asp-action="Login">Sign in</a></p>
+</div>

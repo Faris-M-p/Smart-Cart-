@@ -1,0 +1,47 @@
+@{
+    ViewData["MetisMode"] = "auth";
+    var title = ViewData["Title"] as string ?? "SmartCart Pro";
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>@title · SmartCart Pro</title>
+    <meta name="theme-color" content="#2563eb" />
+    <partial name="_MetisAssets" />
+</head>
+<body data-page="login">
+<div class="auth-layout">
+    <main class="auth-main">
+        <div class="auth-topbar">
+            <a class="auth-brand" asp-controller="Home" asp-action="Index">
+                <span>SmartCart</span>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle aria-label="Toggle colour theme">
+                <i class="bi bi-sun-fill theme-icon-light"></i>
+                <i class="bi bi-moon-fill theme-icon-dark d-none"></i>
+            </button>
+        </div>
+        @RenderBody()
+    </main>
+    <aside class="auth-aside">
+        <div class="auth-aside-inner">
+            <p class="auth-quote">Retail operations for every store — catalog, stock, POS and online orders in one place.</p>
+            <ul class="auth-points">
+                <li><i class="bi bi-check"></i><span>Multi-store inventory and purchasing</span></li>
+                <li><i class="bi bi-check"></i><span>POS billing with returns and cash sessions</span></li>
+                <li><i class="bi bi-check"></i><span>Roles, permissions and company settings</span></li>
+            </ul>
+            <dl class="auth-stats">
+                <div><dt>POS</dt><dd>Billing</dd></div>
+                <div><dt>Stock</dt><dd>Per store</dd></div>
+                <div><dt>Online</dt><dd>Orders</dd></div>
+            </dl>
+        </div>
+    </aside>
+</div>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

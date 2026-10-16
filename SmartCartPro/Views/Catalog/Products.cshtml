@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Products";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Products", Subtitle: "Company-wide catalog — stock balances are per store", ActionText: "Add product", ActionUrl: "#"))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="row g-2 mb-3">
+            <div class="col-md-4"><input class="form-control" placeholder="Search name, SKU, barcode…" /></div>
+            <div class="col-md-3">
+                <select class="form-select"><option>All categories</option><option>Electronics</option><option>Groceries</option></select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Code</th><th>Product</th><th>Category</th><th>Price</th><th>Online</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>PRD-1001</td><td>Wireless Mouse</td><td>Electronics</td><td>₹ 799</td><td>Yes</td><td><span class="badge text-bg-success">Active</span></td></tr>
+                    <tr><td>PRD-1002</td><td>Basmati Rice 5kg</td><td>Groceries</td><td>₹ 620</td><td>No</td><td><span class="badge text-bg-success">Active</span></td></tr>
+                    <tr><td>PRD-1003</td><td>Ceramic Mug</td><td>Home &amp; Kitchen</td><td>₹ 249</td><td>Yes</td><td><span class="badge text-bg-success">Active</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

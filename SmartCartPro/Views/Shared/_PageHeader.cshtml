@@ -1,0 +1,21 @@
+@model (string Title, string? Subtitle, string? ActionText, string? ActionUrl)
+@{
+    var (title, subtitle, actionText, actionUrl) = Model;
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h1 class="h3 mb-1">@title</h1>
+        @if (!string.IsNullOrWhiteSpace(subtitle))
+        {
+            <p class="text-muted mb-0">@subtitle</p>
+        }
+    </div>
+    @if (!string.IsNullOrWhiteSpace(actionText) && !string.IsNullOrWhiteSpace(actionUrl) && actionUrl != "#")
+    {
+        <a class="btn btn-primary" href="@actionUrl"><i class="bi bi-plus-lg me-1"></i>@actionText</a>
+    }
+    else if (!string.IsNullOrWhiteSpace(actionText))
+    {
+        <button type="button" class="btn btn-primary" disabled><i class="bi bi-plus-lg me-1"></i>@actionText</button>
+    }
+</div>

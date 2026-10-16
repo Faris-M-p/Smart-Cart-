@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Product report";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Product report", Subtitle: "Top movers and stock health (sample)", ActionText: "", ActionUrl: ""))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <table class="table mb-0">
+            <thead><tr><th>Product</th><th>Qty sold</th><th>Revenue</th><th>On hand</th></tr></thead>
+            <tbody>
+                <tr><td>Basmati Rice 5kg</td><td>64</td><td>₹ 39,680</td><td>6</td></tr>
+                <tr><td>Wireless Mouse</td><td>22</td><td>₹ 17,578</td><td>48</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,8 +1,84 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Dashboard";
 }
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Dashboard</h1>
+        <p class="text-muted mb-0">Today’s store overview (sample numbers until data is connected).</p>
+    </div>
+    <a class="btn btn-primary" asp-controller="Sales" asp-action="Pos"><i class="bi bi-cash-register me-1"></i>Open POS</a>
+</div>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Today’s sales</div>
+                <div class="fs-3 fw-semibold">₹ 48,250</div>
+                <span class="badge text-bg-success-subtle text-success">+12% vs yesterday</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">POS invoices</div>
+                <div class="fs-3 fw-semibold">86</div>
+                <span class="text-muted small">This store</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Online orders</div>
+                <div class="fs-3 fw-semibold">14</div>
+                <span class="badge text-bg-warning-subtle text-warning">3 pending</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Low stock items</div>
+                <div class="fs-3 fw-semibold">9</div>
+                <a class="small" asp-controller="Inventory" asp-action="Stock">View inventory</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h2 class="h6 mb-0">Recent sales</h2>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td>INV-1042</td><td>Walk-in</td><td>₹ 1,250</td><td><span class="badge text-bg-success">Paid</span></td></tr>
+                            <tr><td>INV-1041</td><td>Ravi Kumar</td><td>₹ 3,480</td><td><span class="badge text-bg-success">Paid</span></td></tr>
+                            <tr><td>INV-1040</td><td>Walk-in</td><td>₹ 620</td><td><span class="badge text-bg-success">Paid</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h2 class="h6 mb-0">Quick actions</h2>
+            </div>
+            <div class="card-body pt-0 d-grid gap-2">
+                <a class="btn btn-outline-primary text-start" asp-controller="Catalog" asp-action="Products"><i class="bi bi-box me-2"></i>Manage products</a>
+                <a class="btn btn-outline-primary text-start" asp-controller="Inventory" asp-action="Purchases"><i class="bi bi-truck me-2"></i>New purchase</a>
+                <a class="btn btn-outline-primary text-start" asp-controller="Sales" asp-action="OnlineOrders"><i class="bi bi-bag me-2"></i>Online orders</a>
+                <a class="btn btn-outline-primary text-start" asp-controller="Admin" asp-action="Stores"><i class="bi bi-shop me-2"></i>Company &amp; stores</a>
+            </div>
+        </div>
+    </div>
 </div>

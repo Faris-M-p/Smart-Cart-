@@ -1,0 +1,1 @@
+function e({getResults:e,minLength:t=2,delayMs:n=200}={}){return()=>({query:``,results:[],isLoading:!1,async search(){if(this.query.length<t){this.results=[];return}this.isLoading=!0;try{n>0&&await new Promise(e=>setTimeout(e,n));let t=e?await e(this.query):[];this.results=Array.isArray(t)?t:[]}finally{this.isLoading=!1}}})}export{e as t};

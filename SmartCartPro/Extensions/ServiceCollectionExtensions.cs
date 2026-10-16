@@ -29,6 +29,10 @@ public static class ServiceCollectionExtensions
         // Optional Dapper (reports / justified queries only)
         services.AddScoped<IProductReportRepository, ProductReportRepository>();
 
+        // Common filter / dropdown fills (Dapper)
+        services.AddScoped<IFilterRepository, FilterRepository>();
+        services.AddScoped<IFilterService, FilterService>();
+
         // Services
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<ICategoryService, CategoryService>();

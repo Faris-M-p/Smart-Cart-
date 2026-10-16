@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Company & stores";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Company & stores", Subtitle: "One company per client DB — each store has a unique code", ActionText: "Add store", ActionUrl: "#"))
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6">Company</h2>
+                <dl class="row mb-0">
+                    <dt class="col-4">Code</dt><dd class="col-8">DEMOCO</dd>
+                    <dt class="col-4">Name</dt><dd class="col-8">Demo Retail Pvt Ltd</dd>
+                    <dt class="col-4">Currency</dt><dd class="col-8">INR</dd>
+                    <dt class="col-4">Timezone</dt><dd class="col-8">Asia/Kolkata</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6">Stores</h2>
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Code</th><th>Name</th><th>Default</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr><td>MAIN</td><td>Main Branch</td><td><span class="badge text-bg-primary">Yes</span></td><td>Active</td></tr>
+                        <tr><td>EAST</td><td>East Mall</td><td>—</td><td>Active</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

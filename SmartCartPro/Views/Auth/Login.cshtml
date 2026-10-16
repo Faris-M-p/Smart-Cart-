@@ -1,0 +1,30 @@
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Sign in";
+}
+<div class="auth-body">
+    <div class="auth-heading">
+        <h1>Sign in</h1>
+        <p>Access your SmartCart Pro store operations.</p>
+    </div>
+    <form class="auth-form" asp-controller="Home" asp-action="Index" method="get">
+        <div class="mb-3">
+            <label class="form-label" for="login-email">Email or username</label>
+            <input type="text" class="form-control" id="login-email" name="email" autocomplete="username" placeholder="admin@company.com" />
+        </div>
+        <div class="mb-3">
+            <div class="form-label-row">
+                <label class="form-label" for="login-password">Password</label>
+                <a asp-controller="Auth" asp-action="ForgotPassword">Forgot?</a>
+            </div>
+            <input type="password" class="form-control" id="login-password" name="password" autocomplete="current-password" placeholder="Enter password" />
+        </div>
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="login-remember" />
+            <label class="form-check-label small" for="login-remember">Keep me signed in</label>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Sign in</button>
+    </form>
+    <p class="auth-footnote">Need an account? <a asp-controller="Auth" asp-action="Register">Register</a></p>
+    <p class="auth-legal text-muted small">UI preview — authentication will be wired in a later task.</p>
+</div>

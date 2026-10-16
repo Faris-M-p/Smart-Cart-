@@ -1,0 +1,32 @@
+@{
+    // Hashed Metis build outputs under wwwroot/metis (from metis-v1.0.0 dist-modern)
+    var css = "/metis/assets/main-Kuf3cpUe.css";
+    var runtime = "/metis/assets/rolldown-runtime-hePW80VL.js";
+    var mainBoot = "/metis/assets/main-BqKkk_Lj.js";
+    var vendorUi = "/metis/assets/vendor-ui-Be8JR3ju.js";
+    var vendorBs = "/metis/assets/vendor-bootstrap-Dj44xPS1.js";
+    var vendorCharts = "/metis/assets/vendor-charts-_UPf9h_O.js";
+    var adminApp = "/metis/assets/main-1Eks1J0_.js";
+    var authApp = "/metis/assets/auth-Cxu0M6Hr.js";
+    var pwd = "/metis/assets/password-strength-CR79XtXF.js";
+    var favSvg = "/metis/assets/favicon-B1-NXkMJ.svg";
+    var favPng = "/metis/assets/favicon-DiW6HRCs.png";
+    var mode = ViewData["MetisMode"] as string ?? "admin";
+}
+<link rel="icon" type="image/svg+xml" href="@favSvg" />
+<link rel="icon" type="image/png" href="@favPng" />
+<link rel="stylesheet" crossorigin href="@css" />
+<script type="module" crossorigin src="@mainBoot"></script>
+<script type="module" crossorigin src="@runtime"></script>
+<script type="module" crossorigin src="@vendorUi"></script>
+@if (mode == "admin")
+{
+    <script type="module" crossorigin src="@vendorBs"></script>
+    <script type="module" crossorigin src="@vendorCharts"></script>
+    <script type="module" crossorigin src="@adminApp"></script>
+}
+else
+{
+    <script type="module" crossorigin src="@pwd"></script>
+    <script type="module" crossorigin src="@authApp"></script>
+}

@@ -1,0 +1,25 @@
+---
+description: SmartCartPro — follow context/RULES.md and ADMIN modules (Ecommerce-style context tree)
+globs: SmartCartPro/**
+alwaysApply: false
+---
+
+# SmartCartPro
+
+Before changing `SmartCartPro/`, read:
+
+1. **`SmartCartPro/context/RULES.md`** — common rules (required)
+2. **`SmartCartPro/context/PROJECT.md`** / **`ARCHITECTURE.md`** / **`DATABASE.md`** as needed
+3. The matching file under **`SmartCartPro/context/ADMIN/modules/`** for the module you touch
+
+## Quick non-negotiables
+
+- Controller → Service → Repository (`*/Interfaces/`). No `Implementations/`.
+- Repositories: data access only — **no** criteria parsing or private business helpers; service prepares typed options (e.g. `CategoryId`).
+- SQL in `Database-Postgres/` is schema truth. **No EF migrations.** No SPs/functions this phase.
+- Pack related DTOs in one file (e.g. `Models/FilterModels.cs`). Do not spam tiny model files.
+- Filter API: `FilterOptions` → service parses → `FilterDataResponse` with `FillProduct` / `FillCategory` / `FillSubCategory`.
+- Metis = design shell; SmartCart modules only (no Metis demo controllers).
+- `fk_store` / `fk_company` in SQL — never `StoreId`.
+- Update `context/` in the **same task** as code/schema changes. `context/` is the only project doc source of truth.
+- Do not run DB bats / live DB / app start unless the user asks.

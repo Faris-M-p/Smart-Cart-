@@ -1,50 +1,176 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    ViewData["MetisMode"] = "admin";
+    var title = ViewData["Title"] as string ?? "SmartCart Pro";
+    string Nav(string ctrl, string act = "Index") =>
+        string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), ctrl, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), act, StringComparison.OrdinalIgnoreCase)
+            ? "nav-link active" : "nav-link";
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SmartCartPro</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SmartCartPro.styles.css" asp-append-version="true" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>@title · SmartCart Pro</title>
+    <meta name="theme-color" content="#2563eb" />
+    <partial name="_MetisAssets" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SmartCartPro</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+<body data-page="dashboard" class="admin-layout">
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="admin-app">
+<div class="admin-wrapper" id="admin-wrapper">
+
+<header class="admin-header">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                <span class="h4 mb-0 fw-bold text-primary-emphasis">SmartCart</span>
+            </a>
+            <button class="hamburger-menu" type="button" data-sidebar-toggle aria-label="Toggle sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="search-container flex-grow-1 mx-4 d-none d-md-block">
+                <div class="position-relative">
+                    <input type="search" class="form-control" placeholder="Search products, invoices, customers…" aria-label="Search" />
+                    <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SmartCartPro - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <div class="navbar-nav flex-row align-items-center">
+                <span class="badge text-bg-light border me-2 d-none d-lg-inline">Store: Main Branch</span>
+                <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="Login">Sign out</a>
+            </div>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </nav>
+</header>
+
+<aside class="admin-sidebar" id="admin-sidebar">
+    <div class="sidebar-content">
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="@Nav("Home")" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Catalog</small></li>
+                <li class="nav-item">
+                    <a class="@Nav("Catalog","Categories")" asp-controller="Catalog" asp-action="Categories">
+                        <i class="bi bi-folder"></i><span>Categories</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Catalog","Brands")" asp-controller="Catalog" asp-action="Brands">
+                        <i class="bi bi-tags"></i><span>Brands</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Catalog","Products")" asp-controller="Catalog" asp-action="Products">
+                        <i class="bi bi-box"></i><span>Products</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Catalog","Variants")" asp-controller="Catalog" asp-action="Variants">
+                        <i class="bi bi-upc"></i><span>SKU / Variants</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Purchase &amp; stock</small></li>
+                <li class="nav-item">
+                    <a class="@Nav("Inventory","Suppliers")" asp-controller="Inventory" asp-action="Suppliers">
+                        <i class="bi bi-truck"></i><span>Suppliers</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Inventory","Purchases")" asp-controller="Inventory" asp-action="Purchases">
+                        <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Inventory","Stock")" asp-controller="Inventory" asp-action="Stock">
+                        <i class="bi bi-stack"></i><span>Inventory</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Sales</small></li>
+                <li class="nav-item">
+                    <a class="@Nav("Sales","Pos")" asp-controller="Sales" asp-action="Pos">
+                        <i class="bi bi-cash-register"></i><span>POS Billing</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Sales","Invoices")" asp-controller="Sales" asp-action="Invoices">
+                        <i class="bi bi-receipt"></i><span>Sales invoices</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Sales","Returns")" asp-controller="Sales" asp-action="Returns">
+                        <i class="bi bi-arrow-return-left"></i><span>Sales returns</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Sales","OnlineOrders")" asp-controller="Sales" asp-action="OnlineOrders">
+                        <i class="bi bi-bag-check"></i><span>Online orders</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Customers")" asp-controller="Customers" asp-action="Index">
+                        <i class="bi bi-people"></i><span>Customers</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Reports</small></li>
+                <li class="nav-item">
+                    <a class="@Nav("Reports","Sales")" asp-controller="Reports" asp-action="Sales">
+                        <i class="bi bi-graph-up"></i><span>Sales report</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Reports","Products")" asp-controller="Reports" asp-action="Products">
+                        <i class="bi bi-bar-chart"></i><span>Product report</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Reports","Customers")" asp-controller="Reports" asp-action="Customers">
+                        <i class="bi bi-person-lines-fill"></i><span>Customer report</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Administration</small></li>
+                <li class="nav-item">
+                    <a class="@Nav("Admin","Employees")" asp-controller="Admin" asp-action="Employees">
+                        <i class="bi bi-person-badge"></i><span>Employees</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Admin","Roles")" asp-controller="Admin" asp-action="Roles">
+                        <i class="bi bi-shield-lock"></i><span>Roles &amp; permissions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Admin","Stores")" asp-controller="Admin" asp-action="Stores">
+                        <i class="bi bi-shop"></i><span>Company &amp; stores</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="@Nav("Admin","Settings")" asp-controller="Admin" asp-action="Settings">
+                        <i class="bi bi-gear"></i><span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</aside>
+
+<main class="admin-main" id="main-content">
+    <div class="container-fluid py-4">
+        @RenderBody()
+    </div>
+</main>
+
+</div>
+</div>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

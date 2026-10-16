@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Inventory";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Inventory", Subtitle: "On-hand quantities for the active store", ActionText: "Stock adjustment", ActionUrl: "#"))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Product</th><th>SKU</th><th>On hand</th><th>Reserved</th><th>Reorder</th></tr></thead>
+                <tbody>
+                    <tr><td>Wireless Mouse</td><td>WM-BLK</td><td>48</td><td>2</td><td>10</td></tr>
+                    <tr class="table-warning"><td>Basmati Rice 5kg</td><td>RICE-5</td><td>6</td><td>0</td><td>20</td></tr>
+                    <tr><td>Ceramic Mug</td><td>MUG-01</td><td>120</td><td>0</td><td>30</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

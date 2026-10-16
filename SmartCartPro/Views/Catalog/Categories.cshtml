@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Categories";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Categories", Subtitle: "Company-wide product categories", ActionText: "Add category", ActionUrl: "#"))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Code</th><th>Name</th><th>Products</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    <tr><td>CAT-01</td><td>Electronics</td><td>42</td><td><span class="badge text-bg-success">Active</span></td><td><a href="#">Edit</a></td></tr>
+                    <tr><td>CAT-02</td><td>Groceries</td><td>128</td><td><span class="badge text-bg-success">Active</span></td><td><a href="#">Edit</a></td></tr>
+                    <tr><td>CAT-03</td><td>Home &amp; Kitchen</td><td>35</td><td><span class="badge text-bg-secondary">Inactive</span></td><td><a href="#">Edit</a></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

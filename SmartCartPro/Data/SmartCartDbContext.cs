@@ -18,6 +18,7 @@ public class SmartCartDbContext : DbContext
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<SubCategory> SubCategories => Set<SubCategory>();
     public DbSet<Inventory> Inventories => Set<Inventory>();
     public DbSet<Order> Orders => Set<Order>();
 
@@ -99,6 +100,27 @@ public class SmartCartDbContext : DbContext
             e.Property(x => x.Cancelled).HasColumnName("cancelled");
             e.Property(x => x.CancelledOn).HasColumnName("cancelledon");
             e.Property(x => x.CancelledReason).HasColumnName("cancelledreason");
+        });
+
+        modelBuilder.Entity<SubCategory>(e =>
+        {
+            e.ToTable("subcategories");
+            e.HasKey(x => x.IdSubcategory);
+            e.Property(x => x.IdSubcategory).HasColumnName("id_subcategory");
+            e.Property(x => x.FkCategory).HasColumnName("fk_category").IsRequired();
+            e.Property(x => x.SubCategoryName).HasColumnName("subcategoryname").IsRequired();
+            e.Property(x => x.Description).HasColumnName("description");
+            e.Property(x => x.DisplayOrder).HasColumnName("displayorder");
+            e.Property(x => x.IsActive).HasColumnName("isactive");
+            e.Property(x => x.CreatedAt).HasColumnName("createdat");
+            e.Property(x => x.UpdatedAt).HasColumnName("updatedat");
+            e.Property(x => x.Cancelled).HasColumnName("cancelled");
+            e.Property(x => x.CancelledOn).HasColumnName("cancelledon");
+            e.Property(x => x.CancelledReason).HasColumnName("cancelledreason");
+            e.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.FkCategory)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Product>(e =>

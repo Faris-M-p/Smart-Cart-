@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Sales returns";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Sales returns", Subtitle: "Return against an original store invoice", ActionText: "New return", ActionUrl: "#"))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Return #</th><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>RET-301</td><td>INV-1038</td><td>2026-10-13</td><td>₹ 499</td><td><span class="badge text-bg-success">Completed</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

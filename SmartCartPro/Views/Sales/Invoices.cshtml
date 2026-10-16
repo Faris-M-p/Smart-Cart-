@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Sales invoices";
+}
+@await Html.PartialAsync("_PageHeader", (Title: "Sales invoices", Subtitle: "POS / manual sales for this store", ActionText: "New sale", ActionUrl: Url.Action("Pos", "Sales")))
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>INV-1042</td><td>2026-10-14 18:02</td><td>Walk-in</td><td>₹ 1,250</td><td>₹ 1,250</td><td><span class="badge text-bg-success">Completed</span></td></tr>
+                    <tr><td>INV-1041</td><td>2026-10-14 17:40</td><td>Ravi Kumar</td><td>₹ 3,480</td><td>₹ 3,480</td><td><span class="badge text-bg-success">Completed</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
