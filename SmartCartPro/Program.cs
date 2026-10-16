@@ -1,9 +1,88 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using SmartCartPro.Configuration;
 using SmartCartPro.Extensions;
+using SmartCartPro.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JwtSettings is not configured.");
+if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Length < 32)
+{
+    throw new InvalidOperationException("JwtSettings:SecretKey must be at least 32 characters.");
+}
+
+builder.Services.AddControllersWithViews(options =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy));
+});
+
 builder.Services.AddSmartCartDataAccess(builder.Configuration);
+builder.Services.AddSmartCartAuth(builder.Configuration);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+            ClockSkew = TimeSpan.FromMinutes(1),
+            NameClaimType = "username",
+            RoleClaimType = "role"
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (!string.IsNullOrEmpty(context.Token))
+                {
+                    return Task.CompletedTask;
+                }
+
+                if (context.Request.Cookies.TryGetValue(AuthClaims.TokenCookieName, out var token)
+                    && !string.IsNullOrWhiteSpace(token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+                if (context.Response.HasStarted)
+                {
+                    return Task.CompletedTask;
+                }
+
+                var returnUrl = context.Request.Path + context.Request.QueryString;
+                var loginUrl = "/Auth/Login";
+                if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl != "/")
+                {
+                    loginUrl += "?returnUrl=" + Uri.EscapeDataString(returnUrl);
+                }
+
+                context.Response.Redirect(loginUrl);
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -16,6 +95,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();

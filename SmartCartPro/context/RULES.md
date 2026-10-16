@@ -52,13 +52,14 @@ Controller → IService / Service → IRepository / Repository → EF Core (DbCo
 
 | Layer | Does | Does not |
 |-------|------|----------|
-| Controller | HTTP bind, call service, return View/JSON | Query DB, business rules |
-| Service | Orchestration, mode switches, parse/validate criteria, compose responses | Raw SQL / DbContext |
+| Controller | HTTP bind, call service, return `IActionResult` (View/JSON/Redirect) | Query DB, business rules, cookies, hashing, JWT build, non-endpoint helpers |
+| Service | Orchestration, mode switches, parse/validate criteria, compose responses, auth cookie set/clear | Raw SQL / DbContext |
 | Repository | EF LINQ (preferred) data access only | HTTP, parsing, mode trees, helper/sub-functions for business logic |
 | Interface | Contracts in `*/Interfaces/` | Implementations folder |
 
 - **No** `Implementations/` folder.
 - Controllers must **not** inject `DbContext`.
+- **Controllers stay endpoint-thin:** only action methods plus small `IActionResult` helpers (e.g. safe local redirect). Put cookie write/delete, token issue, password hash/verify, and other non-endpoint logic in the service layer.
 - Prefer **EF Core + LINQ**. Use **Dapper** only under `Dapper/` for justified aggregates/reports.
 - **Repositories stay thin:** no private parse helpers, no mode switches, no criteria string parsing. Service prepares typed fields on the options model (e.g. `CategoryId` from `Criteria`); repository only reads those fields and queries.
 

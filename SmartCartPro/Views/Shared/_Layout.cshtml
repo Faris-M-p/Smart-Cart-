@@ -1,6 +1,9 @@
-﻿@{
+﻿@using SmartCartPro.Helpers
+@{
     ViewData["MetisMode"] = "admin";
     var title = ViewData["Title"] as string ?? "SmartCart Pro";
+    var storeName = AuthClaims.GetStoreName(User) ?? "Store";
+    var fkStore = AuthClaims.GetFkStore(User);
     string Nav(string ctrl, string act = "Index") =>
         string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), ctrl, StringComparison.OrdinalIgnoreCase)
         && string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), act, StringComparison.OrdinalIgnoreCase)
@@ -37,8 +40,9 @@
                 </div>
             </div>
             <div class="navbar-nav flex-row align-items-center">
-                <span class="badge text-bg-light border me-2 d-none d-lg-inline">Store: Main Branch</span>
-                <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="Login">Sign out</a>
+                <span class="badge text-bg-light border me-2 d-none d-lg-inline" title="fk_store=@fkStore">Store: @storeName</span>
+                <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="ChangePassword">Password</a>
+                <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="LogoutGet">Sign out</a>
             </div>
         </div>
     </nav>

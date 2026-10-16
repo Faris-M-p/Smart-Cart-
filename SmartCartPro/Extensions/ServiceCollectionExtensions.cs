@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SmartCartPro.Configuration;
 using SmartCartPro.Dapper;
 using SmartCartPro.Dapper.Interfaces;
 using SmartCartPro.Data;
+using SmartCartPro.Entities;
 using SmartCartPro.Repositories;
 using SmartCartPro.Repositories.Interfaces;
 using SmartCartPro.Services;
@@ -29,7 +32,7 @@ public static class ServiceCollectionExtensions
         // Optional Dapper (reports / justified queries only)
         services.AddScoped<IProductReportRepository, ProductReportRepository>();
 
-        // Common filter / dropdown fills (Dapper)
+        // Common filter / dropdown fills (EF LINQ)
         services.AddScoped<IFilterRepository, FilterRepository>();
         services.AddScoped<IFilterService, FilterService>();
 
@@ -38,6 +41,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IOrderService, OrderService>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddSmartCartAuth(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddHttpContextAccessor();
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+        services.AddSingleton<AuthJwtTokenService>();
+        services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IAuthService, AuthService>();
         return services;
     }
 }

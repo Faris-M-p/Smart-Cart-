@@ -16,6 +16,10 @@ public class SmartCartDbContext : DbContext
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Store> Stores => Set<Store>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<UserStoreAccess> UserStoreAccess => Set<UserStoreAccess>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<SubCategory> SubCategories => Set<SubCategory>();
@@ -207,6 +211,91 @@ public class SmartCartDbContext : DbContext
                 .HasForeignKey(x => x.FkStore)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.FkStore, x.OrderNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<User>(e =>
+        {
+            e.ToTable("users");
+            e.HasKey(x => x.IdUser);
+            e.Property(x => x.IdUser).HasColumnName("id_user");
+            e.Property(x => x.UserName).HasColumnName("username").IsRequired();
+            e.Property(x => x.Email).HasColumnName("email").IsRequired();
+            e.Property(x => x.PasswordHash).HasColumnName("passwordhash").IsRequired();
+            e.Property(x => x.FullName).HasColumnName("fullname").IsRequired();
+            e.Property(x => x.Phone).HasColumnName("phone");
+            e.Property(x => x.EmployeeCode).HasColumnName("employeecode");
+            e.Property(x => x.IsActive).HasColumnName("isactive");
+            e.Property(x => x.MustChangePassword).HasColumnName("mustchangepassword");
+            e.Property(x => x.LastLoginAt).HasColumnName("lastloginat");
+            e.Property(x => x.CreatedAt).HasColumnName("createdat");
+            e.Property(x => x.UpdatedAt).HasColumnName("updatedat");
+            e.Property(x => x.Cancelled).HasColumnName("cancelled");
+            e.Property(x => x.CancelledOn).HasColumnName("cancelledon");
+            e.Property(x => x.CancelledReason).HasColumnName("cancelledreason");
+            e.HasIndex(x => x.UserName).IsUnique();
+            e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<UserStoreAccess>(e =>
+        {
+            e.ToTable("user_store_access");
+            e.HasKey(x => x.IdUserStoreAccess);
+            e.Property(x => x.IdUserStoreAccess).HasColumnName("id_userstoreaccess");
+            e.Property(x => x.FkUser).HasColumnName("fk_user").IsRequired();
+            e.Property(x => x.FkStore).HasColumnName("fk_store").IsRequired();
+            e.Property(x => x.IsDefault).HasColumnName("isdefault");
+            e.Property(x => x.CreatedAt).HasColumnName("createdat");
+            e.Property(x => x.UpdatedAt).HasColumnName("updatedat");
+            e.Property(x => x.Cancelled).HasColumnName("cancelled");
+            e.Property(x => x.CancelledOn).HasColumnName("cancelledon");
+            e.Property(x => x.CancelledReason).HasColumnName("cancelledreason");
+            e.HasOne(x => x.User)
+                .WithMany(u => u.StoreAccess)
+                .HasForeignKey(x => x.FkUser)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkUser, x.FkStore }).IsUnique();
+        });
+
+        modelBuilder.Entity<Role>(e =>
+        {
+            e.ToTable("roles");
+            e.HasKey(x => x.IdRole);
+            e.Property(x => x.IdRole).HasColumnName("id_role");
+            e.Property(x => x.RoleCode).HasColumnName("rolecode").IsRequired();
+            e.Property(x => x.RoleName).HasColumnName("rolename").IsRequired();
+            e.Property(x => x.Description).HasColumnName("description");
+            e.Property(x => x.IsSystem).HasColumnName("issystem");
+            e.Property(x => x.IsActive).HasColumnName("isactive");
+            e.Property(x => x.CreatedAt).HasColumnName("createdat");
+            e.Property(x => x.UpdatedAt).HasColumnName("updatedat");
+            e.Property(x => x.Cancelled).HasColumnName("cancelled");
+            e.Property(x => x.CancelledOn).HasColumnName("cancelledon");
+            e.Property(x => x.CancelledReason).HasColumnName("cancelledreason");
+            e.HasIndex(x => x.RoleCode).IsUnique();
+        });
+
+        modelBuilder.Entity<UserRole>(e =>
+        {
+            e.ToTable("user_roles");
+            e.HasKey(x => x.IdUserRole);
+            e.Property(x => x.IdUserRole).HasColumnName("id_userrole");
+            e.Property(x => x.FkUser).HasColumnName("fk_user").IsRequired();
+            e.Property(x => x.FkRole).HasColumnName("fk_role").IsRequired();
+            e.Property(x => x.CreatedAt).HasColumnName("createdat");
+            e.Property(x => x.UpdatedAt).HasColumnName("updatedat");
+            e.HasOne(x => x.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(x => x.FkUser)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Role)
+                .WithMany()
+                .HasForeignKey(x => x.FkRole)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkUser, x.FkRole }).IsUnique();
         });
     }
 }
