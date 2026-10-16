@@ -15,40 +15,6 @@ public sealed class LoginInput
     public bool RememberMe { get; set; }
 }
 
-public sealed class RegisterInput
-{
-    [Required]
-    [Display(Name = "Full name")]
-    public string FullName { get; set; } = string.Empty;
-
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
-
-    [Required]
-    [Display(Name = "Username")]
-    [MinLength(3)]
-    public string UserName { get; set; } = string.Empty;
-
-    [Required]
-    [Display(Name = "Company name")]
-    public string CompanyName { get; set; } = string.Empty;
-
-    [Display(Name = "Store name")]
-    public string? StoreName { get; set; }
-
-    [Required]
-    [DataType(DataType.Password)]
-    [MinLength(8)]
-    public string Password { get; set; } = string.Empty;
-
-    [Required]
-    [DataType(DataType.Password)]
-    [Compare(nameof(Password))]
-    [Display(Name = "Confirm password")]
-    public string ConfirmPassword { get; set; } = string.Empty;
-}
-
 public sealed class ChangePasswordInput
 {
     [Required]
