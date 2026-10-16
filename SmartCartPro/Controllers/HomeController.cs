@@ -40,11 +40,12 @@ public class HomeController : Controller
         }
 
         var mapped = ExceptionErrorMapper.Map(exception);
+        Response.StatusCode = mapped.HttpStatusCode;
+
+        // Full developer text for browser console.log only when not Prod (never shown on the page UI).
         var developerMessage = _environmentSettings.IsProduction
             ? null
             : ExceptionErrorMapper.BuildFullDeveloperMessage(mapped.DeveloperMessage, exception);
-
-        Response.StatusCode = mapped.HttpStatusCode;
 
         return View(new ErrorViewModel
         {

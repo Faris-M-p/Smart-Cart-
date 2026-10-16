@@ -16,7 +16,7 @@ Before changing `SmartCartPro/`, read:
 
 - Controller → Service → Repository (`*/Interfaces/`). No `Implementations/`.
 - Controllers: endpoint + `IActionResult` only — **no** cookie/JWT/hash helpers in the controller; those belong on the service.
-- Unhandled exceptions → `AppExceptionHandler` only; throw typed `Exceptions/*` with **both** `UserMessage` and `DeveloperMessage`; handler exposes full developer detail only when not Prod.
+- Unhandled exceptions → `AppExceptionHandler` only; throw typed `Exceptions/*` with **both** `UserMessage` and `DeveloperMessage`. UI shows userMessage only; full detail → server `LogError` + browser `console.error` on the Error page (non-Prod only).
 - Super Admin platform module is **PLANNED/hold** (`context/ADMIN/modules/super-admin.md`) — do not implement until the user explicitly asks.
 - Repositories: data access only — **no** criteria parsing or private business helpers; service prepares typed options (e.g. `CategoryId`).
 - SQL in `Database-Postgres/` is schema truth. **No EF migrations.** No SPs/functions this phase.

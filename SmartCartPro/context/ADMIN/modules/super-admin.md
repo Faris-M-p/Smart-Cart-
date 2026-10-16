@@ -29,7 +29,7 @@ Normal company Admin and Store Admin must **never** see or call Super Admin plat
 
 | Area | Today | Reuse for Super Admin |
 |------|--------|------------------------|
-| Auth | Real JWT cookie (`smartcartpro.auth.token`), `PasswordHasher`, claims `id_user` / `fk_store` / `fk_company` | Extend with Super Admin policy + OTP step; **do not** use public `/Auth/Register` for platform admin |
+| Auth | Real JWT cookie (`smartcartpro.auth.token`), `PasswordHasher`, claims `id_user` / `fk_store` / `fk_company` | Extend with Super Admin policy + OTP step. **Public `/Auth/Register` is already disabled** — company create moves to Super Admin wizard |
 | Users | `users` | Same table; mark Super Admin with a **protected** flag/role normal admins cannot assign |
 | Roles / permissions | `roles`, `modules`, `permissions`, `role_permissions`, `user_roles` | Company RBAC remains; add **separate** platform authorization policy |
 | Company / store | `company`, `store`, `user_store_access` | Company + store creation already patterned in Auth bootstrap transaction |

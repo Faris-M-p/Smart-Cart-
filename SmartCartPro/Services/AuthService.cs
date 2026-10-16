@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using SmartCartPro.Entities;
 using SmartCartPro.Helpers;

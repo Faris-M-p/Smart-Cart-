@@ -6,7 +6,7 @@ using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
-/// <summary>Authentication: login, register (first company), change password, logout.</summary>
+/// <summary>Employee authentication: login, change password, logout. Company registration is Super Admin only.</summary>
 public class AuthController : Controller
 {
     private readonly IAuthService _authService;
@@ -55,39 +55,6 @@ public class AuthController : Controller
         }
 
         return RedirectToLocal(returnUrl);
-    }
-
-    [HttpGet]
-    [AllowAnonymous]
-    public IActionResult Register()
-    {
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            return RedirectToAction("Index", "Home");
-        }
-
-        return View(new RegisterInput());
-    }
-
-    [HttpPost]
-    [AllowAnonymous]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(RegisterInput input, CancellationToken cancellationToken)
-    {
-        if (!ModelState.IsValid)
-        {
-            return View(input);
-        }
-
-        var result = await _authService.RegisterAsync(input, cancellationToken);
-        if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
-        {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Registration failed.");
-            return View(input);
-        }
-
-        _authService.SetAuthCookie(result.Token, result.ExpiresAt, rememberMe: true);
-        return RedirectToAction("Index", "Home");
     }
 
     [HttpGet]

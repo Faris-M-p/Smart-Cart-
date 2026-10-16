@@ -6,11 +6,13 @@
 - **Current Status:** `IMPLEMENTED`
 
 ## Purpose & Responsibilities
-Employee authentication against `users` (Identity `PasswordHasher`), JWT in HttpOnly cookie, store context via `fk_store` claim from `user_store_access`, first-company bootstrap register, change password, logout.
+Employee authentication against `users` (Identity `PasswordHasher`), JWT in HttpOnly cookie, store context via `fk_store` claim from `user_store_access`, change password, logout.
+
+**Company registration is not public.** Per Super Admin rules (`super-admin.md`), companies are provisioned by platform Super Admin — not via `/Auth/Register`.
 
 ## Implemented Features
 - **Login:** Username/email + password; preferred store from `user_store_access` (`isdefault` first); JWT cookie `smartcartpro.auth.token`
-- **Register:** Blocked if any company exists; creates `company` + default `store` + `users` + `user_store_access` (+ `user_roles` SUPER_ADMIN when seeded) in one transaction; signs in with that `fk_store`
+- **Register (public):** **Disabled** — GET/POST `/Auth/Register` redirect to Login; Login page has no “Register company” link
 - **Change password:** Authenticated; re-issues JWT; clears `mustchangepassword`
 - **Logout / LogoutGet:** `IAuthService.ClearAuthCookie()` then redirect to Login
 - **Cookie API on service:** `SetAuthCookie` / `ClearAuthCookie` (not private helpers on the controller)
@@ -22,7 +24,7 @@ Employee authentication against `users` (Identity `PasswordHasher`), JWT in Http
 
 ## Data
 - Entities: `User`, `UserStoreAccess`, `Role`, `UserRole`, `Company`, `Store`
-- Models: `LoginInput`, `RegisterInput`, `ChangePasswordInput`, `AuthSessionResult`, `AuthUserStoreInfo`
+- Models: `LoginInput`, `RegisterInput` (kept for future Super Admin wizard reuse), `ChangePasswordInput`, `AuthSessionResult`, `AuthUserStoreInfo`
 - Helpers: `AuthClaims` (`GetFkStore`, `GetFkCompany`, `GetUserId`, `GetStoreName`)
 
 ## Database Dependencies
@@ -31,22 +33,24 @@ Employee authentication against `users` (Identity `PasswordHasher`), JWT in Http
 
 ## API & Data Access
 - Controller: `Controllers/AuthController.cs`
-- Service: `Services/AuthService.cs`, `Services/AuthJwtTokenService.cs`
+- Service: `Services/AuthService.cs` (`RegisterAsync` retained for Super Admin when implemented — not exposed publicly)
 - Repository: `Repositories/AuthRepository.cs`
-- Views: `Views/Auth/*` with `_AuthLayout`
+- Views: `Views/Auth/Login`, ChangePassword, Forgot/Reset; Register view is a dead-end message only
 - Config: `JwtSettings` in `appsettings.json`
 
 ## UI Rules & Conventions
 - Brand: SmartCart; Metis auth chrome
 - Layout header shows store name from `fk_store` claims (not a hardcoded label)
 - Do not seed a known production password
+- Do not offer public “First setup? Register company”
 
 ## Business Rules
 - Inactive / cancelled users cannot authenticate
 - Passwords stored as ASP.NET Identity hashes only
 - Login requires at least one active `user_store_access` row; active store sets `fk_store` in the token
-- Register is one-time bootstrap (no second company via this path)
+- **No public company signup** — Super Admin company wizard (PLANNED) owns onboarding
 - Cookie `Secure` follows `Request.IsHttps` (works on local HTTP)
 
 ## Dependencies & Related Modules
+- `super-admin.md` — platform company registration
 - `employee.md`, `roles.md`, `stores.md`

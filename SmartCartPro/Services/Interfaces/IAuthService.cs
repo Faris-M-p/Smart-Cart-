@@ -6,8 +6,6 @@ public interface IAuthService
 {
     Task<AuthSessionResult> LoginAsync(LoginInput input, CancellationToken cancellationToken = default);
 
-    Task<AuthSessionResult> RegisterAsync(RegisterInput input, CancellationToken cancellationToken = default);
-
     Task<AuthSessionResult> ChangePasswordAsync(
         int idUser,
         ChangePasswordInput input,

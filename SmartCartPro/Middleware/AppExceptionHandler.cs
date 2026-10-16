@@ -1,15 +1,12 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.Extensions.Options;
-using SmartCartPro.Configuration;
 using SmartCartPro.Helpers;
 
 namespace SmartCartPro.Middleware;
 
 /// <summary>
-/// Global exception handler. API/JSON requests get a JSON envelope.
-/// Browser (HTML) requests return false so <c>/Home/Error</c> renders a friendly page.
-/// Full developerMessage is only exposed when EnvironmentSettings is not Prod.
+/// Global exception handler. Logs the complete error to the server console on every unhandled exception.
+/// Browser Error page (non-Prod) also console.error's the developer payload. Page UI shows userMessage only.
 /// </summary>
 public sealed class AppExceptionHandler : IExceptionHandler
 {
@@ -19,15 +16,10 @@ public sealed class AppExceptionHandler : IExceptionHandler
     };
 
     private readonly ILogger<AppExceptionHandler> _logger;
-    private readonly EnvironmentSettings _environmentSettings;
 
-    public AppExceptionHandler(
-        ILogger<AppExceptionHandler> logger,
-        IOptions<EnvironmentSettings> environmentSettings)
+    public AppExceptionHandler(ILogger<AppExceptionHandler> logger)
     {
         _logger = logger;
-        _environmentSettings = environmentSettings?.Value
-            ?? throw new ArgumentNullException(nameof(environmentSettings));
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -35,19 +27,43 @@ public sealed class AppExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        _logger.LogError(exception, "An unhandled exception has occurred.");
+        var mapped = ExceptionErrorMapper.Map(exception);
+        var fullDeveloperMessage = ExceptionErrorMapper.BuildFullDeveloperMessage(
+            mapped.DeveloperMessage,
+            exception);
 
-        // Let MVC re-execute /Home/Error for browser navigations (friendly page).
+        // Complete error consoling — only when an error happens.
+        _logger.LogError(
+            exception,
+            """
+            Unhandled exception
+            TraceId: {TraceId}
+            Path: {Method} {Path}{Query}
+            StatusCode: {StatusCode}
+            UserMessage: {UserMessage}
+            DeveloperMessage: {DeveloperMessage}
+            ExceptionType: {ExceptionType}
+            ExceptionMessage: {ExceptionMessage}
+            StackTrace: {StackTrace}
+            InnerException: {InnerException}
+            """,
+            context.TraceIdentifier,
+            context.Request.Method,
+            context.Request.Path.Value,
+            context.Request.QueryString.Value,
+            mapped.StatusCode,
+            mapped.UserMessage,
+            fullDeveloperMessage,
+            exception.GetType().FullName,
+            exception.Message,
+            exception.StackTrace,
+            exception.InnerException?.ToString() ?? "(none)");
+
+        // Browser: friendly Error page (no developer details on screen).
         if (!ExceptionErrorMapper.WantsJsonResponse(context.Request))
         {
             return false;
         }
-
-        var mapped = ExceptionErrorMapper.Map(exception);
-        var showFullDeveloperMessage = !_environmentSettings.IsProduction;
-        var exposedDeveloperMessage = showFullDeveloperMessage
-            ? ExceptionErrorMapper.BuildFullDeveloperMessage(mapped.DeveloperMessage, exception)
-            : string.Empty;
 
         var payload = new
         {
@@ -55,13 +71,13 @@ public sealed class AppExceptionHandler : IExceptionHandler
             status = "Error",
             statusMessage = mapped.UserMessage,
             userMessage = mapped.UserMessage,
-            developerMessage = exposedDeveloperMessage,
+            developerMessage = string.Empty,
             error = new
             {
                 errorCode = mapped.StatusCode.ToString(),
                 message = mapped.UserMessage,
                 userMessage = mapped.UserMessage,
-                developerMessage = exposedDeveloperMessage
+                developerMessage = string.Empty
             },
             data = string.Empty,
             timestamp = DateTime.UtcNow.ToString("o")

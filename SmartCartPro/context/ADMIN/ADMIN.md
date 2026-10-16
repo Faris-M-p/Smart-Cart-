@@ -12,9 +12,10 @@ Controllers under `Controllers/` (domain-grouped, not `Controllers/Admin/` prefi
 
 ## Authentication
 
-- Routes: `/Auth/Login`, Register, ChangePassword, ForgotPassword, ResetPassword
+- Routes: `/Auth/Login`, ChangePassword, ForgotPassword, ResetPassword
 - Status: **IMPLEMENTED** for employee JWT cookie auth — see [`modules/auth.md`](modules/auth.md)
-- **Platform Super Admin** (`/platform-access` + OTP, licenses, packages): **PLANNED / hold** — see [`modules/super-admin.md`](modules/super-admin.md). Do not implement until requested.
+- **Public `/Auth/Register` disabled** — company onboarding is Super Admin only (see [`modules/super-admin.md`](modules/super-admin.md))
+- **Platform Super Admin** (`/platform-access` + OTP, licenses, packages): **PLANNED / hold** — do not implement until requested.
 
 ## Authorization (target)
 

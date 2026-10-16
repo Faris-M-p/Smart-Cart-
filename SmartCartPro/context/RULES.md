@@ -67,9 +67,11 @@ Controller → IService / Service → IRepository / Repository → EF Core (DbCo
 
 - **All unhandled exceptions** must pass through `Middleware/AppExceptionHandler` (`IExceptionHandler`). Do not add per-controller try/catch for the same mapping.
 - Throw typed exceptions from `Exceptions/AppExceptions.cs` from the **service** layer. Every `AppException` **must** carry both `UserMessage` (client-safe) and `DeveloperMessage` (technical).
-- **API/JSON** requests: handler returns JSON with `userMessage` + `developerMessage`. Full developer text (detail + stack) **only** when `EnvironmentSettings` is not Prod; in Prod `developerMessage` is empty.
-- **Browser/HTML** requests: do **not** show the ASP.NET developer exception page. Re-execute friendly Metis pages `Home/Error` and `Home/NotFound` (via `UseExceptionHandler` + `UseStatusCodePagesWithReExecute`). Non-Prod may show a collapsed “Developer details” block on the Error page.
-- Register via `AddSmartCartExceptionHandling`; never call `UseDeveloperExceptionPage`.
+- **Page UI never shows developer details** — only the friendly `userMessage`. JSON `developerMessage` stays empty for API clients.
+- **Server console (error only):** `AppExceptionHandler` writes a complete `LogError` (trace id, path, status, userMessage, developerMessage, type, message, stack, inner).
+- **Browser console (error only, non-Prod):** Error page embeds a script that `console.error`s the full developer payload. Prod (`EnvironmentSettings`) does not emit frontend developer logs.
+- **Browser/HTML:** friendly Metis `Home/Error` / `Home/NotFound` — never `UseDeveloperExceptionPage`.
+- Register via `AddSmartCartExceptionHandling` + `UseExceptionHandler` / `UseStatusCodePagesWithReExecute`.
 
 ---
 

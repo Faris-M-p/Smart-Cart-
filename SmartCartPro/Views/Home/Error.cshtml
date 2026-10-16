@@ -1,7 +1,17 @@
 @model SmartCartPro.Models.ErrorViewModel
+@using System.Text.Json
 @{
     Layout = "_AuthLayout";
     ViewData["Title"] = Model.Title;
+    var consolePayload = new
+    {
+        statusCode = Model.StatusCode,
+        title = Model.Title,
+        userMessage = Model.UserMessage,
+        developerMessage = Model.DeveloperMessage,
+        requestId = Model.RequestId
+    };
+    var consoleJson = JsonSerializer.Serialize(consolePayload);
 }
 <div class="auth-body error-page">
     <div class="error-illustration" aria-hidden="true">
@@ -47,15 +57,21 @@
     {
         <p class="error-meta">Reference: <code>@Model.RequestId</code></p>
     }
-
-    @if (Model.ShowDeveloperMessage)
-    {
-        <details class="error-dev">
-            <summary>Developer details</summary>
-            <pre>@Model.DeveloperMessage</pre>
-        </details>
-    }
 </div>
+
+@if (Model.LogDeveloperToConsole)
+{
+    <script>
+        (function () {
+            var errorInfo = @Html.Raw(consoleJson);
+            console.error('[SmartCartPro] Unhandled error', errorInfo);
+            console.error('[SmartCartPro] DeveloperMessage:\n' + (errorInfo.developerMessage || ''));
+            if (errorInfo.requestId) {
+                console.log('[SmartCartPro] RequestId:', errorInfo.requestId);
+            }
+        })();
+    </script>
+}
 
 <style>
     .error-page { text-align: center; max-width: 28rem; margin: 0 auto; }
@@ -76,22 +92,4 @@
     }
     .error-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; }
     .error-meta { margin-top: 1.25rem; font-size: 0.8rem; color: #64748b; }
-    .error-dev {
-        text-align: left;
-        margin-top: 1.5rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.75rem;
-        background: #f8fafc;
-        padding: 0.75rem 1rem;
-    }
-    .error-dev summary { cursor: pointer; font-weight: 600; color: #334155; }
-    .error-dev pre {
-        margin: 0.75rem 0 0;
-        white-space: pre-wrap;
-        word-break: break-word;
-        font-size: 0.75rem;
-        color: #475569;
-        max-height: 14rem;
-        overflow: auto;
-    }
 </style>
