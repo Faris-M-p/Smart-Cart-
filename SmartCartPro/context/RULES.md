@@ -63,6 +63,14 @@ Controller → IService / Service → IRepository / Repository → EF Core (DbCo
 - Prefer **EF Core + LINQ**. Use **Dapper** only under `Dapper/` for justified aggregates/reports.
 - **Repositories stay thin:** no private parse helpers, no mode switches, no criteria string parsing. Service prepares typed fields on the options model (e.g. `CategoryId` from `Criteria`); repository only reads those fields and queries.
 
+### Global exception handling
+
+- **All unhandled exceptions** must pass through `Middleware/AppExceptionHandler` (`IExceptionHandler`). Do not add per-controller try/catch for the same mapping.
+- Throw typed exceptions from `Exceptions/AppExceptions.cs` from the **service** layer. Every `AppException` **must** carry both `UserMessage` (client-safe) and `DeveloperMessage` (technical).
+- **API/JSON** requests: handler returns JSON with `userMessage` + `developerMessage`. Full developer text (detail + stack) **only** when `EnvironmentSettings` is not Prod; in Prod `developerMessage` is empty.
+- **Browser/HTML** requests: do **not** show the ASP.NET developer exception page. Re-execute friendly Metis pages `Home/Error` and `Home/NotFound` (via `UseExceptionHandler` + `UseStatusCodePagesWithReExecute`). Non-Prod may show a collapsed “Developer details” block on the Error page.
+- Register via `AddSmartCartExceptionHandling`; never call `UseDeveloperExceptionPage`.
+
 ---
 
 ## Naming
@@ -71,7 +79,7 @@ Controller → IService / Service → IRepository / Repository → EF Core (DbCo
 
 **Never** use `StoreId` in SQL — use `fk_store`. C#: `FkStore` mapped to `fk_store`.
 
-**C# folders:** `Controllers/`, `Services/` + `Services/Interfaces/`, `Repositories/` + `Repositories/Interfaces/`, `Entities/`, `Models/`, `Data/`, `Views/`, `Dapper/`.
+**C# folders:** `Controllers/`, `Services/` + `Services/Interfaces/`, `Repositories/` + `Repositories/Interfaces/`, `Entities/`, `Models/`, `Data/`, `Views/`, `Dapper/`, `Exceptions/`, `Middleware/`, `Configuration/`.
 
 **DTO packing:** Prefer **one file with multiple related classes** (CRM-style). Example: all filter fill types in `Models/FilterModels.cs`. Do **not** create a new `.cs` file for every small DTO.
 

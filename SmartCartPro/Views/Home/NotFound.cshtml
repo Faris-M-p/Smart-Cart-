@@ -1,0 +1,74 @@
+@model SmartCartPro.Models.ErrorViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = Model.Title;
+}
+<div class="auth-body error-page">
+    <div class="error-illustration" aria-hidden="true">
+        <svg viewBox="0 0 320 220" role="img" focusable="false">
+            <defs>
+                <linearGradient id="nfSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#e0e7ff"/>
+                    <stop offset="100%" stop-color="#f8fafc"/>
+                </linearGradient>
+            </defs>
+            <rect width="320" height="220" rx="24" fill="url(#nfSky)"/>
+            <path d="M40 170h240" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round"/>
+            <g transform="translate(70 70)">
+                <rect x="0" y="20" width="70" height="90" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="3"/>
+                <text x="35" y="78" text-anchor="middle" font-size="36" font-family="Segoe UI, sans-serif" font-weight="700" fill="#64748b">4</text>
+            </g>
+            <g transform="translate(125 55)">
+                <circle cx="35" cy="55" r="40" fill="#fff" stroke="#2563eb" stroke-width="4"/>
+                <circle cx="35" cy="55" r="18" fill="#dbeafe"/>
+                <path d="M62 82l22 22" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+            </g>
+            <g transform="translate(185 70)">
+                <rect x="0" y="20" width="70" height="90" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="3"/>
+                <text x="35" y="78" text-anchor="middle" font-size="36" font-family="Segoe UI, sans-serif" font-weight="700" fill="#64748b">4</text>
+            </g>
+            <g transform="translate(40 150)">
+                <rect x="0" y="0" width="36" height="28" rx="6" fill="#93c5fd" opacity="0.8"/>
+                <rect x="48" y="8" width="28" height="20" rx="5" fill="#bfdbfe"/>
+                <rect x="240" y="4" width="32" height="24" rx="5" fill="#a5b4fc" opacity="0.85"/>
+            </g>
+        </svg>
+    </div>
+
+    <div class="auth-heading">
+        <p class="error-code">404</p>
+        <h1>@Model.Title</h1>
+        <p>@Model.UserMessage</p>
+    </div>
+
+    <div class="error-actions">
+        <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Back to dashboard</a>
+        <a class="btn btn-outline-secondary" href="javascript:history.back()">Go back</a>
+    </div>
+
+    @if (Model.ShowRequestId)
+    {
+        <p class="error-meta">Reference: <code>@Model.RequestId</code></p>
+    }
+</div>
+
+<style>
+    .error-page { text-align: center; max-width: 28rem; margin: 0 auto; }
+    .error-illustration { margin: 0 auto 1.25rem; max-width: 20rem; }
+    .error-illustration svg { width: 100%; height: auto; display: block; border-radius: 1.25rem; }
+    .error-code {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #2563eb;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .error-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; }
+    .error-meta { margin-top: 1.25rem; font-size: 0.8rem; color: #64748b; }
+</style>

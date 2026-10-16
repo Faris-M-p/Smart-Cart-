@@ -30,7 +30,10 @@ There is a legacy monolith at `Ecommerce/` (SQL Server + mixed EF/Dapper/SPs). T
 | Audience | Who | Entry |
 |----------|-----|--------|
 | Employees / admins | `users` + roles + store access | `/Auth/Login` |
+| Platform Super Admin | same `users` table + protected platform flag (**PLANNED**) | `/platform-access` (OTP) — see `ADMIN/modules/super-admin.md` |
 | Customers (future USER) | `customers` | Storefront (not primary yet) |
+
+**Note:** Seeded role `SUPER_ADMIN` is **company** full admin, not platform Super Admin.
 
 ## Current scope
 

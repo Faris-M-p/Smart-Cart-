@@ -1,0 +1,97 @@
+@model SmartCartPro.Models.ErrorViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = Model.Title;
+}
+<div class="auth-body error-page">
+    <div class="error-illustration" aria-hidden="true">
+        <svg viewBox="0 0 320 220" role="img" focusable="false">
+            <defs>
+                <linearGradient id="errSky" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#dbeafe"/>
+                    <stop offset="100%" stop-color="#eff6ff"/>
+                </linearGradient>
+            </defs>
+            <rect width="320" height="220" rx="24" fill="url(#errSky)"/>
+            <circle cx="250" cy="48" r="28" fill="#93c5fd" opacity="0.45"/>
+            <circle cx="60" cy="170" r="18" fill="#bfdbfe" opacity="0.7"/>
+            <g transform="translate(90 55)">
+                <rect x="20" y="40" width="120" height="80" rx="12" fill="#2563eb"/>
+                <rect x="32" y="52" width="96" height="36" rx="6" fill="#eff6ff" opacity="0.9"/>
+                <path d="M40 28h20l12 12h48a10 10 0 0 1 10 10v10H40V28z" fill="#1d4ed8"/>
+                <circle cx="55" cy="130" r="14" fill="#1e3a8a"/>
+                <circle cx="115" cy="130" r="14" fill="#1e3a8a"/>
+                <circle cx="55" cy="130" r="6" fill="#93c5fd"/>
+                <circle cx="115" cy="130" r="6" fill="#93c5fd"/>
+            </g>
+            <g transform="translate(210 90)">
+                <circle cx="24" cy="24" r="22" fill="#fee2e2"/>
+                <path d="M24 12v16" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="24" cy="36" r="2.5" fill="#dc2626"/>
+            </g>
+        </svg>
+    </div>
+
+    <div class="auth-heading">
+        <p class="error-code">@Model.StatusCode</p>
+        <h1>@Model.Title</h1>
+        <p>@Model.UserMessage</p>
+    </div>
+
+    <div class="error-actions">
+        <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Back to dashboard</a>
+        <a class="btn btn-outline-secondary" asp-controller="Auth" asp-action="Login">Sign in</a>
+    </div>
+
+    @if (Model.ShowRequestId)
+    {
+        <p class="error-meta">Reference: <code>@Model.RequestId</code></p>
+    }
+
+    @if (Model.ShowDeveloperMessage)
+    {
+        <details class="error-dev">
+            <summary>Developer details</summary>
+            <pre>@Model.DeveloperMessage</pre>
+        </details>
+    }
+</div>
+
+<style>
+    .error-page { text-align: center; max-width: 28rem; margin: 0 auto; }
+    .error-illustration { margin: 0 auto 1.25rem; max-width: 20rem; }
+    .error-illustration svg { width: 100%; height: auto; display: block; border-radius: 1.25rem; }
+    .error-code {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #2563eb;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .error-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; }
+    .error-meta { margin-top: 1.25rem; font-size: 0.8rem; color: #64748b; }
+    .error-dev {
+        text-align: left;
+        margin-top: 1.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+    }
+    .error-dev summary { cursor: pointer; font-weight: 600; color: #334155; }
+    .error-dev pre {
+        margin: 0.75rem 0 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.75rem;
+        color: #475569;
+        max-height: 14rem;
+        overflow: auto;
+    }
+</style>

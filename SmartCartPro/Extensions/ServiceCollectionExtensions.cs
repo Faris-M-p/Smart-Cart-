@@ -5,6 +5,7 @@ using SmartCartPro.Dapper;
 using SmartCartPro.Dapper.Interfaces;
 using SmartCartPro.Data;
 using SmartCartPro.Entities;
+using SmartCartPro.Middleware;
 using SmartCartPro.Repositories;
 using SmartCartPro.Repositories.Interfaces;
 using SmartCartPro.Services;
@@ -14,6 +15,16 @@ namespace SmartCartPro.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddSmartCartExceptionHandling(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<EnvironmentSettings>(configuration.GetSection(EnvironmentSettings.SectionName));
+        services.AddExceptionHandler<AppExceptionHandler>();
+        services.AddProblemDetails();
+        return services;
+    }
+
     public static IServiceCollection AddSmartCartDataAccess(
         this IServiceCollection services,
         IConfiguration configuration)

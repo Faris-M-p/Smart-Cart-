@@ -12,13 +12,13 @@ Controllers under `Controllers/` (domain-grouped, not `Controllers/Admin/` prefi
 
 ## Authentication
 
-- Routes: `/Auth/Login`, Register, ForgotPassword, ResetPassword
-- Status: **UI SHELL** (forms present; full JWT/permission wiring pending)
-- See [`modules/auth.md`](modules/auth.md)
+- Routes: `/Auth/Login`, Register, ChangePassword, ForgotPassword, ResetPassword
+- Status: **IMPLEMENTED** for employee JWT cookie auth — see [`modules/auth.md`](modules/auth.md)
+- **Platform Super Admin** (`/platform-access` + OTP, licenses, packages): **PLANNED / hold** — see [`modules/super-admin.md`](modules/super-admin.md). Do not implement until requested.
 
 ## Authorization (target)
 
-Roles/permissions seeded in SQL; enforce via claims + permission checks when auth is completed. Do not trust client-only permission flags.
+Roles/permissions seeded in SQL; enforce via claims + permission checks (`RequirePermission` still incomplete). Do not trust client-only permission flags. Platform Super Admin must use a **separate** policy from company role `SUPER_ADMIN`.
 
 ## UI structure
 
@@ -31,6 +31,7 @@ Roles/permissions seeded in SQL; enforce via claims + permission checks when aut
 Documented under `modules/`:
 
 - [`auth.md`](modules/auth.md) — Sign-in / register / password
+- [`super-admin.md`](modules/super-admin.md) — Platform Super Admin (**PLANNED / hold**)
 - [`dashboard.md`](modules/dashboard.md) — Home dashboard
 - [`filter.md`](modules/filter.md) — Common dropdown fill API
 - [`category.md`](modules/category.md) — Categories

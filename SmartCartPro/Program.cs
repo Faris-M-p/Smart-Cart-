@@ -24,6 +24,7 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AuthorizeFilter(policy));
 });
 
+builder.Services.AddSmartCartExceptionHandling(builder.Configuration);
 builder.Services.AddSmartCartDataAccess(builder.Configuration);
 builder.Services.AddSmartCartAuth(builder.Configuration);
 
@@ -86,9 +87,17 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// IExceptionHandler (JSON APIs) first; HTML falls through to /Home/Error page.
+// Never use UseDeveloperExceptionPage — friendly Error/404 views instead.
+app.UseExceptionHandler(new ExceptionHandlerOptions
+{
+    ExceptionHandlingPath = "/Home/Error",
+    AllowStatusCode404Response = true
+});
+app.UseStatusCodePagesWithReExecute("/Home/StatusCodePage", "?code={0}");
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 

@@ -47,6 +47,12 @@ PostgreSQL. Scripts: `SmartCartPro/Database-Postgres/`.
 Roles (`SUPER_ADMIN`, `STORE_MANAGER`, `CASHIER`, …), permissions, company settings.  
 No production admin password in seed — bootstrap hashed admin separately.
 
+**Naming:** `SUPER_ADMIN` = company-wide full access. Platform Super Admin (licenses/packages) is **PLANNED** and must use a distinct protected identity — see `ADMIN/modules/super-admin.md`.
+
+## Not in schema yet (Super Admin hold)
+
+License, package/menu-group, company feature entitlement, OTP challenge, and storefront-theme tables are **not** created. Add only via SQL scripts when Super Admin implementation is authorized. Prefer resolving platform-registry DB vs multi-company single DB first (`FUTURE.md`).
+
 ## Change workflow
 
 ```text
