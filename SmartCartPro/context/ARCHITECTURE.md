@@ -48,6 +48,7 @@ Browser (Metis admin shell)
 - Shared `_Layout.cshtml` (admin shell + SmartCart sidebar).
 - `_AuthLayout.cshtml` for login/register/password pages.
 - `_MetisAssets.cshtml` loads hashed Metis bundles from `/metis/assets/`.
+- Admin sidebar behavior is owned by `wwwroot/css/admin-shell.css` and `wwwroot/js/admin-sidebar.js` (Metis toggle is not used — it pinned the hamburger to the expanded edge and did not scroll a long menu).
 
 ## Controllers by domain
 

@@ -1,0 +1,195 @@
+/* SmartCart admin shell: responsive sidebar, collapse, independent scroll.
+   Loaded after Metis so these rules win without rebuilding the template. */
+
+html,
+body.admin-layout {
+  height: 100%;
+  overflow: hidden;
+}
+
+.admin-app,
+.admin-wrapper {
+  min-height: 100%;
+}
+
+.admin-main {
+  height: calc(100vh - var(--header-height, 56px));
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.admin-header .navbar > .container-fluid {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-header-start {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.admin-header-start .navbar-brand {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-right: 0;
+}
+
+/* Override Metis absolute pin so the icon stays next to the brand. */
+.admin-header .hamburger-menu,
+.admin-header .hamburger-menu:active {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+}
+
+.admin-header .search-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 28rem;
+  margin: 0;
+}
+
+.admin-header-end {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: calc(100vh - var(--header-height, 56px));
+}
+
+.admin-sidebar .sidebar-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.75rem 0.5rem 1.25rem;
+}
+
+.admin-sidebar .sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sidebar .sidebar-content::-webkit-scrollbar-thumb {
+  background-color: var(--bs-border-color);
+  border-radius: 4px;
+}
+
+.admin-sidebar .sidebar-nav .nav-link {
+  white-space: nowrap;
+}
+
+.admin-sidebar .sidebar-nav .nav-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Desktop collapsed: icon rail + main content shifts */
+@media (min-width: 992px) {
+  .admin-wrapper.sidebar-collapsed .admin-sidebar {
+    width: var(--sidebar-mini-width, 64px);
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-content {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-main,
+  .admin-wrapper.sidebar-collapsed .admin-footer {
+    margin-left: var(--sidebar-mini-width, 64px);
+  }
+}
+
+/* Mobile / tablet: overlay drawer, page stays full width */
+@media (max-width: 991.98px) {
+  .admin-sidebar {
+    width: min(var(--sidebar-width, 240px), 86vw);
+    transform: translateX(-100%);
+    z-index: 1045;
+    box-shadow: none;
+  }
+
+  .admin-sidebar.show {
+    transform: translateX(0);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-sidebar {
+    width: min(var(--sidebar-width, 240px), 86vw);
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-nav .nav-link {
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-nav .nav-link span,
+  .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-nav .nav-item small {
+    display: initial;
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-sidebar .sidebar-nav .nav-link i {
+    margin-right: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .admin-main,
+  .admin-footer,
+  .admin-wrapper.sidebar-collapsed .admin-main,
+  .admin-wrapper.sidebar-collapsed .admin-footer {
+    margin-left: 0;
+  }
+
+  .admin-header .search-container {
+    display: none !important;
+  }
+
+  .admin-header .navbar-nav {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  z-index: 1040;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-backdrop.show {
+  display: block;
+  opacity: 1;
+}
+
+@media (min-width: 992px) {
+  .sidebar-backdrop.show {
+    display: none;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-header .navbar-nav .btn {
+    --bs-btn-padding-x: 0.5rem;
+    --bs-btn-padding-y: 0.375rem;
+  }
+}

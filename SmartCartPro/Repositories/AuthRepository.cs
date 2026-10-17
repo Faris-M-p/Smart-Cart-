@@ -36,7 +36,11 @@ public class AuthRepository : IAuthRepository
     public async Task UpdateUserAsync(User user, CancellationToken cancellationToken = default)
     {
         user.UpdatedAt = DateTime.UtcNow;
-        _db.Users.Update(user);
+        if (_db.Entry(user).State == EntityState.Detached)
+        {
+            _db.Users.Attach(user);
+            _db.Entry(user).State = EntityState.Modified;
+        }
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -101,7 +105,11 @@ public class AuthRepository : IAuthRepository
 
     public async Task UpdateOtpChallengeAsync(AuthOtpChallenge challenge, CancellationToken cancellationToken = default)
     {
-        _db.AuthOtpChallenges.Update(challenge);
+        if (_db.Entry(challenge).State == EntityState.Detached)
+        {
+            _db.AuthOtpChallenges.Attach(challenge);
+            _db.Entry(challenge).State = EntityState.Modified;
+        }
         await _db.SaveChangesAsync(cancellationToken);
     }
 

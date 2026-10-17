@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using SmartCartPro.Configuration;
 using SmartCartPro.Extensions;
 using SmartCartPro.Helpers;
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddSmartCartExceptionHandling(builder.Configuration);
 builder.Services.AddSmartCartDataAccess(builder.Configuration);
 builder.Services.AddSmartCartAuth(builder.Configuration);
+builder.Services.AddSmartCartPolicies();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -110,6 +112,11 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapControllers();
+
+app.MapControllerRoute(
+    name: "superAdmin",
+    pattern: "SuperAdmin/{action=Dashboard}/{id?}",
+    defaults: new { controller = "SuperAdmin" });
 
 app.MapControllerRoute(
     name: "default",

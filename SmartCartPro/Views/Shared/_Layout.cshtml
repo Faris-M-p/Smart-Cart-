@@ -19,6 +19,7 @@
     <title>@title · SmartCart Pro</title>
     <meta name="theme-color" content="#2563eb" />
     <partial name="_MetisAssets" />
+    <link rel="stylesheet" href="~/css/admin-shell.css" asp-append-version="true" />
 </head>
 <body data-page="dashboard" class="admin-layout">
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -28,22 +29,24 @@
 <header class="admin-header">
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
-                <span class="h4 mb-0 fw-bold text-primary-emphasis">SmartCart</span>
-            </a>
-            <button class="hamburger-menu" type="button" data-sidebar-toggle aria-label="Toggle sidebar">
-                <i class="bi bi-list"></i>
-            </button>
-            <div class="search-container flex-grow-1 mx-4 d-none d-md-block">
+            <div class="admin-header-start">
+                <a class="navbar-brand d-flex align-items-center mb-0" asp-controller="Home" asp-action="Index">
+                    <span class="h4 mb-0 fw-bold text-primary-emphasis">SmartCart</span>
+                </a>
+                <button class="hamburger-menu" type="button" data-sc-sidebar-toggle aria-label="Toggle sidebar" aria-expanded="true">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
+            <div class="search-container d-none d-lg-block">
                 <div class="position-relative">
                     <input type="search" class="form-control" placeholder="Search products, invoices, customers…" aria-label="Search" />
                     <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
                 </div>
             </div>
-            <div class="navbar-nav flex-row align-items-center">
+            <div class="admin-header-end navbar-nav flex-row align-items-center">
                 <span class="badge text-bg-light border me-2 d-none d-lg-inline" title="@(isPlatform ? "platform" : $"fk_store={fkStore}")">@(isPlatform ? "Super Admin" : $"Store: {storeName}")</span>
-                <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="ChangePassword">Password</a>
-                <a class="btn btn-outline-secondary btn-sm me-2" asp-controller="Auth" asp-action="LogoutGet">Sign out</a>
+                <a class="btn btn-outline-secondary btn-sm me-2 d-none d-md-inline-flex" asp-controller="Auth" asp-action="ChangePassword">Password</a>
+                <a class="btn btn-outline-secondary btn-sm" asp-controller="Auth" asp-action="LogoutGet">Sign out</a>
             </div>
         </div>
     </nav>
@@ -176,6 +179,7 @@
 
 </div>
 </div>
+<script src="~/js/admin-sidebar.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

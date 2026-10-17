@@ -64,7 +64,19 @@ public static class ExceptionErrorMapper
             ? exception.Message
             : developerMessage;
 
-        return $"{detail}\nStack Trace:\n{exception.StackTrace}";
+        var innerMessages = new List<string>();
+        var curr = exception.InnerException;
+        while (curr != null)
+        {
+            innerMessages.Add(curr.Message);
+            curr = curr.InnerException;
+        }
+
+        var innerText = innerMessages.Count > 0
+            ? "\nInner Exceptions: " + string.Join(" --> ", innerMessages)
+            : string.Empty;
+
+        return $"{detail}{innerText}\nStack Trace:\n{exception.StackTrace}";
     }
 
     public static bool WantsJsonResponse(HttpRequest request)

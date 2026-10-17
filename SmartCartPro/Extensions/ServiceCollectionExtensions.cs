@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SmartCartPro.Configuration;
@@ -68,6 +70,23 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ISuperAdminRepository, SuperAdminRepository>();
+        services.AddScoped<ISuperAdminService, SuperAdminService>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the <c>PlatformSuperAdmin</c> authorization policy used to
+    /// protect every Super Admin controller action.
+    /// </summary>
+    public static IServiceCollection AddSmartCartPolicies(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("PlatformSuperAdmin", policy =>
+                policy.RequireAuthenticatedUser()
+                      .RequireClaim(SmartCartPro.Helpers.AuthClaims.IsPlatformSuperAdmin, "1"));
+        });
         return services;
     }
 }

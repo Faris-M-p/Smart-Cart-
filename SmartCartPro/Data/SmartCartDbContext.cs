@@ -27,6 +27,16 @@ public class SmartCartDbContext : DbContext
     public DbSet<Inventory> Inventories => Set<Inventory>();
     public DbSet<Order> Orders => Set<Order>();
 
+    // Super Admin entities
+    public DbSet<License> Licenses => Set<License>();
+    public DbSet<InstallationConfig> InstallationConfigs => Set<InstallationConfig>();
+    public DbSet<Module> Modules => Set<Module>();
+    public DbSet<ModulePreset> ModulePresets => Set<ModulePreset>();
+    public DbSet<ModulePresetItem> ModulePresetItems => Set<ModulePresetItem>();
+    public DbSet<InstallationModule> InstallationModules => Set<InstallationModule>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Company>(e =>
@@ -126,6 +136,80 @@ public class SmartCartDbContext : DbContext
                 .HasForeignKey(x => x.FkRole)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.FkUser, x.FkRole }).IsUnique();
+        });
+
+        // ── New super-admin entities ─────────────────────────────────────────
+
+        modelBuilder.Entity<License>(e =>
+        {
+            e.HasIndex(x => x.LicenseKey).IsUnique();
+        });
+
+        modelBuilder.Entity<InstallationConfig>(e =>
+        {
+            e.HasOne(x => x.License)
+                .WithMany()
+                .HasForeignKey(x => x.FkLicense)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Module>(e =>
+        {
+            e.HasIndex(x => x.ModuleCode).IsUnique();
+        });
+
+        modelBuilder.Entity<ModulePreset>(e =>
+        {
+            e.HasIndex(x => x.PresetCode).IsUnique();
+        });
+
+        modelBuilder.Entity<ModulePresetItem>(e =>
+        {
+            e.HasOne(x => x.Preset)
+                .WithMany(p => p.Items)
+                .HasForeignKey(x => x.FkPreset)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Module)
+                .WithMany()
+                .HasForeignKey(x => x.FkModule)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkPreset, x.FkModule }).IsUnique();
+        });
+
+        modelBuilder.Entity<InstallationModule>(e =>
+        {
+            e.HasOne(x => x.Module)
+                .WithMany()
+                .HasForeignKey(x => x.FkModule)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkModule).IsUnique();
+        });
+
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.FkUser)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.EntityName, x.EntityId });
+        });
+
+        modelBuilder.Entity<UserInvitation>(e =>
+        {
+            e.HasIndex(x => x.InvitationToken).IsUnique();
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.FkUser)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Role)
+                .WithMany()
+                .HasForeignKey(x => x.FkRole)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

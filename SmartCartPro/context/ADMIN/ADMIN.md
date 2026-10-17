@@ -24,6 +24,7 @@ Roles/permissions seeded in SQL; enforce via claims + permission checks (`Requir
 ## UI structure
 
 - Sidebar groups: Dashboard; Catalog; Purchase & stock; Sales; Reports; Administration
+- Sidebar chrome (`_Layout` + `wwwroot/css/admin-shell.css` + `wwwroot/js/admin-sidebar.js`): desktop expand/collapse (icon rail, persisted), overlay drawer below 992px, independent sidebar scroll
 - List pages: Metis cards/tables; many still use sample rows until services bind real data
 - Auth pages: `_AuthLayout`
 

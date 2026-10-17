@@ -1,0 +1,196 @@
+@using SmartCartPro.Helpers
+@{
+    var title = ViewData["Title"] as string ?? "Super Admin";
+    var actName = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string Nav(string action) => string.Equals(actName, action, StringComparison.OrdinalIgnoreCase)
+        ? "nav-link active" : "nav-link";
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>@title · SmartCart Pro — Super Admin</title>
+    <meta name="theme-color" content="#4f46e5" />
+    <partial name="_MetisAssets" />
+    <style>
+        :root {
+            --sa-sidebar-width: 240px;
+            --sa-primary: #4f46e5;
+            --sa-primary-dark: #3730a3;
+            --sa-accent: #7c3aed;
+        }
+        body.sa-layout { background: #f1f5f9; }
+        .sa-app { display: flex; min-height: 100vh; flex-direction: column; }
+        .sa-wrapper { display: flex; flex: 1; }
+
+        /* Header */
+        .sa-header { background: linear-gradient(135deg, var(--sa-primary), var(--sa-accent));
+            color: #fff; padding: .75rem 1.5rem;
+            display: flex; align-items: center; gap: 1rem;
+            position: sticky; top: 0; z-index: 1030; }
+        .sa-header .brand { font-size: 1.1rem; font-weight: 700; color: #fff; text-decoration: none; }
+        .sa-header .brand span { opacity: .7; font-size: .8rem; display: block; line-height: 1; }
+        .sa-header-right { margin-left: auto; display: flex; align-items: center; gap: .75rem; }
+        .sa-header-right a { color: rgba(255,255,255,.8); text-decoration: none; font-size: .85rem; }
+        .sa-header-right a:hover { color: #fff; }
+        .sa-badge { background: rgba(255,255,255,.2); border-radius: 99px;
+            padding: .2rem .75rem; font-size: .75rem; font-weight: 600; color: #fff; }
+
+        /* Sidebar */
+        .sa-sidebar { width: var(--sa-sidebar-width); background: #1e1b4b;
+            flex-shrink: 0; padding: 1rem 0; }
+        .sa-sidebar .sidebar-section { color: rgba(255,255,255,.4);
+            font-size: .65rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; padding: .75rem 1rem .25rem; }
+        .sa-sidebar .nav-link { color: rgba(255,255,255,.7); padding: .5rem 1rem;
+            border-radius: 0; display: flex; align-items: center; gap: .6rem;
+            font-size: .88rem; transition: background .15s, color .15s; }
+        .sa-sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+        .sa-sidebar .nav-link.active { color: #fff; background: var(--sa-primary);
+            font-weight: 600; }
+        .sa-sidebar .nav-link i { font-size: 1rem; width: 18px; text-align: center; }
+
+        /* Main */
+        .sa-main { flex: 1; padding: 2rem; overflow-x: hidden; }
+        .sa-page-header { margin-bottom: 1.5rem; }
+        .sa-page-header h1 { font-size: 1.4rem; font-weight: 700; color: #1e1b4b; margin: 0; }
+        .sa-page-header p  { color: #64748b; margin: .25rem 0 0; font-size: .9rem; }
+
+        /* Cards */
+        .sa-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            padding: 1.25rem; }
+        .sa-stat-card { display: flex; flex-direction: column; gap: .25rem; }
+        .sa-stat-card .stat-label { font-size: .78rem; color: #64748b; font-weight: 500; }
+        .sa-stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: #1e1b4b; line-height: 1; }
+        .sa-stat-card .stat-sub   { font-size: .78rem; }
+
+        /* Wizard progress */
+        .wizard-progress { display: flex; gap: 0; margin-bottom: 2rem; overflow: hidden;
+            border-radius: 8px; border: 1px solid #e2e8f0; }
+        .wizard-step { flex: 1; text-align: center; padding: .5rem .25rem;
+            font-size: .72rem; font-weight: 600; background: #f8fafc; color: #94a3b8;
+            border-right: 1px solid #e2e8f0; position: relative; }
+        .wizard-step:last-child { border-right: none; }
+        .wizard-step.done  { background: #ecfdf5; color: #059669; }
+        .wizard-step.active{ background: var(--sa-primary); color: #fff; }
+
+        /* Status badges */
+        .badge-active    { background: #dcfce7; color: #166534; }
+        .badge-suspended { background: #fee2e2; color: #991b1b; }
+        .badge-expired   { background: #fef3c7; color: #92400e; }
+        .badge-trial     { background: #dbeafe; color: #1e40af; }
+
+        @@media (max-width: 768px) {
+            .sa-sidebar { display: none; }
+            .sa-main { padding: 1rem; }
+        }
+    </style>
+</head>
+<body class="sa-layout">
+<div class="sa-app">
+
+<header class="sa-header">
+    <a class="brand" asp-controller="SuperAdmin" asp-action="Dashboard">
+        SmartCart Pro
+        <span>Super Admin Panel</span>
+    </a>
+    <button class="btn btn-sm d-md-none" style="color:#fff" type="button" aria-label="Menu">
+        <i class="bi bi-list fs-5"></i>
+    </button>
+    <div class="sa-header-right">
+        <span class="sa-badge"><i class="bi bi-shield-lock-fill me-1"></i>Platform Super Admin</span>
+        <a asp-controller="Auth" asp-action="ChangePassword">Change password</a>
+        <a asp-controller="Auth" asp-action="LogoutGet">Sign out</a>
+    </div>
+</header>
+
+<div class="sa-wrapper">
+<aside class="sa-sidebar">
+    <nav>
+        <div class="sidebar-section">Overview</div>
+        <a class="@Nav("Dashboard")" asp-controller="SuperAdmin" asp-action="Dashboard">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+
+        <div class="sidebar-section">Setup Wizard</div>
+        <a class="@Nav("Step1")" asp-controller="SuperAdmin" asp-action="Step1">
+            <i class="bi bi-building"></i> Company Profile
+        </a>
+        <a class="@Nav("Step2")" asp-controller="SuperAdmin" asp-action="Step2">
+            <i class="bi bi-globe2"></i> Regional
+        </a>
+        <a class="@Nav("Step3")" asp-controller="SuperAdmin" asp-action="Step3">
+            <i class="bi bi-grid-3x3-gap"></i> Modules
+        </a>
+        <a class="@Nav("Step4")" asp-controller="SuperAdmin" asp-action="Step4">
+            <i class="bi bi-palette"></i> Theme
+        </a>
+        <a class="@Nav("Step5")" asp-controller="SuperAdmin" asp-action="Step5">
+            <i class="bi bi-key"></i> License
+        </a>
+        <a class="@Nav("Step6")" asp-controller="SuperAdmin" asp-action="Step6">
+            <i class="bi bi-shop"></i> Store Setup
+        </a>
+        <a class="@Nav("Step7")" asp-controller="SuperAdmin" asp-action="Step7">
+            <i class="bi bi-person-plus"></i> Provision Admin
+        </a>
+        <a class="@Nav("Review")" asp-controller="SuperAdmin" asp-action="Review">
+            <i class="bi bi-check2-circle"></i> Review & Activate
+        </a>
+
+        <div class="sidebar-section">Management</div>
+        <a class="@Nav("License")" asp-controller="SuperAdmin" asp-action="License">
+            <i class="bi bi-patch-check"></i> License
+        </a>
+        <a class="@Nav("AuditLog")" asp-controller="SuperAdmin" asp-action="AuditLog">
+            <i class="bi bi-journal-text"></i> Audit Log
+        </a>
+    </nav>
+</aside>
+
+<main class="sa-main" id="main-content">
+    @if (TempData["WizardSuccess"] is string wizOk)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-check-circle me-1"></i>@wizOk
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["WizardWarning"] is string wizWarn)
+    {
+        <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>@wizWarn
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["WizardError"] is string wizErr)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-x-circle me-1"></i>@wizErr
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["SuccessMessage"] is string ok)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-check-circle me-1"></i>@ok
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is string err)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-x-circle me-1"></i>@err
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @RenderBody()
+</main>
+</div>
+
+</div>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
