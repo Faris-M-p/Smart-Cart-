@@ -18,33 +18,56 @@ alwaysApply: true
 | Output returned up | Output{Entity}{Action} | OutputStoreUpdate | Repository → Service → Controller |
 
 Actions: Create, Update, Select (single), List, Delete, Upsert.
-Examples: InStoreCreateView / InputStoreCreate / OutputStoreCreate,
-InputStoreSelect / OutputStoreSelect, InputStoreList / OutputStoreList,
-InCompanyUpdateView / InputCompanyUpdate / OutputCompanyUpdate,
-InLicenseUpdateView / InputLicenseUpdate / OutputLicenseUpdate.
 
 ## 3. Where each model lives
-- One file per module under Models/:
-  - Models/CompanyModels.cs, Models/StoreModels.cs, Models/LicenseModels.cs, Models/AuditModels.cs
-- Namespace: SmartCartPro.Models for all of them.
-- Inside each file, one #region per operation (Create, Update, Select, List, Delete — only regions that have classes).
-  Each region holds In{Entity}{Action}View, Input{Entity}{Action}, Output{Entity}{Action} together (only the ones that exist).
-- DataAnnotations ([Required], [MaxLength], [Display(Name="…")]) ONLY on In…View classes.
-- Input… → plain properties, no annotations.
-- Output… → plain properties + ResponseCode, ResponseMsg, StatusCode where it is a save/update.
+- One file per module under Models/: CompanyModels.cs, StoreModels.cs, LicenseModels.cs, …
+- Namespace: SmartCartPro.Models.
+- One #region per operation; region holds In…View / Input… / Output… that exist.
+- DataAnnotations ONLY on In…View. Input… and Output… stay plain (Output may have ResponseCode, ResponseMsg, StatusCode).
 
-## 4. Mapping
-- Controller: InXxxView → InputXxx (manual mapping, small private method or static Map method in the Input class).
-- Repository: InputXxx → Entity (inside repository only), Entity → OutputXxx (inside repository only, use Select(...) projection for reads – never load full entity just to map).
-- Controller: OutputXxx → View model for display (or pass OutputXxx directly to the view for read-only pages).
+## 4. Mapping (controller owns View → Input)
+- Controller: map InXxxView → InputXxx with an **explicit named variable**, then call the service in a **separate** statement.
+- Do **not** use `InputXxx.From(view)`, mapping helpers on Input models, AutoMapper, or pass `new InputXxx { … }` inline into the service call.
+- Repository: InputXxx → Entity and Entity → OutputXxx only inside the repository (prefer Select projection).
+
+```csharp
+// ✅ GOOD
+var input = new InputCategoryUpdate
+{
+    IdCategory = model.IdCategory,
+    CategoryName = model.CategoryName,
+    // …
+};
+var result = await _svc.UpdateCategoryAsync(input, ct);
+
+// ❌ BAD
+var result = await _svc.UpdateCategoryAsync(InputCategoryUpdate.From(model), ct);
+var result = await _svc.UpdateCategoryAsync(new InputCategoryUpdate { … }, ct);
+```
 
 ## 5. Interface signatures (pattern)
 Task<OutputStoreSelect?> GetStoreAsync(InputStoreSelect input, CancellationToken ct = default);
-Task<OutputStoreList>    ListStoresAsync(InputStoreList input, CancellationToken ct = default);
-Task<OutputStoreCreate>  CreateStoreAsync(InputStoreCreate input, CancellationToken ct = default);
-Task<OutputStoreUpdate>  UpdateStoreAsync(InputStoreUpdate input, CancellationToken ct = default);
+Task<OutputStoreList> ListStoresAsync(InputStoreList input, CancellationToken ct = default);
+Task<OutputStoreCreate> CreateStoreAsync(InputStoreCreate input, CancellationToken ct = default);
+Task<OutputStoreUpdate> UpdateStoreAsync(InputStoreUpdate input, CancellationToken ct = default);
 
 ## 6. Do not
 - Do not put [Required]/[MaxLength] on Input/Output classes.
 - Do not reuse one model for both input and output.
 - Do not add a model that is not used.
+
+## 7. Validation – In…View only (PerSuitePlus style)
+- Validation attributes ONLY on In{Entity}{Action}View. Input/Output stay plain.
+- Every property gets `[Display(Name = "…")]`.
+- Prefer `SmartCartPro.CustomModelValidation` attributes over built-in alone:
+  - Required text: `[Required]` + `[StringLengthValidation]` + `[NoScriptTags]`
+  - Optional text: `[StringLengthValidation(0,max)]` + `[NoScriptTags]`
+  - Name: `[TrimmedString]` or `[DisallowCharacters]` + `[NoScriptTags]`
+  - Required dropdown id: `[Required]` + `[GreaterThanZero(ErrorMessage="Something went wrong/…")]`
+  - Optional dropdown id: `[GreaterThanOrEqualToZero]`
+  - Phone optional: `[PhoneIfNotEmpty]` + `[PhoneNumber]`
+  - Email optional: `[EmailIfNotEmpty]` + `[MatchRegexAllowNull]`
+  - Zip / Lat / Long: `[ZipCode]` / `[ValidLatitude]` / `[ValidLongitude]`
+  - Date range: `[DateGreaterThanOrEqualTo("FromProperty")]` on To field
+  - Fixed values: `[AllowedValues]` (built-in) or `[EnumDefined]` for int enums
+- User fields → plain messages. Hidden/system fields (ids, codes, mode) → prefix `"Something went wrong/"`.

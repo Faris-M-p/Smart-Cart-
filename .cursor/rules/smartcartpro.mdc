@@ -16,11 +16,15 @@ Before changing `SmartCartPro/`, read:
 
 - Controller → Service → Repository (`*/Interfaces/`). No `Implementations/`.
 - Controllers: endpoint + `IActionResult` only — **no** cookie/JWT/hash helpers in the controller; those belong on the service.
+- Map In…View → Input… in the controller with a named `var input = …;` then a separate service call — no `Input.From(view)`.
+- Every public action gets a two-line `/// <summary>` (purpose + when used).
+- Validation attributes only on In…View; use `CustomModelValidation` (see model-naming §7).
+- Shared enums + AJAX envelope: `Models/CommonModel.cs` (`CommonModel` + `CommonResponseModel`) — values only, no StatusCodes helper classes.
 - Unhandled exceptions → `AppExceptionHandler` only; throw typed `Exceptions/*` with **both** `UserMessage` and `DeveloperMessage`. UI shows userMessage only; full detail → server `LogError` + browser `console.error` on the Error page (non-Prod only).
 - Super Admin platform module is **PLANNED/hold** (`context/ADMIN/modules/super-admin.md`) — do not implement until the user explicitly asks.
 - Repositories: data access only — **no** criteria parsing or private business helpers; service prepares typed options (e.g. `CategoryId`).
 - SQL in `Database-Postgres/` is schema truth. **No EF migrations.** No SPs/functions this phase.
-- Pack related DTOs in one file (e.g. `Models/FilterModels.cs`). Do not spam tiny model files.
+- Pack related models in one file per module. Do not spam tiny model files.
 - Filter API: `FilterOptions` → service parses → `FilterDataResponse` with `FillProduct` / `FillCategory` / `FillSubCategory`.
 - Metis = design shell; SmartCart modules only (no Metis demo controllers).
 - `fk_store` / `fk_company` in SQL — never `StoreId`.

@@ -1,0 +1,31 @@
+---
+description: SmartCartPro controller mapping and endpoint documentation
+globs: SmartCartPro/Controllers/**/*.cs
+alwaysApply: false
+---
+
+# CONTROLLER CONVENTIONS – SmartCartPro
+
+## 1. Endpoint XML comments
+- Add a concise `/// <summary>` (max **two** prose lines) above every public action.
+- State business purpose and when/who uses it. No obvious implementation noise.
+- Do not document private properties or constructors.
+
+```csharp
+/// <summary>
+/// Displays the current platform license details and defaults when none exists.
+/// Used by the Platform Super Admin to view and manage license settings.
+/// </summary>
+[HttpGet]
+public async Task<IActionResult> Index(CancellationToken ct)
+```
+
+## 2. View → Input mapping
+- After `CommonHelpers.ValidateModelState(ModelState)` (when used), build `var input = new Input… { … };` then call the service.
+- Preserve ActorUserId, enum ints, null-coalesce, nested line collections, and other existing transforms in that initializer.
+- Route-id Select/List inputs (`new InputXSelect { Id = id }`) may stay compact on GET helpers.
+
+## 3. Responses
+- Mutating AJAX success → `CommonHelpers.SuccessResponse(…)` → `CommonResponseModel`.
+- Failures → throw typed `AppException` (handler returns `CommonResponseModel` for JSON paths).
+- Do not invent one-off path hardcodes in `ExceptionErrorMapper`; use general conventions (`*Json` actions, XHR, Accept, mutating MVC prefixes).

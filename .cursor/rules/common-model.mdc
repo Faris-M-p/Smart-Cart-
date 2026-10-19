@@ -1,0 +1,41 @@
+---
+description: SmartCartPro CommonModel, AJAX envelope, and shared enums
+globs: SmartCartPro/Models/CommonModel.cs,SmartCartPro/**/*.cs
+alwaysApply: false
+---
+
+# COMMON MODEL – SmartCartPro
+
+## 1. Single file
+- Shared enums + AJAX envelope live in `Models/CommonModel.cs` only.
+- Do not split into `CommonEnums.cs` / duplicate response files.
+- Do not copy Persuite CRM bloat (CRMConstants, WhatsApp helpers, etc.).
+
+## 2. Structure
+```csharp
+public class CommonModel
+{
+    public enum LicenseStatus { Active = 1, Suspended = 2, Expired = 3, Trial = 4 }
+    // Add more shared enums here as values only — no mapping helper classes.
+}
+
+public class CommonResponseModel
+{
+    public int StatusCode { get; set; }
+    public string Status { get; set; }
+    public string Message { get; set; }
+    public object? Data { get; set; }
+    public List<string>? Errors { get; set; }
+    public string Timestamp { get; set; }
+    // Success / Failure factories OK — used by CommonHelpers + AppExceptionHandler.
+}
+```
+
+## 3. Enums that hit TEXT DB columns
+- View/Input may use **int** + enum (e.g. `CommonModel.LicenseStatus`).
+- Entity/DB may remain TEXT (e.g. `active` / `suspended`). Map in the **repository** only.
+- Do not add public `*StatusCodes` helper classes on CommonModel; no schema change unless asked.
+
+## 4. Custom validation attributes
+- Live under `CustomModelValidation/`, namespace `SmartCartPro.CustomModelValidation`.
+- Use on In…View only (see model-naming §7).
