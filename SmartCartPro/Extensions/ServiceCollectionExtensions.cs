@@ -13,6 +13,7 @@ using SmartCartPro.Repositories;
 using SmartCartPro.Repositories.Interfaces;
 using SmartCartPro.Services;
 using SmartCartPro.Services.Interfaces;
+#pragma warning disable CS0108 // Hides inherited member — ICategoryService / IProductService intentional rewrites
 
 namespace SmartCartPro.Extensions;
 
@@ -38,10 +39,9 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<SmartCartDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        // Repositories (EF Core CRUD)
-        services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        // ── Legacy (kept for backward compat) ─────────────────────
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IOrderService, OrderService>();
 
         // Optional Dapper (reports / justified queries only)
         services.AddScoped<IProductReportRepository, ProductReportRepository>();
@@ -50,10 +50,27 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFilterRepository, FilterRepository>();
         services.AddScoped<IFilterService, FilterService>();
 
-        // Services
+        // ── Phase 3: Catalog & Products ───────────────────────────
+        services.AddScoped<ICatalogRepository, CatalogRepository>();
+        services.AddScoped<ICatalogService, CatalogService>();
+        services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductService, ProductService>();
-        services.AddScoped<ICategoryService, CategoryService>();
-        services.AddScoped<IOrderService, OrderService>();
+
+        // ── Phase 4: Inventory ────────────────────────────────────
+        services.AddScoped<IStockRepository, StockRepository>();
+        services.AddScoped<IStockService, StockService>();
+
+        // ── Phase 5: Purchasing ───────────────────────────────────
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
+        services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+        services.AddScoped<IPurchaseService, PurchaseService>();
+
+        // ── Phase 6: POS & Billing ────────────────────────────────
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<ISaleRepository, SaleRepository>();
+        services.AddScoped<ISaleService, SaleService>();
 
         return services;
     }
@@ -67,6 +84,7 @@ public static class ServiceCollectionExtensions
         services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
         services.Configure<OtpSettings>(configuration.GetSection(OtpSettings.SectionName));
         services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+        services.AddSingleton<IPasswordHasher<object>, PasswordHasher<object>>();
         services.AddSingleton<AuthJwtTokenService>();
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddScoped<IAuthRepository, AuthRepository>();
@@ -87,6 +105,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRoleService, RoleService>();
 
         // Document numbering
+        services.AddScoped<IDocumentNumberRepository, DocumentNumberRepository>();
         services.AddScoped<IDocumentNumberService, DocumentNumberService>();
 
         return services;

@@ -21,13 +21,38 @@ public class SmartCartDbContext : DbContext
     public DbSet<AuthOtpChallenge> AuthOtpChallenges => Set<AuthOtpChallenge>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
-    public DbSet<Product> Products => Set<Product>();
+
+    // ── Phase 3: Catalog ─────────────────────────────────────────
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<SubCategory> SubCategories => Set<SubCategory>();
+    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<Unit> Units => Set<Unit>();
+    public DbSet<Tax> Taxes => Set<Tax>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+
+    // ── Phase 4: Inventory ────────────────────────────────────────
     public DbSet<Inventory> Inventories => Set<Inventory>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+
+    // ── Phase 5: Purchasing ───────────────────────────────────────
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Purchase> Purchases => Set<Purchase>();
+    public DbSet<PurchaseDetail> PurchaseDetails => Set<PurchaseDetail>();
+
+    // ── Phase 6: POS ──────────────────────────────────────────────
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleDetail> SaleDetails => Set<SaleDetail>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<SalesReturn> SalesReturns => Set<SalesReturn>();
+    public DbSet<SalesReturnDetail> SalesReturnDetails => Set<SalesReturnDetail>();
+
+    // ── Online Orders (legacy stub) ───────────────────────────────
     public DbSet<Order> Orders => Set<Order>();
 
-    // Super Admin entities
+    // ── Platform / super-admin entities ──────────────────────────
     public DbSet<License> Licenses => Set<License>();
     public DbSet<InstallationConfig> InstallationConfigs => Set<InstallationConfig>();
     public DbSet<Module> Modules => Set<Module>();
@@ -244,6 +269,207 @@ public class SmartCartDbContext : DbContext
                 .HasForeignKey(x => x.FkStore)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.FkStore, x.SequenceType }).IsUnique();
+        });
+
+        // ── Phase 3: Catalog ─────────────────────────────────────────
+
+        modelBuilder.Entity<Brand>(e =>
+        {
+            e.HasIndex(x => x.BrandName).IsUnique();
+        });
+
+        modelBuilder.Entity<Unit>(e =>
+        {
+            e.HasIndex(x => x.UnitCode).IsUnique();
+        });
+
+        modelBuilder.Entity<Tax>(e =>
+        {
+            e.HasIndex(x => x.TaxCode).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductVariant>(e =>
+        {
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.SkuCode).IsUnique().HasFilter("\"skucode\" IS NOT NULL");
+            e.HasIndex(x => x.Barcode).IsUnique().HasFilter("\"barcode\" IS NOT NULL");
+            e.HasIndex(x => new { x.FkProduct, x.VariantName }).IsUnique();
+        });
+
+        modelBuilder.Entity<Product>(e =>
+        {
+            e.HasOne(x => x.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(x => x.FkCategory)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => x.ProductCode).IsUnique();
+            e.HasIndex(x => x.Sku).IsUnique().HasFilter("\"sku\" IS NOT NULL");
+            e.HasIndex(x => x.Barcode).IsUnique().HasFilter("\"barcode\" IS NOT NULL");
+        });
+
+        // ── Phase 4: Inventory ─────────────────────────────────────────
+
+        modelBuilder.Entity<Inventory>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkStore);
+            e.HasIndex(x => x.FkProduct);
+        });
+
+        modelBuilder.Entity<StockMovement>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkStore);
+            e.HasIndex(x => x.FkProduct);
+            e.HasIndex(x => x.CreatedAt);
+        });
+
+        // ── Phase 5: Purchasing ────────────────────────────────────────
+
+        modelBuilder.Entity<Supplier>(e =>
+        {
+            e.HasIndex(x => x.SupplierName).IsUnique();
+        });
+
+        modelBuilder.Entity<Purchase>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Supplier)
+                .WithMany()
+                .HasForeignKey(x => x.FkSupplier)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkStore);
+            e.HasIndex(x => x.PurchaseDate);
+        });
+
+        modelBuilder.Entity<PurchaseDetail>(e =>
+        {
+            e.HasOne(x => x.Purchase)
+                .WithMany(p => p.Details)
+                .HasForeignKey(x => x.FkPurchase)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkPurchase);
+        });
+
+        // ── Phase 6: POS ───────────────────────────────────────────────
+
+        modelBuilder.Entity<Customer>(e =>
+        {
+            e.HasIndex(x => x.Email).IsUnique().HasFilter("\"email\" IS NOT NULL");
+            e.HasIndex(x => x.Phone).IsUnique().HasFilter("\"phone\" IS NOT NULL");
+            e.HasIndex(x => x.FullName);
+        });
+
+        modelBuilder.Entity<CashSession>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.FkUser)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkStore, x.Status });
+        });
+
+        modelBuilder.Entity<Sale>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.FkCustomer)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.CashSession)
+                .WithMany()
+                .HasForeignKey(x => x.FkCashSession)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => new { x.FkStore, x.InvoiceNumber }).IsUnique();
+            e.HasIndex(x => x.SaleDate);
+        });
+
+        modelBuilder.Entity<SaleDetail>(e =>
+        {
+            e.HasOne(x => x.Sale)
+                .WithMany(s => s.Details)
+                .HasForeignKey(x => x.FkSale)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkSale);
+        });
+
+        modelBuilder.Entity<Payment>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Sale)
+                .WithMany(s => s.Payments)
+                .HasForeignKey(x => x.FkSale)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.CashSession)
+                .WithMany()
+                .HasForeignKey(x => x.FkCashSession)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => x.FkStore);
+            e.HasIndex(x => x.FkSale);
+        });
+
+        modelBuilder.Entity<SalesReturn>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Sale)
+                .WithMany()
+                .HasForeignKey(x => x.FkSale)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkStore, x.ReturnNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<SalesReturnDetail>(e =>
+        {
+            e.HasOne(x => x.SalesReturn)
+                .WithMany(r => r.Details)
+                .HasForeignKey(x => x.FkSalesReturn)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkSalesReturn);
         });
     }
 }
