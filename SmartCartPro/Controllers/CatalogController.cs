@@ -14,8 +14,13 @@ namespace SmartCartPro.Controllers;
 public class CatalogController : Controller
 {
     private readonly ICatalogService _svc;
+    private readonly IUserService _userSvc;
 
-    public CatalogController(ICatalogService svc) => _svc = svc;
+    public CatalogController(ICatalogService svc, IUserService userSvc)
+    {
+        _svc = svc;
+        _userSvc = userSvc;
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // CATEGORY
@@ -31,6 +36,8 @@ public class CatalogController : Controller
     {
         input.Page = Math.Max(1, input.Page);
         var model = await _svc.ListCategoriesAsync(input, ct);
+        ViewBag.CanManage = await CanManageProductsAsync(ct);
+        ViewBag.ListUrl = Url.Action(nameof(Categories))!;
         return View(model);
     }
 
@@ -40,7 +47,11 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public IActionResult CreateCategory() => View(new InCategoryCreateView { IsActive = true });
+    public IActionResult CreateCategory(string? returnUrl = null)
+    {
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View(new InCategoryCreateView { IsActive = true });
+    }
 
     /// <summary>
     /// Saves a new category used on product forms, POS filters, and online listings.
@@ -48,7 +59,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateCategory(InCategoryCreateView model, CancellationToken ct)
+    public async Task<IActionResult> CreateCategory(InCategoryCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -63,14 +74,22 @@ public class CatalogController : Controller
         var result = await _svc.CreateCategoryAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A category with this name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to create category.",
+                result.ResponseMsg ?? "Unable to create category.",
                 result.ResponseMsg ?? "Unable to create category.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Categories))!;
         return CommonHelpers.SuccessResponse(
             "Category created successfully.",
-            new { id = result.IdCategory });
+            new { id = result.IdCategory, redirectUrl = listUrl });
     }
 
     /// <summary>
@@ -79,10 +98,11 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditCategory(int id, CancellationToken ct)
+    public async Task<IActionResult> EditCategory(int id, string? returnUrl, CancellationToken ct)
     {
         var item = await _svc.GetCategoryAsync(new InputCategorySelect { IdCategory = id }, ct);
         if (item is null) return NotFound();
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
         return View(item.ToUpdateView());
     }
 
@@ -92,7 +112,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditCategory(int id, InCategoryUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> EditCategory(int id, InCategoryUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdCategory = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -109,14 +129,65 @@ public class CatalogController : Controller
         var result = await _svc.UpdateCategoryAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Category not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A category with this name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to update category.",
+                result.ResponseMsg ?? "Unable to update category.",
                 result.ResponseMsg ?? "Unable to update category.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Categories))!;
         return CommonHelpers.SuccessResponse(
             "Category updated successfully.",
-            new { id = result.IdCategory });
+            new { id = result.IdCategory, redirectUrl = listUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a category from the list without opening the edit form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetCategoryActive(int id, bool isActive, CancellationToken ct)
+    {
+        var item = await _svc.GetCategoryAsync(new InputCategorySelect { IdCategory = id }, ct);
+        if (item is null)
+        {
+            throw new ResourceNotFoundException("Category not found.", $"IdCategory={id}");
+        }
+
+        var input = new InputCategoryUpdate
+        {
+            IdCategory = item.IdCategory,
+            CategoryCode = item.CategoryCode,
+            CategoryName = item.CategoryName,
+            Description = item.Description,
+            DisplayOrder = item.DisplayOrder,
+            IsActive = isActive
+        };
+        var result = await _svc.UpdateCategoryAsync(input, ct);
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                result.ResponseMsg ?? "Unable to update category status.",
+                result.ResponseMsg ?? "Unable to update category status.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            isActive ? "Category activated." : "Category deactivated.",
+            new { id = result.IdCategory, isActive });
     }
 
     /// <summary>
@@ -560,4 +631,27 @@ public class CatalogController : Controller
     [HttpGet]
     public async Task<IActionResult> TaxLookup(CancellationToken ct)
         => Json(await _svc.GetTaxLookupAsync(ct));
+
+    private async Task<bool> CanManageProductsAsync(CancellationToken ct)
+    {
+        if (AuthClaims.IsPlatformSuperAdminUser(User))
+            return true;
+
+        var userId = AuthClaims.GetUserId(User);
+        if (userId is null or 0)
+            return false;
+
+        var permissions = await _userSvc.GetUserPermissionsAsync(userId.Value, ct);
+        return permissions.Any(p =>
+            string.Equals(p.PermissionCode, "products.manage", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string? SafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+            return null;
+        if (!Url.IsLocalUrl(returnUrl))
+            return null;
+        return returnUrl;
+    }
 }

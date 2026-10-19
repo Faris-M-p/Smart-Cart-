@@ -32,21 +32,41 @@ public class CatalogRepository : ICatalogRepository
 
     public async Task<OutputCategoryList> ListCategoriesAsync(InputCategoryList input, CancellationToken ct = default)
     {
+        var page = Math.Max(1, input.Page);
+        var pageSize = Math.Clamp(input.PageSize <= 0 ? 25 : input.PageSize, 1, 100);
+        var sortBy = string.IsNullOrWhiteSpace(input.SortBy) ? "categoryname" : input.SortBy;
+
         var q = _db.Categories.Where(x => !x.Cancelled);
         if (input.ActiveOnly == true) q = q.Where(x => x.IsActive);
-        if (!string.IsNullOrWhiteSpace(input.Search))
-            q = q.Where(x => x.CategoryName.Contains(input.Search) || (x.CategoryCode != null && x.CategoryCode.Contains(input.Search)));
+        else if (input.ActiveOnly == false) q = q.Where(x => !x.IsActive);
 
-        q = input.SortBy.ToLowerInvariant() switch
+        if (!string.IsNullOrWhiteSpace(input.Search))
         {
-            "displayorder" => input.SortDesc ? q.OrderByDescending(x => x.DisplayOrder) : q.OrderBy(x => x.DisplayOrder),
-            _ => input.SortDesc ? q.OrderByDescending(x => x.CategoryName) : q.OrderBy(x => x.CategoryName)
+            var term = input.Search.Trim();
+            q = q.Where(x => x.CategoryName.Contains(term)
+                || (x.CategoryCode != null && x.CategoryCode.Contains(term)));
+        }
+
+        q = sortBy.ToLowerInvariant() switch
+        {
+            "categorycode" or "code" => input.SortDesc
+                ? q.OrderByDescending(x => x.CategoryCode).ThenBy(x => x.CategoryName)
+                : q.OrderBy(x => x.CategoryCode).ThenBy(x => x.CategoryName),
+            "displayorder" => input.SortDesc
+                ? q.OrderByDescending(x => x.DisplayOrder).ThenBy(x => x.CategoryName)
+                : q.OrderBy(x => x.DisplayOrder).ThenBy(x => x.CategoryName),
+            "isactive" or "status" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsActive).ThenBy(x => x.CategoryName)
+                : q.OrderBy(x => x.IsActive).ThenBy(x => x.CategoryName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(x => x.CategoryName)
+                : q.OrderBy(x => x.CategoryName)
         };
 
         var total = await q.CountAsync(ct);
         var items = await q
-            .Skip((input.Page - 1) * input.PageSize)
-            .Take(input.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new OutputCategorySelect
             {
                 IdCategory = x.IdCategory,
@@ -58,15 +78,43 @@ public class CatalogRepository : ICatalogRepository
             })
             .ToListAsync(ct);
 
-        return new OutputCategoryList { TotalCount = total, Page = input.Page, PageSize = input.PageSize, Items = items };
+        return new OutputCategoryList
+        {
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize,
+            Items = items,
+            Filter = new InputCategoryList
+            {
+                Search = input.Search,
+                ActiveOnly = input.ActiveOnly,
+                Page = page,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortDesc = input.SortDesc
+            }
+        };
     }
 
     public async Task<OutputCategoryCreate> CreateCategoryAsync(InputCategoryCreate input, CancellationToken ct = default)
     {
+        var name = input.CategoryName.Trim();
+        var duplicate = await _db.Categories.AnyAsync(
+            x => !x.Cancelled && x.CategoryName.ToLower() == name.ToLower(), ct);
+        if (duplicate)
+        {
+            return new OutputCategoryCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A category with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
         var entity = new Category
         {
-            CategoryCode = input.CategoryCode,
-            CategoryName = input.CategoryName,
+            CategoryCode = string.IsNullOrWhiteSpace(input.CategoryCode) ? null : input.CategoryCode.Trim(),
+            CategoryName = name,
             Description = input.Description,
             DisplayOrder = input.DisplayOrder,
             IsActive = input.IsActive,
@@ -82,8 +130,21 @@ public class CatalogRepository : ICatalogRepository
         var entity = await _db.Categories.FirstOrDefaultAsync(x => x.IdCategory == input.IdCategory && !x.Cancelled, ct);
         if (entity is null) return new OutputCategoryUpdate { ResponseCode = 1, ResponseMsg = "Category not found.", StatusCode = 404 };
 
-        entity.CategoryCode = input.CategoryCode;
-        entity.CategoryName = input.CategoryName;
+        var name = input.CategoryName.Trim();
+        var duplicate = await _db.Categories.AnyAsync(
+            x => !x.Cancelled && x.IdCategory != input.IdCategory && x.CategoryName.ToLower() == name.ToLower(), ct);
+        if (duplicate)
+        {
+            return new OutputCategoryUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A category with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        entity.CategoryCode = string.IsNullOrWhiteSpace(input.CategoryCode) ? null : input.CategoryCode.Trim();
+        entity.CategoryName = name;
         entity.Description = input.Description;
         entity.DisplayOrder = input.DisplayOrder;
         entity.IsActive = input.IsActive;

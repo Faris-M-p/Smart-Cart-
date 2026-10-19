@@ -1,0 +1,62 @@
+@model SmartCartPro.Models.PagerViewModel
+@{
+    var total = Model.TotalCount;
+    var page = Model.Page;
+    var pageSize = Model.PageSize <= 0 ? 25 : Model.PageSize;
+    var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+    page = Math.Clamp(page, 1, totalPages);
+    var from = total == 0 ? 0 : ((page - 1) * pageSize) + 1;
+    var to = Math.Min(page * pageSize, total);
+
+    string BuildUrl(int p)
+    {
+        var dict = new RouteValueDictionary();
+        if (Model.RouteValues != null)
+        {
+            foreach (var kv in Model.RouteValues)
+            {
+                if (kv.Value is null) continue;
+                dict[kv.Key] = kv.Value;
+            }
+        }
+        dict["Page"] = p;
+        dict["PageSize"] = pageSize;
+        return Url.Action(Model.Action, dict)!;
+    }
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+    <div class="text-muted small">
+        @if (total == 0)
+        {
+            <span>No records</span>
+        }
+        else
+        {
+            <span>Showing @from–@to of @total</span>
+        }
+    </div>
+    @if (totalPages > 1)
+    {
+        <nav aria-label="Pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(page <= 1 ? "disabled" : null)">
+                    <a class="page-link" href="@(page <= 1 ? "#" : BuildUrl(page - 1))" aria-label="Previous">&laquo;</a>
+                </li>
+                @{
+                    var start = Math.Max(1, page - 2);
+                    var end = Math.Min(totalPages, start + 4);
+                    start = Math.Max(1, end - 4);
+                }
+                @for (var i = start; i <= end; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : null)">
+                        <a class="page-link" href="@BuildUrl(i)">@i</a>
+                    </li>
+                }
+                <li class="page-item @(page >= totalPages ? "disabled" : null)">
+                    <a class="page-link" href="@(page >= totalPages ? "#" : BuildUrl(page + 1))" aria-label="Next">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

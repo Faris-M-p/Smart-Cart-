@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using SmartCartPro.Helpers;
+using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Filters;
@@ -43,6 +44,18 @@ public sealed class ModuleAccessFilter : IAsyncActionFilter
         var enabled = await _moduleService.GetEnabledModuleCodesAsync(context.HttpContext.RequestAborted);
         if (!enabled.Contains(_moduleCode, StringComparer.OrdinalIgnoreCase))
         {
+            if (ExceptionErrorMapper.WantsJsonResponse(context.HttpContext.Request))
+            {
+                context.Result = new ObjectResult(
+                    CommonResponseModel.Failure(
+                        "This module is not enabled for your company.",
+                        statusCode: 403))
+                {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+                return;
+            }
+
             context.Result = new ForbidResult();
             return;
         }

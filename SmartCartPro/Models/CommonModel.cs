@@ -1,5 +1,15 @@
 namespace SmartCartPro.Models;
 
+/// <summary>Shared list pagination for admin master screens.</summary>
+public sealed class PagerViewModel
+{
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public string Action { get; set; } = "Index";
+    public IDictionary<string, object?> RouteValues { get; set; } = new Dictionary<string, object?>();
+}
+
 /// <summary>Shared enums and AJAX response envelope for SmartCartPro.</summary>
 public class CommonModel
 {
@@ -31,6 +41,9 @@ public class CommonResponseModel
 
     public List<string>? Errors { get; set; }
 
+    /// <summary>Field-level errors for forms (camelCase JSON: validationErrors).</summary>
+    public Dictionary<string, string[]>? ValidationErrors { get; set; }
+
     public string Timestamp { get; set; } = string.Empty;
 
     public static CommonResponseModel Success(string message, object? data = null) => new()
@@ -40,13 +53,15 @@ public class CommonResponseModel
         Message = message,
         Data = data,
         Errors = null,
+        ValidationErrors = null,
         Timestamp = DateTime.UtcNow.ToString("o")
     };
 
     public static CommonResponseModel Failure(
         string message,
         IEnumerable<string>? errors = null,
-        int statusCode = 400) => new()
+        int statusCode = 400,
+        IReadOnlyDictionary<string, string[]>? validationErrors = null) => new()
     {
         StatusCode = statusCode,
         Status = "error",
@@ -54,6 +69,9 @@ public class CommonResponseModel
         Data = null,
         Errors = errors?.Where(e => !string.IsNullOrWhiteSpace(e)).Distinct().ToList()
                  ?? new List<string>(),
+        ValidationErrors = validationErrors is null
+            ? null
+            : validationErrors.ToDictionary(kv => kv.Key, kv => kv.Value),
         Timestamp = DateTime.UtcNow.ToString("o")
     };
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using SmartCartPro.Helpers;
+using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Filters;
@@ -43,7 +44,7 @@ public sealed class RequirePermissionFilter : IAsyncActionFilter
         var userId = AuthClaims.GetUserId(context.HttpContext.User);
         if (userId is null or 0)
         {
-            context.Result = new ForbidResult();
+            context.Result = JsonOrForbid(context, 401, "Your session has expired. Please sign in again.");
             return;
         }
 
@@ -55,10 +56,25 @@ public sealed class RequirePermissionFilter : IAsyncActionFilter
 
         if (!hasPermission)
         {
-            context.Result = new ForbidResult();
+            context.Result = JsonOrForbid(context, 403, "You do not have permission to perform this action.");
             return;
         }
 
         await next();
+    }
+
+    private static IActionResult JsonOrForbid(ActionExecutingContext context, int statusCode, string message)
+    {
+        if (ExceptionErrorMapper.WantsJsonResponse(context.HttpContext.Request))
+        {
+            return new ObjectResult(CommonResponseModel.Failure(message, statusCode: statusCode))
+            {
+                StatusCode = statusCode
+            };
+        }
+
+        return statusCode == 401
+            ? new UnauthorizedResult()
+            : new ForbidResult();
     }
 }

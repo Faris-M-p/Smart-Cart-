@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 
@@ -66,10 +67,17 @@ public sealed class AppExceptionHandler : IExceptionHandler
             return false;
         }
 
+        IReadOnlyDictionary<string, string[]>? fieldErrors = exception is ValidationException ve
+            ? ve.FieldErrors
+            : null;
+
         var payload = CommonResponseModel.Failure(
             mapped.UserMessage,
-            errors: new[] { mapped.UserMessage },
-            statusCode: mapped.HttpStatusCode);
+            errors: fieldErrors is null
+                ? new[] { mapped.UserMessage }
+                : fieldErrors.Values.SelectMany(v => v),
+            statusCode: mapped.HttpStatusCode,
+            validationErrors: fieldErrors);
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = mapped.HttpStatusCode;

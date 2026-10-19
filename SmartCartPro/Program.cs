@@ -7,6 +7,7 @@ using SmartCartPro.Configuration;
 using SmartCartPro.Extensions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
+using SmartCartPro.Models;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,12 +69,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                 return Task.CompletedTask;
             },
-            OnChallenge = context =>
+            OnChallenge = async context =>
             {
                 context.HandleResponse();
                 if (context.Response.HasStarted)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 var returnUrl = context.Request.Path + context.Request.QueryString;
@@ -83,8 +84,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     loginUrl += "?returnUrl=" + Uri.EscapeDataString(returnUrl);
                 }
 
+                if (ExceptionErrorMapper.WantsJsonResponse(context.Request))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    context.Response.ContentType = "application/json";
+                    var payload = System.Text.Json.JsonSerializer.Serialize(
+                        CommonResponseModel.Failure(
+                            "Your session has expired. Please sign in again.",
+                            statusCode: 401),
+                        new System.Text.Json.JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+                        });
+                    await context.Response.WriteAsync(payload);
+                    return;
+                }
+
                 context.Response.Redirect(loginUrl);
-                return Task.CompletedTask;
             }
         };
     });

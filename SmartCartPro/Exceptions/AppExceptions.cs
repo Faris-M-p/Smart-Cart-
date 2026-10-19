@@ -46,10 +46,17 @@ public sealed class NoDataFoundException : AppException
 
 public sealed class ValidationException : AppException
 {
-    public ValidationException(string userMessage, string? developerMessage = null)
+    public ValidationException(
+        string userMessage,
+        string? developerMessage = null,
+        IReadOnlyDictionary<string, string[]>? fieldErrors = null)
         : base(userMessage, developerMessage)
     {
+        FieldErrors = fieldErrors;
     }
+
+    /// <summary>Optional per-field errors for AJAX forms (keys match input names).</summary>
+    public IReadOnlyDictionary<string, string[]>? FieldErrors { get; }
 }
 
 public sealed class UnauthorizedException : AppException

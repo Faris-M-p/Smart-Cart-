@@ -18,18 +18,24 @@ public static class CommonHelpers
             return;
         }
 
-        var errors = modelState.Values
-            .SelectMany(v => v.Errors)
-            .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage)
-                ? e.Exception?.Message ?? "Invalid value."
-                : e.ErrorMessage)
-            .Where(e => !string.IsNullOrWhiteSpace(e))
-            .Distinct()
-            .ToList();
+        var fieldErrors = modelState
+            .Where(kv => kv.Value is { Errors.Count: > 0 })
+            .ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value!.Errors
+                    .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage)
+                        ? e.Exception?.Message ?? "Invalid value."
+                        : e.ErrorMessage)
+                    .Where(m => !string.IsNullOrWhiteSpace(m))
+                    .Distinct()
+                    .ToArray());
 
-        throw new ValidationException(
-            $"Invalid input: {string.Join(", ", errors)}",
-            errors.FirstOrDefault() ?? "Invalid input.");
+        var errors = fieldErrors.Values.SelectMany(v => v).Distinct().ToList();
+        var summary = errors.Count > 0
+            ? string.Join(" ", errors)
+            : "Invalid input.";
+
+        throw new ValidationException(summary, summary, fieldErrors);
     }
 
     public static IActionResult SuccessResponse(string message, object? data = null) =>

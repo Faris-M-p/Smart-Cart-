@@ -141,9 +141,10 @@ public sealed class OutputCategorySelect
 public sealed class InputCategoryList
 {
     public string? Search { get; set; }
-    public bool? ActiveOnly { get; set; } = true;
+    /// <summary>null = All, true = Active only, false = Inactive only.</summary>
+    public bool? ActiveOnly { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
     public string SortBy { get; set; } = "categoryname";
     public bool SortDesc { get; set; }
 }
@@ -154,6 +155,8 @@ public sealed class OutputCategoryList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputCategorySelect> Items { get; set; } = new();
+    /// <summary>Echo of list filter for the view (query-string state).</summary>
+    public InputCategoryList Filter { get; set; } = new();
 }
 
 #endregion

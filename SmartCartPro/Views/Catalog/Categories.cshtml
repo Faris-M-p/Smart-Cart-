@@ -1,18 +1,215 @@
+@model SmartCartPro.Models.OutputCategoryList
 @{
     ViewData["Title"] = "Categories";
+    var canManage = ViewBag.CanManage as bool? == true;
+    var f = Model.Filter ?? new SmartCartPro.Models.InputCategoryList();
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Categories", new
+        {
+            Search = f.Search,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Categories",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
 }
-@await Html.PartialAsync("_PageHeader", (Title: "Categories", Subtitle: "Company-wide product categories", ActionText: "Add category", ActionUrl: "#"))
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead><tr><th>Code</th><th>Name</th><th>Products</th><th>Status</th><th></th></tr></thead>
-                <tbody>
-                    <tr><td>CAT-01</td><td>Electronics</td><td>42</td><td><span class="badge text-bg-success">Active</span></td><td><a href="#">Edit</a></td></tr>
-                    <tr><td>CAT-02</td><td>Groceries</td><td>128</td><td><span class="badge text-bg-success">Active</span></td><td><a href="#">Edit</a></td></tr>
-                    <tr><td>CAT-03</td><td>Home &amp; Kitchen</td><td>35</td><td><span class="badge text-bg-secondary">Inactive</span></td><td><a href="#">Edit</a></td></tr>
-                </tbody>
-            </table>
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Categories</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Categories</h1>
+        <p class="text-muted mb-0">Company-wide product categories</p>
+    </div>
+    @if (canManage)
+    {
+        <a class="btn btn-primary"
+           asp-action="CreateCategory"
+           asp-route-returnUrl="@currentListUrl">
+            <i class="bi bi-plus-lg me-1"></i>Add category
+        </a>
+    }
+</div>
+
+<div id="categoryListPage"
+     data-set-active-url="@Url.Action("SetCategoryActive", "Catalog")">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Categories" class="row g-2 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label" for="categorySearch">Search</label>
+                    <input id="categorySearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name or code" autocomplete="off" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="categoryStatus">Status</label>
+                    <select id="categoryStatus" name="ActiveOnly" class="form-select">
+                        @if (statusValue == "")
+                        { <option value="" selected>All</option> }
+                        else
+                        { <option value="">All</option> }
+                        @if (statusValue == "true")
+                        { <option value="true" selected>Active</option> }
+                        else
+                        { <option value="true">Active</option> }
+                        @if (statusValue == "false")
+                        { <option value="false" selected>Inactive</option> }
+                        else
+                        { <option value="false">Inactive</option> }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="categoryPageSize">Page size</label>
+                    <select id="categoryPageSize" name="PageSize" class="form-select">
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (f.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <p class="text-muted mb-3">No categories found</p>
+                    @if (canManage)
+                    {
+                        <a class="btn btn-primary"
+                           asp-action="CreateCategory"
+                           asp-route-returnUrl="@currentListUrl">
+                            <i class="bi bi-plus-lg me-1"></i>Add category
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("categorycode")">
+                                        Code <i class="bi @SortIcon("categorycode")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("categoryname")">
+                                        Name <i class="bi @SortIcon("categoryname")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">Description</th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("displayorder")">
+                                        Display order <i class="bi @SortIcon("displayorder")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr data-category-id="@item.IdCategory">
+                                <td>@(string.IsNullOrWhiteSpace(item.CategoryCode) ? "—" : item.CategoryCode)</td>
+                                <td class="fw-medium">@item.CategoryName</td>
+                                <td class="d-none d-md-table-cell text-muted small">
+                                    @(string.IsNullOrWhiteSpace(item.Description)
+                                        ? "—"
+                                        : (item.Description!.Length > 80
+                                            ? item.Description[..80] + "…"
+                                            : item.Description))
+                                </td>
+                                <td>@item.DisplayOrder</td>
+                                <td>
+                                    <partial name="_StatusBadge" model="item.IsActive" />
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-action="EditCategory"
+                                           asp-route-id="@item.IdCategory"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-toggle-active
+                                                data-id="@item.IdCategory"
+                                                data-name="@item.CategoryName"
+                                                data-next-active="@((!item.IsActive).ToString().ToLowerInvariant())">
+                                            @(item.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
         </div>
     </div>
 </div>
+
+<partial name="_ConfirmModal" />
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="~/js/catalog/category.js" asp-append-version="true"></script>
+}
