@@ -1,0 +1,86 @@
+@model InSubCategoryCreateView
+@{
+    ViewData["Title"] = "Add sub-category";
+    var returnUrl = ViewBag.ReturnUrl as string
+        ?? Url.Action("SubCategories", "Catalog");
+    var categories = ViewBag.Categories as IReadOnlyList<OutputCategorySelect>
+        ?? Array.Empty<OutputCategorySelect>();
+    var activeCategories = categories.Where(cat => cat.IsActive).ToList();
+
+    var categoryItems = new List<SelectListItem>
+    {
+        new("Select a category", "0", Model.FkCategory <= 0)
+    };
+    foreach (var cat in activeCategories)
+    {
+        categoryItems.Add(new SelectListItem(cat.CategoryName, cat.IdCategory.ToString(), Model.FkCategory == cat.IdCategory));
+    }
+}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item"><a asp-action="SubCategories">Sub-categories</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-3">Add sub-category</h1>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        @if (activeCategories.Count == 0)
+        {
+            <div class="alert alert-warning" role="alert">
+                There is no active category yet. Create or activate a
+                <a asp-action="Categories" class="alert-link">category</a> first, then add its sub-categories.
+            </div>
+        }
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        <form id="subCategoryForm"
+              asp-action="CreateSubCategory"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="FkCategory"></label>
+                    <select class="form-select" asp-for="FkCategory" asp-items="categoryItems"></select>
+                    <span asp-validation-for="FkCategory" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="SubCategoryName"></label>
+                    <input class="form-control" asp-for="SubCategoryName" autocomplete="off" />
+                    <span asp-validation-for="SubCategoryName" class="text-danger"></span>
+                    <div class="form-text">Must be unique within the selected category (2–200 characters).</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" asp-for="Description"></label>
+                    <textarea class="form-control" asp-for="Description" rows="3"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="DisplayOrder"></label>
+                    <input class="form-control" asp-for="DisplayOrder" type="number" min="0" step="1" />
+                    <span asp-validation-for="DisplayOrder" class="text-danger"></span>
+                    <div class="form-text">Lower numbers appear first in lists.</div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label" asp-for="IsActive"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/catalog/subcategory.js" asp-append-version="true"></script>
+}

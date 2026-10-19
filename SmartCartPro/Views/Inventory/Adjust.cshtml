@@ -1,0 +1,134 @@
+@model SmartCartPro.Models.InStockAdjustView
+@{
+    ViewData["Title"] = "Adjust stock";
+    var returnUrl = ViewBag.ReturnUrl as string
+        ?? Url.Action("Stock", "Inventory");
+    var prefill = ViewBag.Prefill as SmartCartPro.Models.OutputInventorySelect;
+    var prefillLabel = prefill is null
+        ? null
+        : prefill.ProductName + (string.IsNullOrWhiteSpace(prefill.VariantName) ? "" : " — " + prefill.VariantName);
+    var prefillOnHand = prefill is null
+        ? "0"
+        : prefill.QuantityOnHand.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    string Qty(decimal value) => value.ToString("0.###");
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Stock">Inventory</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Adjust stock</li>
+    </ol>
+</nav>
+
+<div class="mb-3">
+    <h1 class="h3 mb-1">Adjust stock</h1>
+    <p class="text-muted mb-0">Add or remove stock of a product and say why. Every adjustment is kept in the movement history.</p>
+</div>
+
+@await Html.PartialAsync("_InventoryTabs", "adjust")
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form id="stockEntryForm"
+              asp-action="Adjust"
+              method="post"
+              data-sc-ajax-form="true"
+              data-mode="adjust"
+              novalidate>
+            @Html.AntiForgeryToken()
+            <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <input type="hidden" name="FkProduct" value="@(prefill?.FkProduct)" />
+            <input type="hidden" name="FkProductVariant" value="@(prefill?.FkProductVariant)" />
+
+            <div class="row g-3">
+                <div class="col-lg-8">
+                    <label class="form-label" for="productSearch">Product</label>
+                    <input id="productSearch" type="search" class="form-control"
+                           placeholder="Search by name, code, SKU or barcode"
+                           autocomplete="off"
+                           value="@prefillLabel"
+                           data-picker-url="@Url.Action("ProductPicker", "Inventory")" />
+                    <span class="text-danger field-validation-valid" data-valmsg-for="FkProduct" data-valmsg-replace="true"></span>
+                    <div class="form-text">Type at least 2 characters, then pick the product (and variant) from the list.</div>
+                </div>
+
+                <div class="col-12">
+                    <div class="border rounded p-3 bg-body-tertiary @(prefill is null ? "d-none" : "")"
+                         data-sku-card
+                         data-on-hand="@prefillOnHand">
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <div>
+                                <div class="fw-medium" data-sku-name>@prefillLabel</div>
+                                <div class="small text-muted" data-sku-code>@(prefill?.ProductCode)</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">On hand at this store</div>
+                                <div class="fs-5 fw-semibold">
+                                    <span data-sku-onhand>@(prefill is null ? "" : Qty(prefill.QuantityOnHand))</span>
+                                    <span class="small text-muted" data-sku-unit>@(prefill?.UnitCode)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <span class="form-label d-block" id="directionLabel">Direction</span>
+                    <div class="btn-group" role="group" aria-labelledby="directionLabel">
+                        <input type="radio" class="btn-check" name="Direction" id="directionAdd" value="add" autocomplete="off" checked />
+                        <label class="btn btn-outline-success" for="directionAdd"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add stock</label>
+                        <input type="radio" class="btn-check" name="Direction" id="directionRemove" value="remove" autocomplete="off" />
+                        <label class="btn btn-outline-danger" for="directionRemove"><i class="bi bi-dash-lg me-1" aria-hidden="true"></i>Remove stock</label>
+                    </div>
+                    <span class="text-danger field-validation-valid d-block" data-valmsg-for="Direction" data-valmsg-replace="true"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label" for="Quantity">Quantity</label>
+                    <div class="input-group">
+                        <input id="Quantity" name="Quantity" type="number" inputmode="decimal"
+                               min="0.001" step="0.001" class="form-control" placeholder="0" />
+                        <span class="input-group-text" data-sku-unit-addon>@(prefill?.UnitCode ?? "units")</span>
+                    </div>
+                    <span class="text-danger field-validation-valid" data-valmsg-for="Quantity" data-valmsg-replace="true"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label" for="Reason">Reason</label>
+                    <select id="Reason" name="Reason" class="form-select">
+                        <option value="">Select a reason…</option>
+                        @foreach (var reason in SmartCartPro.Models.InStockAdjustView.ReasonOptions)
+                        {
+                            <option value="@reason">@reason</option>
+                        }
+                    </select>
+                    <span class="text-danger field-validation-valid" data-valmsg-for="Reason" data-valmsg-replace="true"></span>
+                </div>
+
+                <div class="col-12">
+                    <div class="small fw-medium d-none" data-adjust-preview aria-live="polite"></div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label" for="Notes">Notes <span class="text-muted">(optional)</span></label>
+                    <textarea id="Notes" name="Notes" class="form-control" rows="3" maxlength="500"
+                              placeholder="For example: two cartons dropped during unloading"></textarea>
+                    <span class="text-danger field-validation-valid" data-valmsg-for="Notes" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary" data-sc-busy-text="Saving…">Save adjustment</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/inventory/inventory-common.js" asp-append-version="true"></script>
+    <script src="~/js/inventory/stock-form.js" asp-append-version="true"></script>
+}

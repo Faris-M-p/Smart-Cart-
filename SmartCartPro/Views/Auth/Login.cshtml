@@ -1,8 +1,7 @@
-@model SmartCartPro.Models.LoginInput
+@model SmartCartPro.Models.InLoginView
 @{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Sign in";
-    var returnUrl = ViewData["ReturnUrl"] as string;
 }
 <div class="auth-body">
     <div class="auth-heading">
@@ -10,14 +9,15 @@
         <p>Sign in with your store account, or Super Admin email for platform access.</p>
     </div>
 
-    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small" role="alert"></div>
-
-    <form class="auth-form" asp-controller="Auth" asp-action="Login" method="post">
+    <form id="loginForm" class="auth-form" asp-controller="Auth" asp-action="Login" method="post" novalidate>
         @Html.AntiForgeryToken()
-        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <div data-sc-form-summary class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+
         <div class="mb-3">
             <label class="form-label" asp-for="UserNameOrEmail"></label>
-            <input class="form-control" asp-for="UserNameOrEmail" autocomplete="username" placeholder="admin@company.com" />
+            <input class="form-control" asp-for="UserNameOrEmail" autocomplete="username" placeholder="admin@company.com" autofocus />
             <span asp-validation-for="UserNameOrEmail" class="text-danger small"></span>
         </div>
         <div class="mb-3">
@@ -30,8 +30,12 @@
         </div>
         <div class="form-check mb-4">
             <input class="form-check-input" asp-for="RememberMe" />
-            <label class="form-check-label small" asp-for="RememberMe">Keep me signed in</label>
+            <label class="form-check-label small" asp-for="RememberMe"></label>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Sign in</button>
+        <button type="submit" class="btn btn-primary w-100" data-sc-busy-text="Signing in…">Sign in</button>
     </form>
 </div>
+
+@section Scripts {
+    <script src="~/js/auth/auth.js" asp-append-version="true"></script>
+}

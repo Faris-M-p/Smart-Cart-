@@ -1,0 +1,330 @@
+@model OutputProductDetail
+@{
+    var p = Model.Product;
+    ViewData["Title"] = p.ProductName;
+    var canManage = await Access.CanAsync("products.manage");
+    var canSeeCost = canManage || await Access.CanAnyAsync(new[] { "purchases.view", "purchases.manage" });
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+    var listUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Product");
+    var setActiveUrl = Url.Action("SetActive", "Product")!;
+    var setVariantActiveUrl = Url.Action("SetVariantActive", "Product")!;
+
+    var toggleVerb = p.IsActive ? "Deactivate" : "Activate";
+    var toggleNext = (!p.IsActive).ToString().ToLowerInvariant();
+    var toggleClass = p.IsActive ? "btn-warning" : "btn-primary";
+    var toggleBody = p.IsActive
+        ? "Deactivate \"" + p.ProductName + "\"? It will no longer be offered for sale or purchase."
+        : "Activate \"" + p.ProductName + "\"? It will be offered again for sale and purchase.";
+
+    var taxText = p.FkTax.HasValue && !string.IsNullOrEmpty(p.TaxName)
+        ? p.TaxName + " (" + p.TaxRate.ToString("0.####") + "%, " + (p.TaxInclusive ? "inclusive" : "exclusive") + ")"
+        : "—";
+    var categoryText = string.IsNullOrEmpty(p.CategoryName)
+        ? "—"
+        : (string.IsNullOrEmpty(p.SubCategoryName) ? p.CategoryName : p.CategoryName + " › " + p.SubCategoryName);
+
+    var variantNames = Model.Variants.ToDictionary(v => v.IdProductVariant, v => v.VariantName);
+
+    string Money(decimal value) => value.ToString("N2");
+    string Qty(decimal value) => value.ToString("0.###");
+    string Dash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+    string StockLabel(OutputProductStockItem s)
+    {
+        if (s.FkProductVariant is null)
+            return "Whole product";
+        return variantNames.TryGetValue(s.FkProductVariant.Value, out var name)
+            ? name
+            : "Variant #" + s.FkProductVariant.Value;
+    }
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item"><a href="@listUrl">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@p.ProductCode</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-2">
+    <div>
+        <h1 class="h3 mb-1">
+            @p.ProductName
+            <partial name="_StatusBadge" model="p.IsActive" />
+        </h1>
+        <p class="text-muted mb-0">
+            Code @p.ProductCode
+            @if (p.IsOnline)
+            {
+                <span class="badge text-bg-info ms-1">Available online</span>
+            }
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" href="@listUrl"><i class="bi bi-arrow-left me-1"></i>Back</a>
+        @if (canManage)
+        {
+            <a class="btn btn-outline-primary"
+               asp-controller="Product" asp-action="Edit"
+               asp-route-id="@p.IdProduct"
+               asp-route-returnUrl="@currentUrl"><i class="bi bi-pencil me-1"></i>Edit</a>
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    data-sc-post="@setActiveUrl"
+                    data-sc-param-id="@p.IdProduct"
+                    data-sc-param-isactive="@toggleNext"
+                    data-sc-confirm="@toggleBody"
+                    data-sc-confirm-title="@(toggleVerb + " product")"
+                    data-sc-confirm-ok="@toggleVerb"
+                    data-sc-confirm-class="@toggleClass"
+                    data-sc-after="reload">@toggleVerb</button>
+            <a class="btn btn-primary"
+               asp-controller="Product" asp-action="CreateVariant"
+               asp-route-productId="@p.IdProduct"
+               asp-route-returnUrl="@currentUrl"><i class="bi bi-plus-lg me-1"></i>Add variant</a>
+        }
+    </div>
+</div>
+
+@if (!p.IsActive)
+{
+    <div class="alert alert-warning" role="alert">
+        This product is inactive. It is hidden from product pickers and cannot be sold or purchased until it is activated.
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h6 text-uppercase text-muted mb-3">Product details</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Product code</dt>
+                    <dd class="col-sm-8">@p.ProductCode</dd>
+                    <dt class="col-sm-4">SKU</dt>
+                    <dd class="col-sm-8">@Dash(p.Sku)</dd>
+                    <dt class="col-sm-4">Barcode</dt>
+                    <dd class="col-sm-8">@Dash(p.Barcode)</dd>
+                    <dt class="col-sm-4">Category</dt>
+                    <dd class="col-sm-8">@categoryText</dd>
+                    <dt class="col-sm-4">Brand</dt>
+                    <dd class="col-sm-8">@Dash(p.BrandName)</dd>
+                    <dt class="col-sm-4">Unit</dt>
+                    <dd class="col-sm-8">@Dash(p.UnitName)</dd>
+                    <dt class="col-sm-4">Tax</dt>
+                    <dd class="col-sm-8">@taxText</dd>
+                    <dt class="col-sm-4">Description</dt>
+                    <dd class="col-sm-8 text-break" style="white-space: pre-line;">@Dash(p.Description)</dd>
+                    <dt class="col-sm-4">Added</dt>
+                    <dd class="col-sm-8 mb-0">
+                        @p.CreatedAt.ToString("dd MMM yyyy")
+                        @if (p.UpdatedAt.HasValue)
+                        {
+                            <span class="text-muted">· updated @p.UpdatedAt.Value.ToString("dd MMM yyyy")</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h2 class="h6 text-uppercase text-muted mb-3">Pricing</h2>
+                <dl class="row mb-0">
+                    <dt class="col-6">Selling price</dt>
+                    <dd class="col-6 text-end fw-semibold">@Money(p.SellingPrice)</dd>
+                    <dt class="col-6">MRP</dt>
+                    <dd class="col-6 text-end">@(p.Mrp.HasValue ? Money(p.Mrp.Value) : "—")</dd>
+                    @if (canSeeCost)
+                    {
+                        <dt class="col-6">Cost price</dt>
+                        <dd class="col-6 text-end">@Money(p.CostPrice)</dd>
+                        if (p.SellingPrice > 0)
+                        {
+                            <dt class="col-6">Margin</dt>
+                            <dd class="col-6 text-end">@(((p.SellingPrice - p.CostPrice) / p.SellingPrice * 100m).ToString("0.#"))%</dd>
+                        }
+                    }
+                    <dt class="col-6">Reorder level</dt>
+                    <dd class="col-6 text-end mb-0">@Qty(p.ReorderLevel)</dd>
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.HasStock)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted mb-3">Stock in your store</h2>
+                    @if (Model.Stock.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No stock has been recorded for this product yet.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th class="text-end">On hand</th>
+                                        <th class="text-end">Reserved</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var s in Model.Stock.OrderBy(x => x.FkProductVariant.HasValue).ThenBy(x => StockLabel(x)))
+                                {
+                                    <tr>
+                                        <td>
+                                            @StockLabel(s)
+                                            @if (s.QuantityOnHand <= 0)
+                                            {
+                                                <span class="badge text-bg-danger ms-1">Out</span>
+                                            }
+                                            else if (s.ReorderLevel > 0 && s.QuantityOnHand <= s.ReorderLevel)
+                                            {
+                                                <span class="badge text-bg-warning ms-1">Low</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">@Qty(s.QuantityOnHand)</td>
+                                        <td class="text-end">@Qty(s.QuantityReserved)</td>
+                                    </tr>
+                                }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-semibold">
+                                        <td>Total</td>
+                                        <td class="text-end">@Qty(Model.Stock.Sum(x => x.QuantityOnHand))</td>
+                                        <td class="text-end">@Qty(Model.Stock.Sum(x => x.QuantityReserved))</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (Access.IsPlatformSuperAdmin)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted mb-2">Stock</h2>
+                    <p class="text-muted mb-0">Sign in as a store user to see the stock on hand for this product.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-3">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <h2 class="h6 text-uppercase text-muted mb-0">
+                Variants (SKUs)
+                <span class="badge text-bg-light ms-1">@Model.VariantTotal</span>
+            </h2>
+            <div class="d-flex gap-2">
+                @if (Model.VariantTotal > 0)
+                {
+                    <a class="btn btn-sm btn-outline-secondary"
+                       asp-controller="Product" asp-action="Variants"
+                       asp-route-productId="@p.IdProduct">Open full list</a>
+                }
+                @if (canManage)
+                {
+                    <a class="btn btn-sm btn-primary"
+                       asp-controller="Product" asp-action="CreateVariant"
+                       asp-route-productId="@p.IdProduct"
+                       asp-route-returnUrl="@currentUrl"><i class="bi bi-plus-lg me-1"></i>Add variant</a>
+                }
+            </div>
+        </div>
+
+        @if (Model.Variants.Count == 0)
+        {
+            <div class="text-center py-4">
+                <p class="text-muted mb-0">
+                    This product has no variants and is sold as a single item.
+                    @if (canManage)
+                    {
+                        <span>Add a variant when it comes in sizes, colours or packs with their own SKU or barcode.</span>
+                    }
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Variant</th>
+                            <th class="d-none d-md-table-cell">SKU code</th>
+                            <th class="d-none d-md-table-cell">Barcode</th>
+                            <th class="text-end d-none d-lg-table-cell">Additional price</th>
+                            <th class="text-end">Selling price</th>
+                            <th>Status</th>
+                            @if (canManage)
+                            {
+                                <th class="text-end">Actions</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var v in Model.Variants)
+                    {
+                        var vVerb = v.IsActive ? "Deactivate" : "Activate";
+                        var vNext = (!v.IsActive).ToString().ToLowerInvariant();
+                        var vClass = v.IsActive ? "btn-warning" : "btn-primary";
+                        var vBody = v.IsActive
+                            ? "Deactivate variant \"" + v.VariantName + "\"? It will no longer be offered for sale or purchase."
+                            : "Activate variant \"" + v.VariantName + "\"? It will be offered again for sale and purchase.";
+                        <tr>
+                            <td class="fw-medium">@v.VariantName</td>
+                            <td class="d-none d-md-table-cell">@Dash(v.SkuCode)</td>
+                            <td class="d-none d-md-table-cell">@Dash(v.Barcode)</td>
+                            <td class="text-end d-none d-lg-table-cell">@Money(v.AdditionalPrice)</td>
+                            <td class="text-end">@Money(v.EffectivePrice)</td>
+                            <td><partial name="_StatusBadge" model="v.IsActive" /></td>
+                            @if (canManage)
+                            {
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-primary me-1"
+                                       asp-controller="Product" asp-action="EditVariant"
+                                       asp-route-id="@v.IdProductVariant"
+                                       asp-route-returnUrl="@currentUrl">Edit</a>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-sc-post="@setVariantActiveUrl"
+                                            data-sc-param-id="@v.IdProductVariant"
+                                            data-sc-param-isactive="@vNext"
+                                            data-sc-confirm="@vBody"
+                                            data-sc-confirm-title="@(vVerb + " variant")"
+                                            data-sc-confirm-ok="@vVerb"
+                                            data-sc-confirm-class="@vClass"
+                                            data-sc-after="reload">@vVerb</button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.VariantTotal > Model.Variants.Count)
+            {
+                <p class="text-muted small mt-3 mb-0">
+                    Showing the first @Model.Variants.Count of @Model.VariantTotal variants.
+                    <a asp-controller="Product" asp-action="Variants" asp-route-productId="@p.IdProduct">Open the full list</a>.
+                </p>
+            }
+        }
+    </div>
+</div>
+
+@if (canManage)
+{
+    <partial name="_ConfirmModal" />
+}

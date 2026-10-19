@@ -1,0 +1,25 @@
+@* Shown instead of an Inventory screen when the signed-in user has no store (e.g. the Platform Super Admin). Model = screen title. *@
+@model string
+@{
+    ViewData["Title"] = Model;
+}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-3">@Model</h1>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-shop display-5 text-muted d-block mb-3" aria-hidden="true"></i>
+        <h2 class="h5">Sign in as a store user to use this screen</h2>
+        <p class="text-muted mb-0 mx-auto" style="max-width: 36rem;">
+            Stock is tracked separately for every store. Your account is not linked to a store
+            (for example the Platform Super Admin), so there is no stock to show or change here.
+            Sign in with a store employee account to continue.
+        </p>
+    </div>
+</div>

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -9,6 +10,7 @@ namespace SmartCartPro.Controllers;
 /// <summary>
 /// Shared login for store admins and platform Super Admin.
 /// Super Admin password success → email OTP screen; store admin → JWT cookie.
+/// All POST actions are AJAX (<c>sc-ajax.js</c>) and answer with the common JSON envelope.
 /// </summary>
 public class AuthController : Controller
 {
@@ -29,79 +31,81 @@ public class AuthController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToLocal(returnUrl);
+            return Redirect(SafeReturnUrl(returnUrl));
         }
 
-        ViewData["ReturnUrl"] = returnUrl;
-        return View(new LoginInput());
+        return View(new InLoginView { ReturnUrl = returnUrl });
     }
 
     /// <summary>
-    /// Validates credentials and issues a JWT cookie or redirects to OTP for Super Admin.
-    /// Submitted from the login form; honors returnUrl and forced password-change flows.
+    /// Validates credentials and issues the JWT cookie, or starts the email OTP step for Super Admin.
+    /// Submitted by the login form via AJAX; the JSON <c>data.redirectUrl</c> tells the page where to go next.
     /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginInput input, string? returnUrl, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login(InLoginView model, CancellationToken cancellationToken)
     {
-        ViewData["ReturnUrl"] = returnUrl;
-        if (!ModelState.IsValid)
-        {
-            return View(input);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
+        var input = new InputAuthLogin
+        {
+            UserNameOrEmail = model.UserNameOrEmail,
+            Password = model.Password,
+            RememberMe = model.RememberMe
+        };
         var result = await _authService.LoginAsync(input, cancellationToken);
         if (!result.Success)
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign-in failed.");
-            return View(input);
+            throw new ValidationException(result.ErrorMessage ?? "Sign-in failed.");
         }
 
         if (result.RequiresOtp && !string.IsNullOrWhiteSpace(result.OtpChallengeToken))
         {
-            TempData["OtpMaskedEmail"] = result.MaskedEmail;
-            return RedirectToAction(nameof(VerifyOtp), new
+            var otpUrl = Url.Action(nameof(VerifyOtp), "Auth", new
             {
                 challengeToken = result.OtpChallengeToken,
-                returnUrl
+                maskedEmail = result.MaskedEmail,
+                returnUrl = model.ReturnUrl
             });
+
+            return CommonHelpers.SuccessResponse(
+                "Verification code sent. Check your email.",
+                new { requiresOtp = true, redirectUrl = otpUrl });
         }
 
         if (string.IsNullOrWhiteSpace(result.Token))
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign-in failed.");
-            return View(input);
+            throw new ValidationException(result.ErrorMessage ?? "Sign-in failed.");
         }
 
-        _authService.SetAuthCookie(result.Token, result.ExpiresAt, input.RememberMe);
+        _authService.SetAuthCookie(result.Token, result.ExpiresAt, model.RememberMe);
 
-        if (result.MustChangePassword)
-        {
-            return RedirectToAction(nameof(ChangePassword));
-        }
+        var redirectUrl = result.MustChangePassword
+            ? Url.Action(nameof(ChangePassword), "Auth")
+            : SafeReturnUrl(model.ReturnUrl);
 
-        return RedirectToLocal(returnUrl);
+        return CommonHelpers.SuccessResponse(
+            "Signed in successfully.",
+            new { requiresOtp = false, mustChangePassword = result.MustChangePassword, redirectUrl });
     }
 
     /// <summary>
     /// Displays the email OTP entry screen after Super Admin password success.
-    /// Opened via redirect from login when RequiresOtp is returned.
+    /// Opened from the login page when the JSON response says an OTP is required.
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult VerifyOtp(string challengeToken, string? returnUrl = null)
+    public IActionResult VerifyOtp(string? challengeToken, string? maskedEmail = null, string? returnUrl = null)
     {
         if (string.IsNullOrWhiteSpace(challengeToken))
         {
             return RedirectToAction(nameof(Login));
         }
 
-        ViewData["ReturnUrl"] = returnUrl;
-        ViewData["MaskedEmail"] = TempData["OtpMaskedEmail"] as string ?? "your email";
-        TempData.Keep("OtpMaskedEmail");
+        ViewData["MaskedEmail"] = string.IsNullOrWhiteSpace(maskedEmail) ? "your email" : maskedEmail;
 
-        return View(new VerifyOtpInput
+        return View(new InVerifyOtpView
         {
             ChallengeToken = challengeToken,
             ReturnUrl = returnUrl
@@ -110,120 +114,185 @@ public class AuthController : Controller
 
     /// <summary>
     /// Verifies the OTP and completes Super Admin sign-in with a JWT cookie.
-    /// Posted from the OTP form using the challenge token from login.
+    /// Posted by the OTP form via AJAX using the challenge token issued at login.
     /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> VerifyOtp(VerifyOtpInput input, CancellationToken cancellationToken)
+    public async Task<IActionResult> VerifyOtp(InVerifyOtpView model, CancellationToken cancellationToken)
     {
-        ViewData["MaskedEmail"] = TempData["OtpMaskedEmail"] as string ?? "your email";
-        TempData.Keep("OtpMaskedEmail");
-        ViewData["ReturnUrl"] = input.ReturnUrl;
+        CommonHelpers.ValidateModelState(ModelState);
 
-        if (!ModelState.IsValid)
+        var input = new InputAuthVerifyOtp
         {
-            return View(input);
-        }
-
+            ChallengeToken = model.ChallengeToken,
+            Code = model.Code
+        };
         var result = await _authService.VerifyOtpAsync(input, cancellationToken);
         if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Verification failed.");
-            return View(input);
+            throw new ValidationException(result.ErrorMessage ?? "Verification failed.");
         }
 
         _authService.SetAuthCookie(result.Token, result.ExpiresAt, rememberMe: false);
-        TempData.Remove("OtpMaskedEmail");
 
-        if (result.MustChangePassword)
-        {
-            return RedirectToAction(nameof(ChangePassword));
-        }
+        var redirectUrl = result.MustChangePassword
+            ? Url.Action(nameof(ChangePassword), "Auth")
+            : SafeReturnUrl(model.ReturnUrl);
 
-        return RedirectToLocal(input.ReturnUrl);
+        return CommonHelpers.SuccessResponse(
+            "Signed in successfully.",
+            new { mustChangePassword = result.MustChangePassword, redirectUrl });
     }
 
     /// <summary>
     /// Requests a new OTP for an in-progress Super Admin challenge.
-    /// Used from the verify-OTP page when the user did not receive or expired a code.
+    /// Used from the verify-OTP page when the user did not receive or expired a code; returns the new challenge token.
     /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ResendOtp(string challengeToken, string? returnUrl, CancellationToken cancellationToken)
+    public async Task<IActionResult> ResendOtp(string? challengeToken, CancellationToken cancellationToken)
     {
-        var result = await _authService.ResendOtpAsync(challengeToken, cancellationToken);
-        if (!result.Success || string.IsNullOrWhiteSpace(result.OtpChallengeToken))
+        if (string.IsNullOrWhiteSpace(challengeToken))
         {
-            TempData["OtpError"] = result.ErrorMessage ?? "Could not resend the code.";
-            return RedirectToAction(nameof(Login));
+            throw new ValidationException("The verification session is missing. Please sign in again.");
         }
 
-        TempData["OtpMaskedEmail"] = result.MaskedEmail;
-        TempData["OtpInfo"] = "A new verification code was sent.";
-        return RedirectToAction(nameof(VerifyOtp), new
+        var input = new InputAuthResendOtp { ChallengeToken = challengeToken };
+        var result = await _authService.ResendOtpAsync(input, cancellationToken);
+        if (!result.Success || string.IsNullOrWhiteSpace(result.OtpChallengeToken))
         {
-            challengeToken = result.OtpChallengeToken,
-            returnUrl
-        });
+            throw new ValidationException(result.ErrorMessage ?? "Could not resend the code.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "A new verification code was sent.",
+            new { challengeToken = result.OtpChallengeToken, maskedEmail = result.MaskedEmail });
     }
 
     /// <summary>
     /// Shows the password change form for signed-in users.
-    /// Used after login when MustChangePassword is set or from account settings.
+    /// Used after login when MustChangePassword is set or from the header Password button.
     /// </summary>
     [HttpGet]
     [Authorize]
-    public IActionResult ChangePassword() => View(new ChangePasswordInput());
+    public IActionResult ChangePassword()
+    {
+        ViewData["MustChange"] = User.FindFirst(AuthClaims.MustChangePassword)?.Value == "1";
+        return View(new InChangePasswordView());
+    }
 
     /// <summary>
     /// Updates the current user's password and refreshes the auth cookie.
-    /// Posted from the change-password form; requires an authenticated session.
+    /// Posted by the change-password form via AJAX; requires an authenticated session.
     /// </summary>
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangePassword(ChangePasswordInput input, CancellationToken cancellationToken)
+    public async Task<IActionResult> ChangePassword(InChangePasswordView model, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return View(input);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var userId = AuthClaims.GetUserId(User);
         if (userId is null)
         {
-            return RedirectToAction(nameof(Login));
+            throw new UnauthorizedException("Your session has expired. Please sign in again.");
         }
 
-        var result = await _authService.ChangePasswordAsync(userId.Value, input, cancellationToken);
+        var input = new InputAuthChangePassword
+        {
+            IdUser = userId.Value,
+            CurrentPassword = model.CurrentPassword,
+            NewPassword = model.NewPassword
+        };
+        var result = await _authService.ChangePasswordAsync(input, cancellationToken);
         if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Could not change password.");
-            return View(input);
+            throw new ValidationException(result.ErrorMessage ?? "Could not change password.");
         }
 
         _authService.SetAuthCookie(result.Token, result.ExpiresAt, rememberMe: false);
-        TempData["AuthMessage"] = "Password updated.";
-        return RedirectToAction("Index", "Home");
+
+        return CommonHelpers.SuccessResponse(
+            "Password updated.",
+            new { redirectUrl = Url.Action("Index", "Home") });
     }
 
     /// <summary>
-    /// Placeholder page to start password recovery by email.
-    /// Linked from the login screen when recovery is offered.
+    /// Shows the form that asks for the account email or username to start password recovery.
+    /// Linked from the "Forgot?" link on the login screen.
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult ForgotPassword() => View();
+    public IActionResult ForgotPassword() => View(new InForgotPasswordView());
 
     /// <summary>
-    /// Placeholder page to set a new password from a reset link.
-    /// Used when the user follows an emailed reset token (future flow).
+    /// Emails a time-limited reset link when the account exists; answers identically when it does not.
+    /// Posted by the forgot-password form via AJAX.
+    /// </summary>
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(InForgotPasswordView model, CancellationToken cancellationToken)
+    {
+        CommonHelpers.ValidateModelState(ModelState);
+
+        var input = new InputAuthForgotPassword
+        {
+            UserNameOrEmail = model.UserNameOrEmail,
+            ResetPath = Url.Action(nameof(ResetPassword), "Auth") ?? "/Auth/ResetPassword",
+            RequestOrigin = $"{Request.Scheme}://{Request.Host}"
+        };
+        var result = await _authService.RequestPasswordResetAsync(input, cancellationToken);
+
+        return CommonHelpers.SuccessResponse(result.Message, new { sent = result.Success });
+    }
+
+    /// <summary>
+    /// Shows the new-password form for an emailed reset link, or a friendly message when the link is bad or expired.
+    /// Opened from the link in the reset email.
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult ResetPassword() => View();
+    public async Task<IActionResult> ResetPassword(string? token, CancellationToken cancellationToken)
+    {
+        var input = new InputAuthResetTokenSelect { Token = token ?? string.Empty };
+        var check = await _authService.GetPasswordResetTokenAsync(input, cancellationToken);
+        if (!check.IsValid)
+        {
+            ViewData["TokenError"] = check.ErrorMessage;
+        }
+
+        return View(new InResetPasswordView { Token = check.IsValid ? input.Token : string.Empty });
+    }
+
+    /// <summary>
+    /// Sets the new password from a valid reset token (single use) and sends the user to sign in.
+    /// Posted by the reset-password form via AJAX.
+    /// </summary>
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(InResetPasswordView model, CancellationToken cancellationToken)
+    {
+        CommonHelpers.ValidateModelState(ModelState);
+
+        var input = new InputAuthResetPassword
+        {
+            Token = model.Token,
+            NewPassword = model.NewPassword
+        };
+        var result = await _authService.ResetPasswordAsync(input, cancellationToken);
+        if (!result.Success)
+        {
+            throw new ValidationException(result.ErrorMessage ?? "Could not reset the password.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Password updated. You can now sign in.",
+            new { redirectUrl = Url.Action(nameof(Login), "Auth") });
+    }
 
     /// <summary>
     /// Signs out by clearing the JWT auth cookie.
@@ -240,7 +309,7 @@ public class AuthController : Controller
 
     /// <summary>
     /// Signs out via GET by clearing the JWT auth cookie.
-    /// Used for simple sign-out links that cannot POST anti-forgery tokens.
+    /// Used by the header "Sign out" link, which cannot post an anti-forgery token.
     /// </summary>
     [HttpGet]
     [Authorize]
@@ -250,13 +319,8 @@ public class AuthController : Controller
         return RedirectToAction(nameof(Login));
     }
 
-    private IActionResult RedirectToLocal(string? returnUrl)
-    {
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-        {
-            return Redirect(returnUrl);
-        }
-
-        return RedirectToAction("Index", "Home");
-    }
+    private string SafeReturnUrl(string? returnUrl) =>
+        !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Action("Index", "Home") ?? "/";
 }

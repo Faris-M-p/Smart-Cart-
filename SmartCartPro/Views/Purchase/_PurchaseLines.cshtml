@@ -1,0 +1,65 @@
+@* Line grid shared by Create and Edit. Rows are built by wwwroot/js/purchasing/purchase-form.js (text only, no HTML injection). *@
+<div class="card border-0 shadow-sm mt-3">
+    <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h2 class="h6 mb-0">Items</h2>
+        <span class="text-muted small"><span data-line-count>0</span> line(s)</span>
+    </div>
+    <div class="card-body">
+        <div class="mb-3" style="max-width: 36rem;">
+            <label class="form-label" for="productPicker">Add a product</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                <input id="productPicker" type="search" class="form-control"
+                       placeholder="Search by name, code, SKU or barcode" autocomplete="off" />
+                <span class="input-group-text d-none" data-picker-spinner>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                </span>
+            </div>
+            <div class="form-text">Type at least 2 characters and pick a product. Picking the same product again adds 1 to its quantity.</div>
+        </div>
+
+        <span class="text-danger small d-block mb-2" data-valmsg-for="Lines"></span>
+
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="purchaseLines">
+                <thead>
+                    <tr>
+                        <th style="width: 2.5rem;">#</th>
+                        <th style="min-width: 14rem;">Product</th>
+                        <th class="text-end" style="width: 8rem;">Quantity</th>
+                        <th class="text-end" style="width: 9rem;">Unit cost</th>
+                        <th class="text-end" style="width: 9rem;">Discount</th>
+                        <th class="text-end" style="width: 6rem;">Tax %</th>
+                        <th class="text-end" style="width: 8rem;">Tax</th>
+                        <th class="text-end" style="width: 9rem;">Line total</th>
+                        <th style="width: 3rem;"><span class="visually-hidden">Remove</span></th>
+                    </tr>
+                </thead>
+                <tbody data-lines-body></tbody>
+            </table>
+        </div>
+
+        <div class="text-center text-muted py-4" data-lines-empty>
+            <i class="bi bi-cart-plus display-6 d-block mb-2" aria-hidden="true"></i>
+            No products added yet. Search above to add the first item.
+        </div>
+
+        <div class="row justify-content-end mt-3">
+            <div class="col-md-6 col-lg-4">
+                <dl class="row mb-0">
+                    <dt class="col-6 fw-normal text-muted">Subtotal</dt>
+                    <dd class="col-6 text-end mb-1" data-total="subtotal">0.00</dd>
+                    <dt class="col-6 fw-normal text-muted">Discount</dt>
+                    <dd class="col-6 text-end mb-1" data-total="discount">0.00</dd>
+                    <dt class="col-6 fw-normal text-muted">Tax</dt>
+                    <dd class="col-6 text-end mb-1" data-total="tax">0.00</dd>
+                    <dt class="col-6 border-top pt-2">Total</dt>
+                    <dd class="col-6 text-end border-top pt-2 mb-0 fw-semibold fs-5" data-total="total">0.00</dd>
+                </dl>
+                <p class="text-muted small mt-2 mb-0">
+                    Tax follows each product's tax profile. The server recalculates tax and totals when you save.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

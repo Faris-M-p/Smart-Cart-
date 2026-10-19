@@ -1,9 +1,8 @@
-@model SmartCartPro.Models.VerifyOtpInput
+@model SmartCartPro.Models.InVerifyOtpView
 @{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Verify code";
     var maskedEmail = ViewData["MaskedEmail"] as string ?? "your email";
-    var info = TempData["OtpInfo"] as string;
 }
 <div class="auth-body">
     <div class="auth-heading">
@@ -11,35 +10,34 @@
         <p>We sent a one-time code to <strong>@maskedEmail</strong>. Enter it to finish Super Admin sign-in.</p>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(info))
-    {
-        <div class="alert alert-success py-2 px-3 small" role="status">@info</div>
-    }
-    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small" role="alert"></div>
-
-    <form class="auth-form" asp-controller="Auth" asp-action="VerifyOtp" method="post">
+    <form id="otpForm" class="auth-form" asp-controller="Auth" asp-action="VerifyOtp" method="post" novalidate>
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="ChallengeToken" />
         <input type="hidden" asp-for="ReturnUrl" />
+
+        <div data-sc-form-summary class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+
         <div class="mb-4">
             <label class="form-label" asp-for="Code"></label>
-            <input class="form-control form-control-lg text-center letter-spacing-wide"
+            <input class="form-control form-control-lg text-center"
                    asp-for="Code"
                    inputmode="numeric"
                    autocomplete="one-time-code"
-                   placeholder="6-digit code"
+                   maxlength="8"
+                   placeholder="Enter code"
                    autofocus />
             <span asp-validation-for="Code" class="text-danger small"></span>
+            <span asp-validation-for="ChallengeToken" class="text-danger small"></span>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Verify and continue</button>
+        <button type="submit" class="btn btn-primary w-100" data-sc-busy-text="Verifying…">Verify and continue</button>
     </form>
 
-    <form class="mt-3" asp-controller="Auth" asp-action="ResendOtp" method="post">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="challengeToken" value="@Model.ChallengeToken" />
-        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
-        <button type="submit" class="btn btn-link w-100">Resend code</button>
-    </form>
+    <button type="button" id="resendOtpBtn" class="btn btn-link w-100 mt-3"
+            data-resend-url="@Url.Action("ResendOtp", "Auth")">Resend code</button>
 
     <p class="auth-footnote"><a asp-controller="Auth" asp-action="Login">Back to sign in</a></p>
 </div>
+
+@section Scripts {
+    <script src="~/js/auth/auth.js" asp-append-version="true"></script>
+}

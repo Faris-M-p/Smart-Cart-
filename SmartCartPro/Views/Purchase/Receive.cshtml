@@ -1,0 +1,140 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputPurchaseSelect
+@{
+    ViewData["Title"] = "Receive goods · " + Model.PoNumber;
+    var today = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    // Display text uses the browser/server culture; input values must stay invariant ("1234.5").
+    string Qty(decimal value) => value.ToString("0.###");
+    string Raw(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
+        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.IdPurchase">@Model.PoNumber</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Receive goods</li>
+    </ol>
+</nav>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+    <h1 class="h3 mb-0">Receive goods</h1>
+    <span class="text-muted">@Model.PoNumber</span>
+    <partial name="_PurchaseStatusBadge" model="Model.Status" />
+</div>
+<p class="text-muted mb-3">
+    @Model.SupplierName · ordered @Model.PurchaseDate.ToString("dd MMM yyyy") · into <strong>@Model.StoreName</strong>.
+    Enter what arrived; quantities above what is still pending are rejected.
+</p>
+
+<div id="purchaseReceivePage"
+     data-id-purchase="@Model.IdPurchase"
+     data-submit-url="@Url.Action("Receive", new { id = Model.IdPurchase })">
+    <form id="purchaseReceiveForm" novalidate>
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        @Html.AntiForgeryToken()
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label" for="receiptDate">Receipt date</label>
+                        <input id="receiptDate" name="ReceiptDate" type="date" class="form-control" value="@today" />
+                        <span class="text-danger small" data-valmsg-for="ReceiptDate"></span>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label" for="receiptNotes">Notes</label>
+                        <input id="receiptNotes" name="Notes" type="text" class="form-control" maxlength="500"
+                               placeholder="Delivery note number, condition of the goods…" autocomplete="off" />
+                        <span class="text-danger small" data-valmsg-for="Notes"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h2 class="h6 mb-0">Items to receive</h2>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Quick fill">
+                    <button type="button" class="btn btn-outline-secondary" data-fill-all>Receive all remaining</button>
+                    <button type="button" class="btn btn-outline-secondary" data-clear-all>Clear</button>
+                </div>
+            </div>
+            <div class="px-3 pt-2">
+                <span class="text-danger small d-block" data-valmsg-for="Lines"></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 2.5rem;">#</th>
+                            <th>Product</th>
+                            <th class="text-end">Ordered</th>
+                            <th class="text-end">Received so far</th>
+                            <th class="text-end">Pending</th>
+                            <th class="text-end" style="width: 11rem;">Receive now</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @{ var n = 0; }
+                    @foreach (var line in Model.Lines)
+                    {
+                        n++;
+                        var pending = line.PendingQty;
+                        <tr data-id-purchase-detail="@line.IdPurchaseDetail" data-remaining="@Raw(pending)">
+                            <td class="text-muted">@n</td>
+                            <td>
+                                <div class="fw-medium">@line.ProductName</div>
+                                <div class="small text-muted">
+                                    @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                    {
+                                        <span>@line.VariantName</span>
+                                        @if (!string.IsNullOrWhiteSpace(line.ProductCode)) { <span> · </span> }
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(line.ProductCode))
+                                    {
+                                        <span>@line.ProductCode</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end">@Qty(line.Quantity)</td>
+                            <td class="text-end">@Qty(line.ReceivedQty)</td>
+                            <td class="text-end fw-medium">@Qty(pending)</td>
+                            <td class="text-end">
+                                @if (pending > 0)
+                                {
+                                    <input type="number" class="form-control form-control-sm text-end" data-field="receiveQty"
+                                           min="0" max="@Raw(pending)" step="0.001" inputmode="decimal" placeholder="0"
+                                           aria-label="Quantity received for @line.ProductName" />
+                                    <div class="small text-danger text-start d-none" data-cell="rowError"></div>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-success">Fully received</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-end text-muted">Receiving now</td>
+                            <td class="text-end fw-semibold" data-total-receive>0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="button" class="btn btn-success" data-submit-receipt data-sc-busy-text="Posting…">
+                <i class="bi bi-box-arrow-in-down me-1"></i>Post goods receipt
+            </button>
+            <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.IdPurchase">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase-receive.js" asp-append-version="true"></script>
+}

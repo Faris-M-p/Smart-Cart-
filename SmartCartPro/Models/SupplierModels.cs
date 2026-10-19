@@ -51,6 +51,7 @@ public sealed class InSupplierCreateView
     public string? State { get; set; }
 
     [Display(Name = "Postal Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Postal Code cannot exceed 20 characters.")]
     [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
@@ -149,6 +150,7 @@ public sealed class InSupplierUpdateView
     public string? State { get; set; }
 
     [Display(Name = "Postal Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Postal Code cannot exceed 20 characters.")]
     [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
@@ -189,6 +191,26 @@ public sealed class OutputSupplierUpdate
     public string ResponseMsg { get; set; } = string.Empty;
     public int StatusCode { get; set; }
     public int IdSupplier { get; set; }
+    public bool Ok => ResponseCode == 0;
+}
+
+#endregion
+
+#region Supplier Set Active
+
+public sealed class InputSupplierSetActive
+{
+    public int IdSupplier { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed class OutputSupplierSetActive
+{
+    public int ResponseCode { get; set; }
+    public string ResponseMsg { get; set; } = string.Empty;
+    public int StatusCode { get; set; }
+    public int IdSupplier { get; set; }
+    public bool IsActive { get; set; }
     public bool Ok => ResponseCode == 0;
 }
 
@@ -239,9 +261,11 @@ public sealed class OutputSupplierSelect
 public sealed class InputSupplierList
 {
     public string? Search { get; set; }
-    public bool? ActiveOnly { get; set; } = true;
+    /// <summary>null = all suppliers, true = active only, false = inactive only.</summary>
+    public bool? ActiveOnly { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    /// <summary>suppliercode | suppliername | city | isactive</summary>
     public string SortBy { get; set; } = "suppliername";
     public bool SortDesc { get; set; }
 }
@@ -252,6 +276,8 @@ public sealed class OutputSupplierList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputSupplierSelect> Items { get; set; } = new();
+    /// <summary>Normalised filter echoed back so the view can repopulate its form and build pager links.</summary>
+    public InputSupplierList Filter { get; set; } = new();
 }
 
 #endregion

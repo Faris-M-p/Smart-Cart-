@@ -25,4 +25,13 @@ public sealed class OtpSettings
     public int ExpiryMinutes { get; set; } = 5;
     public int MaxAttempts { get; set; } = 5;
     public int Length { get; set; } = 6;
+
+    /// <summary>How long an emailed password-reset link stays valid.</summary>
+    public int PasswordResetExpiryMinutes { get; set; } = 30;
+
+    /// <summary>
+    /// Optional fixed OTP for local development only. Honoured solely when the host environment is
+    /// <c>Development</c>; ignored everywhere else. Leave empty to always use a random emailed code.
+    /// </summary>
+    public string? DevelopmentFixedCode { get; set; }
 }

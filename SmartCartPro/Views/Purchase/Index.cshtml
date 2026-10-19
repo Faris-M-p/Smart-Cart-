@@ -1,0 +1,287 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputPurchaseList
+@{
+    ViewData["Title"] = "Purchases";
+    var canManage = await Access.CanAsync("purchases.manage");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputPurchaseList();
+    var suppliers = ViewBag.Suppliers as IReadOnlyList<SmartCartPro.Models.OutputSupplierSelect>
+                    ?? new List<SmartCartPro.Models.OutputSupplierSelect>();
+    var fromText = f.From?.ToString("yyyy-MM-dd");
+    var toText = f.To?.ToString("yyyy-MM-dd");
+    var hasFilter = !string.IsNullOrWhiteSpace(f.Search)
+                    || !string.IsNullOrWhiteSpace(f.Status)
+                    || f.FkSupplier is not null
+                    || f.From is not null
+                    || f.To is not null;
+
+    var statusOptions = new[]
+    {
+        ("", "All statuses"),
+        ("draft", "Draft"),
+        ("posted", "Posted"),
+        ("partially_received", "Partially received"),
+        ("received", "Received"),
+        ("cancelled", "Cancelled")
+    };
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            Status = f.Status,
+            FkSupplier = f.FkSupplier,
+            From = fromText,
+            To = toText,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["Status"] = f.Status,
+            ["FkSupplier"] = f.FkSupplier,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Purchases</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Purchases</h1>
+        <p class="text-muted mb-0">Purchase orders and goods receipts for your store</p>
+    </div>
+    @if (canManage)
+    {
+        <a class="btn btn-primary" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>New purchase order
+        </a>
+    }
+</div>
+
+<div id="purchaseListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="purchaseSearch">Search</label>
+                    <input id="purchaseSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="PO number, invoice # or supplier" autocomplete="off" />
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label" for="purchaseStatus">Status</label>
+                    <select id="purchaseStatus" name="Status" class="form-select" data-sc-auto-submit>
+                        @foreach (var (value, label) in statusOptions)
+                        {
+                            if ((f.Status ?? string.Empty) == value)
+                            {
+                                <option value="@value" selected>@label</option>
+                            }
+                            else
+                            {
+                                <option value="@value">@label</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="purchaseSupplier">Supplier</label>
+                    <select id="purchaseSupplier" name="FkSupplier" class="form-select" data-sc-auto-submit>
+                        @if (f.FkSupplier is null)
+                        { <option value="" selected>All suppliers</option> }
+                        else
+                        { <option value="">All suppliers</option> }
+                        @foreach (var s in suppliers)
+                        {
+                            var supplierLabel = s.IsActive ? s.SupplierName : s.SupplierName + " (inactive)";
+                            if (f.FkSupplier == s.IdSupplier)
+                            {
+                                <option value="@s.IdSupplier" selected>@supplierLabel</option>
+                            }
+                            else
+                            {
+                                <option value="@s.IdSupplier">@supplierLabel</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="purchaseFrom">From</label>
+                    <input id="purchaseFrom" type="date" name="From" value="@fromText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="purchaseTo">To</label>
+                    <input id="purchaseTo" type="date" name="To" value="@toText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <label class="form-label" for="purchasePageSize">Page size</label>
+                    <select id="purchasePageSize" name="PageSize" class="form-select" data-sc-auto-submit>
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (f.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6 d-flex gap-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                    @if (hasFilter)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-file-earmark-text display-5 text-muted" aria-hidden="true"></i>
+                    @if (hasFilter)
+                    {
+                        <p class="text-muted my-3">No purchase orders match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear filters</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted my-3">No purchase orders yet.</p>
+                        @if (canManage)
+                        {
+                            <a class="btn btn-primary" asp-action="Create">
+                                <i class="bi bi-plus-lg me-1"></i>New purchase order
+                            </a>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("id")">
+                                        PO # <i class="bi @SortIcon("id")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("purchasedate")">
+                                        Date <i class="bi @SortIcon("purchasedate")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("supplier")">
+                                        Supplier <i class="bi @SortIcon("supplier")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-lg-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("invoicenumber")">
+                                        Invoice # <i class="bi @SortIcon("invoicenumber")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end d-none d-md-table-cell">Items</th>
+                                <th class="text-end">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("totalamount")">
+                                        Total <i class="bi @SortIcon("totalamount")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("status")">
+                                        Status <i class="bi @SortIcon("status")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr data-purchase-id="@item.IdPurchase" class="@(item.Status == "cancelled" ? "text-muted" : null)">
+                                <td class="fw-medium text-nowrap">
+                                    <a class="text-decoration-none" asp-action="Details" asp-route-id="@item.IdPurchase">@item.PoNumber</a>
+                                </td>
+                                <td class="text-nowrap">@item.PurchaseDate.ToString("dd MMM yyyy")</td>
+                                <td>@item.SupplierName</td>
+                                <td class="d-none d-lg-table-cell">@(string.IsNullOrWhiteSpace(item.InvoiceNumber) ? "—" : item.InvoiceNumber)</td>
+                                <td class="text-end d-none d-md-table-cell">@item.LineCount</td>
+                                <td class="text-end text-nowrap"><span data-sc-money="@Raw(item.TotalAmount)">@Money(item.TotalAmount)</span></td>
+                                <td><partial name="_PurchaseStatusBadge" model="item.Status" /></td>
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@item.IdPurchase" title="View">
+                                        <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span>
+                                    </a>
+                                    @if (canManage && item.CanReceive)
+                                    {
+                                        <a class="btn btn-sm btn-outline-success ms-1" asp-action="Receive" asp-route-id="@item.IdPurchase" title="Receive goods">
+                                            <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i><span class="visually-hidden">Receive goods</span>
+                                        </a>
+                                    }
+                                    @if (canManage && item.CanEdit)
+                                    {
+                                        <a class="btn btn-sm btn-outline-secondary ms-1" asp-action="Edit" asp-route-id="@item.IdPurchase" title="Edit">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Edit</span>
+                                        </a>
+                                    }
+                                    @if (canManage && item.CanCancel)
+                                    {
+                                        <a class="btn btn-sm btn-outline-danger ms-1" asp-action="Cancel" asp-route-id="@item.IdPurchase" title="Cancel">
+                                            <i class="bi bi-x-circle" aria-hidden="true"></i><span class="visually-hidden">Cancel</span>
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase.js" asp-append-version="true"></script>
+}

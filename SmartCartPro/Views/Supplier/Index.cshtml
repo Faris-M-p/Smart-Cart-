@@ -1,0 +1,232 @@
+@model SmartCartPro.Models.OutputSupplierList
+@{
+    ViewData["Title"] = "Suppliers";
+    var canManage = await Access.CanAsync("purchases.manage");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputSupplierList();
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilter = !string.IsNullOrWhiteSpace(f.Search) || f.ActiveOnly is not null;
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Suppliers</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Suppliers</h1>
+        <p class="text-muted mb-0">Company-wide vendors you buy stock from</p>
+    </div>
+    @if (canManage)
+    {
+        <a class="btn btn-primary"
+           asp-action="Create"
+           asp-route-returnUrl="@currentListUrl">
+            <i class="bi bi-plus-lg me-1"></i>Add supplier
+        </a>
+    }
+</div>
+
+<div id="supplierListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label" for="supplierSearch">Search</label>
+                    <input id="supplierSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name, code, contact, phone, email or city" autocomplete="off" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="supplierStatus">Status</label>
+                    <select id="supplierStatus" name="ActiveOnly" class="form-select" data-sc-auto-submit>
+                        @if (statusValue == "")
+                        { <option value="" selected>All</option> }
+                        else
+                        { <option value="">All</option> }
+                        @if (statusValue == "true")
+                        { <option value="true" selected>Active</option> }
+                        else
+                        { <option value="true">Active</option> }
+                        @if (statusValue == "false")
+                        { <option value="false" selected>Inactive</option> }
+                        else
+                        { <option value="false">Inactive</option> }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="supplierPageSize">Page size</label>
+                    <select id="supplierPageSize" name="PageSize" class="form-select" data-sc-auto-submit>
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (f.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-truck display-5 text-muted"></i>
+                    @if (hasFilter)
+                    {
+                        <p class="text-muted my-3">No suppliers match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear filters</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted my-3">No suppliers yet.</p>
+                        @if (canManage)
+                        {
+                            <a class="btn btn-primary"
+                               asp-action="Create"
+                               asp-route-returnUrl="@currentListUrl">
+                                <i class="bi bi-plus-lg me-1"></i>Add supplier
+                            </a>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("suppliercode")">
+                                        Code <i class="bi @SortIcon("suppliercode")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("suppliername")">
+                                        Supplier <i class="bi @SortIcon("suppliername")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">Phone</th>
+                                <th class="d-none d-lg-table-cell">Email</th>
+                                <th class="d-none d-md-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("city")">
+                                        City <i class="bi @SortIcon("city")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                @if (canManage)
+                                {
+                                    <th class="text-end">Actions</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr data-supplier-id="@item.IdSupplier">
+                                <td>@(string.IsNullOrWhiteSpace(item.SupplierCode) ? "—" : item.SupplierCode)</td>
+                                <td>
+                                    <div class="fw-medium">@item.SupplierName</div>
+                                    @if (!string.IsNullOrWhiteSpace(item.ContactPerson))
+                                    {
+                                        <div class="small text-muted">@item.ContactPerson</div>
+                                    }
+                                </td>
+                                <td class="d-none d-md-table-cell">@(string.IsNullOrWhiteSpace(item.Phone) ? "—" : item.Phone)</td>
+                                <td class="d-none d-lg-table-cell">@(string.IsNullOrWhiteSpace(item.Email) ? "—" : item.Email)</td>
+                                <td class="d-none d-md-table-cell">@(string.IsNullOrWhiteSpace(item.City) ? "—" : item.City)</td>
+                                <td>
+                                    <partial name="_StatusBadge" model="item.IsActive" />
+                                </td>
+                                @if (canManage)
+                                {
+                                    <td class="text-end text-nowrap">
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.IdSupplier"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-post="@Url.Action("SetActive")"
+                                                data-sc-param-id="@item.IdSupplier"
+                                                data-sc-param-isactive="@((!item.IsActive).ToString().ToLowerInvariant())"
+                                                data-sc-confirm="@(item.IsActive ? "Deactivate " + item.SupplierName + "? It will no longer be offered on new purchase orders. Existing documents keep it." : "Activate " + item.SupplierName + "? It will be offered on new purchase orders again.")"
+                                                data-sc-confirm-title="@(item.IsActive ? "Deactivate supplier" : "Activate supplier")"
+                                                data-sc-confirm-ok="@(item.IsActive ? "Deactivate" : "Activate")"
+                                                data-sc-confirm-class="@(item.IsActive ? "btn-warning" : "btn-primary")"
+                                                data-sc-after="reload">
+                                            @(item.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/purchasing/supplier.js" asp-append-version="true"></script>
+}

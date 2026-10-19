@@ -1,0 +1,58 @@
+@model InUnitUpdateView
+@{
+    ViewData["Title"] = "Edit unit";
+    var returnUrl = ViewBag.ReturnUrl as string
+        ?? Url.Action("Units", "Catalog");
+}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item"><a asp-action="Units">Units</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-3">Edit unit of measure</h1>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        <form id="unitForm"
+              asp-action="EditUnit"
+              asp-route-id="@Model.IdUnit"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdUnit" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="UnitCode"></label>
+                    <input class="form-control" asp-for="UnitCode" maxlength="20" autocomplete="off" />
+                    <span asp-validation-for="UnitCode" class="text-danger"></span>
+                    <div class="form-text">Short symbol, unique (up to 20 characters).</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" asp-for="UnitName"></label>
+                    <input class="form-control" asp-for="UnitName" maxlength="100" autocomplete="off" />
+                    <span asp-validation-for="UnitName" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label" asp-for="IsActive"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/catalog/unit.js" asp-append-version="true"></script>
+}

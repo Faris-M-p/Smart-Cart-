@@ -1,0 +1,129 @@
+@using SmartCartPro.Helpers
+@model SmartCartPro.Models.InStockTransferCreateView
+@{
+    ViewData["Title"] = "Transfer stock";
+    var returnUrl = ViewBag.ReturnUrl as string
+        ?? Url.Action("Stock", "Inventory");
+    var stores = ViewBag.Stores as List<SmartCartPro.Models.OutputStockLookupItem>
+        ?? new List<SmartCartPro.Models.OutputStockLookupItem>();
+    var prefill = ViewBag.Prefill as SmartCartPro.Models.OutputInventorySelect;
+    var prefillLabel = prefill is null
+        ? null
+        : prefill.ProductName + (string.IsNullOrWhiteSpace(prefill.VariantName) ? "" : " — " + prefill.VariantName);
+    var prefillOnHand = prefill is null
+        ? "0"
+        : prefill.QuantityOnHand.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    var fromStore = AuthClaims.GetStoreName(User);
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Stock">Inventory</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Transfer stock</li>
+    </ol>
+</nav>
+
+<div class="mb-3">
+    <h1 class="h3 mb-1">Transfer stock</h1>
+    <p class="text-muted mb-0">Move products from this store to another store of your company. Both stores are updated together.</p>
+</div>
+
+@await Html.PartialAsync("_InventoryTabs", "transfer")
+
+<div id="transferPage"
+     data-prefill-product="@(prefill?.FkProduct)"
+     data-prefill-variant="@(prefill?.FkProductVariant)"
+     data-prefill-name="@prefillLabel"
+     data-prefill-code="@(prefill?.ProductCode)"
+     data-prefill-onhand="@prefillOnHand"
+     data-prefill-unit="@(prefill?.UnitCode)">
+    <form id="transferForm"
+          asp-action="Transfer"
+          method="post"
+          data-sc-ajax-form="true"
+          novalidate>
+        @Html.AntiForgeryToken()
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="fromStore">From store</label>
+                        <input id="fromStore" type="text" class="form-control"
+                               value="@(string.IsNullOrWhiteSpace(fromStore) ? "This store" : fromStore)" readonly />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="ToStoreId">To store</label>
+                        <select id="ToStoreId" name="ToStoreId" class="form-select">
+                            <option value="">Choose a store…</option>
+                            @foreach (var store in stores)
+                            {
+                                <option value="@store.Id">@store.Name</option>
+                            }
+                        </select>
+                        <span class="text-danger field-validation-valid" data-valmsg-for="ToStoreId" data-valmsg-replace="true"></span>
+                        @if (stores.Count == 0)
+                        {
+                            <div class="form-text text-warning-emphasis">There is no other active store in your company to transfer to.</div>
+                        }
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="Notes">Notes <span class="text-muted">(optional)</span></label>
+                        <input id="Notes" name="Notes" type="text" class="form-control" maxlength="500"
+                               placeholder="For example: weekend restock" autocomplete="off" />
+                        <span class="text-danger field-validation-valid" data-valmsg-for="Notes" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <label class="form-label" for="transferProductSearch">Add a product</label>
+                <input id="transferProductSearch" type="search" class="form-control"
+                       placeholder="Search by name, code, SKU or barcode, then pick a product to add it"
+                       autocomplete="off"
+                       data-picker-url="@Url.Action("ProductPicker", "Inventory")" />
+                <div class="form-text">Quantities are checked against the stock of this store when you transfer.</div>
+
+                <div class="table-responsive mt-3">
+                    <table class="table align-middle mb-0" id="transferLines">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">On hand</th>
+                                <th class="text-end" style="width: 11rem;">Quantity</th>
+                                <th class="text-end" style="width: 1%;"><span class="visually-hidden">Remove</span></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2" class="text-end">Total quantity</th>
+                                <th class="text-end" data-total-qty>0</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <span class="text-danger field-validation-valid d-block" data-valmsg-for="Lines" data-valmsg-replace="true"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary" data-sc-busy-text="Transferring…">
+                <i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>Transfer stock
+            </button>
+            <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/inventory/inventory-common.js" asp-append-version="true"></script>
+    <script src="~/js/inventory/transfer.js" asp-append-version="true"></script>
+}

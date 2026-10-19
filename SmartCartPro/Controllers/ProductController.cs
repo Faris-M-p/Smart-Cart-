@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -8,35 +7,59 @@ using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
-/// <summary>Product master CRUD + variant management.</summary>
+/// <summary>Product master and variants (SKU): list, detail, create/edit, activate and picker lookups.</summary>
 [Authorize]
 [ModuleAccess("PRODUCTS")]
 public class ProductController : Controller
 {
     private readonly IProductService _svc;
-    private readonly ICatalogService _catalog;
-    private int ActorId => AuthClaims.GetUserId(User) ?? 0;
+    private readonly ICurrentUserAccess _access;
 
-    public ProductController(IProductService svc, ICatalogService catalog)
+    public ProductController(IProductService svc, ICurrentUserAccess access)
     {
         _svc = svc;
-        _catalog = catalog;
+        _access = access;
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // PRODUCT LIST
+    // PRODUCT LIST  (views live in ~/Views/Product/)
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Lists store products with pricing, stock hints, and catalog links for maintenance.
-    /// Staff with products.view open this as the main product master grid before POS sales.
+    /// Lists products with search, category/brand/status filters, sorting and paging.
+    /// Staff with products.view open this as the main product master grid.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Index([FromQuery] InputProductList input, CancellationToken ct)
     {
-        input.Page = Math.Max(1, input.Page);
-        return View(await _svc.ListProductsAsync(input, ct));
+        var model = await _svc.ListProductsAsync(input, ct);
+        return View("~/Views/Product/Products.cshtml", model);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PRODUCT DETAIL
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Shows one product with its variants and, for store users, the stock on hand.
+    /// Staff open it from the product list to review pricing before adding variants.
+    /// </summary>
+    [HttpGet]
+    [RequirePermission("products.view")]
+    public async Task<IActionResult> Details(int id, string? returnUrl, CancellationToken ct)
+    {
+        var input = new InputProductDetail
+        {
+            IdProduct = id,
+            FkStore = await StockStoreIdAsync(ct)
+        };
+        var detail = await _svc.GetProductDetailAsync(input, ct);
+        if (detail is null)
+            return NotFound();
+
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Product/ProductDetails.cshtml", detail);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -44,24 +67,25 @@ public class ProductController : Controller
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Shows the form to add a sellable SKU with barcode, prices, and catalog links.
+    /// Shows the form to add a sellable item with barcode, prices and catalog links.
     /// Managers with products.manage use it when onboarding items for register and online.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> Create(CancellationToken ct)
+    public async Task<IActionResult> Create(string? returnUrl, CancellationToken ct)
     {
-        await LoadDropdownsAsync(ct);
-        return View(new InProductCreateView { IsActive = true });
+        var lookupInput = new InputProductLookup();
+        await PrepareFormAsync(lookupInput, returnUrl, ct);
+        return View("~/Views/Product/CreateProduct.cshtml", new InProductCreateView { IsActive = true });
     }
 
     /// <summary>
-    /// Persists a new product available for POS scan, inventory, and optional online sale.
+    /// Saves a new product available for POS scan, inventory and optional online sale.
     /// Managers submit the create product form after validating codes and tax assignment.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> Create(InProductCreateView model, CancellationToken ct)
+    public async Task<IActionResult> Create(InProductCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -85,10 +109,12 @@ public class ProductController : Controller
             IsOnline = model.IsOnline
         };
         var result = await _svc.CreateProductAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to create product.", result.ResponseMsg ?? "Unable to create product.");
 
-        return CommonHelpers.SuccessResponse("Product created.", new { id = result.IdProduct });
+        // New products land on their detail page so variants can be added right away.
+        var detailUrl = Url.Action(nameof(Details), new { id = result.IdProduct, returnUrl = SafeReturnUrl(returnUrl) })!;
+        return CommonHelpers.SuccessResponse(
+            "Product created successfully.",
+            new { id = result.IdProduct, redirectUrl = detailUrl });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -96,17 +122,28 @@ public class ProductController : Controller
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Loads one product for editing prices, barcode, category, and active or online flags.
-    /// Managers open this from the product list when correcting shelf or register data.
+    /// Loads one product for editing prices, barcode, category and active or online flags.
+    /// Managers open this from the product list or detail page when correcting item data.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
-        var item = await _svc.GetProductAsync(new InputProductSelect { IdProduct = id }, ct);
-        if (item is null) return NotFound();
-        await LoadDropdownsAsync(ct);
-        return View(item.ToUpdateView());
+        var selectInput = new InputProductSelect { IdProduct = id };
+        var item = await _svc.GetProductAsync(selectInput, ct);
+        if (item is null)
+            return NotFound();
+
+        var lookupInput = new InputProductLookup
+        {
+            FkCategory = item.FkCategory,
+            FkSubcategory = item.FkSubcategory,
+            FkBrand = item.FkBrand,
+            FkUnit = item.FkUnit,
+            FkTax = item.FkTax
+        };
+        await PrepareFormAsync(lookupInput, returnUrl, ct);
+        return View("~/Views/Product/EditProduct.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
@@ -115,7 +152,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> Edit(int id, InProductUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> Edit(int id, InProductUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdProduct = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -141,41 +178,78 @@ public class ProductController : Controller
             IsOnline = model.IsOnline
         };
         var result = await _svc.UpdateProductAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to update product.", result.ResponseMsg ?? "Unable to update product.");
 
-        return CommonHelpers.SuccessResponse("Product updated.", new { id = result.IdProduct });
+        var nextUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Details), new { id = result.IdProduct })!;
+        return CommonHelpers.SuccessResponse(
+            "Product updated successfully.",
+            new { id = result.IdProduct, redirectUrl = nextUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a product from the list or detail page without opening the form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken ct)
+    {
+        var input = new InputProductSetActive { IdProduct = id, IsActive = isActive };
+        var result = await _svc.SetProductActiveAsync(input, ct);
+
+        return CommonHelpers.SuccessResponse(
+            result.IsActive ? "Product activated." : "Product deactivated.",
+            new { id = result.IdProduct, isActive = result.IsActive });
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // VARIANTS
+    // VARIANTS  (views live in ~/Views/ProductVariant/)
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Lists size, color, or other variants tied to a parent product for separate SKUs.
-    /// Staff with products.view review variants before cashiers scan variant barcodes at POS.
+    /// Lists variants (SKUs) of one product, or of every product when no product is chosen.
+    /// Staff with products.view use it to check SKU codes, barcodes and price adjustments.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
-    public async Task<IActionResult> Variants(int productId, CancellationToken ct)
-        => View(await _svc.ListVariantsAsync(new InputVariantList { FkProduct = productId }, ct));
+    public async Task<IActionResult> Variants([FromQuery] InputVariantList input, int? productId, CancellationToken ct)
+    {
+        if (productId is > 0)
+            input.FkProduct = productId;
+
+        var model = await _svc.ListVariantsAsync(input, ct);
+        if (model is null)
+            return NotFound();
+
+        return View("~/Views/ProductVariant/Variants.cshtml", model);
+    }
 
     /// <summary>
-    /// Shows the form to add a variant with its own barcode and price adjustment.
+    /// Shows the form to add a variant with its own SKU, barcode and price adjustment.
     /// Managers with products.manage add variants for multi-SKU items like apparel sizes.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public IActionResult CreateVariant(int productId)
-        => View(new InVariantCreateView { FkProduct = productId, IsActive = true });
+    public async Task<IActionResult> CreateVariant(int productId, string? returnUrl, CancellationToken ct)
+    {
+        var selectInput = new InputProductSelect { IdProduct = productId };
+        var product = await _svc.GetProductAsync(selectInput, ct);
+        if (product is null)
+            return NotFound();
+
+        ViewBag.Product = product;
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View(
+            "~/Views/ProductVariant/CreateVariant.cshtml",
+            new InVariantCreateView { FkProduct = product.IdProduct, IsActive = true });
+    }
 
     /// <summary>
-    /// Saves a new variant scannable at checkout under the parent product.
+    /// Saves a new variant that can be scanned at checkout under its parent product.
     /// Managers submit the create variant form from the product variants screen.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateVariant(InVariantCreateView model, CancellationToken ct)
+    public async Task<IActionResult> CreateVariant(InVariantCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -189,32 +263,38 @@ public class ProductController : Controller
             IsActive = model.IsActive
         };
         var result = await _svc.CreateVariantAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to create variant.", result.ResponseMsg ?? "Unable to create variant.");
 
-        return CommonHelpers.SuccessResponse("Variant created.", new { id = result.IdProductVariant, productId = model.FkProduct });
+        var nextUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Variants), new { productId = result.FkProduct })!;
+        return CommonHelpers.SuccessResponse(
+            "Variant created successfully.",
+            new { id = result.IdProductVariant, productId = result.FkProduct, redirectUrl = nextUrl });
     }
 
     /// <summary>
-    /// Loads one variant for editing name, SKU, barcode, or supplemental price.
+    /// Loads one variant for editing name, SKU, barcode or additional price.
     /// Managers navigate here from the variant list when fixing register scan issues.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditVariant(int id, CancellationToken ct)
+    public async Task<IActionResult> EditVariant(int id, string? returnUrl, CancellationToken ct)
     {
-        var item = await _svc.GetVariantAsync(new InputVariantSelect { IdProductVariant = id }, ct);
-        if (item is null) return NotFound();
-        return View(item.ToUpdateView());
+        var selectInput = new InputVariantSelect { IdProductVariant = id };
+        var item = await _svc.GetVariantAsync(selectInput, ct);
+        if (item is null)
+            return NotFound();
+
+        ViewBag.Variant = item;
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/ProductVariant/EditVariant.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
-    /// Persists variant updates used when cashiers scan or search by variant barcode.
-    /// Managers submit the edit variant form after revising sellable child SKUs.
+    /// Saves variant changes used when cashiers scan or search by variant barcode.
+    /// Managers submit the edit variant form after revising a sellable child SKU.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditVariant(int id, InVariantUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> EditVariant(int id, InVariantUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdProductVariant = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -230,36 +310,108 @@ public class ProductController : Controller
             IsActive = model.IsActive
         };
         var result = await _svc.UpdateVariantAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to update variant.", result.ResponseMsg ?? "Unable to update variant.");
 
-        return CommonHelpers.SuccessResponse("Variant updated.", new { id = result.IdProductVariant, productId = model.FkProduct });
+        var nextUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Variants), new { productId = result.FkProduct })!;
+        return CommonHelpers.SuccessResponse(
+            "Variant updated successfully.",
+            new { id = result.IdProductVariant, productId = result.FkProduct, redirectUrl = nextUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a variant from a list without opening the edit form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetVariantActive(int id, bool isActive, CancellationToken ct)
+    {
+        var input = new InputVariantSetActive { IdProductVariant = id, IsActive = isActive };
+        var result = await _svc.SetVariantActiveAsync(input, ct);
+
+        return CommonHelpers.SuccessResponse(
+            result.IsActive ? "Variant activated." : "Variant deactivated.",
+            new { id = result.IdProductVariant, productId = result.FkProduct, isActive = result.IsActive });
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // BARCODE / SKU JSON LOOKUP
+    // PICKER LOOKUPS (JSON)
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Resolves a scanned or keyed barcode to product or variant details as JSON.
-    /// POS and receiving UIs call this during fast item lookup without a full page load.
+    /// Searches active products and variants by name, code, SKU or barcode as JSON for typeahead pickers.
+    /// Purchase, stock and POS screens call this while the user types; the rows sit in data.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> Search(string? term, int take = 20, bool expandVariants = true, CancellationToken ct = default)
+    {
+        var input = new InputProductSearch
+        {
+            Term = term,
+            Take = take,
+            ExpandVariants = expandVariants,
+            IncludeCost = await CanSeeCostAsync(ct)
+        };
+        var items = await _svc.SearchProductsAsync(input, ct);
+
+        return CommonHelpers.SuccessResponse("OK", items);
+    }
+
+    /// <summary>
+    /// Resolves a scanned or keyed barcode (or SKU) to one product or variant as a plain JSON object.
+    /// POS and receiving UIs call this during fast item lookup; 404 means no active match.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> FindByBarcode(string barcode, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(barcode)) return BadRequest();
-        var result = await _svc.FindByBarcodeAsync(barcode, ct);
-        if (result is null) return NotFound();
-        return Json(result);
+        if (string.IsNullOrWhiteSpace(barcode))
+            return BadRequest();
+
+        var input = new InputProductBarcode
+        {
+            Barcode = barcode,
+            IncludeCost = await CanSeeCostAsync(ct)
+        };
+        var item = await _svc.FindByBarcodeAsync(input, ct);
+        if (item is null)
+            return NotFound();
+
+        return Json(item);
     }
 
     // ─── helpers ─────────────────────────────────────────────────
 
-    private async Task LoadDropdownsAsync(CancellationToken ct)
+    /// <summary>Loads the dropdown data and the safe return link the product form views read from ViewBag.</summary>
+    private async Task PrepareFormAsync(InputProductLookup lookupInput, string? returnUrl, CancellationToken ct)
     {
-        ViewBag.Categories = await _catalog.GetCategoryLookupAsync(ct);
-        ViewBag.Brands = await _catalog.GetBrandLookupAsync(ct);
-        ViewBag.Units = await _catalog.GetUnitLookupAsync(ct);
-        ViewBag.Taxes = await _catalog.GetTaxLookupAsync(ct);
+        ViewBag.Lookup = await _svc.GetProductLookupAsync(lookupInput, ct);
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+    }
+
+    /// <summary>Cost prices are only returned to staff who manage products or work with purchases.</summary>
+    private Task<bool> CanSeeCostAsync(CancellationToken ct)
+        => _access.CanAnyAsync(new[] { "products.manage", "purchases.view", "purchases.manage" }, ct);
+
+    /// <summary>
+    /// Store whose stock the detail page may summarise; 0 when the user has no store
+    /// (platform admin), the INVENTORY module is off, or inventory.view is missing.
+    /// </summary>
+    private async Task<int> StockStoreIdAsync(CancellationToken ct)
+    {
+        var store = AuthClaims.GetFkStore(User) ?? 0;
+        if (store <= 0)
+            return 0;
+        if (!await _access.ModuleEnabledAsync("INVENTORY", ct))
+            return 0;
+
+        return await _access.CanAsync("inventory.view", ct) ? store : 0;
+    }
+
+    private string? SafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+            return null;
+        if (!Url.IsLocalUrl(returnUrl))
+            return null;
+        return returnUrl;
     }
 }

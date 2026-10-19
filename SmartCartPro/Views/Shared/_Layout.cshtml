@@ -20,8 +20,11 @@
     <meta name="theme-color" content="#2563eb" />
     <partial name="_MetisAssets" />
     <link rel="stylesheet" href="~/css/admin-shell.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body data-page="dashboard" class="admin-layout">
+<body data-page="dashboard" class="admin-layout" data-sc-login-url="@Url.Action("Login", "Auth")">
+@* Page-wide antiforgery token: SmartCartAjax reads it for any AJAX POST, even on pages without a form. *@
+@Html.AntiForgeryToken()
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="admin-app">
 <div class="admin-wrapper" id="admin-wrapper">

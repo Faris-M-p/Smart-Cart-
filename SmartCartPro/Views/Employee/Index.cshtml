@@ -1,0 +1,298 @@
+@model SmartCartPro.Models.OutputUserList
+@{
+    ViewData["Title"] = "Employees";
+    var canManage = await Access.CanAsync("users.manage");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputUserList();
+    var roles = ViewBag.Roles as List<SmartCartPro.Models.OutputUserRoleSelect> ?? new List<SmartCartPro.Models.OutputUserRoleSelect>();
+    var stores = ViewBag.Stores as List<SmartCartPro.Models.OutputUserStoreSelect> ?? new List<SmartCartPro.Models.OutputUserStoreSelect>();
+    var currentUserId = ViewBag.CurrentUserId as int? ?? 0;
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.FkRole.HasValue || f.FkStore.HasValue || f.ActiveOnly.HasValue;
+    var addUrl = Url.Action("Create", "Employee", new { returnUrl = currentListUrl })!;
+    var setActiveUrl = Url.Action("SetActive", "Employee")!;
+
+    var roleItems = roles
+        .Select(r => new SelectListItem(r.IsActive ? r.RoleName : r.RoleName + " (inactive)", r.IdRole.ToString(), f.FkRole == r.IdRole))
+        .ToList();
+    var storeItems = stores
+        .Select(s => new SelectListItem(s.IsActive ? s.StoreName : s.StoreName + " (inactive)", s.IdStore.ToString(), f.FkStore == s.IdStore))
+        .ToList();
+    var statusItems = new List<SelectListItem>
+    {
+        new("Active", "true", statusValue == "true"),
+        new("Inactive", "false", statusValue == "false")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            FkRole = f.FkRole,
+            FkStore = f.FkStore,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["FkRole"] = f.FkRole,
+            ["FkStore"] = f.FkStore,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Employees</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_PageHeader", (Title: "Employees", Subtitle: "Staff accounts, roles and store access", ActionText: canManage ? "Add employee" : null, ActionUrl: addUrl))
+
+<div id="employeeListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3" data-sc-list-filter>
+                <div class="col-12 col-lg-4">
+                    <label class="form-label" for="employeeSearch">Search</label>
+                    <input id="employeeSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name, username, email or code" autocomplete="off" />
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="employeeRole">Role</label>
+                    <select id="employeeRole" name="FkRole" class="form-select" asp-items="roleItems" data-sc-auto-submit>
+                        <option value="">All roles</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="employeeStore">Store</label>
+                    <select id="employeeStore" name="FkStore" class="form-select" asp-items="storeItems" data-sc-auto-submit>
+                        <option value="">All stores</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="employeeStatus">Status</label>
+                    <select id="employeeStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit>
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-1">
+                    <label class="form-label" for="employeePageSize">Rows</label>
+                    <select id="employeePageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-12 col-lg-1 d-flex gap-1">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                </div>
+            </form>
+
+            @if (hasFilters)
+            {
+                <div class="mb-3">
+                    <a class="btn btn-sm btn-link px-0" asp-action="Index"><i class="bi bi-x-circle me-1"></i>Clear filters</a>
+                </div>
+            }
+
+            @if (Model.Users.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-people display-5 text-muted"></i>
+                    <p class="text-muted my-3">@(hasFilters ? "No employees match your filters." : "No employees yet.")</p>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary me-2" asp-action="Index">Clear filters</a>
+                    }
+                    @if (canManage)
+                    {
+                        <a class="btn btn-primary" href="@addUrl"><i class="bi bi-plus-lg me-1"></i>Add employee</a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("fullname")">
+                                        Employee <i class="bi @SortIcon("fullname")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-lg-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("email")">
+                                        Email <i class="bi @SortIcon("email")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("role")">
+                                        Role <i class="bi @SortIcon("role")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">Stores</th>
+                                <th class="d-none d-xl-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("lastlogin")">
+                                        Last sign-in <i class="bi @SortIcon("lastlogin")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Users)
+                        {
+                            var isSelf = item.IdUser == currentUserId;
+                            var extraStoreNames = string.Join(", ", item.Stores.Skip(2).Select(x => x.StoreName));
+                            var deactivateText = "Deactivate " + item.FullName + "? They will no longer be able to sign in.";
+                            var activateText = "Activate " + item.FullName + "? They will be able to sign in again.";
+                            <tr data-user-id="@item.IdUser">
+                                <td>
+                                    <div class="fw-medium">@item.FullName</div>
+                                    <div class="text-muted small">
+                                        <span>@item.UserName</span>
+                                        @if (!string.IsNullOrWhiteSpace(item.EmployeeCode))
+                                        {
+                                            <span class="ms-1">&middot; @item.EmployeeCode</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="d-none d-lg-table-cell text-break">@item.Email</td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(item.CurrentRoleName))
+                                    {
+                                        <span class="text-muted">No role</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-light border">@item.CurrentRoleName</span>
+                                    }
+                                </td>
+                                <td class="d-none d-md-table-cell">
+                                    @if (item.Stores.Count == 0)
+                                    {
+                                        <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>No store</span>
+                                    }
+                                    else
+                                    {
+                                        foreach (var store in item.Stores.Take(2))
+                                        {
+                                            <span class="badge text-bg-light border me-1">@store.StoreName</span>
+                                        }
+
+                                        if (item.Stores.Count > 2)
+                                        {
+                                            <span class="badge text-bg-secondary" title="@extraStoreNames">+@(item.Stores.Count - 2)</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="d-none d-xl-table-cell small">
+                                    @if (item.LastLoginAt.HasValue)
+                                    {
+                                        <time data-sc-utc="@item.LastLoginAt.Value.ToString("yyyy-MM-ddTHH:mm:ss")Z">@item.LastLoginAt.Value.ToString("dd MMM yyyy HH:mm") UTC</time>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Never</span>
+                                    }
+                                </td>
+                                <td>
+                                    <partial name="_StatusBadge" model="item.IsActive" />
+                                    @if (item.MustChangePassword)
+                                    {
+                                        <div class="small text-warning mt-1" title="The employee must set a new password at next sign-in.">
+                                            <i class="bi bi-key me-1"></i>Password change pending
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.IdUser"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        if (item.IsActive)
+                                        {
+                                            if (isSelf)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                        title="You cannot deactivate your own account.">Deactivate</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        data-sc-post="@setActiveUrl"
+                                                        data-sc-param-id="@item.IdUser"
+                                                        data-sc-param-isactive="false"
+                                                        data-sc-confirm="@deactivateText"
+                                                        data-sc-confirm-title="Deactivate employee"
+                                                        data-sc-confirm-ok="Deactivate"
+                                                        data-sc-confirm-class="btn-warning">Deactivate</button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-success"
+                                                    data-sc-post="@setActiveUrl"
+                                                    data-sc-param-id="@item.IdUser"
+                                                    data-sc-param-isactive="true"
+                                                    data-sc-confirm="@activateText"
+                                                    data-sc-confirm-title="Activate employee"
+                                                    data-sc-confirm-ok="Activate"
+                                                    data-sc-confirm-class="btn-success">Activate</button>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/admin/employee.js" asp-append-version="true"></script>
+}

@@ -36,7 +36,7 @@
 6. **Purchase return** — no debit-note / vendor return flow.
 7. **POS hold / resume** — no park-sale.
 8. **Over-receipt guard weak** — GRN UI sets `AlreadyReceivedQty = 0` in `PurchaseController.Receive` GET.
-9. **CartController / AdminController** — no `[Authorize]` (security).
+9. **CartController / AdminController** — no explicit `[Authorize]`/permission/module attributes; only the global signed-in-user policy protects them (corrected — see Addendum A).
 10. **FilterController uses `[ApiController]`** — violates plain-MVC rule.
 
 ---
@@ -130,7 +130,7 @@
 | 7.1 | SmartCart.API / customer endpoints | **Partial** | **Not** in SmartCartPro. Exists separately: `platform/src/SmartCart.API` (`StorefrontConfigController`, `LicenseController`); scaffold only | Cart/checkout/order APIs | Unwired to SmartCartPro; `[ApiController]` in platform (separate solution) |
 | 7.2 | Online orders admin list/details/status | **Complete** | `OnlineOrderController`; tables 034/035; V007 | COD field missing | Status machine present |
 | 7.3 | Stock deduct / cancel restore | **Complete** | `OrderRepository` calls `ApplyMovementAsync` on confirm/cancel | Deduction **point** = confirm (evidence) | |
-| 7.4 | Cart / wishlist vs stock model | **Partial** | `CartController`, tables 036–039; services | No `[Authorize]`; stock reservation Unverified | |
+| 7.4 | Cart / wishlist vs stock model | **Partial** | `CartController`, tables 036–039; services | Global sign-in policy only (no module/permission/ownership check); stock reservation Unverified | |
 | 7.5 | Reviews rules | **Complete** | `ProductReviewController` + service rules (purchase, 7-day, hide) V007 | — | |
 | 7.6 | Campaigns / promotions | **Missing** | Explicitly deferred historically | Tables + module | |
 | 7.7 | Reports suite | **Partial** | `ReportsController` + `ReportService`: SalesByDate, StockValuation, LowStock, TaxSummary, TopSelling | Purchase report; movement report | TaxSummary groups by store with `TaxCode="TOTAL"` placeholder (`ReportService.cs` L167–175) — not per tax rate |
@@ -192,7 +192,7 @@
 | One DB per company; no CompanyId on company-owned rows | **Partial** | `store.fk_company` exists (needed for single-DB multi-store under one company) | Accept for current single-tenant install; no `CompanyId` on products/sales |
 | Super Admin only creates stores + limit | **Yes** | `StoreController.Create` policy; `CompanyService` MaxStores | — |
 | Super Admin hidden from company user lists | **Yes** | `UserRepository.cs` L18 `.Where(u => !u.Cancelled && !u.IsPlatformSuperAdmin)`; same filter on Get/Update/Activate | — |
-| Auth + permission + module + license + store on actions | **Partial** | `CartController`, `AdminController` no `[Authorize]`; store filter not global | Add auth + module where needed |
+| Auth + permission + module + license + store on actions | **Partial** | `CartController`, `AdminController` rely on the global sign-in policy only (no module/permission attributes); store filter not global | Add module/permission/ownership checks where needed |
 | Parameterized SQL / hashed passwords / anti-forgery | **Mostly** | EF parameterized; anti-forgery on mutating POSTs; Cart JSON lacks antiforgery by design | Harden Cart |
 | Stock only via central method + movement | **Yes** (single path) | Transfer = two central calls | Wrap transfer in one TX |
 | Server recalculation prices/tax/discount | **Partial** | Sale repo recalculates; discount **cap** missing | Enforce max discount |
@@ -229,8 +229,8 @@ Plus `DatabaseVersion.sql` (if present at DB root).
 
 | Finding | Evidence | Severity |
 |---------|----------|----------|
-| `CartController` unauthenticated | No `[Authorize]` on class/actions | **High** |
-| `AdminController` unauthenticated shell views | No `[Authorize]` | **Medium** (empty shells) |
+| `CartController` has no module/permission/ownership check | Only the global `AuthorizeFilter` (signed-in user) applies; any signed-in staff user can read/modify any cart | **Medium** (corrected from "unauthenticated") |
+| `AdminController` shell views have no permission check | Only the global sign-in policy applies; views are empty shells | **Low** (corrected from "unauthenticated") |
 | `[ApiController]` on Filter | `FilterController.cs` | **Medium** (rule + behavior) |
 | HTML Forbid vs JSON for AJAX | Permission filter | **Medium** |
 | Super Admin in same user table | Seed + roles | **Low** if list queries filter; verify |
@@ -257,7 +257,7 @@ Views under `SmartCartPro/Views/` (39 cshtml). “Has view?” = matching view f
 
 | Controller | Action | Verb | Returns | Permission | Module | Has view? |
 |------------|--------|------|---------|------------|--------|-----------|
-| AdminController | Employees / Roles / Settings | GET | View | **None** | — | Yes (shells) |
+| AdminController | Employees / Roles / Settings | GET | View | Global sign-in only | — | Yes (shells) |
 | AuthController | Login | GET/POST | View / Redirect | Anonymous | — | Yes |
 | AuthController | VerifyOtp | GET/POST | View / Redirect | Anonymous | — | Yes |
 | AuthController | ChangePassword | GET/POST | View / Redirect | Authorize | — | Yes |
@@ -290,7 +290,7 @@ Views under `SmartCartPro/Views/` (39 cshtml). “Has view?” = matching view f
 | DashboardController | (summary endpoints) | GET | JSON/View | Authorize | — | Unverified / minimal |
 | FilterController | (filter helpers) | GET | JSON | — | — | N/A (`[ApiController]`) |
 
-**Security hotspots in inventory:** `AdminController` (no auth), `CartController` (no auth), `FilterController` (`[ApiController]` at L11).
+**Security hotspots in inventory:** `AdminController` and `CartController` (global sign-in policy only — no permission/module/ownership checks), `FilterController` (`[ApiController]` at L11).
 
 ---
 
@@ -321,8 +321,8 @@ Ordered: security & consistency → planned gaps → compliance → advanced Mus
 
 | ID | Title | Phase | Depends | Files/tables (indicative) | Acceptance |
 |----|-------|-------|---------|---------------------------|------------|
-| SC-SRV-001 | Add `[Authorize]` (+ module) to `CartController` | 8 | — | `CartController.cs` | Unauthenticated calls → 401 |
-| SC-SRV-002 | Secure or remove `AdminController` shells | 8 | — | `AdminController.cs` | No anonymous admin pages |
+| SC-SRV-001 | Add module/permission + customer-ownership checks to `CartController` | 8 | — | `CartController.cs` | Staff without permission → 403; a customer only reaches their own cart |
+| SC-SRV-002 | Remove `AdminController` shells (replaced by Employee/Role/Setting screens) | 8 | — | `AdminController.cs`, `Views/Admin` | No shell routes left |
 | SC-SRV-003 | Remove `[ApiController]` from `FilterController` | 8 | — | `FilterController.cs` | Still returns JSON; rule clean |
 | SC-SRV-004 | Single DB transaction for stock transfer | 4 | — | `StockRepository.cs` | Out+in commit/rollback together |
 | SC-SRV-005 | GRN respect already-received qty; block over-receipt | 5 | — | `PurchaseController`, `PurchaseRepository` | Second GRN cannot exceed ordered |
@@ -374,5 +374,19 @@ Ordered: security & consistency → planned gaps → compliance → advanced Mus
 Compared to `docs/ServerSide_Implementation_Report.md`, this audit marks **Partial/Missing** where that report said Complete for: multi-company provisioning (skipped ≠ done), SKU combination generation, purchase return, hold/resume, campaigns, full report suite, negative-stock setting behavior, and several compliance items (`[ApiController]`, unprotected Cart).
 
 ---
+
+## Addendum A — Corrections and findings added while building the UI
+
+**Corrections to this report**
+- `CartController` / `AdminController` were reported as *unauthenticated*. That was wrong: `Program.cs` registers a global `AuthorizeFilter` (signed-in user required) for every MVC endpoint, and only `Auth*` and the `Home` error/license pages are `[AllowAnonymous]`. The real gap is the **absence of module/permission/ownership checks**; severities above were lowered accordingly (Medium / Low).
+
+**New findings (status as of this addendum)**
+| ID | Finding | Severity | Status |
+|----|---------|----------|--------|
+| A-1 | `AuthService` accepted a hard-coded OTP `123456` for every Super Admin challenge, bypassing the emailed code (contradicted `auth.md`: "Do not hardcode OTP") | **High** | **Fixed** — random emailed code; optional `OtpSettings:DevelopmentFixedCode`, honoured only when the host environment is `Development` |
+| A-2 | `LicenseGateFilter` ran on anonymous endpoints, so a suspended/expired/missing license returned a raw 403 on `/Auth/Login` — nobody (including the Super Admin who renews it) could sign in | **High** | **Fixed** — `[AllowAnonymous]` endpoints bypass the gate; page requests redirect to `Home/LicenseBlocked`, AJAX gets the JSON envelope |
+| A-3 | Controllers required permission codes that are **not in the SQL seed** (`purchasing.view/manage`, `inventory.manage`, `pos.view`, `pos.manage`), so every non-platform user got 403 on Suppliers, Purchases, stock adjustments, POS/invoices/sessions and Customers | **High** | **Being fixed** with the module UIs — controllers move to seeded codes (`purchases.*`, `inventory.adjust`, `pos.sell`, `customers.*`) |
+| A-4 | Forgot/Reset password had views only (SC-SRV-014) | Medium | **Fixed** — emailed single-use, time-limited link (no table needed); see `context/ADMIN/modules/auth.md` |
+| A-5 | Platform Super Admin has `fk_store = 0`, so store-scoped screens (POS, stock, purchases) cannot work for that account | Medium | UI shows a friendly "sign in as a store user" state; operational work is done by company users |
 
 *End of report. Audit task created only `docs/ServerSide_Status_Report.md`. Other dirty/staged files in the working tree (if any) are from prior work, not this audit.*

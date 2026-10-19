@@ -9,14 +9,8 @@ using SmartCartPro.Services.Interfaces;
 namespace SmartCartPro.Controllers;
 
 /// <summary>
-/// Settings controller — manages known company-level configuration keys.
-/// Known keys:
-///   pos.invoice_prefix    (string)
-///   pos.allow_negative_stock  (bool)
-///   default_tax_code          (string)
-///   locale.currency           (string)
-///   locale.timezone           (string)
-///
+/// Company and store settings for the known keys (views in ~/Views/Setting/).
+/// Company scope holds the defaults; store scope overrides the keys that allow it, for the signed-in store only.
 /// ModuleAccess: SETTINGS | Permission: settings.manage
 /// </summary>
 [Authorize]
@@ -25,70 +19,71 @@ namespace SmartCartPro.Controllers;
 public class SettingController : Controller
 {
     private readonly ISettingService _svc;
-    private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
     public SettingController(ISettingService svc) => _svc = svc;
 
-    private static readonly string[] KnownKeys =
-    [
-        "pos.invoice_prefix",
-        "pos.allow_negative_stock",
-        "default_tax_code",
-        "locale.currency",
-        "locale.timezone"
-    ];
+    private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
     /// <summary>
-    /// Displays company-scoped POS and locale settings on one form.
-    /// Users with settings.manage permission in the SETTINGS module.
+    /// Shows the known settings grouped by purpose with their saved, company and effective values.
+    /// Administrators open it from the menu; the store tab applies to the store they are signed in to.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    public async Task<IActionResult> Index(string? scope, CancellationToken ct)
     {
-        var list = await _svc.ListSettingsAsync(new InputSettingList { Scope = "company" }, ct);
-        var map  = list.Items.ToDictionary(s => s.SettingKey, s => s.SettingValue);
+        var fkStore = AuthClaims.GetFkStore(User) ?? 0;
+        var hasStore = fkStore > 0;
+        var wantsStore = string.Equals(scope, "store", StringComparison.OrdinalIgnoreCase);
 
-        var model = new InSettingView
+        ViewBag.HasStore = hasStore;
+        ViewBag.StoreName = AuthClaims.GetStoreName(User);
+
+        if (wantsStore && !hasStore)
         {
-            InvoicePrefix       = map.GetValueOrDefault("pos.invoice_prefix"),
-            AllowNegativeStock  = map.GetValueOrDefault("pos.allow_negative_stock") == "true",
-            DefaultTaxCode      = map.GetValueOrDefault("default_tax_code"),
-            Currency            = map.GetValueOrDefault("locale.currency"),
-            Timezone            = map.GetValueOrDefault("locale.timezone")
-        };
+            // Platform super admin has no store: the view explains it instead of erroring.
+            return View(new OutputSettingSelect { Scope = "store" });
+        }
 
+        var selectInput = new InputSettingSelect
+        {
+            Scope = wantsStore ? "store" : "company",
+            FkStore = wantsStore ? fkStore : null
+        };
+        var model = await _svc.GetSettingsAsync(selectInput, ct);
         return View(model);
     }
 
     /// <summary>
-    /// Persists known company configuration keys from the form.
-    /// Users with settings.manage permission after editing settings.
+    /// Saves the posted values of the known keys for the company or the signed-in store.
+    /// Administrators submit the settings form; unknown keys and invalid values are rejected with field errors.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Save(InSettingView model, CancellationToken ct)
+    public async Task<IActionResult> Save(InSettingUpsertView model, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var values = new Dictionary<string, string?>
+        var isStore = string.Equals(model.Scope, "store", StringComparison.OrdinalIgnoreCase);
+        var fkStore = AuthClaims.GetFkStore(User) ?? 0;
+        if (isStore && fkStore <= 0)
         {
-            ["pos.invoice_prefix"]       = model.InvoicePrefix,
-            ["pos.allow_negative_stock"] = model.AllowNegativeStock ? "true" : "false",
-            ["default_tax_code"]         = model.DefaultTaxCode,
-            ["locale.currency"]          = model.Currency,
-            ["locale.timezone"]          = model.Timezone
-        };
+            throw new ValidationException("Sign in as a store user to edit store settings.");
+        }
 
-        var input = new InputSettingSave
+        var input = new InputSettingUpsert
         {
-            Scope     = "company",
-            Values    = values,
-            UpdatedBy = ActorId
+            ActorUserId = ActorId,
+            Scope = isStore ? "store" : "company",
+            FkStore = isStore ? fkStore : null,
+            Values = model.Values
         };
-        var result = await _svc.SaveSettingsAsync(input, ct);
+        var result = await _svc.UpsertSettingsAsync(input, ct);
 
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to save settings.", result.ResponseMsg ?? "Unable to save settings.");
-
-        return CommonHelpers.SuccessResponse("Settings saved successfully.");
+        var redirectUrl = Url.Action(nameof(Index), new { scope = result.Scope })!;
+        var message = result.ChangedKeys.Count == 0
+            ? "No changes to save."
+            : "Settings saved.";
+        return CommonHelpers.SuccessResponse(
+            message,
+            new { changed = result.ChangedKeys.Count, redirectUrl });
     }
 }

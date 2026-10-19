@@ -170,8 +170,8 @@ public sealed class OutputCategoryList
 public sealed class InSubCategoryCreateView
 {
     [Display(Name = "Category")]
-    [Required]
-    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
+    [Required(ErrorMessage = "Please select a Category.")]
+    [GreaterThanZero(ErrorMessage = "Please select a Category.")]
     public int FkCategory { get; set; }
 
     [Display(Name = "Sub-Category Name")]
@@ -186,7 +186,7 @@ public sealed class InSubCategoryCreateView
     public string? Description { get; set; }
 
     [Display(Name = "Display Order")]
-    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Display Order must be zero or greater.")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "The Display Order must be zero or greater.")]
     public int DisplayOrder { get; set; }
 
     [Display(Name = "Active")]
@@ -224,8 +224,8 @@ public sealed class InSubCategoryUpdateView
     public int IdSubCategory { get; set; }
 
     [Display(Name = "Category")]
-    [Required]
-    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
+    [Required(ErrorMessage = "Please select a Category.")]
+    [GreaterThanZero(ErrorMessage = "Please select a Category.")]
     public int FkCategory { get; set; }
 
     [Display(Name = "Sub-Category Name")]
@@ -240,7 +240,7 @@ public sealed class InSubCategoryUpdateView
     public string? Description { get; set; }
 
     [Display(Name = "Display Order")]
-    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Display Order must be zero or greater.")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "The Display Order must be zero or greater.")]
     public int DisplayOrder { get; set; }
 
     [Display(Name = "Active")]
@@ -299,11 +299,15 @@ public sealed class OutputSubCategorySelect
 
 public sealed class InputSubCategoryList
 {
+    /// <summary>null = all categories, otherwise only sub-categories of this category.</summary>
     public int? FkCategory { get; set; }
     public string? Search { get; set; }
-    public bool? ActiveOnly { get; set; } = true;
+    /// <summary>null = All, true = Active only, false = Inactive only.</summary>
+    public bool? ActiveOnly { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    public string SortBy { get; set; } = "categoryname";
+    public bool SortDesc { get; set; }
 }
 
 public sealed class OutputSubCategoryList
@@ -312,6 +316,8 @@ public sealed class OutputSubCategoryList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputSubCategorySelect> Items { get; set; } = new();
+    /// <summary>Echo of list filter for the view (query-string state).</summary>
+    public InputSubCategoryList Filter { get; set; } = new();
 }
 
 #endregion
@@ -428,9 +434,12 @@ public sealed class OutputBrandSelect
 public sealed class InputBrandList
 {
     public string? Search { get; set; }
-    public bool? ActiveOnly { get; set; } = true;
+    /// <summary>null = All, true = Active only, false = Inactive only.</summary>
+    public bool? ActiveOnly { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    public string SortBy { get; set; } = "brandname";
+    public bool SortDesc { get; set; }
 }
 
 public sealed class OutputBrandList
@@ -439,6 +448,8 @@ public sealed class OutputBrandList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputBrandSelect> Items { get; set; } = new();
+    /// <summary>Echo of list filter for the view (query-string state).</summary>
+    public InputBrandList Filter { get; set; } = new();
 }
 
 #endregion
@@ -557,9 +568,12 @@ public sealed class OutputUnitSelect
 public sealed class InputUnitList
 {
     public string? Search { get; set; }
-    public bool? ActiveOnly { get; set; } = true;
+    /// <summary>null = All, true = Active only, false = Inactive only.</summary>
+    public bool? ActiveOnly { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    public string SortBy { get; set; } = "unitname";
+    public bool SortDesc { get; set; }
 }
 
 public sealed class OutputUnitList
@@ -568,6 +582,8 @@ public sealed class OutputUnitList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputUnitSelect> Items { get; set; } = new();
+    /// <summary>Echo of list filter for the view (query-string state).</summary>
+    public InputUnitList Filter { get; set; } = new();
 }
 
 #endregion
@@ -697,7 +713,8 @@ public sealed class OutputTaxSelect
         IdTax = IdTax,
         TaxCode = TaxCode,
         TaxName = TaxName,
-        TaxRate = TaxRate,
+        // numeric(7,4) comes back as 5.0000; dividing by 1.000… drops the trailing zeros for the edit form.
+        TaxRate = TaxRate / 1.0000000000000000000000000000m,
         IsInclusive = IsInclusive,
         IsActive = IsActive
     };
@@ -710,9 +727,12 @@ public sealed class OutputTaxSelect
 public sealed class InputTaxList
 {
     public string? Search { get; set; }
-    public bool? ActiveOnly { get; set; } = true;
+    /// <summary>null = All, true = Active only, false = Inactive only.</summary>
+    public bool? ActiveOnly { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    public string SortBy { get; set; } = "taxname";
+    public bool SortDesc { get; set; }
 }
 
 public sealed class OutputTaxList
@@ -721,6 +741,8 @@ public sealed class OutputTaxList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputTaxSelect> Items { get; set; } = new();
+    /// <summary>Echo of list filter for the view (query-string state).</summary>
+    public InputTaxList Filter { get; set; } = new();
 }
 
 #endregion

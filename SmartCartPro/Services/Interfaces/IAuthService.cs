@@ -4,18 +4,32 @@ namespace SmartCartPro.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthSessionResult> LoginAsync(LoginInput input, CancellationToken cancellationToken = default);
+    Task<OutputAuthSession> LoginAsync(InputAuthLogin input, CancellationToken cancellationToken = default);
 
-    Task<AuthSessionResult> VerifyOtpAsync(VerifyOtpInput input, CancellationToken cancellationToken = default);
+    Task<OutputAuthSession> VerifyOtpAsync(InputAuthVerifyOtp input, CancellationToken cancellationToken = default);
 
-    Task<AuthSessionResult> ResendOtpAsync(string challengeToken, CancellationToken cancellationToken = default);
+    Task<OutputAuthSession> ResendOtpAsync(InputAuthResendOtp input, CancellationToken cancellationToken = default);
 
-    Task<AuthSessionResult> ChangePasswordAsync(
-        int idUser,
-        ChangePasswordInput input,
+    Task<OutputAuthSession> ChangePasswordAsync(
+        InputAuthChangePassword input,
         CancellationToken cancellationToken = default);
 
-    Task<AuthSessionResult> SwitchStoreAsync(
+    /// <summary>Emails a time-limited reset link. Never reveals whether the account exists.</summary>
+    Task<OutputAuthForgotPassword> RequestPasswordResetAsync(
+        InputAuthForgotPassword input,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Checks that a reset token is genuine, unexpired and not yet used.</summary>
+    Task<OutputAuthResetTokenSelect> GetPasswordResetTokenAsync(
+        InputAuthResetTokenSelect input,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Sets a new password from a valid reset token (single use).</summary>
+    Task<OutputAuthResetPassword> ResetPasswordAsync(
+        InputAuthResetPassword input,
+        CancellationToken cancellationToken = default);
+
+    Task<OutputAuthSession> SwitchStoreAsync(
         int idUser,
         int fkStore,
         bool rememberMe,

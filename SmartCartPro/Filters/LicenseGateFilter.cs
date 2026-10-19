@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Caching.Memory;
@@ -39,17 +40,22 @@ public sealed class LicenseGateFilter : IAsyncActionFilter
             return;
         }
 
+        // Anonymous endpoints (sign-in, OTP, password reset, error and license pages) must stay reachable;
+        // otherwise a suspended/expired license would lock everyone — including the Super Admin who fixes it — out.
+        if (context.ActionDescriptor.EndpointMetadata.OfType<IAllowAnonymous>().Any())
+        {
+            await next();
+            return;
+        }
+
         var license = await GetLicenseAsync(context.HttpContext.RequestAborted);
 
         if (license is null)
         {
-            // No license at all — allow only super admin (already handled) or read-only GET.
+            // No license at all — allow read-only GET only.
             if (!IsReadOnly(context))
             {
-                context.Result = new ObjectResult("No active license. Contact your administrator.")
-                {
-                    StatusCode = 403
-                };
+                Block(context, "none", "No active license. Contact your administrator.");
             }
             else
             {
@@ -60,23 +66,32 @@ public sealed class LicenseGateFilter : IAsyncActionFilter
 
         if (license.Status == (int)CommonModel.LicenseStatus.Suspended)
         {
-            context.Result = new ObjectResult("License is suspended. Contact your administrator.")
-            {
-                StatusCode = 403
-            };
+            Block(context, "suspended", "License is suspended. Contact your administrator.");
             return;
         }
 
         if (license.IsExpired && !IsReadOnly(context))
         {
-            context.Result = new ObjectResult("License has expired. Data entry is disabled. Contact your administrator.")
-            {
-                StatusCode = 403
-            };
+            Block(context, "expired", "License has expired. Data entry is disabled. Contact your administrator.");
             return;
         }
 
         await next();
+    }
+
+    /// <summary>AJAX callers get the common JSON envelope (403); page navigations get the friendly license page.</summary>
+    private static void Block(ActionExecutingContext context, string reason, string message)
+    {
+        if (ExceptionErrorMapper.WantsJsonResponse(context.HttpContext.Request))
+        {
+            context.Result = new ObjectResult(CommonResponseModel.Failure(message, statusCode: 403))
+            {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+            return;
+        }
+
+        context.Result = new RedirectToActionResult("LicenseBlocked", "Home", new { reason });
     }
 
     private async Task<OutputLicenseSelect?> GetLicenseAsync(CancellationToken ct)

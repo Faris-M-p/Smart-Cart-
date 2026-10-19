@@ -1,23 +1,22 @@
 using System.ComponentModel.DataAnnotations;
-using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
-// ═══════════════════════════════════════════════════════════════════
-// SETTINGS — Phase 7
-// Known keys managed via SettingController:
-//   pos.invoice_prefix  (string)
-//   pos.allow_negative_stock  (bool)
-//   default_tax_code  (string)
-//   locale.currency  (string)
-//   locale.timezone  (string)
-// ═══════════════════════════════════════════════════════════════════
+// Known keys managed on the Settings page (see SettingService for the catalog):
+//   pos.invoice_prefix        text   company default, store override allowed
+//   pos.allow_negative_stock  bool   company default, store override allowed
+//   default_tax_code          tax    company default, store override allowed
+//   locale.currency           text   company only
+//   locale.timezone           text   company only
 
-#region Setting Select / List
+#region Setting List (stored rows)
 
 public sealed class InputSettingList
 {
+    /// <summary>company | store.</summary>
     public string Scope { get; set; } = "company";
+
+    /// <summary>Required when <see cref="Scope"/> is store; ignored for company.</summary>
     public int? FkStore { get; set; }
 }
 
@@ -39,50 +38,133 @@ public sealed class OutputSettingList
 
 #endregion
 
-#region Setting Save (known keys only)
+#region Setting Select (known keys with effective values)
 
-/// <summary>View model for the settings form. One property per known key.</summary>
-public sealed class InSettingView
+public sealed class InputSettingSelect
 {
-    [Display(Name = "Invoice Prefix")]
-    [StringLengthValidation(0, 50, ErrorMessage = "The Invoice Prefix cannot exceed 50 characters.")]
-    [NoScriptTags(ErrorMessage = "The Invoice Prefix cannot contain script tags.")]
-    public string? InvoicePrefix { get; set; }
+    /// <summary>company | store.</summary>
+    public string Scope { get; set; } = "company";
 
-    [Display(Name = "Allow Negative Stock")]
-    public bool AllowNegativeStock { get; set; }
-
-    [Display(Name = "Default Tax Code")]
-    [StringLengthValidation(0, 50, ErrorMessage = "The Default Tax Code cannot exceed 50 characters.")]
-    [NoScriptTags(ErrorMessage = "The Default Tax Code cannot contain script tags.")]
-    public string? DefaultTaxCode { get; set; }
-
-    [Display(Name = "Currency Code")]
-    [StringLengthValidation(0, 10, ErrorMessage = "The Currency Code cannot exceed 10 characters.")]
-    [NoScriptTags(ErrorMessage = "The Currency Code cannot contain script tags.")]
-    public string? Currency { get; set; }
-
-    [Display(Name = "Timezone")]
-    [StringLengthValidation(0, 100, ErrorMessage = "The Timezone cannot exceed 100 characters.")]
-    [NoScriptTags(ErrorMessage = "The Timezone cannot contain script tags.")]
-    public string? Timezone { get; set; }
+    /// <summary>Required when <see cref="Scope"/> is store; ignored for company.</summary>
+    public int? FkStore { get; set; }
 }
 
-public sealed class InputSettingSave
+public sealed class OutputSettingSelect
 {
     public string Scope { get; set; } = "company";
     public int? FkStore { get; set; }
-    /// <summary>Key → value pairs to upsert.</summary>
-    public Dictionary<string, string?> Values { get; set; } = new();
-    public int UpdatedBy { get; set; }
+    public List<OutputSettingGroup> Groups { get; set; } = new();
 }
 
-public sealed class OutputSettingSave
+public sealed class OutputSettingGroup
 {
-    public int ResponseCode { get; set; }
-    public string ResponseMsg { get; set; } = string.Empty;
-    public int StatusCode { get; set; }
-    public bool Ok => ResponseCode == 0;
+    public string Title { get; set; } = string.Empty;
+    public string Icon { get; set; } = "bi-sliders";
+    public string Description { get; set; } = string.Empty;
+    public List<OutputSettingItem> Items { get; set; } = new();
+}
+
+public sealed class OutputSettingItem
+{
+    public string SettingKey { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>What the setting does, shown under the label.</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>How the form renders the control: text | bool | select | suggest.</summary>
+    public string Input { get; set; } = "text";
+
+    public bool Required { get; set; }
+    public int MaxLength { get; set; }
+    public string? Placeholder { get; set; }
+
+    /// <summary>Whether a store can override the company value.</summary>
+    public bool AllowStoreOverride { get; set; }
+
+    /// <summary>
+    /// Value the control starts with. Company scope: the saved value, or the built-in default when nothing is saved.
+    /// Store scope: the saved store override, or empty when the store uses the company value.
+    /// </summary>
+    public string? FormValue { get; set; }
+
+    public string CompanyDisplay { get; set; } = string.Empty;
+    public string DefaultDisplay { get; set; } = string.Empty;
+
+    /// <summary>Value in force for the scope being edited, after falling back to company and built-in default.</summary>
+    public string EffectiveValue { get; set; } = string.Empty;
+
+    public string EffectiveDisplay { get; set; } = string.Empty;
+
+    /// <summary>store | company | default: where <see cref="EffectiveValue"/> comes from.</summary>
+    public string EffectiveSource { get; set; } = "default";
+
+    /// <summary>Stores that override the company value (company scope only).</summary>
+    public int StoreOverrideCount { get; set; }
+
+    /// <summary>Choices for bool, select and suggest controls.</summary>
+    public List<OutputSettingOption> Options { get; set; } = new();
+}
+
+public sealed class OutputSettingOption
+{
+    public string Value { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+}
+
+#endregion
+
+#region Setting Upsert
+
+public sealed class InSettingUpsertView
+{
+    [Display(Name = "Scope")]
+    [Required(ErrorMessage = "Something went wrong/Please select a valid scope.")]
+    [AllowedValues("company", "store", ErrorMessage = "Something went wrong/Please select a valid scope.")]
+    public string Scope { get; set; } = "company";
+
+    /// <summary>Posted as Values[setting.key]. Unknown keys are rejected by the service.</summary>
+    [Display(Name = "Settings")]
+    public Dictionary<string, string?> Values { get; set; } = new();
+}
+
+public sealed class InputSettingUpsert
+{
+    public int ActorUserId { get; set; }
+
+    /// <summary>company | store.</summary>
+    public string Scope { get; set; } = "company";
+
+    /// <summary>Store being edited (store scope only). Always taken from the signed-in user's claims.</summary>
+    public int? FkStore { get; set; }
+
+    /// <summary>Raw values posted by the form (key to value).</summary>
+    public Dictionary<string, string?> Values { get; set; } = new();
+
+    /// <summary>Validated and normalised changes prepared by the service. The repository writes only these.</summary>
+    public List<InputSettingUpsertItem> Items { get; set; } = new();
+}
+
+public sealed class InputSettingUpsertItem
+{
+    public string SettingKey { get; set; } = string.Empty;
+
+    /// <summary>New value. Null at store scope removes the override so the company value applies again.</summary>
+    public string? SettingValue { get; set; }
+
+    /// <summary>string | bool. Used when the row does not exist yet.</summary>
+    public string ValueType { get; set; } = "string";
+
+    /// <summary>Used when the row does not exist yet.</summary>
+    public string? Description { get; set; }
+}
+
+public sealed class OutputSettingUpsert
+{
+    public string Scope { get; set; } = "company";
+
+    /// <summary>Keys whose stored value actually changed.</summary>
+    public List<string> ChangedKeys { get; set; } = new();
 }
 
 #endregion

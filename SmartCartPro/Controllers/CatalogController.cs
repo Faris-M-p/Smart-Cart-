@@ -23,7 +23,7 @@ public class CatalogController : Controller
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // CATEGORY
+    // CATEGORY  (views live in ~/Views/Category/)
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -38,7 +38,7 @@ public class CatalogController : Controller
         var model = await _svc.ListCategoriesAsync(input, ct);
         ViewBag.CanManage = await CanManageProductsAsync(ct);
         ViewBag.ListUrl = Url.Action(nameof(Categories))!;
-        return View(model);
+        return View("~/Views/Category/Categories.cshtml", model);
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class CatalogController : Controller
     public IActionResult CreateCategory(string? returnUrl = null)
     {
         ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
-        return View(new InCategoryCreateView { IsActive = true });
+        return View("~/Views/Category/CreateCategory.cshtml", new InCategoryCreateView { IsActive = true });
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public class CatalogController : Controller
         var item = await _svc.GetCategoryAsync(new InputCategorySelect { IdCategory = id }, ct);
         if (item is null) return NotFound();
         ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
-        return View(item.ToUpdateView());
+        return View("~/Views/Category/EditCategory.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
@@ -218,9 +218,9 @@ public class CatalogController : Controller
     [RequirePermission("products.view")]
     public async Task<IActionResult> SubCategories([FromQuery] InputSubCategoryList input, CancellationToken ct)
     {
-        input.Page = Math.Max(1, input.Page);
         var model = await _svc.ListSubCategoriesAsync(input, ct);
-        return View(model);
+        ViewBag.Categories = await _svc.GetCategoryOptionsAsync(ct);
+        return View("~/Views/SubCategory/SubCategories.cshtml", model);
     }
 
     /// <summary>
@@ -229,10 +229,13 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateSubCategory(CancellationToken ct)
+    public async Task<IActionResult> CreateSubCategory(int? fkCategory, string? returnUrl, CancellationToken ct)
     {
-        ViewBag.Categories = await _svc.GetCategoryLookupAsync(ct);
-        return View(new InSubCategoryCreateView { IsActive = true });
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        ViewBag.Categories = await _svc.GetCategoryOptionsAsync(ct);
+        return View(
+            "~/Views/SubCategory/CreateSubCategory.cshtml",
+            new InSubCategoryCreateView { FkCategory = fkCategory ?? 0, IsActive = true });
     }
 
     /// <summary>
@@ -241,7 +244,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateSubCategory(InSubCategoryCreateView model, CancellationToken ct)
+    public async Task<IActionResult> CreateSubCategory(InSubCategoryCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -256,14 +259,36 @@ public class CatalogController : Controller
         var result = await _svc.CreateSubCategoryAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 400)
+            {
+                var message = string.IsNullOrWhiteSpace(result.ResponseMsg)
+                    ? "Please select an active Category."
+                    : result.ResponseMsg;
+                throw new ValidationException(
+                    message,
+                    message,
+                    new Dictionary<string, string[]>
+                    {
+                        [nameof(InSubCategoryCreateView.FkCategory)] = new[] { message }
+                    });
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A sub-category with this name already exists in the selected category.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to create sub-category.",
+                result.ResponseMsg ?? "Unable to create sub-category.",
                 result.ResponseMsg ?? "Unable to create sub-category.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(SubCategories))!;
         return CommonHelpers.SuccessResponse(
             "Sub-category created successfully.",
-            new { id = result.IdSubCategory });
+            new { id = result.IdSubCategory, redirectUrl = listUrl });
     }
 
     /// <summary>
@@ -272,12 +297,13 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditSubCategory(int id, CancellationToken ct)
+    public async Task<IActionResult> EditSubCategory(int id, string? returnUrl, CancellationToken ct)
     {
         var item = await _svc.GetSubCategoryAsync(new InputSubCategorySelect { IdSubCategory = id }, ct);
         if (item is null) return NotFound();
-        ViewBag.Categories = await _svc.GetCategoryLookupAsync(ct);
-        return View(item.ToUpdateView());
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        ViewBag.Categories = await _svc.GetCategoryOptionsAsync(ct);
+        return View("~/Views/SubCategory/EditSubCategory.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
@@ -286,7 +312,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditSubCategory(int id, InSubCategoryUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> EditSubCategory(int id, InSubCategoryUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdSubCategory = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -303,14 +329,93 @@ public class CatalogController : Controller
         var result = await _svc.UpdateSubCategoryAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Sub-category not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 400)
+            {
+                var message = string.IsNullOrWhiteSpace(result.ResponseMsg)
+                    ? "Please select an active Category."
+                    : result.ResponseMsg;
+                throw new ValidationException(
+                    message,
+                    message,
+                    new Dictionary<string, string[]>
+                    {
+                        [nameof(InSubCategoryUpdateView.FkCategory)] = new[] { message }
+                    });
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A sub-category with this name already exists in the selected category.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to update sub-category.",
+                result.ResponseMsg ?? "Unable to update sub-category.",
                 result.ResponseMsg ?? "Unable to update sub-category.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(SubCategories))!;
         return CommonHelpers.SuccessResponse(
             "Sub-category updated successfully.",
-            new { id = result.IdSubCategory });
+            new { id = result.IdSubCategory, redirectUrl = listUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a subcategory from the list without opening the edit form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetSubCategoryActive(int id, bool isActive, CancellationToken ct)
+    {
+        var item = await _svc.GetSubCategoryAsync(new InputSubCategorySelect { IdSubCategory = id }, ct);
+        if (item is null)
+        {
+            throw new ResourceNotFoundException("Sub-category not found.", $"IdSubCategory={id}");
+        }
+
+        var input = new InputSubCategoryUpdate
+        {
+            IdSubCategory = item.IdSubCategory,
+            FkCategory = item.FkCategory,
+            SubCategoryName = item.SubCategoryName,
+            Description = item.Description,
+            DisplayOrder = item.DisplayOrder,
+            IsActive = isActive
+        };
+        var result = await _svc.UpdateSubCategoryAsync(input, ct);
+        if (!result.Ok)
+        {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Sub-category not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A sub-category with this name already exists in the selected category.",
+                    result.ResponseMsg);
+            }
+
+            throw new UpdateFailedException(
+                result.ResponseMsg ?? "Unable to update sub-category status.",
+                result.ResponseMsg ?? "Unable to update sub-category status.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            isActive ? "Sub-category activated." : "Sub-category deactivated.",
+            new { id = result.IdSubCategory, isActive });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -325,8 +430,8 @@ public class CatalogController : Controller
     [RequirePermission("products.view")]
     public async Task<IActionResult> Brands([FromQuery] InputBrandList input, CancellationToken ct)
     {
-        input.Page = Math.Max(1, input.Page);
-        return View(await _svc.ListBrandsAsync(input, ct));
+        var model = await _svc.ListBrandsAsync(input, ct);
+        return View("~/Views/Brand/Brands.cshtml", model);
     }
 
     /// <summary>
@@ -335,7 +440,11 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public IActionResult CreateBrand() => View(new InBrandCreateView { IsActive = true });
+    public IActionResult CreateBrand(string? returnUrl = null)
+    {
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Brand/CreateBrand.cshtml", new InBrandCreateView { IsActive = true });
+    }
 
     /// <summary>
     /// Saves a new brand available on product create and purchase line items.
@@ -343,7 +452,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateBrand(InBrandCreateView model, CancellationToken ct)
+    public async Task<IActionResult> CreateBrand(InBrandCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -356,14 +465,22 @@ public class CatalogController : Controller
         var result = await _svc.CreateBrandAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A brand with this name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to create brand.",
+                result.ResponseMsg ?? "Unable to create brand.",
                 result.ResponseMsg ?? "Unable to create brand.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Brands))!;
         return CommonHelpers.SuccessResponse(
             "Brand created successfully.",
-            new { id = result.IdBrand });
+            new { id = result.IdBrand, redirectUrl = listUrl });
     }
 
     /// <summary>
@@ -372,11 +489,12 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditBrand(int id, CancellationToken ct)
+    public async Task<IActionResult> EditBrand(int id, string? returnUrl, CancellationToken ct)
     {
         var item = await _svc.GetBrandAsync(new InputBrandSelect { IdBrand = id }, ct);
         if (item is null) return NotFound();
-        return View(item.ToUpdateView());
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Brand/EditBrand.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
@@ -385,7 +503,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditBrand(int id, InBrandUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> EditBrand(int id, InBrandUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdBrand = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -400,14 +518,77 @@ public class CatalogController : Controller
         var result = await _svc.UpdateBrandAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Brand not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A brand with this name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to update brand.",
+                result.ResponseMsg ?? "Unable to update brand.",
                 result.ResponseMsg ?? "Unable to update brand.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Brands))!;
         return CommonHelpers.SuccessResponse(
             "Brand updated successfully.",
-            new { id = result.IdBrand });
+            new { id = result.IdBrand, redirectUrl = listUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a brand from the list without opening the edit form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetBrandActive(int id, bool isActive, CancellationToken ct)
+    {
+        var item = await _svc.GetBrandAsync(new InputBrandSelect { IdBrand = id }, ct);
+        if (item is null)
+        {
+            throw new ResourceNotFoundException("Brand not found.", $"IdBrand={id}");
+        }
+
+        var input = new InputBrandUpdate
+        {
+            IdBrand = item.IdBrand,
+            BrandName = item.BrandName,
+            Description = item.Description,
+            IsActive = isActive
+        };
+        var result = await _svc.UpdateBrandAsync(input, ct);
+        if (!result.Ok)
+        {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Brand not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A brand with this name already exists.",
+                    result.ResponseMsg);
+            }
+
+            throw new UpdateFailedException(
+                result.ResponseMsg ?? "Unable to update brand status.",
+                result.ResponseMsg ?? "Unable to update brand status.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            isActive ? "Brand activated." : "Brand deactivated.",
+            new { id = result.IdBrand, isActive });
     }
 
     /// <summary>
@@ -430,8 +611,8 @@ public class CatalogController : Controller
     [RequirePermission("products.view")]
     public async Task<IActionResult> Units([FromQuery] InputUnitList input, CancellationToken ct)
     {
-        input.Page = Math.Max(1, input.Page);
-        return View(await _svc.ListUnitsAsync(input, ct));
+        var model = await _svc.ListUnitsAsync(input, ct);
+        return View("~/Views/Unit/Units.cshtml", model);
     }
 
     /// <summary>
@@ -440,7 +621,11 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public IActionResult CreateUnit() => View(new InUnitCreateView { IsActive = true });
+    public IActionResult CreateUnit(string? returnUrl = null)
+    {
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Unit/CreateUnit.cshtml", new InUnitCreateView { IsActive = true });
+    }
 
     /// <summary>
     /// Saves a new unit used on product cost, quantity, and barcode sale lines.
@@ -448,7 +633,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateUnit(InUnitCreateView model, CancellationToken ct)
+    public async Task<IActionResult> CreateUnit(InUnitCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -461,14 +646,22 @@ public class CatalogController : Controller
         var result = await _svc.CreateUnitAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A unit with this code or name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to create unit.",
+                result.ResponseMsg ?? "Unable to create unit.",
                 result.ResponseMsg ?? "Unable to create unit.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Units))!;
         return CommonHelpers.SuccessResponse(
             "Unit created successfully.",
-            new { id = result.IdUnit });
+            new { id = result.IdUnit, redirectUrl = listUrl });
     }
 
     /// <summary>
@@ -477,11 +670,12 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditUnit(int id, CancellationToken ct)
+    public async Task<IActionResult> EditUnit(int id, string? returnUrl, CancellationToken ct)
     {
         var item = await _svc.GetUnitAsync(new InputUnitSelect { IdUnit = id }, ct);
         if (item is null) return NotFound();
-        return View(item.ToUpdateView());
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Unit/EditUnit.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
@@ -490,7 +684,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditUnit(int id, InUnitUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> EditUnit(int id, InUnitUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdUnit = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -505,14 +699,77 @@ public class CatalogController : Controller
         var result = await _svc.UpdateUnitAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Unit not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A unit with this code or name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to update unit.",
+                result.ResponseMsg ?? "Unable to update unit.",
                 result.ResponseMsg ?? "Unable to update unit.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Units))!;
         return CommonHelpers.SuccessResponse(
             "Unit updated successfully.",
-            new { id = result.IdUnit });
+            new { id = result.IdUnit, redirectUrl = listUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a unit from the list without opening the edit form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetUnitActive(int id, bool isActive, CancellationToken ct)
+    {
+        var item = await _svc.GetUnitAsync(new InputUnitSelect { IdUnit = id }, ct);
+        if (item is null)
+        {
+            throw new ResourceNotFoundException("Unit not found.", $"IdUnit={id}");
+        }
+
+        var input = new InputUnitUpdate
+        {
+            IdUnit = item.IdUnit,
+            UnitCode = item.UnitCode,
+            UnitName = item.UnitName,
+            IsActive = isActive
+        };
+        var result = await _svc.UpdateUnitAsync(input, ct);
+        if (!result.Ok)
+        {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Unit not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A unit with this code or name already exists.",
+                    result.ResponseMsg);
+            }
+
+            throw new UpdateFailedException(
+                result.ResponseMsg ?? "Unable to update unit status.",
+                result.ResponseMsg ?? "Unable to update unit status.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            isActive ? "Unit activated." : "Unit deactivated.",
+            new { id = result.IdUnit, isActive });
     }
 
     /// <summary>
@@ -535,8 +792,8 @@ public class CatalogController : Controller
     [RequirePermission("products.view")]
     public async Task<IActionResult> Taxes([FromQuery] InputTaxList input, CancellationToken ct)
     {
-        input.Page = Math.Max(1, input.Page);
-        return View(await _svc.ListTaxesAsync(input, ct));
+        var model = await _svc.ListTaxesAsync(input, ct);
+        return View("~/Views/Tax/Taxes.cshtml", model);
     }
 
     /// <summary>
@@ -545,7 +802,11 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public IActionResult CreateTax() => View(new InTaxCreateView { IsActive = true });
+    public IActionResult CreateTax(string? returnUrl = null)
+    {
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Tax/CreateTax.cshtml", new InTaxCreateView { IsActive = true });
+    }
 
     /// <summary>
     /// Saves a new tax profile used when ringing sales and printing receipts.
@@ -553,7 +814,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> CreateTax(InTaxCreateView model, CancellationToken ct)
+    public async Task<IActionResult> CreateTax(InTaxCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -568,14 +829,22 @@ public class CatalogController : Controller
         var result = await _svc.CreateTaxAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A tax with this code or name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to create tax.",
+                result.ResponseMsg ?? "Unable to create tax.",
                 result.ResponseMsg ?? "Unable to create tax.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Taxes))!;
         return CommonHelpers.SuccessResponse(
             "Tax created successfully.",
-            new { id = result.IdTax });
+            new { id = result.IdTax, redirectUrl = listUrl });
     }
 
     /// <summary>
@@ -584,11 +853,12 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditTax(int id, CancellationToken ct)
+    public async Task<IActionResult> EditTax(int id, string? returnUrl, CancellationToken ct)
     {
         var item = await _svc.GetTaxAsync(new InputTaxSelect { IdTax = id }, ct);
         if (item is null) return NotFound();
-        return View(item.ToUpdateView());
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View("~/Views/Tax/EditTax.cshtml", item.ToUpdateView());
     }
 
     /// <summary>
@@ -597,7 +867,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
-    public async Task<IActionResult> EditTax(int id, InTaxUpdateView model, CancellationToken ct)
+    public async Task<IActionResult> EditTax(int id, InTaxUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdTax = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -614,14 +884,79 @@ public class CatalogController : Controller
         var result = await _svc.UpdateTaxAsync(input, ct);
         if (!result.Ok)
         {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Tax not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A tax with this code or name already exists.",
+                    result.ResponseMsg);
+            }
+
             throw new UpdateFailedException(
-                "Unable to update tax.",
+                result.ResponseMsg ?? "Unable to update tax.",
                 result.ResponseMsg ?? "Unable to update tax.");
         }
 
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Taxes))!;
         return CommonHelpers.SuccessResponse(
             "Tax updated successfully.",
-            new { id = result.IdTax });
+            new { id = result.IdTax, redirectUrl = listUrl });
+    }
+
+    /// <summary>
+    /// Activates or deactivates a tax profile from the list without opening the edit form.
+    /// Managers with products.manage use this after confirming the status change.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("products.manage")]
+    public async Task<IActionResult> SetTaxActive(int id, bool isActive, CancellationToken ct)
+    {
+        var item = await _svc.GetTaxAsync(new InputTaxSelect { IdTax = id }, ct);
+        if (item is null)
+        {
+            throw new ResourceNotFoundException("Tax not found.", $"IdTax={id}");
+        }
+
+        var input = new InputTaxUpdate
+        {
+            IdTax = item.IdTax,
+            TaxCode = item.TaxCode,
+            TaxName = item.TaxName,
+            TaxRate = item.TaxRate,
+            IsInclusive = item.IsInclusive,
+            IsActive = isActive
+        };
+        var result = await _svc.UpdateTaxAsync(input, ct);
+        if (!result.Ok)
+        {
+            if (result.StatusCode == 404)
+            {
+                throw new ResourceNotFoundException(
+                    result.ResponseMsg ?? "Tax not found.",
+                    result.ResponseMsg);
+            }
+
+            if (result.StatusCode == 409)
+            {
+                throw new ConflictException(
+                    result.ResponseMsg ?? "A tax with this code or name already exists.",
+                    result.ResponseMsg);
+            }
+
+            throw new UpdateFailedException(
+                result.ResponseMsg ?? "Unable to update tax status.",
+                result.ResponseMsg ?? "Unable to update tax status.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            isActive ? "Tax activated." : "Tax deactivated.",
+            new { id = result.IdTax, isActive });
     }
 
     /// <summary>

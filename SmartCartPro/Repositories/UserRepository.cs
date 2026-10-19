@@ -6,6 +6,10 @@ using SmartCartPro.Repositories.Interfaces;
 
 namespace SmartCartPro.Repositories;
 
+/// <summary>
+/// Employees (users), their single role and their store access. EF/LINQ only.
+/// Platform super admin accounts are excluded from every read and write here.
+/// </summary>
 public class UserRepository : IUserRepository
 {
     private readonly SmartCartDbContext _db;
@@ -14,17 +18,71 @@ public class UserRepository : IUserRepository
 
     public async Task<OutputUserList> ListUsersAsync(InputUserList input, CancellationToken ct = default)
     {
+        var page = Math.Max(1, input.Page);
+        var pageSize = input.PageSize <= 0 ? 25 : Math.Min(input.PageSize, 100);
+        var sortBy = (input.SortBy ?? string.Empty).Trim().ToLowerInvariant();
+
         var query = _db.Users.AsNoTracking()
             .Where(u => !u.Cancelled && !u.IsPlatformSuperAdmin);
 
-        if (input.ActiveOnly)
+        if (input.ActiveOnly == true)
         {
             query = query.Where(u => u.IsActive);
         }
+        else if (input.ActiveOnly == false)
+        {
+            query = query.Where(u => !u.IsActive);
+        }
 
-        // Load users with their first role via UserRoles join
-        var users = await query
-            .OrderBy(u => u.FullName)
+        if (input.FkRole.HasValue)
+        {
+            var roleId = input.FkRole.Value;
+            query = query.Where(u => u.UserRoles.Any(ur => ur.FkRole == roleId));
+        }
+
+        if (input.FkStore.HasValue)
+        {
+            var storeId = input.FkStore.Value;
+            query = query.Where(u => u.StoreAccess.Any(a => a.FkStore == storeId && !a.Cancelled));
+        }
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim().ToLowerInvariant();
+            query = query.Where(u =>
+                u.FullName.ToLower().Contains(term)
+                || u.UserName.ToLower().Contains(term)
+                || u.Email.ToLower().Contains(term)
+                || (u.EmployeeCode != null && u.EmployeeCode.ToLower().Contains(term)));
+        }
+
+        var total = await query.CountAsync(ct);
+
+        query = sortBy switch
+        {
+            "username" => input.SortDesc
+                ? query.OrderByDescending(u => u.UserName).ThenBy(u => u.IdUser)
+                : query.OrderBy(u => u.UserName).ThenBy(u => u.IdUser),
+            "email" => input.SortDesc
+                ? query.OrderByDescending(u => u.Email).ThenBy(u => u.IdUser)
+                : query.OrderBy(u => u.Email).ThenBy(u => u.IdUser),
+            "role" => input.SortDesc
+                ? query.OrderByDescending(u => u.UserRoles.Min(ur => ur.Role!.RoleName)).ThenBy(u => u.FullName).ThenBy(u => u.IdUser)
+                : query.OrderBy(u => u.UserRoles.Min(ur => ur.Role!.RoleName)).ThenBy(u => u.FullName).ThenBy(u => u.IdUser),
+            "lastlogin" => input.SortDesc
+                ? query.OrderByDescending(u => u.LastLoginAt).ThenBy(u => u.IdUser)
+                : query.OrderBy(u => u.LastLoginAt).ThenBy(u => u.IdUser),
+            "isactive" => input.SortDesc
+                ? query.OrderByDescending(u => u.IsActive).ThenBy(u => u.FullName).ThenBy(u => u.IdUser)
+                : query.OrderBy(u => u.IsActive).ThenBy(u => u.FullName).ThenBy(u => u.IdUser),
+            _ => input.SortDesc
+                ? query.OrderByDescending(u => u.FullName).ThenBy(u => u.IdUser)
+                : query.OrderBy(u => u.FullName).ThenBy(u => u.IdUser)
+        };
+
+        var rows = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(u => new
             {
                 u.IdUser,
@@ -38,25 +96,20 @@ public class UserRepository : IUserRepository
                 u.LastLoginAt,
                 Role = u.UserRoles
                     .Where(ur => ur.Role != null && !ur.Role.Cancelled)
+                    .OrderBy(ur => ur.IdUserRole)
                     .Select(ur => new { ur.Role!.IdRole, ur.Role.RoleName })
                     .FirstOrDefault()
             })
             .ToListAsync(ct);
 
-        var storeAccess = await _db.UserStoreAccess.AsNoTracking()
-            .Where(a => !a.Cancelled)
-            .Select(a => new { a.FkUser, a.FkStore })
-            .ToListAsync(ct);
-
-        var userIds = users.Select(u => u.IdUser).ToHashSet();
-        var accessByUser = storeAccess
-            .Where(a => userIds.Contains(a.FkUser))
-            .GroupBy(a => a.FkUser)
-            .ToDictionary(g => g.Key, g => g.Select(a => a.FkStore).ToList());
+        var accessByUser = await LoadStoreAccessAsync(rows.Select(r => r.IdUser).ToList(), ct);
 
         return new OutputUserList
         {
-            Users = users.Select(u => new OutputUserSelect
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize,
+            Users = rows.Select(u => new OutputUserSelect
             {
                 IdUser = u.IdUser,
                 UserName = u.UserName,
@@ -69,7 +122,7 @@ public class UserRepository : IUserRepository
                 LastLoginAt = u.LastLoginAt,
                 CurrentRoleId = u.Role?.IdRole,
                 CurrentRoleName = u.Role?.RoleName,
-                StoreIds = accessByUser.TryGetValue(u.IdUser, out var stores) ? stores : new List<int>()
+                Stores = accessByUser.TryGetValue(u.IdUser, out var stores) ? stores : new List<OutputUserStoreAccess>()
             }).ToList()
         };
     }
@@ -91,6 +144,7 @@ public class UserRepository : IUserRepository
                 x.LastLoginAt,
                 Role = x.UserRoles
                     .Where(ur => ur.Role != null && !ur.Role.Cancelled)
+                    .OrderBy(ur => ur.IdUserRole)
                     .Select(ur => new { ur.Role!.IdRole, ur.Role.RoleName })
                     .FirstOrDefault()
             })
@@ -98,10 +152,7 @@ public class UserRepository : IUserRepository
 
         if (u is null) return null;
 
-        var storeIds = await _db.UserStoreAccess.AsNoTracking()
-            .Where(a => a.FkUser == input.IdUser && !a.Cancelled)
-            .Select(a => a.FkStore)
-            .ToListAsync(ct);
+        var accessByUser = await LoadStoreAccessAsync(new List<int> { u.IdUser }, ct);
 
         return new OutputUserSelect
         {
@@ -116,160 +167,218 @@ public class UserRepository : IUserRepository
             LastLoginAt = u.LastLoginAt,
             CurrentRoleId = u.Role?.IdRole,
             CurrentRoleName = u.Role?.RoleName,
-            StoreIds = storeIds
+            Stores = accessByUser.TryGetValue(u.IdUser, out var stores) ? stores : new List<OutputUserStoreAccess>()
         };
+    }
+
+    public async Task<OutputUserOptionList> ListUserOptionsAsync(InputUserOptionList input, CancellationToken ct = default)
+    {
+        var roles = await _db.Roles.AsNoTracking()
+            .Where(r => !r.Cancelled)
+            .OrderBy(r => r.RoleName)
+            .Select(r => new OutputUserRoleSelect
+            {
+                IdRole = r.IdRole,
+                RoleCode = r.RoleCode,
+                RoleName = r.RoleName,
+                IsActive = r.IsActive
+            })
+            .ToListAsync(ct);
+
+        var storeQuery = _db.Stores.AsNoTracking().Where(s => !s.Cancelled);
+        if (input.FkCompany.HasValue && input.FkCompany.Value > 0)
+        {
+            var companyId = input.FkCompany.Value;
+            storeQuery = storeQuery.Where(s => s.FkCompany == companyId);
+        }
+
+        var stores = await storeQuery
+            .OrderByDescending(s => s.IsDefault)
+            .ThenBy(s => s.StoreName)
+            .Select(s => new OutputUserStoreSelect
+            {
+                IdStore = s.IdStore,
+                StoreCode = s.StoreCode,
+                StoreName = s.StoreName,
+                IsActive = s.IsActive
+            })
+            .ToListAsync(ct);
+
+        return new OutputUserOptionList { Roles = roles, Stores = stores };
+    }
+
+    public Task<bool> IsLoginIdentifierTakenAsync(string identifier, int? excludeIdUser, CancellationToken ct = default)
+    {
+        var value = identifier.Trim().ToLowerInvariant();
+        var excludeId = excludeIdUser ?? 0;
+
+        return _db.Users.AsNoTracking().AnyAsync(
+            u => u.IdUser != excludeId
+                 && (u.UserName.ToLower() == value || u.Email.ToLower() == value),
+            ct);
     }
 
     public async Task<OutputUserCreate> CreateUserAsync(InputUserCreate input, CancellationToken ct = default)
     {
+        var now = DateTime.UtcNow;
+
         var entity = new User
         {
             UserName = input.UserName.Trim(),
             Email = input.Email.Trim().ToLowerInvariant(),
             PasswordHash = input.PasswordHash,
             FullName = input.FullName.Trim(),
-            Phone = input.Phone?.Trim(),
-            EmployeeCode = input.EmployeeCode?.Trim(),
+            Phone = string.IsNullOrWhiteSpace(input.Phone) ? null : input.Phone.Trim(),
+            EmployeeCode = string.IsNullOrWhiteSpace(input.EmployeeCode) ? null : input.EmployeeCode.Trim(),
             IsActive = true,
-            MustChangePassword = true,
+            MustChangePassword = input.MustChangePassword,
             IsPlatformSuperAdmin = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = now
         };
 
+        entity.UserRoles.Add(new UserRole { FkRole = input.FkRole, CreatedAt = now });
+
+        foreach (var storeId in input.StoreIds.Distinct())
+        {
+            entity.StoreAccess.Add(new UserStoreAccess
+            {
+                FkStore = storeId,
+                IsDefault = input.DefaultStoreId.HasValue && storeId == input.DefaultStoreId.Value,
+                CreatedAt = now
+            });
+        }
+
+        // One SaveChanges = one transaction: the employee never exists without role and stores.
         _db.Users.Add(entity);
         await _db.SaveChangesAsync(ct);
 
-        // Assign role
-        if (input.FkRole.HasValue)
+        return new OutputUserCreate { IdUser = entity.IdUser, UserName = entity.UserName };
+    }
+
+    public async Task<OutputUserUpdate?> UpdateUserAsync(InputUserUpdate input, CancellationToken ct = default)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        var entity = await _db.Users.FirstOrDefaultAsync(
+            u => u.IdUser == input.IdUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+        if (entity is null) return null;
+
+        var now = DateTime.UtcNow;
+
+        entity.Email = input.Email.Trim().ToLowerInvariant();
+        entity.FullName = input.FullName.Trim();
+        entity.Phone = string.IsNullOrWhiteSpace(input.Phone) ? null : input.Phone.Trim();
+        entity.EmployeeCode = string.IsNullOrWhiteSpace(input.EmployeeCode) ? null : input.EmployeeCode.Trim();
+        entity.UpdatedAt = now;
+
+        // Role: an employee holds exactly one role.
+        var roles = await _db.UserRoles.Where(ur => ur.FkUser == entity.IdUser).ToListAsync(ct);
+        var staleRoles = roles.Where(r => r.FkRole != input.FkRole).ToList();
+        if (staleRoles.Count > 0)
         {
-            _db.UserRoles.Add(new UserRole
-            {
-                FkUser = entity.IdUser,
-                FkRole = input.FkRole.Value,
-                CreatedAt = DateTime.UtcNow
-            });
+            _db.UserRoles.RemoveRange(staleRoles);
         }
 
-        // Assign stores
-        foreach (var storeId in input.StoreIds.Distinct())
+        if (roles.All(r => r.FkRole != input.FkRole))
         {
-            _db.UserStoreAccess.Add(new UserStoreAccess
+            _db.UserRoles.Add(new UserRole { FkUser = entity.IdUser, FkRole = input.FkRole, CreatedAt = now });
+        }
+
+        // Store access (soft cancel). Pass 1 cancels/revives/adds rows and clears stale default flags,
+        // pass 2 sets the single default, so the "one default per user" index is never violated.
+        var wanted = input.StoreIds.Distinct().ToList();
+        var defaultStoreId = input.DefaultStoreId.HasValue && wanted.Contains(input.DefaultStoreId.Value)
+            ? input.DefaultStoreId.Value
+            : (wanted.Count > 0 ? wanted[0] : 0);
+
+        var access = await _db.UserStoreAccess.Where(a => a.FkUser == entity.IdUser).ToListAsync(ct);
+
+        foreach (var row in access)
+        {
+            var keep = wanted.Contains(row.FkStore);
+            var wasCancelled = row.Cancelled;
+
+            if (keep && wasCancelled)
+            {
+                row.Cancelled = false;
+                row.CancelledOn = null;
+                row.CancelledReason = null;
+                row.UpdatedAt = now;
+            }
+            else if (!keep && !wasCancelled)
+            {
+                row.Cancelled = true;
+                row.CancelledOn = now;
+                row.CancelledReason = "Removed from the employee's store access.";
+                row.UpdatedAt = now;
+            }
+
+            var keepsDefault = keep && !wasCancelled && row.FkStore == defaultStoreId;
+            if (row.IsDefault && !keepsDefault)
+            {
+                row.IsDefault = false;
+                row.UpdatedAt = now;
+            }
+        }
+
+        var added = new List<UserStoreAccess>();
+        foreach (var storeId in wanted.Where(id => access.All(a => a.FkStore != id)))
+        {
+            var row = new UserStoreAccess
             {
                 FkUser = entity.IdUser,
                 FkStore = storeId,
-                IsDefault = input.StoreIds.IndexOf(storeId) == 0,
-                CreatedAt = DateTime.UtcNow
-            });
+                IsDefault = false,
+                CreatedAt = now
+            };
+            added.Add(row);
+            _db.UserStoreAccess.Add(row);
         }
 
-        if (input.FkRole.HasValue || input.StoreIds.Any())
+        await _db.SaveChangesAsync(ct);
+
+        var defaultRow = access.Concat(added)
+            .FirstOrDefault(a => a.FkStore == defaultStoreId && !a.Cancelled);
+        if (defaultRow is not null && !defaultRow.IsDefault)
         {
+            defaultRow.IsDefault = true;
+            defaultRow.UpdatedAt = now;
             await _db.SaveChangesAsync(ct);
         }
 
-        return new OutputUserCreate
-        {
-            ResponseCode = 0,
-            ResponseMsg = "Created",
-            StatusCode = 200,
-            IdUser = entity.IdUser,
-            UserName = entity.UserName
-        };
+        await tx.CommitAsync(ct);
+
+        return new OutputUserUpdate { IdUser = entity.IdUser };
     }
 
-    public async Task<OutputUserUpdate> UpdateUserAsync(InputUserUpdate input, CancellationToken ct = default)
+    public async Task<OutputUserStatusUpdate?> UpdateUserStatusAsync(InputUserStatusUpdate input, CancellationToken ct = default)
     {
         var entity = await _db.Users.FirstOrDefaultAsync(
             u => u.IdUser == input.IdUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+        if (entity is null) return null;
 
-        if (entity is null)
-        {
-            return new OutputUserUpdate { ResponseCode = 1, ResponseMsg = "User not found.", StatusCode = 404 };
-        }
-
-        entity.FullName = input.FullName.Trim();
-        entity.Phone = input.Phone?.Trim();
-        entity.EmployeeCode = input.EmployeeCode?.Trim();
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
-
         await _db.SaveChangesAsync(ct);
 
-        return new OutputUserUpdate { ResponseCode = 0, ResponseMsg = "Updated", StatusCode = 200 };
+        return new OutputUserStatusUpdate { IdUser = entity.IdUser, IsActive = entity.IsActive };
     }
 
-    public async Task<bool> DeactivateUserAsync(int idUser, CancellationToken ct = default)
+    public async Task<OutputUserPasswordUpdate?> UpdateUserPasswordAsync(InputUserPasswordUpdate input, CancellationToken ct = default)
     {
         var entity = await _db.Users.FirstOrDefaultAsync(
-            u => u.IdUser == idUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+            u => u.IdUser == input.IdUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+        if (entity is null) return null;
 
-        if (entity is null) return false;
-
-        entity.IsActive = false;
-        entity.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
-        return true;
-    }
-
-    public async Task<bool> ResetPasswordHashAsync(int idUser, string newPasswordHash, CancellationToken ct = default)
-    {
-        var entity = await _db.Users.FirstOrDefaultAsync(
-            u => u.IdUser == idUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
-
-        if (entity is null) return false;
-
-        entity.PasswordHash = newPasswordHash;
+        entity.PasswordHash = input.PasswordHash;
         entity.MustChangePassword = true;
         entity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
-        return true;
+
+        return new OutputUserPasswordUpdate { IdUser = entity.IdUser };
     }
 
-    public async Task<bool> AssignStoresToUserAsync(int idUser, List<int> storeIds, CancellationToken ct = default)
-    {
-        var existing = await _db.UserStoreAccess
-            .Where(a => a.FkUser == idUser && !a.Cancelled)
-            .ToListAsync(ct);
-
-        _db.UserStoreAccess.RemoveRange(existing);
-
-        var now = DateTime.UtcNow;
-        var isFirst = true;
-        foreach (var storeId in storeIds.Distinct())
-        {
-            _db.UserStoreAccess.Add(new UserStoreAccess
-            {
-                FkUser = idUser,
-                FkStore = storeId,
-                IsDefault = isFirst,
-                CreatedAt = now
-            });
-            isFirst = false;
-        }
-
-        await _db.SaveChangesAsync(ct);
-        return true;
-    }
-
-    public async Task<bool> AssignRoleToUserAsync(int idUser, int idRole, CancellationToken ct = default)
-    {
-        var existing = await _db.UserRoles
-            .Where(ur => ur.FkUser == idUser)
-            .ToListAsync(ct);
-
-        _db.UserRoles.RemoveRange(existing);
-
-        _db.UserRoles.Add(new UserRole
-        {
-            FkUser = idUser,
-            FkRole = idRole,
-            CreatedAt = DateTime.UtcNow
-        });
-
-        await _db.SaveChangesAsync(ct);
-        return true;
-    }
-
+    // Used by shared filters and the layout (ICurrentUserAccess). Keep as is.
     public Task<List<OutputPermissionSelect>> GetUserPermissionsAsync(int idUser, CancellationToken ct = default) =>
         _db.UserRoles.AsNoTracking()
             .Where(ur => ur.FkUser == idUser)
@@ -288,4 +397,35 @@ public class UserRepository : IUserRepository
                     }))
             .Distinct()
             .ToListAsync(ct);
+
+    /// <summary>Active (not cancelled) store access per user, default store first.</summary>
+    private async Task<Dictionary<int, List<OutputUserStoreAccess>>> LoadStoreAccessAsync(
+        List<int> userIds, CancellationToken ct)
+    {
+        var result = new Dictionary<int, List<OutputUserStoreAccess>>();
+        if (userIds.Count == 0) return result;
+
+        var rows = await (
+            from a in _db.UserStoreAccess.AsNoTracking()
+            join s in _db.Stores.AsNoTracking() on a.FkStore equals s.IdStore
+            where userIds.Contains(a.FkUser) && !a.Cancelled && !s.Cancelled
+            orderby a.IsDefault descending, s.StoreName
+            select new { a.FkUser, s.IdStore, s.StoreName, a.IsDefault, s.IsActive })
+            .ToListAsync(ct);
+
+        foreach (var group in rows.GroupBy(r => r.FkUser))
+        {
+            result[group.Key] = group
+                .Select(r => new OutputUserStoreAccess
+                {
+                    IdStore = r.IdStore,
+                    StoreName = r.StoreName,
+                    IsDefault = r.IsDefault,
+                    IsActive = r.IsActive
+                })
+                .ToList();
+        }
+
+        return result;
+    }
 }

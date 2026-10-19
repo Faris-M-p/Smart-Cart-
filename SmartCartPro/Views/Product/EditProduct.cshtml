@@ -1,0 +1,181 @@
+@model InProductUpdateView
+@{
+    ViewData["Title"] = "Edit product";
+    var lookup = ViewBag.Lookup as OutputProductLookup ?? new OutputProductLookup();
+    var detailsUrl = Url.Action("Details", "Product", new { id = Model.IdProduct })!;
+    var returnUrl = ViewBag.ReturnUrl as string ?? detailsUrl;
+
+    string Label(OutputProductLookupItem item) => item.IsActive ? item.Name : item.Name + " (inactive)";
+    string UnitLabel(OutputProductLookupItem item)
+        => string.IsNullOrEmpty(item.Code) ? Label(item) : Label(item) + " (" + item.Code + ")";
+    string TaxLabel(OutputProductLookupItem item)
+        => Label(item) + " (" + item.Rate.ToString("0.####") + "%" + (item.IsInclusive ? ", inclusive" : "") + ")";
+
+    var categoryItems = lookup.Categories.Select(c => new SelectListItem(Label(c), c.Id.ToString())).ToList();
+    var subCategoryItems = lookup.SubCategories.Select(s => new SelectListItem(Label(s), s.Id.ToString())).ToList();
+    var brandItems = lookup.Brands.Select(b => new SelectListItem(Label(b), b.Id.ToString())).ToList();
+    var unitItems = lookup.Units.Select(u => new SelectListItem(UnitLabel(u), u.Id.ToString())).ToList();
+    var taxItems = lookup.Taxes.Select(t => new SelectListItem(TaxLabel(t), t.Id.ToString())).ToList();
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item"><a asp-controller="Product" asp-action="Index">Products</a></li>
+        <li class="breadcrumb-item"><a href="@detailsUrl">@Model.ProductCode</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h1 class="h3 mb-0">Edit product</h1>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="@detailsUrl">View details</a>
+        <a class="btn btn-sm btn-outline-secondary"
+           asp-controller="Product" asp-action="Variants"
+           asp-route-productId="@Model.IdProduct">Variants</a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        <form id="productForm"
+              asp-controller="Product"
+              asp-action="Edit"
+              asp-route-id="@Model.IdProduct"
+              method="post"
+              data-sc-ajax-form="true"
+              data-subcategory-url="@Url.Action("SubCategoryLookup", "Catalog")"
+              novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdProduct" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <h2 class="h6 text-uppercase text-muted mb-3">Identification</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="ProductCode"></label><span class="text-danger ms-1" aria-hidden="true">*</span>
+                    <input class="form-control" asp-for="ProductCode" maxlength="50" autocomplete="off" />
+                    <span asp-validation-for="ProductCode" class="text-danger"></span>
+                    <div class="form-text">Unique internal code (max 50 characters).</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" asp-for="ProductName"></label><span class="text-danger ms-1" aria-hidden="true">*</span>
+                    <input class="form-control" asp-for="ProductName" maxlength="300" autocomplete="off" />
+                    <span asp-validation-for="ProductName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Sku"></label>
+                    <input class="form-control" asp-for="Sku" maxlength="50" autocomplete="off" data-no-enter-submit />
+                    <span asp-validation-for="Sku" class="text-danger"></span>
+                    <div class="form-text">Optional. Must be unique across products and variants.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Barcode"></label>
+                    <input class="form-control" asp-for="Barcode" maxlength="50" autocomplete="off" data-no-enter-submit />
+                    <span asp-validation-for="Barcode" class="text-danger"></span>
+                    <div class="form-text">Optional. Scan or type it; must be unique across products and variants.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" asp-for="Description"></label>
+                    <textarea class="form-control" asp-for="Description" rows="3" maxlength="2000"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+            </div>
+
+            <h2 class="h6 text-uppercase text-muted mb-3">Classification</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="FkCategory"></label>
+                    <select class="form-select" asp-for="FkCategory" asp-items="categoryItems" data-product-category>
+                        <option value="">— None —</option>
+                    </select>
+                    <span asp-validation-for="FkCategory" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="FkSubcategory"></label>
+                    <select class="form-select" asp-for="FkSubcategory" asp-items="subCategoryItems" data-product-subcategory>
+                        <option value="">— None —</option>
+                    </select>
+                    <span asp-validation-for="FkSubcategory" class="text-danger"></span>
+                    <div class="form-text">Pick a category first to choose a sub-category.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="FkBrand"></label>
+                    <select class="form-select" asp-for="FkBrand" asp-items="brandItems">
+                        <option value="">— None —</option>
+                    </select>
+                    <span asp-validation-for="FkBrand" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="FkUnit"></label>
+                    <select class="form-select" asp-for="FkUnit" asp-items="unitItems">
+                        <option value="">— None —</option>
+                    </select>
+                    <span asp-validation-for="FkUnit" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="FkTax"></label>
+                    <select class="form-select" asp-for="FkTax" asp-items="taxItems">
+                        <option value="">— None —</option>
+                    </select>
+                    <span asp-validation-for="FkTax" class="text-danger"></span>
+                </div>
+            </div>
+
+            <h2 class="h6 text-uppercase text-muted mb-3">Pricing and stock</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-md-3">
+                    <label class="form-label" asp-for="CostPrice"></label>
+                    <input class="form-control" asp-for="CostPrice" asp-format="{0:0.00}" inputmode="decimal" autocomplete="off" data-decimal="2" />
+                    <span asp-validation-for="CostPrice" class="text-danger"></span>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <label class="form-label" asp-for="SellingPrice"></label>
+                    <input class="form-control" asp-for="SellingPrice" asp-format="{0:0.00}" inputmode="decimal" autocomplete="off" data-decimal="2" />
+                    <span asp-validation-for="SellingPrice" class="text-danger"></span>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <label class="form-label" asp-for="Mrp"></label>
+                    <input class="form-control" asp-for="Mrp" asp-format="{0:0.00}" inputmode="decimal" autocomplete="off" data-decimal="2" />
+                    <span asp-validation-for="Mrp" class="text-danger"></span>
+                    <div class="form-text">Optional maximum retail price.</div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <label class="form-label" asp-for="ReorderLevel"></label>
+                    <input class="form-control" asp-for="ReorderLevel" asp-format="{0:0.###}" inputmode="decimal" autocomplete="off" />
+                    <span asp-validation-for="ReorderLevel" class="text-danger"></span>
+                    <div class="form-text">Low-stock alert threshold.</div>
+                </div>
+            </div>
+
+            <h2 class="h6 text-uppercase text-muted mb-3">Availability</h2>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label" asp-for="IsActive"></label>
+                    </div>
+                    <div class="form-text">Inactive products are hidden from sale and purchase pickers.</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="IsOnline" />
+                        <label class="form-check-label" asp-for="IsOnline"></label>
+                    </div>
+                    <div class="form-text">Show this product in the online shop.</div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary" data-sc-busy-text="Saving…">Save changes</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/product/product.js" asp-append-version="true"></script>
+}

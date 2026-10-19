@@ -1,0 +1,125 @@
+@using SmartCartPro.Helpers
+@model SmartCartPro.Models.InPurchaseUpdateView
+@{
+    var po = (SmartCartPro.Models.OutputPurchaseSelect)ViewBag.Purchase;
+    ViewData["Title"] = "Edit " + po.PoNumber;
+
+    var suppliers = ViewBag.Suppliers as IReadOnlyList<SmartCartPro.Models.OutputSupplierSelect>
+                    ?? new List<SmartCartPro.Models.OutputSupplierSelect>();
+    var supplierItems = suppliers
+        .Select(s => new SelectListItem(
+            s.IsActive ? s.SupplierName : s.SupplierName + " (inactive)",
+            s.IdSupplier.ToString())
+        {
+            Disabled = !s.IsActive && s.IdSupplier != Model.FkSupplier
+        })
+        .ToList();
+
+    var storeName = AuthClaims.GetStoreName(User) ?? po.StoreName;
+    var isDraft = po.Status == "draft";
+
+    var linesJson = System.Text.Json.JsonSerializer.Serialize(po.Lines.Select(l => new
+    {
+        fkProduct = l.FkProduct,
+        fkProductVariant = l.FkProductVariant,
+        productName = l.ProductName,
+        productCode = l.ProductCode,
+        variantName = l.VariantName,
+        quantity = l.Quantity,
+        unitCost = l.UnitCost,
+        discountAmount = l.DiscountAmount,
+        taxRate = l.TaxRate
+    }));
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
+        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@po.IdPurchase">@po.PoNumber</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+    <h1 class="h3 mb-0">Edit @po.PoNumber</h1>
+    <partial name="_PurchaseStatusBadge" model="po.Status" />
+</div>
+<p class="text-muted mb-3">
+    Goods will be received into <strong>@storeName</strong>.
+    @if (isDraft)
+    {
+        <span>This draft cannot be received until it is saved as a posted order.</span>
+    }
+    else
+    {
+        <span>Orders can be edited until the first goods receipt is posted.</span>
+    }
+</p>
+
+<div id="purchaseFormPage"
+     data-mode="edit"
+     data-status="@po.Status"
+     data-id-purchase="@po.IdPurchase"
+     data-submit-url="@Url.Action("Edit", new { id = po.IdPurchase })"
+     data-lookup-url="@Url.Action("ProductLookup")"
+     data-lines="@linesJson">
+    <form id="purchaseForm" novalidate>
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        @Html.AntiForgeryToken()
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="FkSupplier"></label>
+                        <select class="form-select" asp-for="FkSupplier" asp-items="supplierItems">
+                            <option value="0">Select supplier…</option>
+                        </select>
+                        <span asp-validation-for="FkSupplier" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="PurchaseDate"></label>
+                        <input class="form-control" asp-for="PurchaseDate" type="date" />
+                        <span asp-validation-for="PurchaseDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" asp-for="InvoiceNumber"></label>
+                        <input class="form-control" asp-for="InvoiceNumber" autocomplete="off" />
+                        <span asp-validation-for="InvoiceNumber" class="text-danger"></span>
+                        <div class="form-text">Optional. The number on the supplier's invoice or delivery note.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Notes"></label>
+                        <textarea class="form-control" asp-for="Notes" rows="2"></textarea>
+                        <span asp-validation-for="Notes" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <partial name="_PurchaseLines" />
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            @if (isDraft)
+            {
+                <button type="button" class="btn btn-primary" data-save="post" data-sc-busy-text="Saving…">
+                    Save &amp; post
+                </button>
+                <button type="button" class="btn btn-outline-primary" data-save="draft" data-sc-busy-text="Saving…">
+                    Save draft
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-primary" data-save="post" data-sc-busy-text="Saving…">
+                    Save changes
+                </button>
+            }
+            <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@po.IdPurchase">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase-form.js" asp-append-version="true"></script>
+}

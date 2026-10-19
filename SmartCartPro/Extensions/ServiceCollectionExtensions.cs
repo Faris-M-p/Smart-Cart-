@@ -101,6 +101,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+        services.AddDataProtection(); // password-reset tokens (time-limited protector)
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
         services.Configure<OtpSettings>(configuration.GetSection(OtpSettings.SectionName));
@@ -120,6 +121,9 @@ public static class ServiceCollectionExtensions
         // User management
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
+
+        // Permission / module visibility for views (injected as `Access` in _ViewImports)
+        services.AddScoped<ICurrentUserAccess, CurrentUserAccess>();
 
         // Role management
         services.AddScoped<IRoleRepository, RoleRepository>();

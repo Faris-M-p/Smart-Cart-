@@ -1,0 +1,85 @@
+@using SmartCartPro.Helpers
+@model SmartCartPro.Models.InPurchaseCreateView
+@{
+    ViewData["Title"] = "New purchase order";
+    var suppliers = ViewBag.Suppliers as IReadOnlyList<SmartCartPro.Models.OutputSupplierSelect>
+                    ?? new List<SmartCartPro.Models.OutputSupplierSelect>();
+    var supplierItems = suppliers
+        .Select(s => new SelectListItem(s.SupplierName, s.IdSupplier.ToString()))
+        .ToList();
+    var storeName = AuthClaims.GetStoreName(User) ?? "your store";
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
+        <li class="breadcrumb-item active" aria-current="page">New</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-1">New purchase order</h1>
+<p class="text-muted mb-3">Goods will be received into <strong>@storeName</strong>.</p>
+
+<div id="purchaseFormPage"
+     data-mode="create"
+     data-status="new"
+     data-submit-url="@Url.Action("Create")"
+     data-lookup-url="@Url.Action("ProductLookup")"
+     data-lines="[]">
+    <form id="purchaseForm" novalidate>
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        @Html.AntiForgeryToken()
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="FkSupplier"></label>
+                        <select class="form-select" asp-for="FkSupplier" asp-items="supplierItems">
+                            <option value="0">Select supplier…</option>
+                        </select>
+                        <span asp-validation-for="FkSupplier" class="text-danger"></span>
+                        @if (suppliers.Count == 0)
+                        {
+                            <div class="form-text text-warning">
+                                No active suppliers yet. <a asp-controller="Supplier" asp-action="Create">Add a supplier</a> first.
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="PurchaseDate"></label>
+                        <input class="form-control" asp-for="PurchaseDate" type="date" />
+                        <span asp-validation-for="PurchaseDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" asp-for="InvoiceNumber"></label>
+                        <input class="form-control" asp-for="InvoiceNumber" autocomplete="off" />
+                        <span asp-validation-for="InvoiceNumber" class="text-danger"></span>
+                        <div class="form-text">Optional. The number on the supplier's invoice or delivery note.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Notes"></label>
+                        <textarea class="form-control" asp-for="Notes" rows="2"></textarea>
+                        <span asp-validation-for="Notes" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <partial name="_PurchaseLines" />
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="button" class="btn btn-primary" data-save="post" data-sc-busy-text="Saving…">
+                Create purchase order
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-save="draft" data-sc-busy-text="Saving…">
+                Save as draft
+            </button>
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase-form.js" asp-append-version="true"></script>
+}

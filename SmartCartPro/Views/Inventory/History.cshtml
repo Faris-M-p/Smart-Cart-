@@ -1,0 +1,248 @@
+@using SmartCartPro.Helpers
+@model SmartCartPro.Models.OutputStockMovementList
+@{
+    ViewData["Title"] = "Movement history";
+    var canAdjust = await Access.CanAsync("inventory.adjust");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputStockMovementList();
+    var storeName = AuthClaims.GetStoreName(User);
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+    var fromText = f.From?.ToString("yyyy-MM-dd", invariant);
+    var toText = f.To?.ToString("yyyy-MM-dd", invariant);
+    var currentType = string.IsNullOrWhiteSpace(f.MovementType) ? "" : f.MovementType;
+    var hasFilters = f.FkProduct.HasValue || currentType != "" || f.From.HasValue || f.To.HasValue;
+
+    var typeOptions = new (string Value, string Label)[]
+    {
+        ("purchase", "Purchase received"),
+        ("sale", "Sale"),
+        ("adjustment", "Adjustment"),
+        ("transfer_in", "Transfer in"),
+        ("transfer_out", "Transfer out"),
+        ("return_in", "Customer return"),
+        ("return_out", "Supplier return"),
+        ("opening", "Opening stock")
+    };
+
+    string TypeLabel(string type)
+    {
+        foreach (var option in typeOptions)
+        {
+            if (option.Value == type) return option.Label;
+        }
+        return type;
+    }
+
+    string TypeClass(string type)
+    {
+        switch (type)
+        {
+            case "purchase":
+            case "return_in":
+            case "opening":
+                return "text-bg-success";
+            case "sale":
+            case "return_out":
+                return "text-bg-primary";
+            case "adjustment":
+                return "text-bg-warning";
+            default:
+                return "text-bg-info";
+        }
+    }
+
+    string SignedQty(decimal value) => (value > 0 ? "+" : "") + value.ToString("0.###");
+    string Iso(DateTime value) => value.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", invariant);
+
+    string Reference(SmartCartPro.Models.OutputStockMovementItem item)
+    {
+        if (string.IsNullOrWhiteSpace(item.ReferenceType)) return "—";
+        var name = item.ReferenceType.Replace('_', ' ');
+        name = char.ToUpperInvariant(name[0]) + name.Substring(1);
+        return item.ReferenceId.HasValue ? name + " #" + item.ReferenceId.Value : name;
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "History",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["FkProduct"] = f.FkProduct,
+            ["MovementType"] = currentType == "" ? null : currentType,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["TzOffsetMinutes"] = f.TzOffsetMinutes
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Stock">Inventory</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Movement history</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Movement history</h1>
+        <p class="text-muted mb-0">Every stock change@(string.IsNullOrWhiteSpace(storeName) ? "" : " at " + storeName), newest first</p>
+    </div>
+</div>
+
+@await Html.PartialAsync("_InventoryTabs", "history")
+
+<div id="historyPage" data-inv-list>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="History" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-4">
+                    <label class="form-label" for="historyProduct">Product</label>
+                    <div class="input-group">
+                        <input id="historyProduct" type="search" class="form-control"
+                               value="@(Model.FilterProductName ?? (f.FkProduct.HasValue ? "Product #" + f.FkProduct.Value : null))"
+                               placeholder="All products. Type to search"
+                               autocomplete="off"
+                               data-picker-url="@Url.Action("ProductPicker", "Inventory")" />
+                        <button type="button" class="btn btn-outline-secondary" data-clear-product
+                                title="Clear product filter" aria-label="Clear product filter">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" id="historyProductId" name="FkProduct" value="@f.FkProduct" />
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label class="form-label" for="historyType">Movement type</label>
+                    <select id="historyType" name="MovementType" class="form-select" data-sc-auto-submit>
+                        @if (currentType == "")
+                        { <option value="" selected>All types</option> }
+                        else
+                        { <option value="">All types</option> }
+                        @foreach (var option in typeOptions)
+                        {
+                            if (currentType == option.Value)
+                            {
+                                <option value="@option.Value" selected>@option.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-sm-3 col-lg-2">
+                    <label class="form-label" for="historyFrom">From</label>
+                    <input id="historyFrom" type="date" name="From" value="@fromText" class="form-control" />
+                </div>
+                <div class="col-6 col-sm-3 col-lg-2">
+                    <label class="form-label" for="historyTo">To</label>
+                    <input id="historyTo" type="date" name="To" value="@toText" class="form-control" />
+                </div>
+                <div class="col-6 col-lg-1">
+                    <label class="form-label" for="historyPageSize">Rows</label>
+                    <select id="historyPageSize" name="PageSize" class="form-select" data-sc-auto-submit>
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (f.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-lg-1">
+                    <input type="hidden" id="tzOffset" name="TzOffsetMinutes" value="@f.TzOffsetMinutes" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    @if (Model.TotalCount > 0)
+                    {
+                        <p class="text-muted mb-3">There is nothing on this page.</p>
+                        <a class="btn btn-outline-primary" asp-action="History">Back to the first page</a>
+                    }
+                    else if (hasFilters)
+                    {
+                        <p class="text-muted mb-3">No stock movements match your filters.</p>
+                        <a class="btn btn-outline-primary" asp-action="History">Clear filters</a>
+                    }
+                    else
+                    {
+                        <i class="bi bi-clock-history display-5 text-muted d-block mb-3" aria-hidden="true"></i>
+                        <p class="text-muted mb-3">No stock movements have been recorded for this store yet.</p>
+                        @if (canAdjust)
+                        {
+                            <a class="btn btn-primary" asp-action="Opening">
+                                <i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Record opening stock
+                            </a>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>Type</th>
+                                <th>Product</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="d-none d-md-table-cell">Reference</th>
+                                <th class="d-none d-lg-table-cell">Notes</th>
+                                <th class="d-none d-lg-table-cell">By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="text-nowrap">
+                                    <time datetime="@Iso(item.CreatedAt)" data-sc-local-time>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm", invariant) UTC</time>
+                                </td>
+                                <td><span class="badge @TypeClass(item.MovementType)">@TypeLabel(item.MovementType)</span></td>
+                                <td>
+                                    <div class="fw-medium">@item.ProductName</div>
+                                    <div class="small text-muted">
+                                        @(string.IsNullOrWhiteSpace(item.ProductCode) ? "—" : item.ProductCode)
+                                        @if (!string.IsNullOrWhiteSpace(item.VariantName))
+                                        {
+                                            <span class="badge text-bg-light border ms-1">@item.VariantName</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-end text-nowrap fw-semibold @(item.SignedQuantity < 0 ? "text-danger" : "text-success")">
+                                    @SignedQty(item.SignedQuantity)
+                                </td>
+                                <td class="d-none d-md-table-cell text-muted small">@Reference(item)</td>
+                                <td class="d-none d-lg-table-cell text-muted small">@(string.IsNullOrWhiteSpace(item.Notes) ? "—" : item.Notes)</td>
+                                <td class="d-none d-lg-table-cell text-muted small">@(string.IsNullOrWhiteSpace(item.CreatedByName) ? "—" : item.CreatedByName)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/inventory/inventory-common.js" asp-append-version="true"></script>
+    <script src="~/js/inventory/history.js" asp-append-version="true"></script>
+}

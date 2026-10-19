@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -8,43 +7,43 @@ using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
-/// <summary>Supplier master CRUD.</summary>
+/// <summary>Supplier master: list, create, edit and activate / deactivate (company-wide, not store-scoped).</summary>
 [Authorize]
 [ModuleAccess("PURCHASES")]
 public class SupplierController : Controller
 {
     private readonly ISupplierService _svc;
-    private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
     public SupplierController(ISupplierService svc) => _svc = svc;
 
     /// <summary>
-    /// Lists vendors used when raising purchase orders and receiving stock into the store.
-    /// Staff with purchasing.view open this from the Purchases supplier master screen.
+    /// Lists vendors used when raising purchase orders and receiving stock, with search, status filter and paging.
+    /// Staff with purchases.view open this from the Suppliers menu entry.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.view")]
+    [RequirePermission("purchases.view")]
     public async Task<IActionResult> Index([FromQuery] InputSupplierList input, CancellationToken ct)
-    {
-        input.Page = Math.Max(1, input.Page);
-        return View(await _svc.ListSuppliersAsync(input, ct));
-    }
+        => View(await _svc.ListSuppliersAsync(input, ct));
 
     /// <summary>
     /// Shows the form to onboard a supplier with contact, address, and tax details.
-    /// Buyers with purchasing.manage use it before creating POs or GRN receipts.
+    /// Buyers with purchases.manage use it before creating purchase orders.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.manage")]
-    public IActionResult Create() => View(new InSupplierCreateView { IsActive = true });
+    [RequirePermission("purchases.manage")]
+    public IActionResult Create(string? returnUrl)
+    {
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View(new InSupplierCreateView { IsActive = true });
+    }
 
     /// <summary>
-    /// Saves a new supplier available on purchase documents and payable tracking.
-    /// Buyers submit the create supplier form during vendor setup for the store.
+    /// Saves a new supplier available on purchase documents.
+    /// Buyers submit the create supplier form during vendor setup.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    [RequirePermission("purchasing.manage")]
-    public async Task<IActionResult> Create(InSupplierCreateView model, CancellationToken ct)
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Create(InSupplierCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -64,32 +63,36 @@ public class SupplierController : Controller
             IsActive = model.IsActive
         };
         var result = await _svc.CreateSupplierAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to create supplier.", result.ResponseMsg ?? "Unable to create supplier.");
 
-        return CommonHelpers.SuccessResponse("Supplier created.", new { id = result.IdSupplier });
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Index))!;
+        return CommonHelpers.SuccessResponse(
+            "Supplier created successfully.",
+            new { id = result.IdSupplier, redirectUrl = listUrl });
     }
 
     /// <summary>
-    /// Loads one supplier for editing contacts, remit-to address, or tax registration.
-    /// Buyers with purchasing.manage navigate here from the supplier list for corrections.
+    /// Loads one supplier for editing contacts, address, or tax registration.
+    /// Buyers with purchases.manage navigate here from the supplier list for corrections.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.manage")]
-    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
-        var item = await _svc.GetSupplierAsync(new InputSupplierSelect { IdSupplier = id }, ct);
+        var select = new InputSupplierSelect { IdSupplier = id };
+        var item = await _svc.GetSupplierAsync(select, ct);
         if (item is null) return NotFound();
+
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
         return View(item.ToUpdateView());
     }
 
     /// <summary>
-    /// Persists supplier updates reflected on open POs and receiving workflows.
+    /// Persists supplier updates shown on purchase orders and print-outs.
     /// Buyers submit the edit supplier form after revising vendor master data.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    [RequirePermission("purchasing.manage")]
-    public async Task<IActionResult> Edit(int id, InSupplierUpdateView model, CancellationToken ct)
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Edit(int id, InSupplierUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdSupplier = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -111,17 +114,44 @@ public class SupplierController : Controller
             IsActive = model.IsActive
         };
         var result = await _svc.UpdateSupplierAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to update supplier.", result.ResponseMsg ?? "Unable to update supplier.");
 
-        return CommonHelpers.SuccessResponse("Supplier updated.", new { id = result.IdSupplier });
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Index))!;
+        return CommonHelpers.SuccessResponse(
+            "Supplier updated successfully.",
+            new { id = result.IdSupplier, redirectUrl = listUrl });
     }
 
     /// <summary>
-    /// Returns active suppliers as JSON for purchase order and GRN vendor pickers.
-    /// Purchasing screens call this via AJAX when selecting a vendor on a document.
+    /// Activates or deactivates a supplier from the list without opening the edit form.
+    /// Inactive suppliers stay on existing documents but cannot be chosen on new purchase orders.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken ct)
+    {
+        var input = new InputSupplierSetActive { IdSupplier = id, IsActive = isActive };
+        var result = await _svc.SetSupplierActiveAsync(input, ct);
+
+        return CommonHelpers.SuccessResponse(
+            isActive ? "Supplier activated." : "Supplier deactivated.",
+            new { id = result.IdSupplier, isActive = result.IsActive });
+    }
+
+    /// <summary>
+    /// Returns active suppliers as JSON for vendor pickers.
+    /// Purchasing screens call this via AJAX when a vendor must be selected.
     /// </summary>
     [HttpGet]
+    [RequirePermission("purchases.view")]
     public async Task<IActionResult> Lookup(CancellationToken ct)
         => Json(await _svc.GetSupplierLookupAsync(ct));
+
+    private string? SafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+            return null;
+        if (!Url.IsLocalUrl(returnUrl))
+            return null;
+        return returnUrl;
+    }
 }

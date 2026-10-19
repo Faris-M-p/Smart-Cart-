@@ -1,0 +1,278 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputPurchaseSelect
+@{
+    ViewData["Title"] = Model.PoNumber;
+    var canManage = await Access.CanAsync("purchases.manage");
+    var notice = ViewBag.Notice as string;
+    var isDraft = Model.Status == "draft";
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+    string Utc(DateTime value) =>
+        DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.PoNumber</li>
+    </ol>
+</nav>
+
+<div id="purchaseDetailsPage">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="h3 mb-0">@Model.PoNumber</h1>
+                <partial name="_PurchaseStatusBadge" model="Model.Status" />
+            </div>
+            <p class="text-muted mb-0">
+                @Model.SupplierName · @Model.PurchaseDate.ToString("dd MMM yyyy") · @Model.StoreName
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Index">
+                <i class="bi bi-arrow-left me-1"></i>Back to list
+            </a>
+            <a class="btn btn-outline-secondary" asp-action="Print" asp-route-id="@Model.IdPurchase" target="_blank" rel="noopener">
+                <i class="bi bi-printer me-1"></i>Print
+            </a>
+            @if (canManage && Model.CanEdit)
+            {
+                <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.IdPurchase">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                </a>
+            }
+            @if (canManage && Model.CanReceive)
+            {
+                <a class="btn btn-success" asp-action="Receive" asp-route-id="@Model.IdPurchase">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Receive goods
+                </a>
+            }
+            @if (canManage && Model.CanCancel)
+            {
+                <a class="btn btn-outline-danger" asp-action="Cancel" asp-route-id="@Model.IdPurchase">
+                    <i class="bi bi-x-circle me-1"></i>Cancel order
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(notice))
+    {
+        <div class="alert alert-warning" role="alert">@notice</div>
+    }
+
+    @if (Model.Cancelled)
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Cancelled</strong>
+            @if (Model.CancelledOn is not null)
+            {
+                <span> on <time data-sc-local-datetime datetime="@Utc(Model.CancelledOn.Value)">@Model.CancelledOn.Value.ToString("dd MMM yyyy HH:mm") UTC</time></span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CancelledReason))
+            {
+                <div class="mt-1">Reason: @Model.CancelledReason</div>
+            }
+            @if (Model.TotalReceivedQty > 0)
+            {
+                <div class="mt-1">Goods that were already received stay in stock.</div>
+            }
+        </div>
+    }
+    else if (isDraft)
+    {
+        <div class="alert alert-info" role="alert">
+            This purchase order is a draft. @(canManage ? "Open Edit and choose Save & post" : "Ask a buyer to post it") before goods can be received.
+        </div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Supplier</h2>
+                    <div class="fw-semibold">@Model.SupplierName</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.SupplierCode))
+                    {
+                        <div class="text-muted small">Code @Model.SupplierCode</div>
+                    }
+                    <dl class="row small mb-0 mt-2">
+                        @if (!string.IsNullOrWhiteSpace(Model.SupplierPhone))
+                        {
+                            <dt class="col-4 fw-normal text-muted">Phone</dt>
+                            <dd class="col-8 mb-1">@Model.SupplierPhone</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.SupplierEmail))
+                        {
+                            <dt class="col-4 fw-normal text-muted">Email</dt>
+                            <dd class="col-8 mb-1 text-break">@Model.SupplierEmail</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.SupplierTaxNumber))
+                        {
+                            <dt class="col-4 fw-normal text-muted">Tax no.</dt>
+                            <dd class="col-8 mb-1">@Model.SupplierTaxNumber</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.SupplierAddress))
+                        {
+                            <dt class="col-4 fw-normal text-muted">Address</dt>
+                            <dd class="col-8 mb-1">@Model.SupplierAddress</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Order</h2>
+                    <dl class="row small mb-0">
+                        <dt class="col-5 fw-normal text-muted">Purchase date</dt>
+                        <dd class="col-7 mb-1">@Model.PurchaseDate.ToString("dd MMM yyyy")</dd>
+                        <dt class="col-5 fw-normal text-muted">Invoice #</dt>
+                        <dd class="col-7 mb-1">@(string.IsNullOrWhiteSpace(Model.InvoiceNumber) ? "—" : Model.InvoiceNumber)</dd>
+                        <dt class="col-5 fw-normal text-muted">Store</dt>
+                        <dd class="col-7 mb-1">@Model.StoreName</dd>
+                        <dt class="col-5 fw-normal text-muted">Created</dt>
+                        <dd class="col-7 mb-1"><time data-sc-local-datetime datetime="@Utc(Model.CreatedAt)">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm") UTC</time></dd>
+                        @if (Model.UpdatedAt is not null)
+                        {
+                            <dt class="col-5 fw-normal text-muted">Updated</dt>
+                            <dd class="col-7 mb-1"><time data-sc-local-datetime datetime="@Utc(Model.UpdatedAt.Value)">@Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm") UTC</time></dd>
+                        }
+                        <dt class="col-5 fw-normal text-muted">Notes</dt>
+                        <dd class="col-7 mb-0 text-break">@(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Totals</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-6 fw-normal text-muted">Subtotal</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.SubTotal)">@Money(Model.SubTotal)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Discount</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Tax</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></dd>
+                        <dt class="col-6 border-top pt-2">Total</dt>
+                        <dd class="col-6 text-end border-top pt-2 mb-1 fw-semibold fs-5"><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted small">Received</dt>
+                        <dd class="col-6 text-end small mb-0">@Qty(Model.TotalReceivedQty) of @Qty(Model.TotalOrderedQty)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent">
+            <h2 class="h6 mb-0">Items <span class="text-muted fw-normal">(@Model.Lines.Count)</span></h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 2.5rem;">#</th>
+                        <th>Product</th>
+                        <th class="text-end">Ordered</th>
+                        <th class="text-end">Received</th>
+                        <th class="text-end">Pending</th>
+                        <th class="text-end">Unit cost</th>
+                        <th class="text-end">Discount</th>
+                        <th class="text-end">Tax</th>
+                        <th class="text-end">Line total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @{ var n = 0; }
+                @foreach (var line in Model.Lines)
+                {
+                    n++;
+                    <tr>
+                        <td class="text-muted">@n</td>
+                        <td>
+                            <div class="fw-medium">@line.ProductName</div>
+                            <div class="small text-muted">
+                                @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                {
+                                    <span>@line.VariantName</span>
+                                    @if (!string.IsNullOrWhiteSpace(line.ProductCode)) { <span> · </span> }
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.ProductCode))
+                                {
+                                    <span>@line.ProductCode</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="text-end">@Qty(line.Quantity)</td>
+                        <td class="text-end">
+                            <span class="@(line.ReceivedQty >= line.Quantity ? "text-success fw-medium" : null)">@Qty(line.ReceivedQty)</span>
+                        </td>
+                        <td class="text-end">
+                            <span class="@(Model.Cancelled ? "text-muted" : null)">@(Model.Cancelled ? "—" : Qty(line.PendingQty))</span>
+                        </td>
+                        <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.UnitCost)">@Money(line.UnitCost)</span></td>
+                        <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.DiscountAmount)">@Money(line.DiscountAmount)</span></td>
+                        <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.TaxAmount)">@Money(line.TaxAmount)</span></td>
+                        <td class="text-end text-nowrap fw-medium"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent">
+            <h2 class="h6 mb-0">Goods receipts <span class="text-muted fw-normal">(@Model.Receipts.Count)</span></h2>
+        </div>
+        @if (Model.Receipts.Count == 0)
+        {
+            <div class="card-body text-muted">No goods have been received for this purchase order yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Received at</th>
+                            <th>Product</th>
+                            <th class="text-end">Quantity</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var receipt in Model.Receipts)
+                    {
+                        <tr>
+                            <td class="text-nowrap">
+                                <time data-sc-local-datetime datetime="@Utc(receipt.ReceivedAt)">@receipt.ReceivedAt.ToString("dd MMM yyyy HH:mm") UTC</time>
+                            </td>
+                            <td>
+                                @receipt.ProductName
+                                @if (!string.IsNullOrWhiteSpace(receipt.VariantName))
+                                {
+                                    <span class="text-muted"> · @receipt.VariantName</span>
+                                }
+                            </td>
+                            <td class="text-end">@Qty(receipt.Quantity)</td>
+                            <td class="text-break">@((receipt.Notes ?? string.Empty).Replace(" | ", " · "))</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase.js" asp-append-version="true"></script>
+}

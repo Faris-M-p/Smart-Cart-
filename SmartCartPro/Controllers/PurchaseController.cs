@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -8,14 +7,17 @@ using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
-/// <summary>Purchase order management: create, edit, receive (GRN), cancel.</summary>
+/// <summary>Purchase orders of the signed-in user's store: list, create, edit, print, receive goods (GRN) and cancel.</summary>
 [Authorize]
 [ModuleAccess("PURCHASES")]
 public class PurchaseController : Controller
 {
     private readonly IPurchaseService _svc;
     private readonly ISupplierService _supplierSvc;
+
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
+
+    /// <summary>The user's store from the sign-in claims. 0 for platform accounts, which have no store.</summary>
     private int StoreId => AuthClaims.GetFkStore(User) ?? 0;
 
     public PurchaseController(IPurchaseService svc, ISupplierService supplierSvc)
@@ -29,15 +31,17 @@ public class PurchaseController : Controller
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Paginated purchase order list for the current store.
-    /// Used from the purchases index page and filters.
+    /// Paged purchase order list of the current store with status, supplier and date filters.
+    /// Staff with purchases.view open this from the Purchases menu entry.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.view")]
+    [RequirePermission("purchases.view")]
     public async Task<IActionResult> Index([FromQuery] InputPurchaseList input, CancellationToken ct)
     {
-        if (input.FkStore is null or 0) input.FkStore = StoreId;
-        input.Page = Math.Max(1, input.Page);
+        if (StoreId <= 0) return StoreRequiredView("Purchases");
+
+        input.FkStore = StoreId;
+        ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(true, ct);
         return View(await _svc.ListPurchasesAsync(input, ct));
     }
 
@@ -46,183 +50,188 @@ public class PurchaseController : Controller
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Shows the form to create a new purchase order.
-    /// Used when staff start a new PO from purchasing.
+    /// Shows the new purchase order form with header fields and the product line grid.
+    /// Buyers with purchases.manage start a purchase order here.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.manage")]
+    [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Create(CancellationToken ct)
     {
+        if (StoreId <= 0) return StoreRequiredView("New purchase order");
+
         ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-        return View(new InPurchaseCreateView { FkStore = StoreId, PurchaseDate = DateOnly.FromDateTime(DateTime.Today) });
+        return View(new InPurchaseCreateView());
     }
 
     /// <summary>
-    /// Persists a new purchase order with line items.
-    /// Used on submit of the create PO form.
+    /// Saves a new purchase order sent as JSON; tax and totals are recomputed on the server.
+    /// The page script posts the document here and then opens the saved order.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    [RequirePermission("purchasing.manage")]
-    public async Task<IActionResult> Create(InPurchaseCreateView model, CancellationToken ct)
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Create([FromBody] InPurchaseCreateView model, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        if (!model.Lines.Any())
-            throw new ValidationException("At least one line item is required.", "Purchase must have at least one line.");
-
         var input = new InputPurchaseCreate
         {
-            FkStore = model.FkStore,
+            FkStore = StoreId,
             FkSupplier = model.FkSupplier,
             PurchaseDate = model.PurchaseDate,
             InvoiceNumber = model.InvoiceNumber,
             Notes = model.Notes,
+            SaveAsDraft = model.SaveAsDraft,
             CreatedBy = ActorId,
             Lines = model.Lines.Select(l => new InputPurchaseLine
             {
                 FkProduct = l.FkProduct,
                 FkProductVariant = l.FkProductVariant,
                 Quantity = l.Quantity,
-                UnitCost = l.UnitCost
+                UnitCost = l.UnitCost,
+                DiscountAmount = l.DiscountAmount
             }).ToList()
         };
         var result = await _svc.CreatePurchaseAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to create purchase order.", result.ResponseMsg ?? "Unable to create purchase order.");
 
-        return CommonHelpers.SuccessResponse("Purchase order created.", new { id = result.IdPurchase });
+        return CommonHelpers.SuccessResponse(
+            model.SaveAsDraft ? "Draft purchase order saved." : "Purchase order created.",
+            new { id = result.IdPurchase, redirectUrl = Url.Action(nameof(Details), new { id = result.IdPurchase }) });
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // DETAILS / EDIT
+    // DETAILS / PRINT
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Read-only purchase order detail including lines and status.
-    /// Used when opening a PO from the list or after save.
+    /// Shows one purchase order with lines, received quantities, receipts and the actions still allowed.
+    /// Opened from the list; guard redirects from edit, receive and cancel also land here with a notice.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.view")]
-    public async Task<IActionResult> Details(int id, CancellationToken ct)
+    [RequirePermission("purchases.view")]
+    public async Task<IActionResult> Details(int id, string? notice, CancellationToken ct)
     {
-        var item = await _svc.GetPurchaseAsync(new InputPurchaseSelect { IdPurchase = id }, ct);
+        if (StoreId <= 0) return StoreRequiredView("Purchase order");
+
+        var select = new InputPurchaseSelect { IdPurchase = id, FkStore = StoreId };
+        var item = await _svc.GetPurchaseAsync(select, ct);
         if (item is null) return NotFound();
+
+        ViewBag.Notice = NoticeText(notice);
         return View(item);
     }
 
     /// <summary>
-    /// Loads the edit form for a posted purchase order.
-    /// Used when correcting PO header or lines before receipt.
+    /// Print-friendly purchase order sheet that opens the browser print dialog.
+    /// Opened in a new tab from the purchase order details page.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.manage")]
+    [RequirePermission("purchases.view")]
+    public async Task<IActionResult> Print(int id, CancellationToken ct)
+    {
+        if (StoreId <= 0) return StoreRequiredView("Purchase order");
+
+        var select = new InputPurchaseSelect { IdPurchase = id, FkStore = StoreId };
+        var item = await _svc.GetPurchaseAsync(select, ct);
+        if (item is null) return NotFound();
+
+        return View(item);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // EDIT
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Opens a draft or posted purchase order without receipts for editing; anything else goes back to the details page.
+    /// Buyers with purchases.manage reach it from the details page.
+    /// </summary>
+    [HttpGet]
+    [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
-        var item = await _svc.GetPurchaseAsync(new InputPurchaseSelect { IdPurchase = id }, ct);
-        if (item is null) return NotFound();
-        if (item.Status != "posted")
-        {
-            TempData["ErrorMessage"] = "Only posted purchases can be edited.";
-            return RedirectToAction(nameof(Details), new { id });
-        }
+        if (StoreId <= 0) return StoreRequiredView("Edit purchase order");
 
-        ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-        var view = new InPurchaseUpdateView
-        {
-            IdPurchase = item.IdPurchase,
-            FkStore = item.FkStore,
-            FkSupplier = item.FkSupplier,
-            PurchaseDate = item.PurchaseDate,
-            InvoiceNumber = item.InvoiceNumber,
-            Notes = item.Notes,
-            Lines = item.Lines.Select(l => new InPurchaseLineView
-            {
-                FkProduct = l.FkProduct,
-                FkProductVariant = l.FkProductVariant,
-                Quantity = l.Quantity,
-                UnitCost = l.UnitCost
-            }).ToList()
-        };
-        return View(view);
+        var select = new InputPurchaseSelect { IdPurchase = id, FkStore = StoreId };
+        var item = await _svc.GetPurchaseAsync(select, ct);
+        if (item is null) return NotFound();
+        if (!item.CanEdit)
+            return RedirectToAction(nameof(Details), new { id, notice = "edit-locked" });
+
+        ViewBag.Purchase = item;
+        ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(true, ct);
+        return View(item.ToUpdateView());
     }
 
     /// <summary>
-    /// Saves changes to an editable posted purchase order.
-    /// Used on submit of the edit PO form.
+    /// Saves changes to a draft or posted purchase order sent as JSON; totals are recomputed on the server.
+    /// The page script posts the document here and then returns to the details page.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    [RequirePermission("purchasing.manage")]
-    public async Task<IActionResult> Edit(int id, InPurchaseUpdateView model, CancellationToken ct)
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Edit(int id, [FromBody] InPurchaseUpdateView model, CancellationToken ct)
     {
         model.IdPurchase = id;
+        ModelState.Remove(nameof(InPurchaseUpdateView.IdPurchase));
         CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputPurchaseUpdate
         {
             IdPurchase = model.IdPurchase,
-            FkStore = model.FkStore,
+            FkStore = StoreId,
             FkSupplier = model.FkSupplier,
             PurchaseDate = model.PurchaseDate,
             InvoiceNumber = model.InvoiceNumber,
             Notes = model.Notes,
+            SaveAsDraft = model.SaveAsDraft,
             Lines = model.Lines.Select(l => new InputPurchaseLine
             {
                 FkProduct = l.FkProduct,
                 FkProductVariant = l.FkProductVariant,
                 Quantity = l.Quantity,
-                UnitCost = l.UnitCost
+                UnitCost = l.UnitCost,
+                DiscountAmount = l.DiscountAmount
             }).ToList()
         };
-
         var result = await _svc.UpdatePurchaseAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to update purchase order.", result.ResponseMsg ?? "Unable to update purchase order.");
 
-        return CommonHelpers.SuccessResponse("Purchase order updated.", new { id });
+        return CommonHelpers.SuccessResponse(
+            "Purchase order updated.",
+            new { id = result.IdPurchase, redirectUrl = Url.Action(nameof(Details), new { id = result.IdPurchase }) });
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // GOODS RECEIPT (GRN)
+    // RECEIVE (GRN)
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Shows goods receipt (GRN) entry for a purchase order.
-    /// Used when recording inbound stock against a PO.
+    /// Shows the goods receipt form with ordered, already received and pending quantities per line.
+    /// Receivers with purchases.manage open it from the details page of a posted order.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.manage")]
+    [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Receive(int id, CancellationToken ct)
     {
-        var po = await _svc.GetPurchaseAsync(new InputPurchaseSelect { IdPurchase = id }, ct);
-        if (po is null) return NotFound();
+        if (StoreId <= 0) return StoreRequiredView("Receive goods");
 
-        var model = new InGoodsReceiptView
-        {
-            IdPurchase = po.IdPurchase,
-            ReceiptDate = DateOnly.FromDateTime(DateTime.Today),
-            Lines = po.Lines.Select(l => new InGrnLineView
-            {
-                IdPurchaseDetail = l.IdPurchaseDetail,
-                FkProduct = l.FkProduct,
-                FkProductVariant = l.FkProductVariant,
-                ProductName = l.ProductName,
-                OrderedQty = l.Quantity,
-                AlreadyReceivedQty = 0,
-                ReceiveQty = l.Quantity
-            }).ToList()
-        };
-        return View(model);
+        var select = new InputPurchaseSelect { IdPurchase = id, FkStore = StoreId };
+        var item = await _svc.GetPurchaseAsync(select, ct);
+        if (item is null) return NotFound();
+        if (!item.CanReceive)
+            return RedirectToAction(nameof(Details), new { id, notice = "receive-locked" });
+
+        return View(item);
     }
 
     /// <summary>
-    /// Posts a GRN and updates PO receipt status and inventory.
-    /// Used on submit of the receive-goods form.
+    /// Posts a goods receipt sent as JSON; quantities above what is still pending are rejected.
+    /// The page script posts the receipt here and then returns to the details page.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    [RequirePermission("purchasing.manage")]
-    public async Task<IActionResult> Receive(int id, InGoodsReceiptView model, CancellationToken ct)
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Receive(int id, [FromBody] InGoodsReceiptView model, CancellationToken ct)
     {
         model.IdPurchase = id;
+        ModelState.Remove(nameof(InGoodsReceiptView.IdPurchase));
         CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputGoodsReceipt
@@ -232,24 +241,24 @@ public class PurchaseController : Controller
             ReceiptDate = model.ReceiptDate,
             Notes = model.Notes,
             CreatedBy = ActorId,
-            Lines = model.Lines
-                .Where(l => l.ReceiveQty > 0)
-                .Select(l => new InputGrnLine
-                {
-                    IdPurchaseDetail = l.IdPurchaseDetail,
-                    FkProduct = l.FkProduct,
-                    FkProductVariant = l.FkProductVariant,
-                    ReceiveQty = l.ReceiveQty
-                }).ToList()
+            Lines = model.Lines.Select(l => new InputGrnLine
+            {
+                IdPurchaseDetail = l.IdPurchaseDetail,
+                ReceiveQty = l.ReceiveQty
+            }).ToList()
         };
-
         var result = await _svc.ReceiveGoodsAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to receive goods.", result.ResponseMsg ?? "Unable to receive goods.");
 
+        var statusText = result.NewPurchaseStatus.Replace('_', ' ');
         return CommonHelpers.SuccessResponse(
-            $"GRN {result.GrnNumber} recorded. PO status: {result.NewPurchaseStatus}",
-            new { id, grnNumber = result.GrnNumber, purchaseStatus = result.NewPurchaseStatus });
+            $"Goods receipt {result.GrnNumber} recorded. The purchase order is now {statusText}.",
+            new
+            {
+                id,
+                grnNumber = result.GrnNumber,
+                purchaseStatus = result.NewPurchaseStatus,
+                redirectUrl = Url.Action(nameof(Details), new { id })
+            });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -257,36 +266,83 @@ public class PurchaseController : Controller
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Shows cancellation reason form for a purchase order.
-    /// Used before voiding an open or posted PO.
+    /// Shows the cancellation form that asks for a reason before a purchase order is cancelled.
+    /// Managers with purchases.manage open it from the details page.
     /// </summary>
     [HttpGet]
-    [RequirePermission("purchasing.manage")]
-    public IActionResult Cancel(int id)
-        => View(new InPurchaseCancelView { IdPurchase = id });
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Cancel(int id, CancellationToken ct)
+    {
+        if (StoreId <= 0) return StoreRequiredView("Cancel purchase order");
+
+        var select = new InputPurchaseSelect { IdPurchase = id, FkStore = StoreId };
+        var item = await _svc.GetPurchaseAsync(select, ct);
+        if (item is null) return NotFound();
+        if (!item.CanCancel)
+            return RedirectToAction(nameof(Details), new { id, notice = "cancel-locked" });
+
+        return View(item);
+    }
 
     /// <summary>
-    /// Cancels a purchase order with a documented reason.
-    /// Used on submit of the cancel PO form.
+    /// Cancels a purchase order that is not fully received and records the reason.
+    /// Already received goods stay in stock; only the pending quantities are dropped.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
-    [RequirePermission("purchasing.manage")]
+    [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Cancel(int id, InPurchaseCancelView model, CancellationToken ct)
     {
         model.IdPurchase = id;
+        ModelState.Remove(nameof(InPurchaseCancelView.IdPurchase));
         CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputPurchaseCancel
         {
             IdPurchase = model.IdPurchase,
+            FkStore = StoreId,
             Reason = model.Reason,
             CancelledBy = ActorId
         };
-        var result = await _svc.CancelPurchaseAsync(input, ct);
+        await _svc.CancelPurchaseAsync(input, ct);
 
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to cancel purchase order.", result.ResponseMsg ?? "Unable to cancel purchase order.");
-
-        return CommonHelpers.SuccessResponse("Purchase order cancelled.", new { id });
+        return CommonHelpers.SuccessResponse(
+            "Purchase order cancelled.",
+            new { id, redirectUrl = Url.Action(nameof(Details), new { id }) });
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PRODUCT PICKER
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Searches active products and variants by name, code, SKU or barcode for the purchase line picker.
+    /// The purchase form calls this via AJAX while the buyer types.
+    /// </summary>
+    [HttpGet]
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> ProductLookup(string? term, CancellationToken ct)
+    {
+        var input = new InputPurchaseProductList { Search = term };
+        var items = await _svc.ListProductsAsync(input, ct);
+
+        return CommonHelpers.SuccessResponse("Products loaded.", items);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // helpers
+    // ═══════════════════════════════════════════════════════════════
+
+    private IActionResult StoreRequiredView(string title)
+    {
+        ViewData["Title"] = title;
+        return View("StoreRequired");
+    }
+
+    private static string? NoticeText(string? code) => code switch
+    {
+        "edit-locked" => "This purchase order can no longer be edited. Only drafts and posted orders without receipts can be changed.",
+        "receive-locked" => "Goods cannot be received for this purchase order right now. It must be posted and still have pending quantities.",
+        "cancel-locked" => "This purchase order cannot be cancelled because it is already cancelled or fully received.",
+        _ => null
+    };
 }

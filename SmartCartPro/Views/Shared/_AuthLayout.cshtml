@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#2563eb" />
     <partial name="_MetisAssets" />
 </head>
-<body data-page="login">
+<body data-page="login" data-sc-login-url="@Url.Action("Login", "Auth")">
 <div class="auth-layout">
     <main class="auth-main">
         <div class="auth-topbar">
@@ -42,6 +42,8 @@
         </div>
     </aside>
 </div>
+<script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+<script src="~/js/sc-ajax.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -6,6 +6,7 @@ using SmartCartPro.Repositories.Interfaces;
 
 namespace SmartCartPro.Repositories;
 
+/// <summary>Roles and their permission sets. EF/LINQ only; deletes are soft (cancelled flag).</summary>
 public class RoleRepository : IRoleRepository
 {
     private readonly SmartCartDbContext _db;
@@ -14,24 +15,54 @@ public class RoleRepository : IRoleRepository
 
     public async Task<OutputRoleList> ListRolesAsync(InputRoleList input, CancellationToken ct = default)
     {
-        var roles = await _db.Roles.AsNoTracking()
-            .Where(r => !r.Cancelled)
-            .OrderBy(r => r.RoleName)
-            .Select(r => new
-            {
-                r.IdRole,
-                r.RoleCode,
-                r.RoleName,
-                r.Description,
-                r.IsSystem,
-                r.IsActive,
-                UserCount = _db.UserRoles.Count(ur => ur.FkRole == r.IdRole)
-            })
-            .ToListAsync(ct);
+        var page = Math.Max(1, input.Page);
+        var pageSize = input.PageSize <= 0 ? 25 : Math.Min(input.PageSize, 100);
+        var sortBy = (input.SortBy ?? string.Empty).Trim().ToLowerInvariant();
 
-        return new OutputRoleList
+        var query = _db.Roles.AsNoTracking().Where(r => !r.Cancelled);
+
+        if (input.ActiveOnly == true)
         {
-            Roles = roles.Select(r => new OutputRoleSelect
+            query = query.Where(r => r.IsActive);
+        }
+        else if (input.ActiveOnly == false)
+        {
+            query = query.Where(r => !r.IsActive);
+        }
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim().ToLowerInvariant();
+            query = query.Where(r =>
+                r.RoleCode.ToLower().Contains(term)
+                || r.RoleName.ToLower().Contains(term)
+                || (r.Description != null && r.Description.ToLower().Contains(term)));
+        }
+
+        var total = await query.CountAsync(ct);
+
+        query = sortBy switch
+        {
+            "rolecode" => input.SortDesc
+                ? query.OrderByDescending(r => r.RoleCode).ThenBy(r => r.IdRole)
+                : query.OrderBy(r => r.RoleCode).ThenBy(r => r.IdRole),
+            "usercount" => input.SortDesc
+                ? query.OrderByDescending(r => _db.UserRoles.Count(ur => ur.FkRole == r.IdRole && !ur.User!.Cancelled))
+                    .ThenBy(r => r.RoleName).ThenBy(r => r.IdRole)
+                : query.OrderBy(r => _db.UserRoles.Count(ur => ur.FkRole == r.IdRole && !ur.User!.Cancelled))
+                    .ThenBy(r => r.RoleName).ThenBy(r => r.IdRole),
+            "isactive" => input.SortDesc
+                ? query.OrderByDescending(r => r.IsActive).ThenBy(r => r.RoleName).ThenBy(r => r.IdRole)
+                : query.OrderBy(r => r.IsActive).ThenBy(r => r.RoleName).ThenBy(r => r.IdRole),
+            _ => input.SortDesc
+                ? query.OrderByDescending(r => r.RoleName).ThenBy(r => r.IdRole)
+                : query.OrderBy(r => r.RoleName).ThenBy(r => r.IdRole)
+        };
+
+        var rows = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new OutputRoleSelect
             {
                 IdRole = r.IdRole,
                 RoleCode = r.RoleCode,
@@ -39,129 +70,150 @@ public class RoleRepository : IRoleRepository
                 Description = r.Description,
                 IsSystem = r.IsSystem,
                 IsActive = r.IsActive,
-                UserCount = r.UserCount
-            }).ToList()
+                UserCount = _db.UserRoles.Count(ur => ur.FkRole == r.IdRole && !ur.User!.Cancelled),
+                PermissionCount = _db.RolePermissions.Count(rp =>
+                    rp.FkRole == r.IdRole && rp.Permission != null && rp.Permission.IsActive && !rp.Permission.Cancelled)
+            })
+            .ToListAsync(ct);
+
+        return new OutputRoleList
+        {
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize,
+            Roles = rows
         };
     }
 
     public async Task<OutputRoleSelect?> GetRoleAsync(InputRoleSelect input, CancellationToken ct = default)
     {
-        var r = await _db.Roles.AsNoTracking()
-            .Where(x => x.IdRole == input.IdRole && !x.Cancelled)
-            .Select(x => new
+        var role = await _db.Roles.AsNoTracking()
+            .Where(r => r.IdRole == input.IdRole && !r.Cancelled)
+            .Select(r => new OutputRoleSelect
             {
-                x.IdRole,
-                x.RoleCode,
-                x.RoleName,
-                x.Description,
-                x.IsSystem,
-                x.IsActive,
-                UserCount = _db.UserRoles.Count(ur => ur.FkRole == x.IdRole)
+                IdRole = r.IdRole,
+                RoleCode = r.RoleCode,
+                RoleName = r.RoleName,
+                Description = r.Description,
+                IsSystem = r.IsSystem,
+                IsActive = r.IsActive,
+                UserCount = _db.UserRoles.Count(ur => ur.FkRole == r.IdRole && !ur.User!.Cancelled)
             })
             .FirstOrDefaultAsync(ct);
 
-        if (r is null) return null;
+        if (role is null) return null;
 
-        var permIds = await GetRolePermissionIdsAsync(r.IdRole, ct);
+        role.PermissionIds = await _db.RolePermissions.AsNoTracking()
+            .Where(rp => rp.FkRole == role.IdRole
+                         && rp.Permission != null && rp.Permission.IsActive && !rp.Permission.Cancelled)
+            .Select(rp => rp.FkPermission)
+            .ToListAsync(ct);
+        role.PermissionCount = role.PermissionIds.Count;
 
-        return new OutputRoleSelect
-        {
-            IdRole = r.IdRole,
-            RoleCode = r.RoleCode,
-            RoleName = r.RoleName,
-            Description = r.Description,
-            IsSystem = r.IsSystem,
-            IsActive = r.IsActive,
-            UserCount = r.UserCount,
-            PermissionIds = permIds
-        };
+        return role;
     }
 
     public async Task<OutputRoleCreate> CreateRoleAsync(InputRoleCreate input, CancellationToken ct = default)
     {
+        var now = DateTime.UtcNow;
+
         var entity = new Role
         {
             RoleCode = input.RoleCode.Trim().ToUpperInvariant(),
             RoleName = input.RoleName.Trim(),
-            Description = input.Description?.Trim(),
+            Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim(),
             IsSystem = false,
             IsActive = input.IsActive,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = now
         };
-
         _db.Roles.Add(entity);
+
+        foreach (var permissionId in input.PermissionIds.Distinct())
+        {
+            _db.RolePermissions.Add(new RolePermission
+            {
+                Role = entity,
+                FkPermission = permissionId,
+                CreatedAt = now
+            });
+        }
+
+        // One SaveChanges = one transaction: the role never exists without its permissions.
         await _db.SaveChangesAsync(ct);
 
-        if (input.PermissionIds.Any())
-        {
-            await SetRolePermissionsAsync(entity.IdRole, input.PermissionIds, ct);
-        }
-
-        return new OutputRoleCreate
-        {
-            ResponseCode = 0,
-            ResponseMsg = "Created",
-            StatusCode = 200,
-            IdRole = entity.IdRole
-        };
+        return new OutputRoleCreate { IdRole = entity.IdRole, RoleCode = entity.RoleCode };
     }
 
-    public async Task<OutputRoleUpdate> UpdateRoleAsync(InputRoleUpdate input, CancellationToken ct = default)
+    public async Task<OutputRoleUpdate?> UpdateRoleAsync(InputRoleUpdate input, CancellationToken ct = default)
     {
-        var entity = await _db.Roles.FirstOrDefaultAsync(
-            r => r.IdRole == input.IdRole && !r.Cancelled, ct);
+        var entity = await _db.Roles.FirstOrDefaultAsync(r => r.IdRole == input.IdRole && !r.Cancelled, ct);
+        if (entity is null) return null;
 
-        if (entity is null)
+        var now = DateTime.UtcNow;
+        entity.RoleName = input.RoleName.Trim();
+        entity.Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim();
+        entity.UpdatedAt = now;
+
+        // Apply only the difference. Rows that point at permissions which are no longer active
+        // are left untouched so they come back if the permission is re-enabled.
+        var desired = input.PermissionIds.Distinct().ToHashSet();
+        var activePermissionIds = await _db.Permissions
+            .Where(p => p.IsActive && !p.Cancelled)
+            .Select(p => p.IdPermission)
+            .ToListAsync(ct);
+        var activeSet = activePermissionIds.ToHashSet();
+
+        var existing = await _db.RolePermissions.Where(rp => rp.FkRole == entity.IdRole).ToListAsync(ct);
+
+        var toRemove = existing
+            .Where(rp => activeSet.Contains(rp.FkPermission) && !desired.Contains(rp.FkPermission))
+            .ToList();
+        if (toRemove.Count > 0)
         {
-            return new OutputRoleUpdate { ResponseCode = 1, ResponseMsg = "Role not found.", StatusCode = 404 };
+            _db.RolePermissions.RemoveRange(toRemove);
         }
 
-        entity.RoleName = input.RoleName.Trim();
-        entity.Description = input.Description?.Trim();
+        var existingIds = existing.Select(rp => rp.FkPermission).ToHashSet();
+        foreach (var permissionId in desired.Where(id => !existingIds.Contains(id)))
+        {
+            _db.RolePermissions.Add(new RolePermission
+            {
+                FkRole = entity.IdRole,
+                FkPermission = permissionId,
+                CreatedAt = now
+            });
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        return new OutputRoleUpdate { IdRole = entity.IdRole };
+    }
+
+    public async Task<OutputRoleStatusUpdate?> UpdateRoleStatusAsync(InputRoleStatusUpdate input, CancellationToken ct = default)
+    {
+        var entity = await _db.Roles.FirstOrDefaultAsync(r => r.IdRole == input.IdRole && !r.Cancelled, ct);
+        if (entity is null) return null;
+
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
-
         await _db.SaveChangesAsync(ct);
-        await SetRolePermissionsAsync(entity.IdRole, input.PermissionIds, ct);
 
-        return new OutputRoleUpdate { ResponseCode = 0, ResponseMsg = "Updated", StatusCode = 200 };
+        return new OutputRoleStatusUpdate { IdRole = entity.IdRole, IsActive = entity.IsActive };
     }
 
-    public async Task<OutputRoleDelete> DeleteRoleAsync(InputRoleDelete input, CancellationToken ct = default)
+    public async Task<OutputRoleDelete?> DeleteRoleAsync(InputRoleDelete input, CancellationToken ct = default)
     {
-        if (await IsRoleInUseAsync(input.IdRole, ct))
-        {
-            return new OutputRoleDelete
-            {
-                ResponseCode = 1,
-                ResponseMsg = "Cannot delete role — it is assigned to one or more users.",
-                StatusCode = 409
-            };
-        }
+        var entity = await _db.Roles.FirstOrDefaultAsync(r => r.IdRole == input.IdRole && !r.Cancelled, ct);
+        if (entity is null) return null;
 
-        var entity = await _db.Roles.FirstOrDefaultAsync(
-            r => r.IdRole == input.IdRole && !r.Cancelled && !r.IsSystem, ct);
-
-        if (entity is null)
-        {
-            return new OutputRoleDelete
-            {
-                ResponseCode = 1,
-                ResponseMsg = "Role not found or is a system role.",
-                StatusCode = 404
-            };
-        }
-
-        // Remove permissions first
-        var perms = await _db.RolePermissions.Where(rp => rp.FkRole == input.IdRole).ToListAsync(ct);
-        _db.RolePermissions.RemoveRange(perms);
-
+        var now = DateTime.UtcNow;
         entity.Cancelled = true;
-        entity.CancelledOn = DateTime.UtcNow;
-        entity.CancelledReason = $"Deleted by user {input.ActorUserId}";
+        entity.CancelledOn = now;
+        entity.CancelledReason = $"Deleted by user {input.ActorUserId}.";
+        entity.UpdatedAt = now;
         await _db.SaveChangesAsync(ct);
 
-        return new OutputRoleDelete { ResponseCode = 0, ResponseMsg = "Deleted", StatusCode = 200 };
+        return new OutputRoleDelete { IdRole = entity.IdRole };
     }
 
     public Task<List<OutputPermissionSelect>> ListPermissionsAsync(CancellationToken ct = default) =>
@@ -178,40 +230,26 @@ public class RoleRepository : IRoleRepository
                     FkModule = p.FkModule,
                     ModuleCode = m.ModuleCode,
                     ModuleName = m.ModuleName,
+                    ModuleDisplayOrder = m.DisplayOrder,
                     DisplayOrder = p.DisplayOrder
                 })
-            .OrderBy(p => p.ModuleCode)
+            .OrderBy(p => p.ModuleDisplayOrder)
+            .ThenBy(p => p.ModuleName)
             .ThenBy(p => p.DisplayOrder)
+            .ThenBy(p => p.PermissionCode)
             .ToListAsync(ct);
 
-    public Task<List<int>> GetRolePermissionIdsAsync(int idRole, CancellationToken ct = default) =>
-        _db.RolePermissions.AsNoTracking()
-            .Where(rp => rp.FkRole == idRole)
-            .Select(rp => rp.FkPermission)
-            .ToListAsync(ct);
-
-    public async Task SetRolePermissionsAsync(int idRole, List<int> permissionIds, CancellationToken ct = default)
+    public Task<bool> IsRoleCodeTakenAsync(string roleCode, CancellationToken ct = default)
     {
-        var existing = await _db.RolePermissions
-            .Where(rp => rp.FkRole == idRole)
-            .ToListAsync(ct);
-
-        _db.RolePermissions.RemoveRange(existing);
-
-        var now = DateTime.UtcNow;
-        foreach (var permId in permissionIds.Distinct())
-        {
-            _db.RolePermissions.Add(new RolePermission
-            {
-                FkRole = idRole,
-                FkPermission = permId,
-                CreatedAt = now
-            });
-        }
-
-        await _db.SaveChangesAsync(ct);
+        var code = roleCode.Trim().ToUpperInvariant();
+        return _db.Roles.AsNoTracking().AnyAsync(r => r.RoleCode.ToUpper() == code, ct);
     }
 
-    public Task<bool> IsRoleInUseAsync(int idRole, CancellationToken ct = default) =>
-        _db.UserRoles.AnyAsync(ur => ur.FkRole == idRole, ct);
+    public Task<bool> IsRoleNameTakenAsync(string roleName, int? excludeIdRole, CancellationToken ct = default)
+    {
+        var name = roleName.Trim().ToLowerInvariant();
+        var excludeId = excludeIdRole ?? 0;
+        return _db.Roles.AsNoTracking().AnyAsync(
+            r => !r.Cancelled && r.IdRole != excludeId && r.RoleName.ToLower() == name, ct);
+    }
 }

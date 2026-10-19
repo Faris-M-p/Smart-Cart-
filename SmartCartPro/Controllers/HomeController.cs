@@ -98,6 +98,32 @@ public class HomeController : Controller
     }
 
     /// <summary>
+    /// Friendly page shown when the installation license blocks a page (suspended, expired or missing).
+    /// Reached by redirect from the license gate; AJAX callers receive JSON instead.
+    /// </summary>
+    [AllowAnonymous]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult LicenseBlocked(string? reason = null)
+    {
+        var message = reason switch
+        {
+            "suspended" => "This installation's license is suspended. Please contact your administrator.",
+            "expired" => "This installation's license has expired, so data entry is disabled. Please contact your administrator.",
+            "none" => "No active license was found for this installation. Please contact your administrator.",
+            _ => "The license for this installation does not allow this action. Please contact your administrator."
+        };
+
+        Response.StatusCode = StatusCodes.Status403Forbidden;
+        return View("Error", new ErrorViewModel
+        {
+            StatusCode = StatusCodes.Status403Forbidden,
+            Title = "License restricted",
+            UserMessage = message,
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+        });
+    }
+
+    /// <summary>
     /// Dedicated 404 page when a route or link targets a missing resource.
     /// Called directly or from routing when a not-found view is needed.
     /// </summary>

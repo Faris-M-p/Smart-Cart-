@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = ViewData["Title"] as string ?? "Purchases";
+}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-shop display-4 text-muted" aria-hidden="true"></i>
+        <h1 class="h4 mt-3">Sign in as a store user to use this screen</h1>
+        <p class="text-muted mx-auto mb-4" style="max-width: 36rem;">
+            Purchase orders and goods receipts belong to a store, and platform administrator accounts are not tied to one.
+            Sign in with a store account to create, receive or review purchases. Suppliers are shared company-wide and
+            stay available from the Suppliers screen.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a class="btn btn-primary" asp-controller="Supplier" asp-action="Index">
+                <i class="bi bi-truck me-1"></i>Go to suppliers
+            </a>
+            <a class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Back to dashboard</a>
+        </div>
+    </div>
+</div>

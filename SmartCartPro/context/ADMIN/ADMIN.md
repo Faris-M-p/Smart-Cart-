@@ -28,6 +28,47 @@ Roles/permissions seeded in SQL; enforce via claims + permission checks (`Requir
 - List pages: Metis cards/tables; many still use sample rows until services bind real data
 - Auth pages: `_AuthLayout`
 
+## Front-end conventions (every admin screen)
+
+Reference implementation: **Category** (`Views/Category/*`, `wwwroot/js/catalog/category.js`, `CatalogController` Category actions). Copy its structure; do not invent new patterns.
+
+### Files and folders
+| What | Where |
+|------|-------|
+| Views | `Views/{Module}/…` — one **top-level folder per master/module** (`Category/`, `Brand/`, `Supplier/`, …). No shared `Views/Catalog/` folder and **no view-location expander**. When one controller serves several modules (`CatalogController`), return `View("~/Views/{Module}/{Page}.cshtml", model)`. |
+| Page JS | `wwwroot/js/{area}/{module}.js`, loaded from `@section Scripts` with `asp-append-version="true"`. No business logic in inline `<script>`. |
+| Page CSS | Only when Bootstrap/Metis utilities are not enough: `wwwroot/css/{module}.css` via `@section Styles`. |
+| Shared (do not fork) | `_Layout`, `_AuthLayout`, `wwwroot/js/sc-ajax.js` (`window.SmartCartAjax`), partials `_PageHeader`, `_StatusBadge`, `_ConfirmModal`, `_Pager`. `_Layout` already renders a page-wide antiforgery token and a `Styles` / `Scripts` section. |
+
+### Page patterns
+- **List**: breadcrumb → `_PageHeader` (title + primary action, hidden without the manage permission) → GET filter form (search, status, other filters; `data-sc-auto-submit` on selects) → table with sortable headers → empty state → `_Pager`. State lives in the query string (`search`, `status`, `sortBy`, `sortDesc`, `page`, `pageSize`). Row actions: Edit link, and activate/deactivate (or cancel) through `data-sc-post` + confirm. **No hard delete.**
+- **Form (create/edit)**: full page, fields exactly as the `In…View`, antiforgery token, `<form novalidate>`, `[data-sc-form-summary]` alert inside the form, `asp-validation-for` spans (the AJAX helper fills them from `validationErrors`), Save disabled while posting, Cancel back to the list (honour a safe `returnUrl`).
+- **Detail / document view**: read-only header card + lines table + action buttons gated by status and permission (receive, cancel, print…).
+- **Document entry (purchase, sale, transfer…)**: header form + dynamic line table; line product picker uses `SmartCartAjax.typeahead`; the whole document is sent with `SmartCartAjax.postJson` (server validates again).
+- Every table is `table-responsive`; every page works at tablet width; loading and empty states are visible; all output is Razor-encoded (never `Html.Raw` on user data; build DOM with `.text()` or `SmartCartAjax.escapeHtml`).
+
+### AJAX contract (server ⇄ `sc-ajax.js`)
+- Mutating POST actions are `[ValidateAntiForgeryToken]`, call `CommonHelpers.ValidateModelState(ModelState)` first, then the service, then `CommonHelpers.SuccessResponse(message, data)`; **no TempData/Redirect from a POST**. `data.redirectUrl` (built with `Url.Action`) makes `submitForm` navigate after showing a flash toast.
+- Failures are thrown as typed `AppException`s from the service/controller (`ValidationException` with `FieldErrors`, `ResourceNotFoundException` 404, `ConflictException` 409 …). The global handler returns the JSON envelope for any request with `X-Requested-With: XMLHttpRequest` (all `SmartCartAjax` calls send it). 401 → login redirect, 403 → toast.
+- Map `In…View` → `Input…` with an explicit named variable in the controller (see `model-naming.mdc`); services return `Output…`.
+- Read endpoints used by pickers return `CommonResponseModel.Success` with `data` = array (or a small typed list) so `typeahead`/`fillSelect` can use `res.data`.
+
+### `SmartCartAjax` quick reference
+`submitForm($form, {stayOnSuccess,onSuccess,onError})` · `post(url, fields, {silent,$form,onSuccess})` · `postJson(url, obj, {…})` · `getJson(url, params)` · `confirm({title,body,confirmText,confirmClass,onConfirm})` · `typeahead(input,{source,label,sublabel,onSelect,minChars})` · `fillSelect($sel, items, {valueField,textField,placeholder,selected})` · `toast/flash/reloadWithToast` · `setBusy` · `formToObject` · `fmt.money/number/date/dateTime` · `debounce` · `escapeHtml`.
+Declarative: `<button data-sc-post="@Url.Action(…)" data-sc-param-id="@x.Id" data-sc-param-isactive="false" data-sc-confirm="…" data-sc-confirm-ok="Deactivate" data-sc-after="reload|none|redirect|remove-row">` and `<select data-sc-auto-submit>`.
+
+### Permissions and modules in views
+`_ViewImports` injects `Access` (`ICurrentUserAccess`): `@if (await Access.CanAsync("products.manage")) { … }`, `await Access.ModuleEnabledAsync("POS")`. This only shapes the UI; enforcement stays in `[RequirePermission]` / `[ModuleAccess]` on the action. Platform Super Admin passes every check but has **no store** (`fk_store = 0`), so store-scoped screens must show a friendly "select a store / sign in as a store user" state instead of failing.
+
+### Permission code catalog (SQL seed is the source of truth)
+Seeded in `Database-Postgres/02_Seed/002_DefaultPermissions.sql` (+ `V006` for `pos.cancel`): `dashboard.view`, `products.view`, `products.manage`, `inventory.view`, `inventory.adjust`, `purchases.view`, `purchases.manage`, `pos.sell`, `pos.return`, `pos.cancel`, `customers.view`, `customers.manage`, `reports.view`, `settings.manage`, `users.manage`. Modules: `DASHBOARD`, `PRODUCTS`, `INVENTORY`, `PURCHASES`, `POS`, `CUSTOMERS`, `REPORTS`, `SETTINGS`, `USERS`.
+Controllers must only reference codes from this catalog. Previously unseeded codes were replaced: `purchasing.view/manage` → `purchases.view/manage`, `inventory.manage` → `inventory.adjust`, `pos.view`/`pos.manage` → `pos.sell` (POS, invoices, sessions) and `customers.view`/`customers.manage` (customers).
+
+### Razor pitfalls (build breaks otherwise)
+- Never put C# expressions inside the attribute area of tag-helper elements (`<option … @(c ? "selected" : null)>` → RZ1031). Use `selected="@flag"` boolean attributes or if/else blocks.
+- `@model` type must match what the action passes; use `@using` for enums/helpers.
+- Use `Url.Action`/`asp-action`, never hard-coded URLs. Use `data-*` attributes to pass URLs/ids to JS.
+
 ## Current modules
 
 Documented under `modules/`:

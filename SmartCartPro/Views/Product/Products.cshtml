@@ -1,0 +1,314 @@
+@model OutputProductList
+@{
+    ViewData["Title"] = "Products";
+    var canManage = await Access.CanAsync("products.manage");
+    var f = Model.Filter;
+    var lookup = Model.Lookup;
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.FkCategory is not null || f.FkSubcategory is not null
+                     || f.FkBrand is not null || f.ActiveOnly is not null;
+    var setActiveUrl = Url.Action("SetActive", "Product")!;
+    var addUrl = Url.Action("Create", "Product", new { returnUrl = currentListUrl });
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("All statuses", "", statusValue == ""),
+        new("Active", "true", statusValue == "true"),
+        new("Inactive", "false", statusValue == "false")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var categoryItems = new List<SelectListItem> { new("All categories", "", f.FkCategory is null) };
+    categoryItems.AddRange(lookup.Categories.Select(c =>
+        new SelectListItem(c.IsActive ? c.Name : c.Name + " (inactive)", c.Id.ToString(), f.FkCategory == c.Id)));
+
+    var subCategoryItems = new List<SelectListItem>();
+    if (f.FkCategory is null)
+    {
+        subCategoryItems.Add(new SelectListItem("Select a category first", "", true));
+    }
+    else
+    {
+        subCategoryItems.Add(new SelectListItem("All sub-categories", "", f.FkSubcategory is null));
+        subCategoryItems.AddRange(lookup.SubCategories.Select(s =>
+            new SelectListItem(s.IsActive ? s.Name : s.Name + " (inactive)", s.Id.ToString(), f.FkSubcategory == s.Id)));
+    }
+
+    var brandItems = new List<SelectListItem> { new("All brands", "", f.FkBrand is null) };
+    brandItems.AddRange(lookup.Brands.Select(b =>
+        new SelectListItem(b.IsActive ? b.Name : b.Name + " (inactive)", b.Id.ToString(), f.FkBrand == b.Id)));
+
+    var pageHeader = (
+        Title: "Products",
+        Subtitle: "Items you sell, with prices, barcodes and variants",
+        ActionText: canManage ? "Add product" : null,
+        ActionUrl: canManage ? addUrl : null);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", "Product", new
+        {
+            Search = f.Search,
+            FkCategory = f.FkCategory,
+            FkSubcategory = f.FkSubcategory,
+            FkBrand = f.FkBrand,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    string Money(decimal value) => value.ToString("N2");
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["FkCategory"] = f.FkCategory,
+            ["FkSubcategory"] = f.FkSubcategory,
+            ["FkBrand"] = f.FkBrand,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Products</li>
+    </ol>
+</nav>
+
+<partial name="_PageHeader" model="pageHeader" />
+
+<div id="productListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-controller="Product" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-12 col-md-6 col-lg-4">
+                    <label class="form-label" for="productSearch">Search</label>
+                    <input id="productSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name, code, SKU or barcode" autocomplete="off" />
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label" for="productCategory">Category</label>
+                    <select id="productCategory" name="FkCategory" class="form-select" asp-items="categoryItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label" for="productSubCategory">Sub-category</label>
+                    <select id="productSubCategory" name="FkSubcategory" class="form-select" asp-items="subCategoryItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label" for="productBrand">Brand</label>
+                    <select id="productBrand" name="FkBrand" class="form-select" asp-items="brandItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label" for="productStatus">Status</label>
+                    <select id="productStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label" for="productPageSize">Page size</label>
+                    <select id="productPageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-6 col-md-auto d-flex gap-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary">Apply</button>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary" asp-controller="Product" asp-action="Index">Clear</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    @if (hasFilters)
+                    {
+                        <p class="text-muted mb-3">No products match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-controller="Product" asp-action="Index">Clear filters</a>
+                    }
+                    else if (canManage)
+                    {
+                        <p class="text-muted mb-3">No products yet.</p>
+                        <a class="btn btn-primary" href="@addUrl"><i class="bi bi-plus-lg me-1"></i>Add product</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No products yet.</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("productcode")">
+                                        Code <i class="bi @SortIcon("productcode")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("productname")">
+                                        Product <i class="bi @SortIcon("productname")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-lg-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("category")">
+                                        Category <i class="bi @SortIcon("category")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-xl-table-cell">Brand</th>
+                                <th class="text-end">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("sellingprice")">
+                                        Price <i class="bi @SortIcon("sellingprice")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-center d-none d-md-table-cell">Variants</th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var toggleVerb = item.IsActive ? "Deactivate" : "Activate";
+                            var toggleTitle = toggleVerb + " product";
+                            var toggleClass = item.IsActive ? "btn-warning" : "btn-primary";
+                            var toggleNext = (!item.IsActive).ToString().ToLowerInvariant();
+                            var toggleBody = item.IsActive
+                                ? "Deactivate \"" + item.ProductName + "\"? It will no longer be offered for sale or purchase."
+                                : "Activate \"" + item.ProductName + "\"? It will be offered again for sale and purchase.";
+                            <tr>
+                                <td class="text-nowrap text-muted">@item.ProductCode</td>
+                                <td>
+                                    <a class="fw-medium text-decoration-none"
+                                       asp-controller="Product" asp-action="Details"
+                                       asp-route-id="@item.IdProduct"
+                                       asp-route-returnUrl="@currentListUrl">@item.ProductName</a>
+                                    @if (item.IsOnline)
+                                    {
+                                        <span class="badge text-bg-info ms-1">Online</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(item.Barcode))
+                                    {
+                                        <div class="small text-muted"><i class="bi bi-upc-scan me-1"></i>@item.Barcode</div>
+                                    }
+                                </td>
+                                <td class="d-none d-lg-table-cell">
+                                    @if (!string.IsNullOrEmpty(item.CategoryName))
+                                    {
+                                        <div>@item.CategoryName</div>
+                                        if (!string.IsNullOrEmpty(item.SubCategoryName))
+                                        {
+                                            <div class="small text-muted">@item.SubCategoryName</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="d-none d-xl-table-cell">
+                                    @if (!string.IsNullOrEmpty(item.BrandName))
+                                    {
+                                        @item.BrandName
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <div>@Money(item.SellingPrice)</div>
+                                    @if (item.Mrp.HasValue)
+                                    {
+                                        <div class="small text-muted">MRP @Money(item.Mrp.Value)</div>
+                                    }
+                                </td>
+                                <td class="text-center d-none d-md-table-cell">
+                                    @if (item.VariantCount > 0)
+                                    {
+                                        <a class="text-decoration-none"
+                                           asp-controller="Product" asp-action="Variants"
+                                           asp-route-productId="@item.IdProduct">@item.VariantCount</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                                <td>
+                                    <partial name="_StatusBadge" model="item.IsActive" />
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-secondary me-1"
+                                       asp-controller="Product" asp-action="Details"
+                                       asp-route-id="@item.IdProduct"
+                                       asp-route-returnUrl="@currentListUrl">View</a>
+                                    @if (canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-controller="Product" asp-action="Edit"
+                                           asp-route-id="@item.IdProduct"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-post="@setActiveUrl"
+                                                data-sc-param-id="@item.IdProduct"
+                                                data-sc-param-isactive="@toggleNext"
+                                                data-sc-confirm="@toggleBody"
+                                                data-sc-confirm-title="@toggleTitle"
+                                                data-sc-confirm-ok="@toggleVerb"
+                                                data-sc-confirm-class="@toggleClass"
+                                                data-sc-after="reload">@toggleVerb</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+@if (canManage)
+{
+    <partial name="_ConfirmModal" />
+}
+
+@section Scripts {
+    <script src="~/js/product/product.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,112 @@
+@model SmartCartPro.Models.InSupplierUpdateView
+@{
+    ViewData["Title"] = "Edit supplier";
+    var returnUrl = ViewBag.ReturnUrl as string
+        ?? Url.Action("Index", "Supplier");
+}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Suppliers</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-3">Edit supplier</h1>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form id="supplierForm"
+              asp-action="Edit"
+              asp-route-id="@Model.IdSupplier"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdSupplier" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <h2 class="h6 text-uppercase text-muted mb-3">Supplier</h2>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="SupplierCode"></label>
+                    <input class="form-control" asp-for="SupplierCode" autocomplete="off" />
+                    <span asp-validation-for="SupplierCode" class="text-danger"></span>
+                    <div class="form-text">Optional short code (max 20 characters).</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" asp-for="SupplierName"></label>
+                    <input class="form-control" asp-for="SupplierName" autocomplete="off" />
+                    <span asp-validation-for="SupplierName" class="text-danger"></span>
+                    <div class="form-text">Must be unique, even if a supplier with the same name was removed earlier.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="ContactPerson"></label>
+                    <input class="form-control" asp-for="ContactPerson" autocomplete="off" />
+                    <span asp-validation-for="ContactPerson" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="Phone"></label>
+                    <input class="form-control" asp-for="Phone" type="tel" autocomplete="off" />
+                    <span asp-validation-for="Phone" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="Email"></label>
+                    <input class="form-control" asp-for="Email" type="email" autocomplete="off" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+            </div>
+
+            <h2 class="h6 text-uppercase text-muted mt-4 mb-3">Address &amp; tax</h2>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label" asp-for="AddressLine1"></label>
+                    <input class="form-control" asp-for="AddressLine1" autocomplete="off" />
+                    <span asp-validation-for="AddressLine1" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" asp-for="City"></label>
+                    <input class="form-control" asp-for="City" autocomplete="off" />
+                    <span asp-validation-for="City" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" asp-for="State"></label>
+                    <input class="form-control" asp-for="State" autocomplete="off" />
+                    <span asp-validation-for="State" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" asp-for="PostalCode"></label>
+                    <input class="form-control" asp-for="PostalCode" autocomplete="off" />
+                    <span asp-validation-for="PostalCode" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" asp-for="Country"></label>
+                    <input class="form-control" asp-for="Country" autocomplete="off" />
+                    <span asp-validation-for="Country" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="TaxNumber"></label>
+                    <input class="form-control" asp-for="TaxNumber" autocomplete="off" />
+                    <span asp-validation-for="TaxNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label" asp-for="IsActive"></label>
+                        <div class="form-text">Inactive suppliers cannot be chosen on new purchase orders.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/purchasing/supplier.js" asp-append-version="true"></script>
+}

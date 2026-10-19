@@ -36,6 +36,8 @@ public interface ICatalogRepository
 
     // ── Lookups (for dropdowns / JSON) ────────────────────────────
     Task<IReadOnlyList<OutputCategorySelect>> GetCategoryLookupAsync(CancellationToken ct = default);
+    /// <summary>All non-cancelled categories (active and inactive) for admin forms and filters; <c>IsActive</c> tells the view which are inactive.</summary>
+    Task<IReadOnlyList<OutputCategorySelect>> GetCategoryOptionsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<OutputSubCategorySelect>> GetSubCategoryLookupAsync(int fkCategory, CancellationToken ct = default);
     Task<IReadOnlyList<OutputBrandSelect>> GetBrandLookupAsync(CancellationToken ct = default);
     Task<IReadOnlyList<OutputUnitSelect>> GetUnitLookupAsync(CancellationToken ct = default);

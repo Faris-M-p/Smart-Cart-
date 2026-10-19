@@ -1,0 +1,200 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputPurchaseSelect
+@{
+    Layout = null;
+    var statusLabel = Model.Status switch
+    {
+        "draft" => "Draft",
+        "posted" => "Posted",
+        "partially_received" => "Partially received",
+        "received" => "Received",
+        "cancelled" => "Cancelled",
+        _ => Model.Status
+    };
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.PoNumber · Purchase order</title>
+    <style>
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 13px; line-height: 1.45; color: #1f2937; background: #fff; }
+        .sheet { max-width: 900px; margin: 0 auto; }
+        .toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 16px; }
+        .toolbar button { font: inherit; padding: 6px 14px; border: 1px solid #9ca3af; border-radius: 6px; background: #fff; cursor: pointer; }
+        .toolbar button.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+        header.doc { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 16px; }
+        header.doc h1 { margin: 0; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; }
+        header.doc .po { font-size: 18px; font-weight: 600; }
+        .muted { color: #6b7280; }
+        .status { display: inline-block; margin-top: 4px; padding: 1px 10px; border: 1px solid #6b7280; border-radius: 999px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+        .cols { display: flex; gap: 24px; margin-bottom: 16px; }
+        .cols > div { flex: 1; min-width: 0; }
+        h2 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; }
+        dl { margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 2px 8px; }
+        dt { color: #6b7280; }
+        dd { margin: 0; overflow-wrap: anywhere; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid #d1d5db; text-align: left; vertical-align: top; }
+        thead th { border-bottom: 2px solid #111827; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+        .num { text-align: right; white-space: nowrap; }
+        .totals { margin-left: auto; width: 280px; }
+        .totals div { display: flex; justify-content: space-between; padding: 3px 0; }
+        .totals .grand { border-top: 2px solid #111827; margin-top: 4px; padding-top: 6px; font-size: 15px; font-weight: 700; }
+        .notes { margin: 8px 0 24px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .signatures { display: flex; gap: 48px; margin-top: 56px; }
+        .signatures div { flex: 1; border-top: 1px solid #111827; padding-top: 4px; font-size: 11px; color: #6b7280; }
+        footer.doc { margin-top: 24px; font-size: 11px; color: #6b7280; text-align: center; }
+        @@media print {
+            body { padding: 0; }
+            .toolbar { display: none; }
+            .sheet { max-width: none; }
+            thead { display: table-header-group; }
+            tr { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="toolbar">
+            <button type="button" class="primary" data-print>Print</button>
+            <button type="button" data-close>Close</button>
+        </div>
+
+        <header class="doc">
+            <div>
+                <h1>Purchase order</h1>
+                <div class="muted">@Model.StoreName</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="po">@Model.PoNumber</div>
+                <div class="muted">@Model.PurchaseDate.ToString("dd MMM yyyy")</div>
+                <span class="status">@statusLabel</span>
+            </div>
+        </header>
+
+        <div class="cols">
+            <div>
+                <h2>Supplier</h2>
+                <div><strong>@Model.SupplierName</strong></div>
+                <dl>
+                    @if (!string.IsNullOrWhiteSpace(Model.SupplierCode))
+                    {
+                        <dt>Code</dt>
+                        <dd>@Model.SupplierCode</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SupplierPhone))
+                    {
+                        <dt>Phone</dt>
+                        <dd>@Model.SupplierPhone</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SupplierEmail))
+                    {
+                        <dt>Email</dt>
+                        <dd>@Model.SupplierEmail</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SupplierTaxNumber))
+                    {
+                        <dt>Tax no.</dt>
+                        <dd>@Model.SupplierTaxNumber</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SupplierAddress))
+                    {
+                        <dt>Address</dt>
+                        <dd>@Model.SupplierAddress</dd>
+                    }
+                </dl>
+            </div>
+            <div>
+                <h2>Order</h2>
+                <dl>
+                    <dt>PO number</dt>
+                    <dd>@Model.PoNumber</dd>
+                    <dt>Date</dt>
+                    <dd>@Model.PurchaseDate.ToString("dd MMM yyyy")</dd>
+                    <dt>Supplier invoice</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.InvoiceNumber) ? "—" : Model.InvoiceNumber)</dd>
+                    <dt>Deliver to</dt>
+                    <dd>@Model.StoreName</dd>
+                    <dt>Status</dt>
+                    <dd>@statusLabel</dd>
+                </dl>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 32px;">#</th>
+                    <th>Item</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Unit cost</th>
+                    <th class="num">Discount</th>
+                    <th class="num">Tax</th>
+                    <th class="num">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+            @{ var n = 0; }
+            @foreach (var line in Model.Lines)
+            {
+                n++;
+                <tr>
+                    <td>@n</td>
+                    <td>
+                        @line.ProductName
+                        @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                        {
+                            <span class="muted"> · @line.VariantName</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(line.ProductCode))
+                        {
+                            <div class="muted">@line.ProductCode</div>
+                        }
+                    </td>
+                    <td class="num">@Qty(line.Quantity)</td>
+                    <td class="num"><span data-sc-money="@Raw(line.UnitCost)">@Money(line.UnitCost)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.DiscountAmount)">@Money(line.DiscountAmount)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.TaxAmount)">@Money(line.TaxAmount)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div><span class="muted">Subtotal</span><span data-sc-money="@Raw(Model.SubTotal)">@Money(Model.SubTotal)</span></div>
+            <div><span class="muted">Discount</span><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></div>
+            <div><span class="muted">Tax</span><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></div>
+            <div class="grand"><span>Total</span><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <h2>Notes</h2>
+            <div class="notes">@Model.Notes</div>
+        }
+
+        @if (Model.Cancelled)
+        {
+            <div class="notes"><strong>Cancelled.</strong> @Model.CancelledReason</div>
+        }
+
+        <div class="signatures">
+            <div>Prepared by</div>
+            <div>Approved by</div>
+        </div>
+
+        <footer class="doc">Printed <span data-printed-at></span></footer>
+    </div>
+
+    <script src="~/js/purchasing/purchase-print.js" asp-append-version="true"></script>
+</body>
+</html>

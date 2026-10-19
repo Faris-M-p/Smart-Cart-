@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SmartCartPro.Data;
 using SmartCartPro.Entities;
 using SmartCartPro.Models;
@@ -21,15 +22,35 @@ public class SupplierRepository : ISupplierRepository
     public async Task<OutputSupplierList> ListSuppliersAsync(InputSupplierList input, CancellationToken ct = default)
     {
         var q = _db.Suppliers.Where(x => !x.Cancelled);
+
         if (input.ActiveOnly == true) q = q.Where(x => x.IsActive);
+        else if (input.ActiveOnly == false) q = q.Where(x => !x.IsActive);
+
         if (!string.IsNullOrWhiteSpace(input.Search))
-            q = q.Where(x => x.SupplierName.Contains(input.Search)
-                || (x.SupplierCode != null && x.SupplierCode.Contains(input.Search))
-                || (x.Phone != null && x.Phone.Contains(input.Search)));
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(x => x.SupplierName.ToLower().Contains(term)
+                || (x.SupplierCode != null && x.SupplierCode.ToLower().Contains(term))
+                || (x.ContactPerson != null && x.ContactPerson.ToLower().Contains(term))
+                || (x.Phone != null && x.Phone.ToLower().Contains(term))
+                || (x.Email != null && x.Email.ToLower().Contains(term))
+                || (x.City != null && x.City.ToLower().Contains(term)));
+        }
 
         q = input.SortBy.ToLowerInvariant() switch
         {
-            _ => input.SortDesc ? q.OrderByDescending(x => x.SupplierName) : q.OrderBy(x => x.SupplierName)
+            "suppliercode" => input.SortDesc
+                ? q.OrderByDescending(x => x.SupplierCode).ThenBy(x => x.SupplierName)
+                : q.OrderBy(x => x.SupplierCode).ThenBy(x => x.SupplierName),
+            "city" => input.SortDesc
+                ? q.OrderByDescending(x => x.City).ThenBy(x => x.SupplierName)
+                : q.OrderBy(x => x.City).ThenBy(x => x.SupplierName),
+            "isactive" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsActive).ThenBy(x => x.SupplierName)
+                : q.OrderBy(x => x.IsActive).ThenBy(x => x.SupplierName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(x => x.SupplierName)
+                : q.OrderBy(x => x.SupplierName)
         };
 
         var total = await q.CountAsync(ct);
@@ -44,6 +65,12 @@ public class SupplierRepository : ISupplierRepository
 
     public async Task<OutputSupplierCreate> CreateSupplierAsync(InputSupplierCreate input, CancellationToken ct = default)
     {
+        // The database enforces a unique supplier name across every row (soft-cancelled ones included), so check them all.
+        var nameKey = input.SupplierName.ToLower();
+        var duplicate = await _db.Suppliers.AnyAsync(x => x.SupplierName.ToLower() == nameKey, ct);
+        if (duplicate)
+            return new OutputSupplierCreate { ResponseCode = 1, ResponseMsg = "A supplier with this name already exists.", StatusCode = 409 };
+
         var entity = new Supplier
         {
             SupplierCode = input.SupplierCode,
@@ -60,15 +87,31 @@ public class SupplierRepository : ISupplierRepository
             IsActive = input.IsActive,
             CreatedAt = DateTime.UtcNow
         };
+
         _db.Suppliers.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Lost a race with a concurrent create of the same name.
+            return new OutputSupplierCreate { ResponseCode = 1, ResponseMsg = "A supplier with this name already exists.", StatusCode = 409 };
+        }
+
         return new OutputSupplierCreate { IdSupplier = entity.IdSupplier, SupplierName = entity.SupplierName };
     }
 
     public async Task<OutputSupplierUpdate> UpdateSupplierAsync(InputSupplierUpdate input, CancellationToken ct = default)
     {
         var entity = await _db.Suppliers.FirstOrDefaultAsync(x => x.IdSupplier == input.IdSupplier && !x.Cancelled, ct);
-        if (entity is null) return new OutputSupplierUpdate { ResponseCode = 1, ResponseMsg = "Supplier not found.", StatusCode = 404 };
+        if (entity is null)
+            return new OutputSupplierUpdate { ResponseCode = 1, ResponseMsg = "Supplier not found.", StatusCode = 404 };
+
+        var nameKey = input.SupplierName.ToLower();
+        var duplicate = await _db.Suppliers.AnyAsync(x => x.IdSupplier != input.IdSupplier && x.SupplierName.ToLower() == nameKey, ct);
+        if (duplicate)
+            return new OutputSupplierUpdate { ResponseCode = 2, ResponseMsg = "A supplier with this name already exists.", StatusCode = 409 };
 
         entity.SupplierCode = input.SupplierCode;
         entity.SupplierName = input.SupplierName;
@@ -84,16 +127,44 @@ public class SupplierRepository : ISupplierRepository
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            return new OutputSupplierUpdate { ResponseCode = 2, ResponseMsg = "A supplier with this name already exists.", StatusCode = 409 };
+        }
+
         return new OutputSupplierUpdate { IdSupplier = entity.IdSupplier };
     }
 
+    public async Task<OutputSupplierSetActive> SetSupplierActiveAsync(InputSupplierSetActive input, CancellationToken ct = default)
+    {
+        var entity = await _db.Suppliers.FirstOrDefaultAsync(x => x.IdSupplier == input.IdSupplier && !x.Cancelled, ct);
+        if (entity is null)
+            return new OutputSupplierSetActive { ResponseCode = 1, ResponseMsg = "Supplier not found.", StatusCode = 404 };
+
+        entity.IsActive = input.IsActive;
+        entity.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return new OutputSupplierSetActive { IdSupplier = entity.IdSupplier, IsActive = entity.IsActive };
+    }
+
     public Task<IReadOnlyList<OutputSupplierSelect>> GetSupplierLookupAsync(CancellationToken ct = default)
-        => _db.Suppliers.Where(x => !x.Cancelled && x.IsActive)
+        => GetSupplierLookupAsync(false, ct);
+
+    public async Task<IReadOnlyList<OutputSupplierSelect>> GetSupplierLookupAsync(bool includeInactive, CancellationToken ct = default)
+    {
+        var q = _db.Suppliers.Where(x => !x.Cancelled);
+        if (!includeInactive) q = q.Where(x => x.IsActive);
+
+        return await q
             .OrderBy(x => x.SupplierName)
             .Select(SupplierProjection())
-            .ToListAsync(ct)
-            .ContinueWith<IReadOnlyList<OutputSupplierSelect>>(t => t.Result, ct);
+            .ToListAsync(ct);
+    }
 
     private static System.Linq.Expressions.Expression<Func<Supplier, OutputSupplierSelect>> SupplierProjection()
         => x => new OutputSupplierSelect

@@ -1,0 +1,272 @@
+@model OutputVariantList
+@{
+    var scoped = Model.FkProduct > 0;
+    ViewData["Title"] = scoped ? "Variants - " + Model.ProductName : "SKU variants";
+    var canManage = await Access.CanAsync("products.manage");
+    var f = Model.Filter;
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.ActiveOnly is not null;
+    var setActiveUrl = Url.Action("SetVariantActive", "Product")!;
+    var productsUrl = Url.Action("Index", "Product")!;
+    var productUrl = scoped ? Url.Action("Details", "Product", new { id = Model.FkProduct }) : null;
+    var addUrl = scoped
+        ? Url.Action("CreateVariant", "Product", new { productId = Model.FkProduct, returnUrl = currentListUrl })
+        : null;
+    int? scopeProductId = scoped ? Model.FkProduct : null;
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("All statuses", "", statusValue == ""),
+        new("Active", "true", statusValue == "true"),
+        new("Inactive", "false", statusValue == "false")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var pageHeader = (
+        Title: scoped ? "Variants" : "SKU variants",
+        Subtitle: scoped
+            ? Model.ProductCode + " · " + Model.ProductName
+            : "Every variant (SKU) across all products. Open a product to add variants.",
+        ActionText: canManage && scoped ? "Add variant" : null,
+        ActionUrl: canManage && scoped ? addUrl : null);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Variants", "Product", new
+        {
+            productId = scopeProductId,
+            Search = f.Search,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    string Money(decimal value) => value.ToString("N2");
+    string Dash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Variants",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["productId"] = scopeProductId,
+            ["Search"] = f.Search,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item"><a href="@productsUrl">Products</a></li>
+        @if (scoped)
+        {
+            <li class="breadcrumb-item"><a href="@productUrl">@Model.ProductCode</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Variants</li>
+        }
+        else
+        {
+            <li class="breadcrumb-item active" aria-current="page">SKU variants</li>
+        }
+    </ol>
+</nav>
+
+<partial name="_PageHeader" model="pageHeader" />
+
+@if (scoped && !Model.ProductIsActive)
+{
+    <div class="alert alert-warning" role="alert">
+        This product is inactive, so its variants are hidden from product pickers and cannot be sold or purchased.
+    </div>
+}
+
+<div id="variantListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-controller="Product" asp-action="Variants" class="row g-2 align-items-end mb-3">
+                @if (scoped)
+                {
+                    <input type="hidden" name="productId" value="@Model.FkProduct" />
+                }
+                <div class="col-12 col-md-5">
+                    <label class="form-label" for="variantSearch">Search</label>
+                    <input id="variantSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control"
+                           placeholder="@(scoped ? "Variant name, SKU or barcode" : "Variant, product, SKU or barcode")"
+                           autocomplete="off" />
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="variantStatus">Status</label>
+                    <select id="variantStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="variantPageSize">Page size</label>
+                    <select id="variantPageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary"
+                           asp-controller="Product" asp-action="Variants"
+                           asp-route-productId="@scopeProductId">Clear</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    @if (hasFilters)
+                    {
+                        <p class="text-muted mb-3">No variants match your filters.</p>
+                        <a class="btn btn-outline-secondary"
+                           asp-controller="Product" asp-action="Variants"
+                           asp-route-productId="@scopeProductId">Clear filters</a>
+                    }
+                    else if (scoped && canManage)
+                    {
+                        <p class="text-muted mb-3">This product has no variants yet.</p>
+                        <a class="btn btn-primary" href="@addUrl"><i class="bi bi-plus-lg me-1"></i>Add variant</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">@(scoped ? "This product has no variants yet." : "No variants yet.")</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                @if (!scoped)
+                                {
+                                    <th>
+                                        <a class="text-decoration-none text-body" href="@SortUrl("product")">
+                                            Product <i class="bi @SortIcon("product")"></i>
+                                        </a>
+                                    </th>
+                                }
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("variantname")">
+                                        Variant <i class="bi @SortIcon("variantname")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("skucode")">
+                                        SKU code <i class="bi @SortIcon("skucode")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">Barcode</th>
+                                <th class="text-end d-none d-lg-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("additionalprice")">
+                                        Additional price <i class="bi @SortIcon("additionalprice")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Selling price</th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var toggleVerb = item.IsActive ? "Deactivate" : "Activate";
+                            var toggleTitle = toggleVerb + " variant";
+                            var toggleClass = item.IsActive ? "btn-warning" : "btn-primary";
+                            var toggleNext = (!item.IsActive).ToString().ToLowerInvariant();
+                            var toggleBody = item.IsActive
+                                ? "Deactivate variant \"" + item.VariantName + "\"? It will no longer be offered for sale or purchase."
+                                : "Activate variant \"" + item.VariantName + "\"? It will be offered again for sale and purchase.";
+                            <tr>
+                                @if (!scoped)
+                                {
+                                    <td>
+                                        <a class="text-decoration-none"
+                                           asp-controller="Product" asp-action="Details"
+                                           asp-route-id="@item.FkProduct">@item.ProductName</a>
+                                        <div class="small text-muted">
+                                            @item.ProductCode
+                                            @if (!item.ProductIsActive)
+                                            {
+                                                <span class="badge text-bg-secondary ms-1">Product inactive</span>
+                                            }
+                                        </div>
+                                    </td>
+                                }
+                                <td class="fw-medium">@item.VariantName</td>
+                                <td class="d-none d-md-table-cell">@Dash(item.SkuCode)</td>
+                                <td class="d-none d-md-table-cell">@Dash(item.Barcode)</td>
+                                <td class="text-end d-none d-lg-table-cell">@Money(item.AdditionalPrice)</td>
+                                <td class="text-end">@Money(item.EffectivePrice)</td>
+                                <td><partial name="_StatusBadge" model="item.IsActive" /></td>
+                                <td class="text-end text-nowrap">
+                                    @if (canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-controller="Product" asp-action="EditVariant"
+                                           asp-route-id="@item.IdProductVariant"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-post="@setActiveUrl"
+                                                data-sc-param-id="@item.IdProductVariant"
+                                                data-sc-param-isactive="@toggleNext"
+                                                data-sc-confirm="@toggleBody"
+                                                data-sc-confirm-title="@toggleTitle"
+                                                data-sc-confirm-ok="@toggleVerb"
+                                                data-sc-confirm-class="@toggleClass"
+                                                data-sc-after="reload">@toggleVerb</button>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           asp-controller="Product" asp-action="Details"
+                                           asp-route-id="@item.FkProduct">View product</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+@if (canManage)
+{
+    <partial name="_ConfirmModal" />
+}

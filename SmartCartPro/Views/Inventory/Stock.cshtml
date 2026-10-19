@@ -1,18 +1,281 @@
+@using SmartCartPro.Helpers
+@model SmartCartPro.Models.OutputInventoryList
 @{
     ViewData["Title"] = "Inventory";
+    var canAdjust = await Access.CanAsync("inventory.adjust");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputInventoryList();
+    var storeName = AuthClaims.GetStoreName(User);
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var status = string.IsNullOrWhiteSpace(f.StockStatus) ? "" : f.StockStatus;
+    string? statusParam = status == "" ? null : status;
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.FkCategory.HasValue || status != "";
+
+    string Qty(decimal value) => value.ToString("0.###");
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Stock", new
+        {
+            Search = f.Search,
+            FkCategory = f.FkCategory,
+            StockStatus = statusParam,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    string ChipUrl(string chipStatus)
+    {
+        return Url.Action("Stock", new
+        {
+            Search = f.Search,
+            FkCategory = f.FkCategory,
+            StockStatus = chipStatus == "" ? null : chipStatus,
+            PageSize = f.PageSize,
+            SortBy = f.SortBy,
+            SortDesc = f.SortDesc
+        })!;
+    }
+
+    string RowUrl(string action, SmartCartPro.Models.OutputInventorySelect item)
+    {
+        return Url.Action(action, new
+        {
+            productId = item.FkProduct,
+            variantId = item.FkProductVariant,
+            returnUrl = currentListUrl
+        })!;
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Stock",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["FkCategory"] = f.FkCategory,
+            ["StockStatus"] = statusParam,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
 }
-@await Html.PartialAsync("_PageHeader", (Title: "Inventory", Subtitle: "On-hand quantities for the active store", ActionText: "Stock adjustment", ActionUrl: "#"))
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead><tr><th>Product</th><th>SKU</th><th>On hand</th><th>Reserved</th><th>Reorder</th></tr></thead>
-                <tbody>
-                    <tr><td>Wireless Mouse</td><td>WM-BLK</td><td>48</td><td>2</td><td>10</td></tr>
-                    <tr class="table-warning"><td>Basmati Rice 5kg</td><td>RICE-5</td><td>6</td><td>0</td><td>20</td></tr>
-                    <tr><td>Ceramic Mug</td><td>MUG-01</td><td>120</td><td>0</td><td>30</td></tr>
-                </tbody>
-            </table>
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Inventory</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Inventory</h1>
+        <p class="text-muted mb-0">On-hand stock@(string.IsNullOrWhiteSpace(storeName) ? "" : " at " + storeName)</p>
+    </div>
+    @if (canAdjust)
+    {
+        <a class="btn btn-primary" asp-action="Adjust" asp-route-returnUrl="@currentListUrl">
+            <i class="bi bi-sliders me-1" aria-hidden="true"></i>Adjust stock
+        </a>
+    }
+</div>
+
+@await Html.PartialAsync("_InventoryTabs", "stock")
+
+<div id="stockListPage" data-inv-list>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Stock status">
+                <a class="btn btn-sm @(status == "" ? "btn-primary" : "btn-outline-primary")" href="@ChipUrl("")">
+                    All <span class="badge text-bg-light ms-1">@Model.ScopeCount</span>
+                </a>
+                <a class="btn btn-sm @(status == "low" ? "btn-warning" : "btn-outline-warning")" href="@ChipUrl("low")">
+                    Low stock <span class="badge text-bg-light ms-1">@Model.LowStockCount</span>
+                </a>
+                <a class="btn btn-sm @(status == "out" ? "btn-danger" : "btn-outline-danger")" href="@ChipUrl("out")">
+                    Out of stock <span class="badge text-bg-light ms-1">@Model.OutOfStockCount</span>
+                </a>
+            </div>
+
+            <form method="get" asp-action="Stock" class="row g-2 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label" for="stockSearch">Search</label>
+                    <input id="stockSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name, code, SKU or barcode" autocomplete="off" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="stockCategory">Category</label>
+                    <select id="stockCategory" name="FkCategory" class="form-select" data-sc-auto-submit>
+                        @if (!f.FkCategory.HasValue)
+                        { <option value="" selected>All categories</option> }
+                        else
+                        { <option value="">All categories</option> }
+                        @foreach (var c in Model.Categories)
+                        {
+                            if (f.FkCategory == c.Id)
+                            {
+                                <option value="@c.Id" selected>@c.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@c.Id">@c.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="stockPageSize">Page size</label>
+                    <select id="stockPageSize" name="PageSize" class="form-select" data-sc-auto-submit>
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (f.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="hidden" name="StockStatus" value="@status" />
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    @if (Model.TotalCount > 0)
+                    {
+                        <p class="text-muted mb-3">There is nothing on this page.</p>
+                        <a class="btn btn-outline-primary" href="@ChipUrl(status)">Back to the first page</a>
+                    }
+                    else if (hasFilters)
+                    {
+                        <p class="text-muted mb-3">No stock matches your filters.</p>
+                        <a class="btn btn-outline-primary" asp-action="Stock">Clear filters</a>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box-seam display-5 text-muted d-block mb-3" aria-hidden="true"></i>
+                        <p class="text-muted mb-3">No stock has been recorded for this store yet.</p>
+                        @if (canAdjust)
+                        {
+                            <a class="btn btn-primary" asp-action="Opening">
+                                <i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Record opening stock
+                            </a>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("productname")">
+                                        Product <i class="bi @SortIcon("productname")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">Category</th>
+                                <th class="text-end">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("quantityonhand")">
+                                        On hand <i class="bi @SortIcon("quantityonhand")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end d-none d-lg-table-cell">Reserved</th>
+                                <th class="text-end d-none d-lg-table-cell">Available</th>
+                                <th class="text-end d-none d-md-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("reorderlevel")">
+                                        Reorder level <i class="bi @SortIcon("reorderlevel")"></i>
+                                    </a>
+                                </th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-medium">@item.ProductName</div>
+                                    <div class="small text-muted">
+                                        @(string.IsNullOrWhiteSpace(item.ProductCode) ? "—" : item.ProductCode)
+                                        @if (!string.IsNullOrWhiteSpace(item.VariantName))
+                                        {
+                                            <span class="badge text-bg-light border ms-1">@item.VariantName</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="d-none d-md-table-cell">@(string.IsNullOrWhiteSpace(item.CategoryName) ? "—" : item.CategoryName)</td>
+                                <td class="text-end text-nowrap">
+                                    <span class="fw-semibold">@Qty(item.QuantityOnHand)</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.UnitCode))
+                                    {
+                                        <span class="text-muted small">@item.UnitCode</span>
+                                    }
+                                </td>
+                                <td class="text-end d-none d-lg-table-cell">@Qty(item.QuantityReserved)</td>
+                                <td class="text-end d-none d-lg-table-cell">@Qty(item.AvailableQuantity)</td>
+                                <td class="text-end d-none d-md-table-cell">@(item.ReorderLevel > 0 ? Qty(item.ReorderLevel) : "—")</td>
+                                <td>
+                                    @if (item.StockStatus == "out")
+                                    {
+                                        <span class="badge text-bg-danger">Out of stock</span>
+                                    }
+                                    else if (item.StockStatus == "low")
+                                    {
+                                        <span class="badge text-bg-warning">Low stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-success">In stock</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (canAdjust)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1" href="@RowUrl("Adjust", item)">Adjust</a>
+                                        <a class="btn btn-sm btn-outline-secondary me-1" href="@RowUrl("Transfer", item)">Transfer</a>
+                                    }
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="@Url.Action("History", new { FkProduct = item.FkProduct })">History</a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/inventory/inventory-common.js" asp-append-version="true"></script>
+}

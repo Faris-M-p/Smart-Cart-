@@ -1,0 +1,84 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputPurchaseSelect
+@{
+    ViewData["Title"] = "Cancel " + Model.PoNumber;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
+        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.IdPurchase">@Model.PoNumber</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cancel</li>
+    </ol>
+</nav>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Cancel @Model.PoNumber</h1>
+    <partial name="_PurchaseStatusBadge" model="Model.Status" />
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <dl class="row mb-3">
+                    <dt class="col-sm-4 fw-normal text-muted">Supplier</dt>
+                    <dd class="col-sm-8">@Model.SupplierName</dd>
+                    <dt class="col-sm-4 fw-normal text-muted">Purchase date</dt>
+                    <dd class="col-sm-8">@Model.PurchaseDate.ToString("dd MMM yyyy")</dd>
+                    <dt class="col-sm-4 fw-normal text-muted">Total</dt>
+                    <dd class="col-sm-8"><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></dd>
+                    <dt class="col-sm-4 fw-normal text-muted">Received so far</dt>
+                    <dd class="col-sm-8 mb-0">@Qty(Model.TotalReceivedQty) of @Qty(Model.TotalOrderedQty)</dd>
+                </dl>
+
+                @if (Model.TotalReceivedQty > 0)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        Goods that were already received stay in stock. Cancelling only drops the quantities that are still pending,
+                        and the order cannot be reopened.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        Nothing has been received for this order. Once cancelled it cannot be edited, received or reopened.
+                    </div>
+                }
+
+                <form id="purchaseCancelForm"
+                      asp-action="Cancel"
+                      asp-route-id="@Model.IdPurchase"
+                      method="post"
+                      data-sc-ajax-form="true"
+                      novalidate>
+                    <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="IdPurchase" value="@Model.IdPurchase" />
+
+                    <div class="mb-3">
+                        <label class="form-label" for="cancelReason">Reason for cancelling</label>
+                        <textarea id="cancelReason" name="Reason" class="form-control" rows="3" maxlength="500"
+                                  placeholder="For example: supplier could not deliver, ordered by mistake…"></textarea>
+                        <span class="text-danger small" data-valmsg-for="Reason"></span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-danger" data-sc-busy-text="Cancelling…">
+                            <i class="bi bi-x-circle me-1"></i>Cancel purchase order
+                        </button>
+                        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.IdPurchase">Keep order</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase.js" asp-append-version="true"></script>
+}

@@ -175,15 +175,39 @@ public class CatalogRepository : ICatalogRepository
 
     public async Task<OutputSubCategoryList> ListSubCategoriesAsync(InputSubCategoryList input, CancellationToken ct = default)
     {
-        var q = _db.SubCategories.Include(x => x.Category).Where(x => !x.Cancelled);
-        if (input.FkCategory.HasValue) q = q.Where(x => x.FkCategory == input.FkCategory.Value);
+        var q = _db.SubCategories.Where(x => !x.Cancelled);
+
+        var categoryId = input.FkCategory ?? 0;
+        if (categoryId > 0) q = q.Where(x => x.FkCategory == categoryId);
+
         if (input.ActiveOnly == true) q = q.Where(x => x.IsActive);
+        else if (input.ActiveOnly == false) q = q.Where(x => !x.IsActive);
+
         if (!string.IsNullOrWhiteSpace(input.Search))
-            q = q.Where(x => x.SubCategoryName.Contains(input.Search));
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(x => x.SubCategoryName.ToLower().Contains(term)
+                || (x.Category != null && x.Category.CategoryName.ToLower().Contains(term)));
+        }
+
+        q = input.SortBy.ToLowerInvariant() switch
+        {
+            "subcategoryname" or "name" => input.SortDesc
+                ? q.OrderByDescending(x => x.SubCategoryName)
+                : q.OrderBy(x => x.SubCategoryName),
+            "displayorder" => input.SortDesc
+                ? q.OrderByDescending(x => x.DisplayOrder).ThenBy(x => x.SubCategoryName)
+                : q.OrderBy(x => x.DisplayOrder).ThenBy(x => x.SubCategoryName),
+            "isactive" or "status" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsActive).ThenBy(x => x.SubCategoryName)
+                : q.OrderBy(x => x.IsActive).ThenBy(x => x.SubCategoryName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(x => x.Category!.CategoryName).ThenBy(x => x.SubCategoryName)
+                : q.OrderBy(x => x.Category!.CategoryName).ThenBy(x => x.SubCategoryName)
+        };
 
         var total = await q.CountAsync(ct);
         var items = await q
-            .OrderBy(x => x.SubCategoryName)
             .Skip((input.Page - 1) * input.PageSize)
             .Take(input.PageSize)
             .Select(x => new OutputSubCategorySelect
@@ -203,11 +227,40 @@ public class CatalogRepository : ICatalogRepository
 
     public async Task<OutputSubCategoryCreate> CreateSubCategoryAsync(InputSubCategoryCreate input, CancellationToken ct = default)
     {
+        // The parent must exist, be live and active (never trust the posted id).
+        var parent = await _db.Categories
+            .Where(x => x.IdCategory == input.FkCategory && !x.Cancelled)
+            .Select(x => new { x.IsActive })
+            .FirstOrDefaultAsync(ct);
+        if (parent is null || !parent.IsActive)
+        {
+            return new OutputSubCategoryCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "Please select an active Category.",
+                StatusCode = 400
+            };
+        }
+
+        // uq_subcategories_category_name covers cancelled rows too, so they are not excluded here.
+        var name = input.SubCategoryName.Trim();
+        var duplicate = await _db.SubCategories.AnyAsync(
+            x => x.FkCategory == input.FkCategory && x.SubCategoryName.ToLower() == name.ToLower(), ct);
+        if (duplicate)
+        {
+            return new OutputSubCategoryCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A sub-category with this name already exists in the selected category.",
+                StatusCode = 409
+            };
+        }
+
         var entity = new SubCategory
         {
             FkCategory = input.FkCategory,
-            SubCategoryName = input.SubCategoryName,
-            Description = input.Description,
+            SubCategoryName = name,
+            Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim(),
             DisplayOrder = input.DisplayOrder,
             IsActive = input.IsActive,
             CreatedAt = DateTime.UtcNow
@@ -222,9 +275,42 @@ public class CatalogRepository : ICatalogRepository
         var entity = await _db.SubCategories.FirstOrDefaultAsync(x => x.IdSubcategory == input.IdSubCategory && !x.Cancelled, ct);
         if (entity is null) return new OutputSubCategoryUpdate { ResponseCode = 1, ResponseMsg = "Sub-category not found.", StatusCode = 404 };
 
+        // Only a re-parent needs an active target; an unchanged (possibly inactive) parent must not block edits or status toggles.
+        if (entity.FkCategory != input.FkCategory)
+        {
+            var parent = await _db.Categories
+                .Where(x => x.IdCategory == input.FkCategory && !x.Cancelled)
+                .Select(x => new { x.IsActive })
+                .FirstOrDefaultAsync(ct);
+            if (parent is null || !parent.IsActive)
+            {
+                return new OutputSubCategoryUpdate
+                {
+                    ResponseCode = 1,
+                    ResponseMsg = "Please select an active Category.",
+                    StatusCode = 400
+                };
+            }
+        }
+
+        var name = input.SubCategoryName.Trim();
+        var duplicate = await _db.SubCategories.AnyAsync(
+            x => x.IdSubcategory != input.IdSubCategory
+                 && x.FkCategory == input.FkCategory
+                 && x.SubCategoryName.ToLower() == name.ToLower(), ct);
+        if (duplicate)
+        {
+            return new OutputSubCategoryUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A sub-category with this name already exists in the selected category.",
+                StatusCode = 409
+            };
+        }
+
         entity.FkCategory = input.FkCategory;
-        entity.SubCategoryName = input.SubCategoryName;
-        entity.Description = input.Description;
+        entity.SubCategoryName = name;
+        entity.Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim();
         entity.DisplayOrder = input.DisplayOrder;
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -246,12 +332,30 @@ public class CatalogRepository : ICatalogRepository
     public async Task<OutputBrandList> ListBrandsAsync(InputBrandList input, CancellationToken ct = default)
     {
         var q = _db.Brands.Where(x => !x.Cancelled);
+
         if (input.ActiveOnly == true) q = q.Where(x => x.IsActive);
-        if (!string.IsNullOrWhiteSpace(input.Search)) q = q.Where(x => x.BrandName.Contains(input.Search));
+        else if (input.ActiveOnly == false) q = q.Where(x => !x.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(x => x.BrandName.ToLower().Contains(term));
+        }
+
+        q = input.SortBy.ToLowerInvariant() switch
+        {
+            "isactive" or "status" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsActive).ThenBy(x => x.BrandName)
+                : q.OrderBy(x => x.IsActive).ThenBy(x => x.BrandName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(x => x.BrandName)
+                : q.OrderBy(x => x.BrandName)
+        };
 
         var total = await q.CountAsync(ct);
-        var items = await q.OrderBy(x => x.BrandName)
-            .Skip((input.Page - 1) * input.PageSize).Take(input.PageSize)
+        var items = await q
+            .Skip((input.Page - 1) * input.PageSize)
+            .Take(input.PageSize)
             .Select(x => new OutputBrandSelect { IdBrand = x.IdBrand, BrandName = x.BrandName, Description = x.Description, IsActive = x.IsActive })
             .ToListAsync(ct);
 
@@ -260,7 +364,26 @@ public class CatalogRepository : ICatalogRepository
 
     public async Task<OutputBrandCreate> CreateBrandAsync(InputBrandCreate input, CancellationToken ct = default)
     {
-        var entity = new Brand { BrandName = input.BrandName, Description = input.Description, IsActive = input.IsActive, CreatedAt = DateTime.UtcNow };
+        // uq_brands_brandname covers cancelled rows too, so they are not excluded here.
+        var name = input.BrandName.Trim();
+        var duplicate = await _db.Brands.AnyAsync(x => x.BrandName.ToLower() == name.ToLower(), ct);
+        if (duplicate)
+        {
+            return new OutputBrandCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A brand with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var entity = new Brand
+        {
+            BrandName = name,
+            Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim(),
+            IsActive = input.IsActive,
+            CreatedAt = DateTime.UtcNow
+        };
         _db.Brands.Add(entity);
         await _db.SaveChangesAsync(ct);
         return new OutputBrandCreate { IdBrand = entity.IdBrand, BrandName = entity.BrandName };
@@ -271,8 +394,21 @@ public class CatalogRepository : ICatalogRepository
         var entity = await _db.Brands.FirstOrDefaultAsync(x => x.IdBrand == input.IdBrand && !x.Cancelled, ct);
         if (entity is null) return new OutputBrandUpdate { ResponseCode = 1, ResponseMsg = "Brand not found.", StatusCode = 404 };
 
-        entity.BrandName = input.BrandName;
-        entity.Description = input.Description;
+        var name = input.BrandName.Trim();
+        var duplicate = await _db.Brands.AnyAsync(
+            x => x.IdBrand != input.IdBrand && x.BrandName.ToLower() == name.ToLower(), ct);
+        if (duplicate)
+        {
+            return new OutputBrandUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A brand with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        entity.BrandName = name;
+        entity.Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim();
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
@@ -292,12 +428,33 @@ public class CatalogRepository : ICatalogRepository
     public async Task<OutputUnitList> ListUnitsAsync(InputUnitList input, CancellationToken ct = default)
     {
         var q = _db.Units.Where(x => !x.Cancelled);
+
         if (input.ActiveOnly == true) q = q.Where(x => x.IsActive);
-        if (!string.IsNullOrWhiteSpace(input.Search)) q = q.Where(x => x.UnitName.Contains(input.Search) || x.UnitCode.Contains(input.Search));
+        else if (input.ActiveOnly == false) q = q.Where(x => !x.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(x => x.UnitName.ToLower().Contains(term) || x.UnitCode.ToLower().Contains(term));
+        }
+
+        q = input.SortBy.ToLowerInvariant() switch
+        {
+            "unitcode" or "code" => input.SortDesc
+                ? q.OrderByDescending(x => x.UnitCode).ThenBy(x => x.UnitName)
+                : q.OrderBy(x => x.UnitCode).ThenBy(x => x.UnitName),
+            "isactive" or "status" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsActive).ThenBy(x => x.UnitName)
+                : q.OrderBy(x => x.IsActive).ThenBy(x => x.UnitName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(x => x.UnitName)
+                : q.OrderBy(x => x.UnitName)
+        };
 
         var total = await q.CountAsync(ct);
-        var items = await q.OrderBy(x => x.UnitName)
-            .Skip((input.Page - 1) * input.PageSize).Take(input.PageSize)
+        var items = await q
+            .Skip((input.Page - 1) * input.PageSize)
+            .Take(input.PageSize)
             .Select(x => new OutputUnitSelect { IdUnit = x.IdUnit, UnitCode = x.UnitCode, UnitName = x.UnitName, IsActive = x.IsActive })
             .ToListAsync(ct);
 
@@ -306,7 +463,33 @@ public class CatalogRepository : ICatalogRepository
 
     public async Task<OutputUnitCreate> CreateUnitAsync(InputUnitCreate input, CancellationToken ct = default)
     {
-        var entity = new Unit { UnitCode = input.UnitCode, UnitName = input.UnitName, IsActive = input.IsActive, CreatedAt = DateTime.UtcNow };
+        var code = input.UnitCode.Trim();
+        var name = input.UnitName.Trim();
+
+        // uq_units_unitcode covers cancelled rows too, so they are not excluded for the code check.
+        var codeTaken = await _db.Units.AnyAsync(x => x.UnitCode.ToLower() == code.ToLower(), ct);
+        if (codeTaken)
+        {
+            return new OutputUnitCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A unit with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var nameTaken = await _db.Units.AnyAsync(x => !x.Cancelled && x.UnitName.ToLower() == name.ToLower(), ct);
+        if (nameTaken)
+        {
+            return new OutputUnitCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A unit with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var entity = new Unit { UnitCode = code, UnitName = name, IsActive = input.IsActive, CreatedAt = DateTime.UtcNow };
         _db.Units.Add(entity);
         await _db.SaveChangesAsync(ct);
         return new OutputUnitCreate { IdUnit = entity.IdUnit, UnitCode = entity.UnitCode };
@@ -317,8 +500,35 @@ public class CatalogRepository : ICatalogRepository
         var entity = await _db.Units.FirstOrDefaultAsync(x => x.IdUnit == input.IdUnit && !x.Cancelled, ct);
         if (entity is null) return new OutputUnitUpdate { ResponseCode = 1, ResponseMsg = "Unit not found.", StatusCode = 404 };
 
-        entity.UnitCode = input.UnitCode;
-        entity.UnitName = input.UnitName;
+        var code = input.UnitCode.Trim();
+        var name = input.UnitName.Trim();
+
+        var codeTaken = await _db.Units.AnyAsync(
+            x => x.IdUnit != input.IdUnit && x.UnitCode.ToLower() == code.ToLower(), ct);
+        if (codeTaken)
+        {
+            return new OutputUnitUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A unit with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var nameTaken = await _db.Units.AnyAsync(
+            x => !x.Cancelled && x.IdUnit != input.IdUnit && x.UnitName.ToLower() == name.ToLower(), ct);
+        if (nameTaken)
+        {
+            return new OutputUnitUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A unit with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        entity.UnitCode = code;
+        entity.UnitName = name;
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
@@ -338,12 +548,39 @@ public class CatalogRepository : ICatalogRepository
     public async Task<OutputTaxList> ListTaxesAsync(InputTaxList input, CancellationToken ct = default)
     {
         var q = _db.Taxes.Where(x => !x.Cancelled);
+
         if (input.ActiveOnly == true) q = q.Where(x => x.IsActive);
-        if (!string.IsNullOrWhiteSpace(input.Search)) q = q.Where(x => x.TaxName.Contains(input.Search) || x.TaxCode.Contains(input.Search));
+        else if (input.ActiveOnly == false) q = q.Where(x => !x.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(x => x.TaxName.ToLower().Contains(term) || x.TaxCode.ToLower().Contains(term));
+        }
+
+        q = input.SortBy.ToLowerInvariant() switch
+        {
+            "taxcode" or "code" => input.SortDesc
+                ? q.OrderByDescending(x => x.TaxCode).ThenBy(x => x.TaxName)
+                : q.OrderBy(x => x.TaxCode).ThenBy(x => x.TaxName),
+            "taxrate" or "rate" => input.SortDesc
+                ? q.OrderByDescending(x => x.TaxRate).ThenBy(x => x.TaxName)
+                : q.OrderBy(x => x.TaxRate).ThenBy(x => x.TaxName),
+            "isinclusive" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsInclusive).ThenBy(x => x.TaxName)
+                : q.OrderBy(x => x.IsInclusive).ThenBy(x => x.TaxName),
+            "isactive" or "status" => input.SortDesc
+                ? q.OrderByDescending(x => x.IsActive).ThenBy(x => x.TaxName)
+                : q.OrderBy(x => x.IsActive).ThenBy(x => x.TaxName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(x => x.TaxName)
+                : q.OrderBy(x => x.TaxName)
+        };
 
         var total = await q.CountAsync(ct);
-        var items = await q.OrderBy(x => x.TaxName)
-            .Skip((input.Page - 1) * input.PageSize).Take(input.PageSize)
+        var items = await q
+            .Skip((input.Page - 1) * input.PageSize)
+            .Take(input.PageSize)
             .Select(x => new OutputTaxSelect { IdTax = x.IdTax, TaxCode = x.TaxCode, TaxName = x.TaxName, TaxRate = x.TaxRate, IsInclusive = x.IsInclusive, IsActive = x.IsActive })
             .ToListAsync(ct);
 
@@ -352,7 +589,41 @@ public class CatalogRepository : ICatalogRepository
 
     public async Task<OutputTaxCreate> CreateTaxAsync(InputTaxCreate input, CancellationToken ct = default)
     {
-        var entity = new Tax { TaxCode = input.TaxCode, TaxName = input.TaxName, TaxRate = input.TaxRate, IsInclusive = input.IsInclusive, IsActive = input.IsActive, CreatedAt = DateTime.UtcNow };
+        var code = input.TaxCode.Trim();
+        var name = input.TaxName.Trim();
+
+        // uq_taxes_taxcode covers cancelled rows too, so they are not excluded for the code check.
+        var codeTaken = await _db.Taxes.AnyAsync(x => x.TaxCode.ToLower() == code.ToLower(), ct);
+        if (codeTaken)
+        {
+            return new OutputTaxCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A tax with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var nameTaken = await _db.Taxes.AnyAsync(x => !x.Cancelled && x.TaxName.ToLower() == name.ToLower(), ct);
+        if (nameTaken)
+        {
+            return new OutputTaxCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A tax with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var entity = new Tax
+        {
+            TaxCode = code,
+            TaxName = name,
+            TaxRate = Math.Round(input.TaxRate, 4, MidpointRounding.AwayFromZero),
+            IsInclusive = input.IsInclusive,
+            IsActive = input.IsActive,
+            CreatedAt = DateTime.UtcNow
+        };
         _db.Taxes.Add(entity);
         await _db.SaveChangesAsync(ct);
         return new OutputTaxCreate { IdTax = entity.IdTax, TaxCode = entity.TaxCode };
@@ -363,9 +634,36 @@ public class CatalogRepository : ICatalogRepository
         var entity = await _db.Taxes.FirstOrDefaultAsync(x => x.IdTax == input.IdTax && !x.Cancelled, ct);
         if (entity is null) return new OutputTaxUpdate { ResponseCode = 1, ResponseMsg = "Tax not found.", StatusCode = 404 };
 
-        entity.TaxCode = input.TaxCode;
-        entity.TaxName = input.TaxName;
-        entity.TaxRate = input.TaxRate;
+        var code = input.TaxCode.Trim();
+        var name = input.TaxName.Trim();
+
+        var codeTaken = await _db.Taxes.AnyAsync(
+            x => x.IdTax != input.IdTax && x.TaxCode.ToLower() == code.ToLower(), ct);
+        if (codeTaken)
+        {
+            return new OutputTaxUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A tax with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
+        var nameTaken = await _db.Taxes.AnyAsync(
+            x => !x.Cancelled && x.IdTax != input.IdTax && x.TaxName.ToLower() == name.ToLower(), ct);
+        if (nameTaken)
+        {
+            return new OutputTaxUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A tax with this name already exists.",
+                StatusCode = 409
+            };
+        }
+
+        entity.TaxCode = code;
+        entity.TaxName = name;
+        entity.TaxRate = Math.Round(input.TaxRate, 4, MidpointRounding.AwayFromZero);
         entity.IsInclusive = input.IsInclusive;
         entity.IsActive = input.IsActive;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -383,6 +681,13 @@ public class CatalogRepository : ICatalogRepository
             .Select(x => new OutputCategorySelect { IdCategory = x.IdCategory, CategoryName = x.CategoryName, IsActive = x.IsActive })
             .ToListAsync(ct)
             .ContinueWith<IReadOnlyList<OutputCategorySelect>>(t => t.Result, ct);
+
+    public async Task<IReadOnlyList<OutputCategorySelect>> GetCategoryOptionsAsync(CancellationToken ct = default)
+        => await _db.Categories
+            .Where(x => !x.Cancelled)
+            .OrderBy(x => x.CategoryName)
+            .Select(x => new OutputCategorySelect { IdCategory = x.IdCategory, CategoryName = x.CategoryName, IsActive = x.IsActive })
+            .ToListAsync(ct);
 
     public Task<IReadOnlyList<OutputSubCategorySelect>> GetSubCategoryLookupAsync(int fkCategory, CancellationToken ct = default)
         => _db.SubCategories.Where(x => !x.Cancelled && x.IsActive && x.FkCategory == fkCategory)
