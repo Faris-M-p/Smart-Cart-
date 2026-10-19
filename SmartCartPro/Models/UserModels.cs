@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -45,35 +46,46 @@ public sealed class OutputUserSelect
 
 public sealed class InUserCreateView
 {
-    [Required]
-    [MaxLength(50)]
     [Display(Name = "Username")]
+    [Required(ErrorMessage = "The Username field is required.")]
+    [StringLengthValidation(3, 50, ErrorMessage = "The Username must be between 3 and 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Username cannot contain script tags.")]
     public string UserName { get; set; } = string.Empty;
 
-    [Required]
-    [EmailAddress]
     [Display(Name = "Email")]
+    [Required(ErrorMessage = "The Email field is required.")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string Email { get; set; } = string.Empty;
 
-    [Required]
-    [Display(Name = "Full name")]
+    [Display(Name = "Full Name")]
+    [Required(ErrorMessage = "The Full Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Full Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Full Name cannot contain script tags.")]
     public string FullName { get; set; } = string.Empty;
 
     [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
-    [Display(Name = "Employee code")]
+    [Display(Name = "Employee Code")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Employee Code cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Employee Code cannot contain script tags.")]
     public string? EmployeeCode { get; set; }
 
     [Display(Name = "Role")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Role.")]
     public int? FkRole { get; set; }
 
-    [Display(Name = "Store access")]
+    [Display(Name = "Store Access")]
     public List<int> StoreIds { get; set; } = new();
 
-    [Required]
-    [MinLength(8)]
-    [Display(Name = "Initial password")]
+    [Display(Name = "Initial Password")]
+    [Required(ErrorMessage = "The Initial Password field is required.")]
+    [StrongPassword(8, 64, ErrorMessage = "The Initial Password must be between 8 and 64 characters and contain uppercase, lowercase, digit, and special character.")]
     public string InitialPassword { get; set; } = string.Empty;
 }
 
@@ -106,16 +118,26 @@ public sealed class OutputUserCreate
 
 public sealed class InUserUpdateView
 {
+    [Display(Name = "User")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid User.")]
     public int IdUser { get; set; }
 
-    [Required]
-    [Display(Name = "Full name")]
+    [Display(Name = "Full Name")]
+    [Required(ErrorMessage = "The Full Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Full Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Full Name cannot contain script tags.")]
     public string FullName { get; set; } = string.Empty;
 
     [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
-    [Display(Name = "Employee code")]
+    [Display(Name = "Employee Code")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Employee Code cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Employee Code cannot contain script tags.")]
     public string? EmployeeCode { get; set; }
 
     [Display(Name = "Active")]
@@ -130,16 +152,6 @@ public sealed class InputUserUpdate
     public string? Phone { get; set; }
     public string? EmployeeCode { get; set; }
     public bool IsActive { get; set; }
-
-    public static InputUserUpdate From(InUserUpdateView view, int actorUserId) => new()
-    {
-        ActorUserId = actorUserId,
-        IdUser = view.IdUser,
-        FullName = view.FullName,
-        Phone = view.Phone,
-        EmployeeCode = view.EmployeeCode,
-        IsActive = view.IsActive
-    };
 }
 
 public sealed class OutputUserUpdate

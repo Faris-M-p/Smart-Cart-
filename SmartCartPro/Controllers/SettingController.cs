@@ -70,12 +70,13 @@ public class SettingController : Controller
             ["locale.timezone"]          = model.Timezone
         };
 
-        var result = await _svc.SaveSettingsAsync(new InputSettingSave
+        var input = new InputSettingSave
         {
             Scope     = "company",
             Values    = values,
             UpdatedBy = ActorId
-        }, ct);
+        };
+        var result = await _svc.SaveSettingsAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to save settings.", result.ResponseMsg ?? "Unable to save settings.");

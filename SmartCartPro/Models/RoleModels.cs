@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -53,16 +54,21 @@ public sealed class OutputRoleSelect
 
 public sealed class InRoleCreateView
 {
-    [Required]
-    [MaxLength(30)]
-    [Display(Name = "Role code")]
+    [Display(Name = "Role Code")]
+    [Required(ErrorMessage = "The Role Code field is required.")]
+    [StringLengthValidation(2, 30, ErrorMessage = "The Role Code must be between 2 and 30 characters.")]
+    [NoScriptTags(ErrorMessage = "The Role Code cannot contain script tags.")]
     public string RoleCode { get; set; } = string.Empty;
 
-    [Required]
-    [Display(Name = "Role name")]
+    [Display(Name = "Role Name")]
+    [Required(ErrorMessage = "The Role Name field is required.")]
+    [TrimmedString(2, 100, ErrorMessage = "The Role Name must be between 2 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Role Name cannot contain script tags.")]
     public string RoleName { get; set; } = string.Empty;
 
     [Display(Name = "Description")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Description cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
     [Display(Name = "Active")]
@@ -80,16 +86,6 @@ public sealed class InputRoleCreate
     public string? Description { get; set; }
     public bool IsActive { get; set; }
     public List<int> PermissionIds { get; set; } = new();
-
-    public static InputRoleCreate From(InRoleCreateView view, int actorUserId) => new()
-    {
-        ActorUserId = actorUserId,
-        RoleCode = view.RoleCode,
-        RoleName = view.RoleName,
-        Description = view.Description,
-        IsActive = view.IsActive,
-        PermissionIds = view.PermissionIds ?? new List<int>()
-    };
 }
 
 public sealed class OutputRoleCreate
@@ -107,13 +103,20 @@ public sealed class OutputRoleCreate
 
 public sealed class InRoleUpdateView
 {
+    [Display(Name = "Role")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Role.")]
     public int IdRole { get; set; }
 
-    [Required]
-    [Display(Name = "Role name")]
+    [Display(Name = "Role Name")]
+    [Required(ErrorMessage = "The Role Name field is required.")]
+    [TrimmedString(2, 100, ErrorMessage = "The Role Name must be between 2 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Role Name cannot contain script tags.")]
     public string RoleName { get; set; } = string.Empty;
 
     [Display(Name = "Description")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Description cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
     [Display(Name = "Active")]
@@ -122,9 +125,13 @@ public sealed class InRoleUpdateView
     [Display(Name = "Permissions")]
     public List<int> PermissionIds { get; set; } = new();
 
-    // Read-only display data
+    [Display(Name = "System Role")]
     public bool IsSystem { get; set; }
+
+    [Display(Name = "Role Code")]
     public string RoleCode { get; set; } = string.Empty;
+
+    [Display(Name = "All Permissions")]
     public List<OutputPermissionSelect> AllPermissions { get; set; } = new();
 }
 
@@ -136,16 +143,6 @@ public sealed class InputRoleUpdate
     public string? Description { get; set; }
     public bool IsActive { get; set; }
     public List<int> PermissionIds { get; set; } = new();
-
-    public static InputRoleUpdate From(InRoleUpdateView view, int actorUserId) => new()
-    {
-        ActorUserId = actorUserId,
-        IdRole = view.IdRole,
-        RoleName = view.RoleName,
-        Description = view.Description,
-        IsActive = view.IsActive,
-        PermissionIds = view.PermissionIds ?? new List<int>()
-    };
 }
 
 public sealed class OutputRoleUpdate

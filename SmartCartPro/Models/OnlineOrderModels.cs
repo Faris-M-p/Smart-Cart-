@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -93,15 +94,21 @@ public sealed class OutputOnlineOrderSelect
 
 public sealed class InOnlineOrderStatusView
 {
+    [Display(Name = "Online Order")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Online Order.")]
     public int IdOnlineOrder { get; set; }
 
-    [Required]
     [Display(Name = "New Status")]
+    [Required(ErrorMessage = "The New Status field is required.")]
+    [AllowedValues("pending", "confirmed", "packed", "shipped", "delivered", "cancelled",
+        ErrorMessage = "Something went wrong/Please select a valid New Status.")]
+    [NoScriptTags(ErrorMessage = "The New Status cannot contain script tags.")]
     public string NewStatus { get; set; } = string.Empty;
 
-    [MaxLength(500)]
     [Display(Name = "Reason / Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Reason / Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Reason / Notes cannot contain script tags.")]
     public string? Reason { get; set; }
 }
 

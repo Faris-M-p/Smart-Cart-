@@ -93,7 +93,16 @@ public class EmployeeController : Controller
         model.IdUser = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _userSvc.UpdateUserAsync(InputUserUpdate.From(model, ActorId), ct);
+        var input = new InputUserUpdate
+        {
+            ActorUserId = ActorId,
+            IdUser = model.IdUser,
+            FullName = model.FullName,
+            Phone = model.Phone,
+            EmployeeCode = model.EmployeeCode,
+            IsActive = model.IsActive
+        };
+        var result = await _userSvc.UpdateUserAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update employee.", result.ResponseMsg ?? "Unable to update employee.");
 

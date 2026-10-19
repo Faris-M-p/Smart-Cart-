@@ -40,7 +40,15 @@ public class CatalogController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateCategoryAsync(InputCategoryCreate.From(model), ct);
+        var input = new InputCategoryCreate
+        {
+            CategoryCode = model.CategoryCode,
+            CategoryName = model.CategoryName,
+            Description = model.Description,
+            DisplayOrder = model.DisplayOrder,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateCategoryAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -69,7 +77,16 @@ public class CatalogController : Controller
         model.IdCategory = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateCategoryAsync(InputCategoryUpdate.From(model), ct);
+        var input = new InputCategoryUpdate
+        {
+            IdCategory = model.IdCategory,
+            CategoryCode = model.CategoryCode,
+            CategoryName = model.CategoryName,
+            Description = model.Description,
+            DisplayOrder = model.DisplayOrder,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateCategoryAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -117,7 +134,15 @@ public class CatalogController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateSubCategoryAsync(InputSubCategoryCreate.From(model), ct);
+        var input = new InputSubCategoryCreate
+        {
+            FkCategory = model.FkCategory,
+            SubCategoryName = model.SubCategoryName,
+            Description = model.Description,
+            DisplayOrder = model.DisplayOrder,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateSubCategoryAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -147,7 +172,16 @@ public class CatalogController : Controller
         model.IdSubCategory = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateSubCategoryAsync(InputSubCategoryUpdate.From(model), ct);
+        var input = new InputSubCategoryUpdate
+        {
+            IdSubCategory = model.IdSubCategory,
+            FkCategory = model.FkCategory,
+            SubCategoryName = model.SubCategoryName,
+            Description = model.Description,
+            DisplayOrder = model.DisplayOrder,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateSubCategoryAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -182,7 +216,13 @@ public class CatalogController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateBrandAsync(InputBrandCreate.From(model), ct);
+        var input = new InputBrandCreate
+        {
+            BrandName = model.BrandName,
+            Description = model.Description,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateBrandAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -211,7 +251,14 @@ public class CatalogController : Controller
         model.IdBrand = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateBrandAsync(InputBrandUpdate.From(model), ct);
+        var input = new InputBrandUpdate
+        {
+            IdBrand = model.IdBrand,
+            BrandName = model.BrandName,
+            Description = model.Description,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateBrandAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -250,7 +297,13 @@ public class CatalogController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateUnitAsync(InputUnitCreate.From(model), ct);
+        var input = new InputUnitCreate
+        {
+            UnitCode = model.UnitCode,
+            UnitName = model.UnitName,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateUnitAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -279,7 +332,14 @@ public class CatalogController : Controller
         model.IdUnit = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateUnitAsync(InputUnitUpdate.From(model), ct);
+        var input = new InputUnitUpdate
+        {
+            IdUnit = model.IdUnit,
+            UnitCode = model.UnitCode,
+            UnitName = model.UnitName,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateUnitAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -318,7 +378,15 @@ public class CatalogController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateTaxAsync(InputTaxCreate.From(model), ct);
+        var input = new InputTaxCreate
+        {
+            TaxCode = model.TaxCode,
+            TaxName = model.TaxName,
+            TaxRate = model.TaxRate,
+            IsInclusive = model.IsInclusive,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateTaxAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(
@@ -347,7 +415,16 @@ public class CatalogController : Controller
         model.IdTax = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateTaxAsync(InputTaxUpdate.From(model), ct);
+        var input = new InputTaxUpdate
+        {
+            IdTax = model.IdTax,
+            TaxCode = model.TaxCode,
+            TaxName = model.TaxName,
+            TaxRate = model.TaxRate,
+            IsInclusive = model.IsInclusive,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateTaxAsync(input, ct);
         if (!result.Ok)
         {
             throw new UpdateFailedException(

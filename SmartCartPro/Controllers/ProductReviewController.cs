@@ -52,12 +52,13 @@ public class ProductReviewController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Hide(int id, CancellationToken ct)
     {
-        var result = await _svc.HideReviewAsync(new InputProductReviewHide
+        var input = new InputProductReviewHide
         {
             IdProductReview = id,
             IsApproved      = false,
             UpdatedBy       = ActorId
-        }, ct);
+        };
+        var result = await _svc.HideReviewAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to hide review.", result.ResponseMsg ?? "Unable to hide review.");
@@ -70,12 +71,13 @@ public class ProductReviewController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Approve(int id, CancellationToken ct)
     {
-        var result = await _svc.HideReviewAsync(new InputProductReviewHide
+        var input = new InputProductReviewHide
         {
             IdProductReview = id,
             IsApproved      = true,
             UpdatedBy       = ActorId
-        }, ct);
+        };
+        var result = await _svc.HideReviewAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to approve review.", result.ResponseMsg ?? "Unable to approve review.");

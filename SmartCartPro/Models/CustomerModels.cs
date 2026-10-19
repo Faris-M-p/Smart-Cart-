@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -6,18 +7,27 @@ namespace SmartCartPro.Models;
 
 public sealed class InCustomerCreateView
 {
-    [MaxLength(20)]
-    [Display(Name = "Customer code")]
+    [Display(Name = "Customer Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Customer Code cannot exceed 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Customer Code cannot contain script tags.")]
     public string? CustomerCode { get; set; }
 
-    [Required, MaxLength(300)]
-    [Display(Name = "Full name")]
+    [Display(Name = "Full Name")]
+    [Required(ErrorMessage = "The Full Name field is required.")]
+    [TrimmedString(2, 300, ErrorMessage = "The Full Name must be between 2 and 300 characters.")]
+    [NoScriptTags(ErrorMessage = "The Full Name cannot contain script tags.")]
     public string FullName { get; set; } = string.Empty;
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
     [Display(Name = "Active")]
@@ -31,15 +41,6 @@ public sealed class InputCustomerCreate
     public string? Email { get; set; }
     public string? Phone { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputCustomerCreate From(InCustomerCreateView v) => new()
-    {
-        CustomerCode = v.CustomerCode,
-        FullName = v.FullName,
-        Email = v.Email,
-        Phone = v.Phone,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputCustomerCreate
@@ -58,20 +59,32 @@ public sealed class OutputCustomerCreate
 
 public sealed class InCustomerUpdateView
 {
+    [Display(Name = "Customer")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Customer.")]
     public int IdCustomer { get; set; }
 
-    [MaxLength(20)]
-    [Display(Name = "Customer code")]
+    [Display(Name = "Customer Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Customer Code cannot exceed 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Customer Code cannot contain script tags.")]
     public string? CustomerCode { get; set; }
 
-    [Required, MaxLength(300)]
-    [Display(Name = "Full name")]
+    [Display(Name = "Full Name")]
+    [Required(ErrorMessage = "The Full Name field is required.")]
+    [TrimmedString(2, 300, ErrorMessage = "The Full Name must be between 2 and 300 characters.")]
+    [NoScriptTags(ErrorMessage = "The Full Name cannot contain script tags.")]
     public string FullName { get; set; } = string.Empty;
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
     [Display(Name = "Active")]
@@ -86,16 +99,6 @@ public sealed class InputCustomerUpdate
     public string? Email { get; set; }
     public string? Phone { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputCustomerUpdate From(InCustomerUpdateView v) => new()
-    {
-        IdCustomer = v.IdCustomer,
-        CustomerCode = v.CustomerCode,
-        FullName = v.FullName,
-        Email = v.Email,
-        Phone = v.Phone,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputCustomerUpdate

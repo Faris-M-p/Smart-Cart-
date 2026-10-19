@@ -99,13 +99,14 @@ public class OnlineOrderController : Controller
         model.IdOnlineOrder = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateStatusAsync(new InputOnlineOrderStatusUpdate
+        var input = new InputOnlineOrderStatusUpdate
         {
             IdOnlineOrder = model.IdOnlineOrder,
             NewStatus     = model.NewStatus,
             Reason        = model.Reason,
             UpdatedBy     = ActorId
-        }, ct);
+        };
+        var result = await _svc.UpdateStatusAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update order status.", result.ResponseMsg ?? "Unable to update order status.");

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -6,36 +7,61 @@ namespace SmartCartPro.Models;
 
 public sealed class InSupplierCreateView
 {
-    [MaxLength(20)]
-    [Display(Name = "Supplier code")]
+    [Display(Name = "Supplier Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Supplier Code cannot exceed 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Supplier Code cannot contain script tags.")]
     public string? SupplierCode { get; set; }
 
-    [Required, MaxLength(300)]
-    [Display(Name = "Supplier name")]
+    [Display(Name = "Supplier Name")]
+    [Required(ErrorMessage = "The Supplier Name field is required.")]
+    [TrimmedString(2, 300, ErrorMessage = "The Supplier Name must be between 2 and 300 characters.")]
+    [NoScriptTags(ErrorMessage = "The Supplier Name cannot contain script tags.")]
     public string SupplierName { get; set; } = string.Empty;
 
-    [MaxLength(200)]
-    [Display(Name = "Contact person")]
+    [Display(Name = "Contact Person")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Contact Person cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Contact Person cannot contain script tags.")]
     public string? ContactPerson { get; set; }
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
     [Display(Name = "Address")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address cannot contain script tags.")]
     public string? AddressLine1 { get; set; }
 
+    [Display(Name = "City")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The City cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The City cannot contain script tags.")]
     public string? City { get; set; }
+
+    [Display(Name = "State")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The State cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The State cannot contain script tags.")]
     public string? State { get; set; }
 
-    [Display(Name = "Postal code")]
+    [Display(Name = "Postal Code")]
+    [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
+    [Display(Name = "Country")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Country cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Country cannot contain script tags.")]
     public string? Country { get; set; }
 
-    [Display(Name = "Tax / GST number")]
+    [Display(Name = "Tax / GST Number")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Tax / GST Number cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax / GST Number cannot contain script tags.")]
     public string? TaxNumber { get; set; }
 
     [Display(Name = "Active")]
@@ -56,22 +82,6 @@ public sealed class InputSupplierCreate
     public string? Country { get; set; }
     public string? TaxNumber { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputSupplierCreate From(InSupplierCreateView v) => new()
-    {
-        SupplierCode = v.SupplierCode,
-        SupplierName = v.SupplierName,
-        ContactPerson = v.ContactPerson,
-        Email = v.Email,
-        Phone = v.Phone,
-        AddressLine1 = v.AddressLine1,
-        City = v.City,
-        State = v.State,
-        PostalCode = v.PostalCode,
-        Country = v.Country,
-        TaxNumber = v.TaxNumber,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputSupplierCreate
@@ -90,38 +100,66 @@ public sealed class OutputSupplierCreate
 
 public sealed class InSupplierUpdateView
 {
+    [Display(Name = "Supplier")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Supplier.")]
     public int IdSupplier { get; set; }
 
-    [MaxLength(20)]
-    [Display(Name = "Supplier code")]
+    [Display(Name = "Supplier Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Supplier Code cannot exceed 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Supplier Code cannot contain script tags.")]
     public string? SupplierCode { get; set; }
 
-    [Required, MaxLength(300)]
-    [Display(Name = "Supplier name")]
+    [Display(Name = "Supplier Name")]
+    [Required(ErrorMessage = "The Supplier Name field is required.")]
+    [TrimmedString(2, 300, ErrorMessage = "The Supplier Name must be between 2 and 300 characters.")]
+    [NoScriptTags(ErrorMessage = "The Supplier Name cannot contain script tags.")]
     public string SupplierName { get; set; } = string.Empty;
 
-    [MaxLength(200)]
-    [Display(Name = "Contact person")]
+    [Display(Name = "Contact Person")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Contact Person cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Contact Person cannot contain script tags.")]
     public string? ContactPerson { get; set; }
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
     [Display(Name = "Address")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address cannot contain script tags.")]
     public string? AddressLine1 { get; set; }
 
+    [Display(Name = "City")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The City cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The City cannot contain script tags.")]
     public string? City { get; set; }
+
+    [Display(Name = "State")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The State cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The State cannot contain script tags.")]
     public string? State { get; set; }
 
-    [Display(Name = "Postal code")]
+    [Display(Name = "Postal Code")]
+    [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
+    [Display(Name = "Country")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Country cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Country cannot contain script tags.")]
     public string? Country { get; set; }
 
-    [Display(Name = "Tax / GST number")]
+    [Display(Name = "Tax / GST Number")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Tax / GST Number cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax / GST Number cannot contain script tags.")]
     public string? TaxNumber { get; set; }
 
     [Display(Name = "Active")]
@@ -143,23 +181,6 @@ public sealed class InputSupplierUpdate
     public string? Country { get; set; }
     public string? TaxNumber { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputSupplierUpdate From(InSupplierUpdateView v) => new()
-    {
-        IdSupplier = v.IdSupplier,
-        SupplierCode = v.SupplierCode,
-        SupplierName = v.SupplierName,
-        ContactPerson = v.ContactPerson,
-        Email = v.Email,
-        Phone = v.Phone,
-        AddressLine1 = v.AddressLine1,
-        City = v.City,
-        State = v.State,
-        PostalCode = v.PostalCode,
-        Country = v.Country,
-        TaxNumber = v.TaxNumber,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputSupplierUpdate

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace SmartCartPro.Models;
 
 #region Audit Create
@@ -18,13 +20,23 @@ public sealed class InputAuditLogCreate
 public sealed class InputAuditLogList
 {
     public string? EntityName { get; set; }
+
     public int? EntityId { get; set; }
+
     public int? FkUser { get; set; }
+
     public int? FkStore { get; set; }
+
     public string? Action { get; set; }
+
     public DateTime? From { get; set; }
+
     public DateTime? To { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "Page must be at least 1.")]
     public int Page { get; set; } = 1;
+
+    [Range(1, 200, ErrorMessage = "PageSize must be between 1 and 200.")]
     public int PageSize { get; set; } = 50;
 }
 

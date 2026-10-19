@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -43,23 +44,27 @@ public sealed class OutputSettingList
 /// <summary>View model for the settings form. One property per known key.</summary>
 public sealed class InSettingView
 {
-    [MaxLength(50)]
     [Display(Name = "Invoice Prefix")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Invoice Prefix cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Invoice Prefix cannot contain script tags.")]
     public string? InvoicePrefix { get; set; }
 
     [Display(Name = "Allow Negative Stock")]
     public bool AllowNegativeStock { get; set; }
 
-    [MaxLength(50)]
     [Display(Name = "Default Tax Code")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Default Tax Code cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Default Tax Code cannot contain script tags.")]
     public string? DefaultTaxCode { get; set; }
 
-    [MaxLength(10)]
     [Display(Name = "Currency Code")]
+    [StringLengthValidation(0, 10, ErrorMessage = "The Currency Code cannot exceed 10 characters.")]
+    [NoScriptTags(ErrorMessage = "The Currency Code cannot contain script tags.")]
     public string? Currency { get; set; }
 
-    [MaxLength(100)]
     [Display(Name = "Timezone")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Timezone cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Timezone cannot contain script tags.")]
     public string? Timezone { get; set; }
 }
 

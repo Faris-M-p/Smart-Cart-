@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -6,31 +7,42 @@ namespace SmartCartPro.Models;
 
 public sealed class InLicenseUpdateView
 {
-    [Required]
-    [Display(Name = "License key")]
+    [Display(Name = "License Key")]
+    [Required(ErrorMessage = "The License Key field is required.")]
+    [StringLengthValidation(8, 200, ErrorMessage = "The License Key must be between 8 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The License Key cannot contain script tags.")]
     public string LicenseKey { get; set; } = string.Empty;
 
-    [Required]
-    [Display(Name = "License type")]
+    [Display(Name = "License Type")]
+    [Required(ErrorMessage = "The License Type field is required.")]
+    [AllowedValues("standard", "premium", "enterprise", ErrorMessage = "Something went wrong/Please select a valid License Type.")]
+    [StringLengthValidation(2, 50, ErrorMessage = "The License Type must be between 2 and 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The License Type cannot contain script tags.")]
     public string LicenseType { get; set; } = "standard";
 
-    [Required]
     [Display(Name = "Status")]
-    public string Status { get; set; } = "active";
+    [Required(ErrorMessage = "Status is required.")]
+    [EnumDataType(typeof(CommonModel.LicenseStatus), ErrorMessage = "Please select a valid status.")]
+    [EnumDefined(typeof(CommonModel.LicenseStatus), ErrorMessage = "Something went wrong/Please select a valid Status.")]
+    public int Status { get; set; } = (int)CommonModel.LicenseStatus.Active;
 
-    [Required]
-    [Display(Name = "Start date")]
+    [Display(Name = "Start Date")]
+    [Required(ErrorMessage = "The Start Date field is required.")]
     public DateOnly StartDate { get; set; }
 
-    [Required]
-    [Display(Name = "Expiry date")]
+    [Display(Name = "Expiry Date")]
+    [Required(ErrorMessage = "The Expiry Date field is required.")]
+    [DateGreaterThanOrEqualTo("StartDate", ErrorMessage = "The Expiry Date must be greater than or equal to the Start Date.")]
     public DateOnly ExpiryDate { get; set; }
 
-    [Range(1, 100)]
-    [Display(Name = "Max stores")]
+    [Display(Name = "Max Stores")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please enter a valid Max Stores value.")]
     public int MaxStores { get; set; } = 1;
 
     [Display(Name = "Notes")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Notes cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 }
 
@@ -41,24 +53,11 @@ public sealed class InputLicenseUpdate
 
     public string LicenseKey { get; set; } = string.Empty;
     public string LicenseType { get; set; } = "standard";
-    public string Status { get; set; } = "active";
+    public int Status { get; set; } = (int)CommonModel.LicenseStatus.Active;
     public DateOnly StartDate { get; set; }
     public DateOnly ExpiryDate { get; set; }
     public int MaxStores { get; set; } = 1;
     public string? Notes { get; set; }
-
-    public static InputLicenseUpdate From(InLicenseUpdateView view, int actorUserId, bool canEditLicense) => new()
-    {
-        ActorUserId = actorUserId,
-        CanEditLicense = canEditLicense,
-        LicenseKey = view.LicenseKey,
-        LicenseType = view.LicenseType,
-        Status = view.Status,
-        StartDate = view.StartDate,
-        ExpiryDate = view.ExpiryDate,
-        MaxStores = view.MaxStores,
-        Notes = view.Notes
-    };
 }
 
 public sealed class OutputLicenseUpdate
@@ -70,7 +69,7 @@ public sealed class OutputLicenseUpdate
     public int IdLicense { get; set; }
     public string LicenseKey { get; set; } = string.Empty;
     public string LicenseType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public int Status { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly ExpiryDate { get; set; }
     public int MaxStores { get; set; }
@@ -92,11 +91,16 @@ public sealed class OutputLicenseSelect
     public int IdLicense { get; set; }
     public string LicenseKey { get; set; } = string.Empty;
     public string LicenseType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    /// <summary><see cref="CommonModel.LicenseStatus"/> integer.</summary>
+    public int Status { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly ExpiryDate { get; set; }
     public int MaxStores { get; set; }
     public string? Notes { get; set; }
+
+    public string StatusLabel => Enum.IsDefined(typeof(CommonModel.LicenseStatus), Status)
+        ? ((CommonModel.LicenseStatus)Status).ToString()
+        : "Unknown";
 
     public bool IsExpired => ExpiryDate < DateOnly.FromDateTime(DateTime.UtcNow);
     public bool IsNearExpiry => !IsExpired && (ExpiryDate.ToDateTime(TimeOnly.MinValue) - DateTime.UtcNow).TotalDays <= 30;

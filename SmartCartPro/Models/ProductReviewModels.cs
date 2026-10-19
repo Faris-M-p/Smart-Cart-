@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -15,28 +16,39 @@ namespace SmartCartPro.Models;
 
 public sealed class InProductReviewCreateView
 {
+    [Display(Name = "Product")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
+    [Display(Name = "Customer")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Customer.")]
     public int FkCustomer { get; set; }
 
+    [Display(Name = "Store")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int? FkStore { get; set; }
 
     /// <summary>Must reference a qualifying order item owned by the customer.</summary>
+    [Display(Name = "Order Item")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Order Item.")]
     public int FkOnlineOrderItem { get; set; }
 
-    [Required, Range(1, 5)]
     [Display(Name = "Rating")]
+    [Required]
+    [Range(1, 5, ErrorMessage = "The Rating must be between 1 and 5.")]
     public int Rating { get; set; }
 
-    [MaxLength(200)]
     [Display(Name = "Title")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Title cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Title cannot contain script tags.")]
     public string? Title { get; set; }
 
-    [MaxLength(2000)]
     [Display(Name = "Review")]
+    [StringLengthValidation(0, 2000, ErrorMessage = "The Review cannot exceed 2000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Review cannot contain script tags.")]
     public string? ReviewText { get; set; }
 }
 

@@ -35,8 +35,12 @@ public class ModuleController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InModuleAssignView model, CancellationToken ct)
     {
-        var result = await _svc.AssignModulesAsync(
-            InputModuleAssign.From(model, ActorId), ct);
+        var input = new InputModuleAssign
+        {
+            ActorUserId = ActorId,
+            EnabledModuleIds = model.EnabledModuleIds ?? new List<int>()
+        };
+        var result = await _svc.AssignModulesAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to save module assignment.", result.ResponseMsg ?? "Unable to save module assignment.");

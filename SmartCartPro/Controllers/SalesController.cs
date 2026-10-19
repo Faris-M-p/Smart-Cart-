@@ -115,13 +115,14 @@ public class SalesController : Controller
         model.IdSale = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CancelSaleAsync(new InputSaleCancel
+        var input = new InputSaleCancel
         {
             IdSale = model.IdSale,
             FkStore = StoreId,
             Reason = model.Reason,
             CancelledBy = ActorId
-        }, ct);
+        };
+        var result = await _svc.CancelSaleAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to cancel sale.", result.ResponseMsg ?? "Unable to cancel sale.");
@@ -209,13 +210,14 @@ public class SalesController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.OpenSessionAsync(new InputCashSessionOpen
+        var input = new InputCashSessionOpen
         {
             FkStore = model.FkStore > 0 ? model.FkStore : StoreId,
             FkUser = ActorId,
             OpeningFloat = model.OpeningFloat,
             Notes = model.Notes
-        }, ct);
+        };
+        var result = await _svc.OpenSessionAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to open cash session.", result.ResponseMsg ?? "Unable to open cash session.");
 
@@ -228,13 +230,14 @@ public class SalesController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CloseSessionAsync(new InputCashSessionClose
+        var input = new InputCashSessionClose
         {
             IdCashSession = model.IdCashSession,
             FkStore = StoreId,
             ClosingCash = model.ClosingCash,
             Notes = model.Notes
-        }, ct);
+        };
+        var result = await _svc.CloseSessionAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to close session.", result.ResponseMsg ?? "Unable to close session.");
 

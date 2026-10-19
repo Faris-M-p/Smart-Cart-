@@ -89,8 +89,13 @@ public static class ExceptionErrorMapper
             return true;
         }
 
-        // POST/PUT/DELETE/PATCH on these MVC controller prefixes always return JSON
-        // so that AppExceptionHandler serialises thrown exceptions as CommonResponseModel.
+        // Convention: *Json actions (ListJson, etc.) always expect CommonResponseModel.
+        if (IsJsonActionPath(request.Path))
+        {
+            return true;
+        }
+
+        // POST/PUT/DELETE/PATCH on MVC JSON controllers → CommonResponseModel.
         if (IsMutatingMethod(request.Method)
             && IsMvcJsonControllerPath(request.Path))
         {
@@ -113,6 +118,18 @@ public static class ExceptionErrorMapper
         || HttpMethods.IsDelete(method)
         || HttpMethods.IsPatch(method);
 
+    /// <summary>True when the last path segment ends with "Json" (e.g. /Audit/ListJson).</summary>
+    private static bool IsJsonActionPath(PathString path)
+    {
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        var lastSlash = value.LastIndexOf('/');
+        var action = lastSlash >= 0 ? value[(lastSlash + 1)..] : value;
+        return action.EndsWith("Json", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static readonly string[] JsonControllerPrefixes =
     [
         "/api",
@@ -133,7 +150,8 @@ public static class ExceptionErrorMapper
         "/Setting",
         "/ProductReview",
         "/OnlineOrder",
-        "/Cart"
+        "/Cart",
+        "/Audit"
     ];
 
     private static bool IsMvcJsonControllerPath(PathString path) =>

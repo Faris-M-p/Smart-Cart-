@@ -38,7 +38,16 @@ public class RoleController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateRoleAsync(InputRoleCreate.From(model, ActorId), ct);
+        var input = new InputRoleCreate
+        {
+            ActorUserId = ActorId,
+            RoleCode = model.RoleCode,
+            RoleName = model.RoleName,
+            Description = model.Description,
+            IsActive = model.IsActive,
+            PermissionIds = model.PermissionIds ?? new List<int>()
+        };
+        var result = await _svc.CreateRoleAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create role.", result.ResponseMsg ?? "Unable to create role.");
 
@@ -75,7 +84,16 @@ public class RoleController : Controller
         model.IdRole = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateRoleAsync(InputRoleUpdate.From(model, ActorId), ct);
+        var input = new InputRoleUpdate
+        {
+            ActorUserId = ActorId,
+            IdRole = model.IdRole,
+            RoleName = model.RoleName,
+            Description = model.Description,
+            IsActive = model.IsActive,
+            PermissionIds = model.PermissionIds ?? new List<int>()
+        };
+        var result = await _svc.UpdateRoleAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update role.", result.ResponseMsg ?? "Unable to update role.");
 
@@ -86,7 +104,12 @@ public class RoleController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var result = await _svc.DeleteRoleAsync(new InputRoleDelete { ActorUserId = ActorId, IdRole = id }, ct);
+        var input = new InputRoleDelete
+        {
+            ActorUserId = ActorId,
+            IdRole = id
+        };
+        var result = await _svc.DeleteRoleAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to delete role.", result.ResponseMsg ?? "Unable to delete role.");

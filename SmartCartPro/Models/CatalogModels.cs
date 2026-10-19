@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -10,17 +11,24 @@ namespace SmartCartPro.Models;
 
 public sealed class InCategoryCreateView
 {
-    [MaxLength(20)]
-    [Display(Name = "Category code")]
+    [Display(Name = "Category Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Category Code cannot exceed 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Category Code cannot contain script tags.")]
     public string? CategoryCode { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Category name")]
+    [Display(Name = "Category Name")]
+    [Required(ErrorMessage = "The Category Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Category Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Category Name cannot contain script tags.")]
     public string CategoryName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Description cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
-    [Display(Name = "Display order")]
+    [Display(Name = "Display Order")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Display Order must be zero or greater.")]
     public int DisplayOrder { get; set; }
 
     [Display(Name = "Active")]
@@ -34,15 +42,6 @@ public sealed class InputCategoryCreate
     public string? Description { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputCategoryCreate From(InCategoryCreateView v) => new()
-    {
-        CategoryCode = v.CategoryCode,
-        CategoryName = v.CategoryName,
-        Description = v.Description,
-        DisplayOrder = v.DisplayOrder,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputCategoryCreate
@@ -61,19 +60,29 @@ public sealed class OutputCategoryCreate
 
 public sealed class InCategoryUpdateView
 {
+    [Display(Name = "Category")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
     public int IdCategory { get; set; }
 
-    [MaxLength(20)]
-    [Display(Name = "Category code")]
+    [Display(Name = "Category Code")]
+    [StringLengthValidation(0, 20, ErrorMessage = "The Category Code cannot exceed 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Category Code cannot contain script tags.")]
     public string? CategoryCode { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Category name")]
+    [Display(Name = "Category Name")]
+    [Required(ErrorMessage = "The Category Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Category Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Category Name cannot contain script tags.")]
     public string CategoryName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Description cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
-    [Display(Name = "Display order")]
+    [Display(Name = "Display Order")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Display Order must be zero or greater.")]
     public int DisplayOrder { get; set; }
 
     [Display(Name = "Active")]
@@ -88,16 +97,6 @@ public sealed class InputCategoryUpdate
     public string? Description { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputCategoryUpdate From(InCategoryUpdateView v) => new()
-    {
-        IdCategory = v.IdCategory,
-        CategoryCode = v.CategoryCode,
-        CategoryName = v.CategoryName,
-        Description = v.Description,
-        DisplayOrder = v.DisplayOrder,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputCategoryUpdate
@@ -167,17 +166,24 @@ public sealed class OutputCategoryList
 
 public sealed class InSubCategoryCreateView
 {
-    [Required]
     [Display(Name = "Category")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
     public int FkCategory { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Sub-category name")]
+    [Display(Name = "Sub-Category Name")]
+    [Required(ErrorMessage = "The Sub-Category Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Sub-Category Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Sub-Category Name cannot contain script tags.")]
     public string SubCategoryName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Description cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
-    [Display(Name = "Display order")]
+    [Display(Name = "Display Order")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Display Order must be zero or greater.")]
     public int DisplayOrder { get; set; }
 
     [Display(Name = "Active")]
@@ -191,15 +197,6 @@ public sealed class InputSubCategoryCreate
     public string? Description { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputSubCategoryCreate From(InSubCategoryCreateView v) => new()
-    {
-        FkCategory = v.FkCategory,
-        SubCategoryName = v.SubCategoryName,
-        Description = v.Description,
-        DisplayOrder = v.DisplayOrder,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputSubCategoryCreate
@@ -218,19 +215,29 @@ public sealed class OutputSubCategoryCreate
 
 public sealed class InSubCategoryUpdateView
 {
+    [Display(Name = "Sub-Category")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Sub-Category.")]
     public int IdSubCategory { get; set; }
 
-    [Required]
     [Display(Name = "Category")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
     public int FkCategory { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Sub-category name")]
+    [Display(Name = "Sub-Category Name")]
+    [Required(ErrorMessage = "The Sub-Category Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Sub-Category Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Sub-Category Name cannot contain script tags.")]
     public string SubCategoryName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Description cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
-    [Display(Name = "Display order")]
+    [Display(Name = "Display Order")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Display Order must be zero or greater.")]
     public int DisplayOrder { get; set; }
 
     [Display(Name = "Active")]
@@ -245,16 +252,6 @@ public sealed class InputSubCategoryUpdate
     public string? Description { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputSubCategoryUpdate From(InSubCategoryUpdateView v) => new()
-    {
-        IdSubCategory = v.IdSubCategory,
-        FkCategory = v.FkCategory,
-        SubCategoryName = v.SubCategoryName,
-        Description = v.Description,
-        DisplayOrder = v.DisplayOrder,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputSubCategoryUpdate
@@ -324,10 +321,15 @@ public sealed class OutputSubCategoryList
 
 public sealed class InBrandCreateView
 {
-    [Required, MaxLength(200)]
-    [Display(Name = "Brand name")]
+    [Display(Name = "Brand Name")]
+    [Required(ErrorMessage = "The Brand Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Brand Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Brand Name cannot contain script tags.")]
     public string BrandName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Description cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
     [Display(Name = "Active")]
@@ -339,13 +341,6 @@ public sealed class InputBrandCreate
     public string BrandName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputBrandCreate From(InBrandCreateView v) => new()
-    {
-        BrandName = v.BrandName,
-        Description = v.Description,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputBrandCreate
@@ -364,12 +359,20 @@ public sealed class OutputBrandCreate
 
 public sealed class InBrandUpdateView
 {
+    [Display(Name = "Brand")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Brand.")]
     public int IdBrand { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Brand name")]
+    [Display(Name = "Brand Name")]
+    [Required(ErrorMessage = "The Brand Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Brand Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Brand Name cannot contain script tags.")]
     public string BrandName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Description cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
     [Display(Name = "Active")]
@@ -382,14 +385,6 @@ public sealed class InputBrandUpdate
     public string BrandName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputBrandUpdate From(InBrandUpdateView v) => new()
-    {
-        IdBrand = v.IdBrand,
-        BrandName = v.BrandName,
-        Description = v.Description,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputBrandUpdate
@@ -453,12 +448,16 @@ public sealed class OutputBrandList
 
 public sealed class InUnitCreateView
 {
-    [Required, MaxLength(20)]
-    [Display(Name = "Unit code")]
+    [Display(Name = "Unit Code")]
+    [Required(ErrorMessage = "The Unit Code field is required.")]
+    [StringLengthValidation(1, 20, ErrorMessage = "The Unit Code must be between 1 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Unit Code cannot contain script tags.")]
     public string UnitCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(100)]
-    [Display(Name = "Unit name")]
+    [Display(Name = "Unit Name")]
+    [Required(ErrorMessage = "The Unit Name field is required.")]
+    [TrimmedString(1, 100, ErrorMessage = "The Unit Name must be between 1 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Unit Name cannot contain script tags.")]
     public string UnitName { get; set; } = string.Empty;
 
     [Display(Name = "Active")]
@@ -470,13 +469,6 @@ public sealed class InputUnitCreate
     public string UnitCode { get; set; } = string.Empty;
     public string UnitName { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
-
-    public static InputUnitCreate From(InUnitCreateView v) => new()
-    {
-        UnitCode = v.UnitCode,
-        UnitName = v.UnitName,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputUnitCreate
@@ -495,14 +487,21 @@ public sealed class OutputUnitCreate
 
 public sealed class InUnitUpdateView
 {
+    [Display(Name = "Unit")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Unit.")]
     public int IdUnit { get; set; }
 
-    [Required, MaxLength(20)]
-    [Display(Name = "Unit code")]
+    [Display(Name = "Unit Code")]
+    [Required(ErrorMessage = "The Unit Code field is required.")]
+    [StringLengthValidation(1, 20, ErrorMessage = "The Unit Code must be between 1 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Unit Code cannot contain script tags.")]
     public string UnitCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(100)]
-    [Display(Name = "Unit name")]
+    [Display(Name = "Unit Name")]
+    [Required(ErrorMessage = "The Unit Name field is required.")]
+    [TrimmedString(1, 100, ErrorMessage = "The Unit Name must be between 1 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Unit Name cannot contain script tags.")]
     public string UnitName { get; set; } = string.Empty;
 
     [Display(Name = "Active")]
@@ -515,14 +514,6 @@ public sealed class InputUnitUpdate
     public string UnitCode { get; set; } = string.Empty;
     public string UnitName { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
-
-    public static InputUnitUpdate From(InUnitUpdateView v) => new()
-    {
-        IdUnit = v.IdUnit,
-        UnitCode = v.UnitCode,
-        UnitName = v.UnitName,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputUnitUpdate
@@ -586,16 +577,21 @@ public sealed class OutputUnitList
 
 public sealed class InTaxCreateView
 {
-    [Required, MaxLength(20)]
-    [Display(Name = "Tax code")]
+    [Display(Name = "Tax Code")]
+    [Required(ErrorMessage = "The Tax Code field is required.")]
+    [StringLengthValidation(1, 20, ErrorMessage = "The Tax Code must be between 1 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax Code cannot contain script tags.")]
     public string TaxCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(100)]
-    [Display(Name = "Tax name")]
+    [Display(Name = "Tax Name")]
+    [Required(ErrorMessage = "The Tax Name field is required.")]
+    [TrimmedString(1, 100, ErrorMessage = "The Tax Name must be between 1 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax Name cannot contain script tags.")]
     public string TaxName { get; set; } = string.Empty;
 
-    [Range(0, 100)]
-    [Display(Name = "Tax rate (%)")]
+    [Display(Name = "Tax Rate (%)")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Tax Rate (%) must be greater than or equal to zero.")]
+    [MaxPercentage(100, ErrorMessage = "The Tax Rate (%) must not exceed 100.")]
     public decimal TaxRate { get; set; }
 
     [Display(Name = "Inclusive")]
@@ -612,15 +608,6 @@ public sealed class InputTaxCreate
     public decimal TaxRate { get; set; }
     public bool IsInclusive { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputTaxCreate From(InTaxCreateView v) => new()
-    {
-        TaxCode = v.TaxCode,
-        TaxName = v.TaxName,
-        TaxRate = v.TaxRate,
-        IsInclusive = v.IsInclusive,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputTaxCreate
@@ -639,18 +626,26 @@ public sealed class OutputTaxCreate
 
 public sealed class InTaxUpdateView
 {
+    [Display(Name = "Tax")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Tax.")]
     public int IdTax { get; set; }
 
-    [Required, MaxLength(20)]
-    [Display(Name = "Tax code")]
+    [Display(Name = "Tax Code")]
+    [Required(ErrorMessage = "The Tax Code field is required.")]
+    [StringLengthValidation(1, 20, ErrorMessage = "The Tax Code must be between 1 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax Code cannot contain script tags.")]
     public string TaxCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(100)]
-    [Display(Name = "Tax name")]
+    [Display(Name = "Tax Name")]
+    [Required(ErrorMessage = "The Tax Name field is required.")]
+    [TrimmedString(1, 100, ErrorMessage = "The Tax Name must be between 1 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax Name cannot contain script tags.")]
     public string TaxName { get; set; } = string.Empty;
 
-    [Range(0, 100)]
-    [Display(Name = "Tax rate (%)")]
+    [Display(Name = "Tax Rate (%)")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Tax Rate (%) must be greater than or equal to zero.")]
+    [MaxPercentage(100, ErrorMessage = "The Tax Rate (%) must not exceed 100.")]
     public decimal TaxRate { get; set; }
 
     [Display(Name = "Inclusive")]
@@ -668,16 +663,6 @@ public sealed class InputTaxUpdate
     public decimal TaxRate { get; set; }
     public bool IsInclusive { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputTaxUpdate From(InTaxUpdateView v) => new()
-    {
-        IdTax = v.IdTax,
-        TaxCode = v.TaxCode,
-        TaxName = v.TaxName,
-        TaxRate = v.TaxRate,
-        IsInclusive = v.IsInclusive,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputTaxUpdate

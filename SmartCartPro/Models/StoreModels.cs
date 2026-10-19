@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -6,35 +7,60 @@ namespace SmartCartPro.Models;
 
 public sealed class InStoreCreateView
 {
-    [Required, MaxLength(20)]
-    [Display(Name = "Store code")]
+    [Display(Name = "Store Code")]
+    [Required(ErrorMessage = "The Store Code field is required.")]
+    [StringLengthValidation(2, 20, ErrorMessage = "The Store Code must be between 2 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Store Code cannot contain script tags.")]
     public string StoreCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Store name")]
+    [Display(Name = "Store Name")]
+    [Required(ErrorMessage = "The Store Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Store Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Store Name cannot contain script tags.")]
     public string StoreName { get; set; } = string.Empty;
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
-    [Display(Name = "Address line 1")]
+    [Display(Name = "Address Line 1")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address Line 1 cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address Line 1 cannot contain script tags.")]
     public string? AddressLine1 { get; set; }
 
-    [Display(Name = "Address line 2")]
+    [Display(Name = "Address Line 2")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address Line 2 cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address Line 2 cannot contain script tags.")]
     public string? AddressLine2 { get; set; }
 
+    [Display(Name = "City")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The City cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The City cannot contain script tags.")]
     public string? City { get; set; }
+
+    [Display(Name = "State")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The State cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The State cannot contain script tags.")]
     public string? State { get; set; }
 
-    [Display(Name = "Postal code")]
+    [Display(Name = "Postal Code")]
+    [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
+    [Display(Name = "Country")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Country cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Country cannot contain script tags.")]
     public string? Country { get; set; }
 
-    [Display(Name = "Default store")]
+    [Display(Name = "Default Store")]
     public bool IsDefault { get; set; }
 
     [Display(Name = "Active")]
@@ -59,24 +85,6 @@ public sealed class InputStoreCreate
     public string? Country { get; set; }
     public bool IsDefault { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputStoreCreate From(InStoreCreateView view, int actorUserId, bool canCreate) => new()
-    {
-        ActorUserId = actorUserId,
-        CanCreate = canCreate,
-        StoreCode = view.StoreCode,
-        StoreName = view.StoreName,
-        Email = view.Email,
-        Phone = view.Phone,
-        AddressLine1 = view.AddressLine1,
-        AddressLine2 = view.AddressLine2,
-        City = view.City,
-        State = view.State,
-        PostalCode = view.PostalCode,
-        Country = view.Country,
-        IsDefault = view.IsDefault,
-        IsActive = view.IsActive
-    };
 }
 
 public sealed class OutputStoreCreate
@@ -108,37 +116,65 @@ public sealed class OutputStoreCreate
 
 public sealed class InStoreUpdateView
 {
+    [Display(Name = "Store")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int IdStore { get; set; }
 
-    [Required, MaxLength(20)]
-    [Display(Name = "Store code")]
-    public string StoreCode { get; set; } = string.Empty;
+    [Display(Name = "Store Code")]
+    [Required(ErrorMessage = "The Store Code field is required.")]
+    [StringLengthValidation(2, 20, ErrorMessage = "The Store Code must be between 2 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Store Code cannot contain script tags.")]
+    public string? StoreCode { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Store name")]
-    public string StoreName { get; set; } = string.Empty;
+    [Display(Name = "Store Name")]
+    [Required(ErrorMessage = "The Store Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Store Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Store Name cannot contain script tags.")]
+    public string? StoreName { get; set; }
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
-    [Display(Name = "Address line 1")]
+    [Display(Name = "Address Line 1")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address Line 1 cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address Line 1 cannot contain script tags.")]
     public string? AddressLine1 { get; set; }
 
-    [Display(Name = "Address line 2")]
+    [Display(Name = "Address Line 2")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address Line 2 cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address Line 2 cannot contain script tags.")]
     public string? AddressLine2 { get; set; }
 
+    [Display(Name = "City")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The City cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The City cannot contain script tags.")]
     public string? City { get; set; }
+
+    [Display(Name = "State")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The State cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The State cannot contain script tags.")]
     public string? State { get; set; }
 
-    [Display(Name = "Postal code")]
+    [Display(Name = "Postal Code")]
+    [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
+    [Display(Name = "Country")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Country cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Country cannot contain script tags.")]
     public string? Country { get; set; }
 
-    [Display(Name = "Default store")]
+    [Display(Name = "Default Store")]
     public bool IsDefault { get; set; }
 
     [Display(Name = "Active")]
@@ -162,24 +198,6 @@ public sealed class InputStoreUpdate
     public string? Country { get; set; }
     public bool IsDefault { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputStoreUpdate From(InStoreUpdateView view, int actorUserId) => new()
-    {
-        ActorUserId = actorUserId,
-        IdStore = view.IdStore,
-        StoreCode = view.StoreCode,
-        StoreName = view.StoreName,
-        Email = view.Email,
-        Phone = view.Phone,
-        AddressLine1 = view.AddressLine1,
-        AddressLine2 = view.AddressLine2,
-        City = view.City,
-        State = view.State,
-        PostalCode = view.PostalCode,
-        Country = view.Country,
-        IsDefault = view.IsDefault,
-        IsActive = view.IsActive
-    };
 }
 
 public sealed class OutputStoreUpdate

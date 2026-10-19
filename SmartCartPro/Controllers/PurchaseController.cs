@@ -58,7 +58,23 @@ public class PurchaseController : Controller
         if (!model.Lines.Any())
             throw new ValidationException("At least one line item is required.", "Purchase must have at least one line.");
 
-        var result = await _svc.CreatePurchaseAsync(InputPurchaseCreate.From(model, ActorId), ct);
+        var input = new InputPurchaseCreate
+        {
+            FkStore = model.FkStore,
+            FkSupplier = model.FkSupplier,
+            PurchaseDate = model.PurchaseDate,
+            InvoiceNumber = model.InvoiceNumber,
+            Notes = model.Notes,
+            CreatedBy = ActorId,
+            Lines = model.Lines.Select(l => new InputPurchaseLine
+            {
+                FkProduct = l.FkProduct,
+                FkProductVariant = l.FkProductVariant,
+                Quantity = l.Quantity,
+                UnitCost = l.UnitCost
+            }).ToList()
+        };
+        var result = await _svc.CreatePurchaseAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create purchase order.", result.ResponseMsg ?? "Unable to create purchase order.");
 
@@ -220,12 +236,13 @@ public class PurchaseController : Controller
         model.IdPurchase = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CancelPurchaseAsync(new InputPurchaseCancel
+        var input = new InputPurchaseCancel
         {
             IdPurchase = model.IdPurchase,
             Reason = model.Reason,
             CancelledBy = ActorId
-        }, ct);
+        };
+        var result = await _svc.CancelPurchaseAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to cancel purchase order.", result.ResponseMsg ?? "Unable to cancel purchase order.");

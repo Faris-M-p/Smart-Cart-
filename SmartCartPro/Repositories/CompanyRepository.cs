@@ -334,24 +334,43 @@ public class CompanyRepository : ICompanyRepository
         };
     }
 
-    public Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default) =>
-        _db.Licenses.AsNoTracking()
+    public async Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default)
+    {
+        var row = await _db.Licenses.AsNoTracking()
             .Where(l => !l.Cancelled)
-            .Select(l => new OutputLicenseSelect
+            .Select(l => new
             {
-                IdLicense = l.IdLicense,
-                LicenseKey = l.LicenseKey,
-                LicenseType = l.LicenseType,
-                Status = l.Status,
-                StartDate = l.StartDate,
-                ExpiryDate = l.ExpiryDate,
-                MaxStores = l.MaxStores,
-                Notes = l.Notes
+                l.IdLicense,
+                l.LicenseKey,
+                l.LicenseType,
+                l.Status,
+                l.StartDate,
+                l.ExpiryDate,
+                l.MaxStores,
+                l.Notes
             })
             .FirstOrDefaultAsync(ct);
 
+        if (row is null)
+            return null;
+
+        return new OutputLicenseSelect
+        {
+            IdLicense = row.IdLicense,
+            LicenseKey = row.LicenseKey,
+            LicenseType = row.LicenseType,
+            Status = MapLicenseStatusFromDb(row.Status),
+            StartDate = row.StartDate,
+            ExpiryDate = row.ExpiryDate,
+            MaxStores = row.MaxStores,
+            Notes = row.Notes
+        };
+    }
+
     public async Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default)
     {
+        var statusDb = MapLicenseStatusToDb(input.Status);
+
         var existing = await _db.Licenses.FirstOrDefaultAsync(l => !l.Cancelled, ct);
         if (existing is null)
         {
@@ -359,7 +378,7 @@ public class CompanyRepository : ICompanyRepository
             {
                 LicenseKey = input.LicenseKey.Trim(),
                 LicenseType = input.LicenseType.Trim(),
-                Status = input.Status,
+                Status = statusDb,
                 StartDate = input.StartDate,
                 ExpiryDate = input.ExpiryDate,
                 MaxStores = input.MaxStores,
@@ -377,7 +396,7 @@ public class CompanyRepository : ICompanyRepository
                 IdLicense = created.IdLicense,
                 LicenseKey = created.LicenseKey,
                 LicenseType = created.LicenseType,
-                Status = created.Status,
+                Status = input.Status,
                 StartDate = created.StartDate,
                 ExpiryDate = created.ExpiryDate,
                 MaxStores = created.MaxStores,
@@ -387,7 +406,7 @@ public class CompanyRepository : ICompanyRepository
 
         existing.LicenseKey = input.LicenseKey.Trim();
         existing.LicenseType = input.LicenseType.Trim();
-        existing.Status = input.Status;
+        existing.Status = statusDb;
         existing.StartDate = input.StartDate;
         existing.ExpiryDate = input.ExpiryDate;
         existing.MaxStores = input.MaxStores;
@@ -403,7 +422,7 @@ public class CompanyRepository : ICompanyRepository
             IdLicense = existing.IdLicense,
             LicenseKey = existing.LicenseKey,
             LicenseType = existing.LicenseType,
-            Status = existing.Status,
+            Status = input.Status,
             StartDate = existing.StartDate,
             ExpiryDate = existing.ExpiryDate,
             MaxStores = existing.MaxStores,
@@ -424,4 +443,24 @@ public class CompanyRepository : ICompanyRepository
         });
         await _db.SaveChangesAsync(ct);
     }
+
+    private static int MapLicenseStatusFromDb(string? dbValue) =>
+        dbValue?.Trim().ToLowerInvariant() switch
+        {
+            "active" => (int)CommonModel.LicenseStatus.Active,
+            "suspended" => (int)CommonModel.LicenseStatus.Suspended,
+            "expired" => (int)CommonModel.LicenseStatus.Expired,
+            "trial" => (int)CommonModel.LicenseStatus.Trial,
+            _ => throw new ArgumentOutOfRangeException(nameof(dbValue), dbValue, "Unknown license status in database.")
+        };
+
+    private static string MapLicenseStatusToDb(int status) =>
+        (CommonModel.LicenseStatus)status switch
+        {
+            CommonModel.LicenseStatus.Active => "active",
+            CommonModel.LicenseStatus.Suspended => "suspended",
+            CommonModel.LicenseStatus.Expired => "expired",
+            CommonModel.LicenseStatus.Trial => "trial",
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown license status.")
+        };
 }

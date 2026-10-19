@@ -53,7 +53,26 @@ public class ProductController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateProductAsync(InputProductCreate.From(model), ct);
+        var input = new InputProductCreate
+        {
+            ProductCode = model.ProductCode,
+            ProductName = model.ProductName,
+            Description = model.Description,
+            Sku = model.Sku,
+            Barcode = model.Barcode,
+            FkCategory = model.FkCategory,
+            FkSubcategory = model.FkSubcategory,
+            FkBrand = model.FkBrand,
+            FkUnit = model.FkUnit,
+            FkTax = model.FkTax,
+            CostPrice = model.CostPrice,
+            SellingPrice = model.SellingPrice,
+            Mrp = model.Mrp,
+            ReorderLevel = model.ReorderLevel,
+            IsActive = model.IsActive,
+            IsOnline = model.IsOnline
+        };
+        var result = await _svc.CreateProductAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create product.", result.ResponseMsg ?? "Unable to create product.");
 
@@ -81,7 +100,27 @@ public class ProductController : Controller
         model.IdProduct = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateProductAsync(InputProductUpdate.From(model), ct);
+        var input = new InputProductUpdate
+        {
+            IdProduct = model.IdProduct,
+            ProductCode = model.ProductCode,
+            ProductName = model.ProductName,
+            Description = model.Description,
+            Sku = model.Sku,
+            Barcode = model.Barcode,
+            FkCategory = model.FkCategory,
+            FkSubcategory = model.FkSubcategory,
+            FkBrand = model.FkBrand,
+            FkUnit = model.FkUnit,
+            FkTax = model.FkTax,
+            CostPrice = model.CostPrice,
+            SellingPrice = model.SellingPrice,
+            Mrp = model.Mrp,
+            ReorderLevel = model.ReorderLevel,
+            IsActive = model.IsActive,
+            IsOnline = model.IsOnline
+        };
+        var result = await _svc.UpdateProductAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update product.", result.ResponseMsg ?? "Unable to update product.");
 
@@ -108,7 +147,16 @@ public class ProductController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateVariantAsync(InputVariantCreate.From(model), ct);
+        var input = new InputVariantCreate
+        {
+            FkProduct = model.FkProduct,
+            VariantName = model.VariantName,
+            SkuCode = model.SkuCode,
+            Barcode = model.Barcode,
+            AdditionalPrice = model.AdditionalPrice,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateVariantAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create variant.", result.ResponseMsg ?? "Unable to create variant.");
 
@@ -131,7 +179,17 @@ public class ProductController : Controller
         model.IdProductVariant = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateVariantAsync(InputVariantUpdate.From(model), ct);
+        var input = new InputVariantUpdate
+        {
+            IdProductVariant = model.IdProductVariant,
+            FkProduct = model.FkProduct,
+            VariantName = model.VariantName,
+            SkuCode = model.SkuCode,
+            Barcode = model.Barcode,
+            AdditionalPrice = model.AdditionalPrice,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateVariantAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update variant.", result.ResponseMsg ?? "Unable to update variant.");
 

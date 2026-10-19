@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -10,52 +11,83 @@ namespace SmartCartPro.Models;
 
 public sealed class InSaleCreateView
 {
+    [Display(Name = "Store")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int FkStore { get; set; }
 
+    [Display(Name = "Customer")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Customer.")]
     public int? FkCustomer { get; set; }
 
+    [Display(Name = "Cash Session")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Cash Session.")]
     public int? FkCashSession { get; set; }
 
-    [MaxLength(500)]
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 
     /// <summary>Client-generated idempotency reference to prevent double-posts.</summary>
-    [MaxLength(100)]
+    [Display(Name = "Client Reference")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Client Reference cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Client Reference cannot contain script tags.")]
     public string? ClientRef { get; set; }
 
-    [Required, MinLength(1)]
+    [Display(Name = "Lines")]
+    [Required]
+    [NotEmptyList(ErrorMessage = "At least one sale line is required.")]
     public List<InSaleLineView> Lines { get; set; } = new();
 
-    [Required, MinLength(1)]
+    [Display(Name = "Payments")]
+    [Required]
+    [NotEmptyList(ErrorMessage = "At least one payment is required.")]
     public List<InPaymentView> Payments { get; set; } = new();
 }
 
 public sealed class InSaleLineView
 {
+    [Display(Name = "Product")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
+    [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
 
-    [Required, Range(0.001, double.MaxValue)]
+    [Display(Name = "Quantity")]
+    [Required]
+    [DecimalGreaterThanZero(ErrorMessage = "The Quantity must be greater than zero.")]
     public decimal Quantity { get; set; }
 
     /// <summary>Override price; if 0/null, server recalculates from product master.</summary>
+    [Display(Name = "Unit Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Unit Price must be greater than or equal to zero.")]
     public decimal? UnitPrice { get; set; }
 
-    [Range(0, double.MaxValue)]
+    [Display(Name = "Discount Amount")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Discount Amount must be greater than or equal to zero.")]
     public decimal DiscountAmount { get; set; }
 }
 
 public sealed class InPaymentView
 {
-    [Required]
+    [Display(Name = "Payment Method")]
+    [Required(ErrorMessage = "The Payment Method field is required.")]
+    [StringLengthValidation(1, 50, ErrorMessage = "The Payment Method must be between 1 and 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Payment Method cannot contain script tags.")]
     public string PaymentMethod { get; set; } = string.Empty;
 
-    [Required, Range(0.01, double.MaxValue)]
+    [Display(Name = "Amount")]
+    [Required]
+    [DecimalGreaterThanZero(ErrorMessage = "The Amount must be greater than zero.")]
     public decimal Amount { get; set; }
 
+    [Display(Name = "Reference No.")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Reference No. cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Reference No. cannot contain script tags.")]
     public string? ReferenceNo { get; set; }
 }
 
@@ -207,10 +239,15 @@ public sealed class OutputSaleList
 
 public sealed class InSaleCancelView
 {
+    [Display(Name = "Sale")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Sale.")]
     public int IdSale { get; set; }
 
-    [Required, MaxLength(500)]
     [Display(Name = "Reason")]
+    [Required(ErrorMessage = "The Reason field is required.")]
+    [StringLengthValidation(2, 500, ErrorMessage = "The Reason must be between 2 and 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Reason cannot contain script tags.")]
     public string Reason { get; set; } = string.Empty;
 }
 
@@ -240,25 +277,49 @@ public sealed class OutputSaleCancel
 
 public sealed class InSaleReturnView
 {
+    [Display(Name = "Sale")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Sale.")]
     public int IdSale { get; set; }
+
+    [Display(Name = "Invoice Number")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Invoice Number cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Invoice Number cannot contain script tags.")]
     public string InvoiceNumber { get; set; } = string.Empty;
 
-    [MaxLength(500)]
+    [Display(Name = "Reason")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Reason cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Reason cannot contain script tags.")]
     public string? Reason { get; set; }
 
-    [Required, MinLength(1)]
+    [Display(Name = "Lines")]
+    [Required]
+    [NotEmptyList(ErrorMessage = "At least one return line is required.")]
     public List<InReturnLineView> Lines { get; set; } = new();
 }
 
 public sealed class InReturnLineView
 {
+    [Display(Name = "Sale Detail")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Sale Detail.")]
     public int IdSaleDetail { get; set; }
+
+    [Display(Name = "Product")]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
+
+    [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
+
+    [Display(Name = "Product Name")]
     public string ProductName { get; set; } = string.Empty;
+
+    [Display(Name = "Max Qty")]
     public decimal MaxQty { get; set; }
 
-    [Range(0.001, double.MaxValue)]
+    [Display(Name = "Return Qty")]
+    [DecimalGreaterThanZero(ErrorMessage = "The Return Qty must be greater than zero.")]
     public decimal ReturnQty { get; set; }
 }
 
@@ -300,13 +361,18 @@ public sealed class OutputSaleReturn
 
 public sealed class InCashSessionOpenView
 {
+    [Display(Name = "Store")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int FkStore { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Opening float")]
+    [Display(Name = "Opening Float")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Opening Float must be greater than or equal to zero.")]
     public decimal OpeningFloat { get; set; }
 
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 }
 
@@ -320,12 +386,18 @@ public sealed class InputCashSessionOpen
 
 public sealed class InCashSessionCloseView
 {
+    [Display(Name = "Cash Session")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Cash Session.")]
     public int IdCashSession { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Closing cash counted")]
+    [Display(Name = "Closing Cash Counted")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Closing Cash Counted must be greater than or equal to zero.")]
     public decimal ClosingCash { get; set; }
 
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 }
 

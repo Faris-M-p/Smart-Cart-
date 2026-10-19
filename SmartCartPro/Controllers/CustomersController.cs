@@ -36,7 +36,15 @@ public class CustomersController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateCustomerAsync(InputCustomerCreate.From(model), ct);
+        var input = new InputCustomerCreate
+        {
+            CustomerCode = model.CustomerCode,
+            FullName = model.FullName,
+            Email = model.Email,
+            Phone = model.Phone,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateCustomerAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create customer.", result.ResponseMsg ?? "Unable to create customer.");
 
@@ -59,7 +67,16 @@ public class CustomersController : Controller
         model.IdCustomer = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateCustomerAsync(InputCustomerUpdate.From(model), ct);
+        var input = new InputCustomerUpdate
+        {
+            IdCustomer = model.IdCustomer,
+            CustomerCode = model.CustomerCode,
+            FullName = model.FullName,
+            Email = model.Email,
+            Phone = model.Phone,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateCustomerAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update customer.", result.ResponseMsg ?? "Unable to update customer.");
 

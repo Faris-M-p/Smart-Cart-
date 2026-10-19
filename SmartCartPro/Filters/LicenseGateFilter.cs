@@ -58,7 +58,7 @@ public sealed class LicenseGateFilter : IAsyncActionFilter
             return;
         }
 
-        if (license.Status == "suspended")
+        if (license.Status == (int)CommonModel.LicenseStatus.Suspended)
         {
             context.Result = new ObjectResult("License is suspended. Contact your administrator.")
             {

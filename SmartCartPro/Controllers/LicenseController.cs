@@ -46,8 +46,19 @@ public class LicenseController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateLicenseAsync(
-            InputLicenseUpdate.From(model, ActorId, canEditLicense: true), ct);
+        var input = new InputLicenseUpdate
+        {
+            ActorUserId = ActorId,
+            CanEditLicense = true,
+            LicenseKey = model.LicenseKey,
+            LicenseType = model.LicenseType,
+            Status = model.Status,
+            StartDate = model.StartDate,
+            ExpiryDate = model.ExpiryDate,
+            MaxStores = model.MaxStores,
+            Notes = model.Notes
+        };
+        var result = await _svc.UpdateLicenseAsync(input, ct);
 
         if (!result.Ok)
             throw new UpdateFailedException("Unable to save license.", result.ResponseMsg ?? "Unable to save license.");
@@ -69,7 +80,7 @@ public class LicenseController : Controller
             CanEditLicense = true,
             LicenseKey = license.LicenseKey,
             LicenseType = license.LicenseType,
-            Status = "suspended",
+            Status = (int)CommonModel.LicenseStatus.Suspended,
             StartDate = license.StartDate,
             ExpiryDate = license.ExpiryDate,
             MaxStores = license.MaxStores,
@@ -97,7 +108,7 @@ public class LicenseController : Controller
             CanEditLicense = true,
             LicenseKey = license.LicenseKey,
             LicenseType = license.LicenseType,
-            Status = "active",
+            Status = (int)CommonModel.LicenseStatus.Active,
             StartDate = license.StartDate,
             ExpiryDate = license.ExpiryDate,
             MaxStores = license.MaxStores,

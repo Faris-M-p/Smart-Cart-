@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -98,21 +99,28 @@ public sealed class OutputInventoryList
 
 public sealed class InOpeningStockView
 {
-    [Required]
     [Display(Name = "Store")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int FkStore { get; set; }
 
-    [Required]
     [Display(Name = "Product")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
     [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
 
-    [Required, Range(0, double.MaxValue)]
-    [Display(Name = "Opening qty")]
+    [Display(Name = "Opening Qty")]
+    [Required]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Opening Qty must be greater than or equal to zero.")]
     public decimal Quantity { get; set; }
 
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 }
 
@@ -126,26 +134,33 @@ public sealed class InOpeningStockView
 
 public sealed class InStockAdjustView
 {
-    [Required]
     [Display(Name = "Store")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int FkStore { get; set; }
 
-    [Required]
     [Display(Name = "Product")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
     [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
 
-    [Required, Range(0.001, double.MaxValue)]
     [Display(Name = "Quantity")]
+    [Required]
+    [DecimalGreaterThanZero(ErrorMessage = "The Quantity must be greater than zero.")]
     public decimal Quantity { get; set; }
 
-    [Required]
     [Display(Name = "Direction")]
-    public string Direction { get; set; } = "add"; // "add" or "remove"
+    [Required(ErrorMessage = "The Direction field is required.")]
+    [AllowedValues("add", "remove", ErrorMessage = "Something went wrong/Please select a valid Direction.")]
+    public string Direction { get; set; } = "add";
 
-    [MaxLength(500)]
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 }
 
@@ -159,26 +174,33 @@ public sealed class InStockAdjustView
 
 public sealed class InStockTransferView
 {
+    [Display(Name = "From Store")]
     [Required]
-    [Display(Name = "From store")]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid From Store.")]
     public int FromStoreId { get; set; }
 
+    [Display(Name = "To Store")]
     [Required]
-    [Display(Name = "To store")]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid To Store.")]
     public int ToStoreId { get; set; }
 
-    [Required]
     [Display(Name = "Product")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
     [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
 
-    [Required, Range(0.001, double.MaxValue)]
     [Display(Name = "Quantity")]
+    [Required]
+    [DecimalGreaterThanZero(ErrorMessage = "The Quantity must be greater than zero.")]
     public decimal Quantity { get; set; }
 
-    [MaxLength(500)]
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 500, ErrorMessage = "The Notes cannot exceed 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 }
 

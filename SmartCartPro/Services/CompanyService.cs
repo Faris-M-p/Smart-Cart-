@@ -6,8 +6,6 @@ namespace SmartCartPro.Services;
 
 public class CompanyService : ICompanyService
 {
-    private static readonly string[] ValidLicenseStatus = { "active", "suspended", "expired", "trial" };
-
     private readonly ICompanyRepository _repo;
 
     public CompanyService(ICompanyRepository repo) => _repo = repo;
@@ -91,7 +89,9 @@ public class CompanyService : ICompanyService
         }
 
         var lic = await _repo.GetLicenseAsync(new InputLicenseSelect(), ct);
-        if (lic is null || lic.Status is not ("active" or "trial"))
+        if (lic is null
+            || (lic.Status != (int)CommonModel.LicenseStatus.Active
+                && lic.Status != (int)CommonModel.LicenseStatus.Trial))
         {
             return FailStoreCreate("An active license is required to create stores.", 400);
         }
@@ -148,7 +148,7 @@ public class CompanyService : ICompanyService
             };
         }
 
-        if (!ValidLicenseStatus.Contains(input.Status))
+        if (!Enum.IsDefined(typeof(CommonModel.LicenseStatus), input.Status))
         {
             return new OutputLicenseUpdate
             {

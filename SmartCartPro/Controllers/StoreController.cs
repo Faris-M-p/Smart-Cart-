@@ -40,8 +40,24 @@ public class StoreController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateStoreAsync(
-            InputStoreCreate.From(model, ActorId, canCreate: true), ct);
+        var input = new InputStoreCreate
+        {
+            ActorUserId = ActorId,
+            CanCreate = true,
+            StoreCode = model.StoreCode,
+            StoreName = model.StoreName,
+            Email = model.Email,
+            Phone = model.Phone,
+            AddressLine1 = model.AddressLine1,
+            AddressLine2 = model.AddressLine2,
+            City = model.City,
+            State = model.State,
+            PostalCode = model.PostalCode,
+            Country = model.Country,
+            IsDefault = model.IsDefault,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateStoreAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create store.", result.ResponseMsg ?? "Unable to create store.");
 
@@ -67,7 +83,24 @@ public class StoreController : Controller
         model.IdStore = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateStoreAsync(InputStoreUpdate.From(model, ActorId), ct);
+        var input = new InputStoreUpdate
+        {
+            ActorUserId = ActorId,
+            IdStore = model.IdStore,
+            StoreCode = model.StoreCode ?? string.Empty,
+            StoreName = model.StoreName ?? string.Empty,
+            Email = model.Email,
+            Phone = model.Phone,
+            AddressLine1 = model.AddressLine1,
+            AddressLine2 = model.AddressLine2,
+            City = model.City,
+            State = model.State,
+            PostalCode = model.PostalCode,
+            Country = model.Country,
+            IsDefault = model.IsDefault,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateStoreAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update store.", result.ResponseMsg ?? "Unable to update store.");
 

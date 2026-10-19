@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
+
 namespace SmartCartPro.Models;
 
 #region Module List / Select
@@ -40,11 +43,18 @@ public sealed class OutputModulePresetSelect
 
 public sealed class InModuleAssignView
 {
+    [Display(Name = "Enabled Modules")]
     public List<int> EnabledModuleIds { get; set; } = new();
+
+    [Display(Name = "Preset")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Preset cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Preset cannot contain script tags.")]
     public string? SelectedPresetCode { get; set; }
 
-    // Read-only display data (populated before rendering)
+    [Display(Name = "All Modules")]
     public List<OutputModuleSelect> AllModules { get; set; } = new();
+
+    [Display(Name = "Presets")]
     public List<OutputModulePresetSelect> Presets { get; set; } = new();
 }
 
@@ -52,12 +62,6 @@ public sealed class InputModuleAssign
 {
     public int ActorUserId { get; set; }
     public List<int> EnabledModuleIds { get; set; } = new();
-
-    public static InputModuleAssign From(InModuleAssignView view, int actorUserId) => new()
-    {
-        ActorUserId = actorUserId,
-        EnabledModuleIds = view.EnabledModuleIds ?? new List<int>()
-    };
 }
 
 public sealed class OutputModuleAssign

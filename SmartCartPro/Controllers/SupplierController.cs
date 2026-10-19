@@ -36,7 +36,22 @@ public class SupplierController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.CreateSupplierAsync(InputSupplierCreate.From(model), ct);
+        var input = new InputSupplierCreate
+        {
+            SupplierCode = model.SupplierCode,
+            SupplierName = model.SupplierName,
+            ContactPerson = model.ContactPerson,
+            Email = model.Email,
+            Phone = model.Phone,
+            AddressLine1 = model.AddressLine1,
+            City = model.City,
+            State = model.State,
+            PostalCode = model.PostalCode,
+            Country = model.Country,
+            TaxNumber = model.TaxNumber,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.CreateSupplierAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to create supplier.", result.ResponseMsg ?? "Unable to create supplier.");
 
@@ -59,7 +74,23 @@ public class SupplierController : Controller
         model.IdSupplier = id;
         CommonHelpers.ValidateModelState(ModelState);
 
-        var result = await _svc.UpdateSupplierAsync(InputSupplierUpdate.From(model), ct);
+        var input = new InputSupplierUpdate
+        {
+            IdSupplier = model.IdSupplier,
+            SupplierCode = model.SupplierCode,
+            SupplierName = model.SupplierName,
+            ContactPerson = model.ContactPerson,
+            Email = model.Email,
+            Phone = model.Phone,
+            AddressLine1 = model.AddressLine1,
+            City = model.City,
+            State = model.State,
+            PostalCode = model.PostalCode,
+            Country = model.Country,
+            TaxNumber = model.TaxNumber,
+            IsActive = model.IsActive
+        };
+        var result = await _svc.UpdateSupplierAsync(input, ct);
         if (!result.Ok)
             throw new UpdateFailedException("Unable to update supplier.", result.ResponseMsg ?? "Unable to update supplier.");
 

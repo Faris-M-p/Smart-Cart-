@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -10,37 +11,54 @@ namespace SmartCartPro.Models;
 
 public sealed class InPurchaseCreateView
 {
-    [Required]
     [Display(Name = "Store")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int FkStore { get; set; }
 
-    [Required]
     [Display(Name = "Supplier")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Supplier.")]
     public int FkSupplier { get; set; }
 
-    [Required]
-    [Display(Name = "Purchase date")]
+    [Display(Name = "Purchase Date")]
+    [Required(ErrorMessage = "The Purchase Date field is required.")]
     public DateOnly PurchaseDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
-    [Display(Name = "Supplier invoice #")]
+    [Display(Name = "Supplier Invoice #")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Supplier Invoice # cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Supplier Invoice # cannot contain script tags.")]
     public string? InvoiceNumber { get; set; }
 
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Notes cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 
+    [Display(Name = "Lines")]
+    [NotEmptyList(ErrorMessage = "At least one purchase line is required.")]
     public List<InPurchaseLineView> Lines { get; set; } = new();
 }
 
 public sealed class InPurchaseLineView
 {
+    [Display(Name = "Product")]
     [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
+    [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
 
-    [Required, Range(0.001, double.MaxValue)]
+    [Display(Name = "Quantity")]
+    [Required]
+    [DecimalGreaterThanZero(ErrorMessage = "The Quantity must be greater than zero.")]
     public decimal Quantity { get; set; }
 
-    [Required, Range(0, double.MaxValue)]
+    [Display(Name = "Unit Cost")]
+    [Required]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Unit Cost must be greater than or equal to zero.")]
     public decimal UnitCost { get; set; }
 }
 
@@ -53,23 +71,6 @@ public sealed class InputPurchaseCreate
     public string? Notes { get; set; }
     public int? CreatedBy { get; set; }
     public List<InputPurchaseLine> Lines { get; set; } = new();
-
-    public static InputPurchaseCreate From(InPurchaseCreateView v, int createdBy) => new()
-    {
-        FkStore = v.FkStore,
-        FkSupplier = v.FkSupplier,
-        PurchaseDate = v.PurchaseDate,
-        InvoiceNumber = v.InvoiceNumber,
-        Notes = v.Notes,
-        CreatedBy = createdBy,
-        Lines = v.Lines.Select(l => new InputPurchaseLine
-        {
-            FkProduct = l.FkProduct,
-            FkProductVariant = l.FkProductVariant,
-            Quantity = l.Quantity,
-            UnitCost = l.UnitCost
-        }).ToList()
-    };
 }
 
 public sealed class InputPurchaseLine
@@ -95,25 +96,37 @@ public sealed class OutputPurchaseCreate
 
 public sealed class InPurchaseUpdateView
 {
+    [Display(Name = "Purchase")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Purchase.")]
     public int IdPurchase { get; set; }
 
-    [Required]
     [Display(Name = "Store")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Store.")]
     public int FkStore { get; set; }
 
-    [Required]
     [Display(Name = "Supplier")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Supplier.")]
     public int FkSupplier { get; set; }
 
-    [Required]
-    [Display(Name = "Purchase date")]
+    [Display(Name = "Purchase Date")]
+    [Required(ErrorMessage = "The Purchase Date field is required.")]
     public DateOnly PurchaseDate { get; set; }
 
-    [Display(Name = "Supplier invoice #")]
+    [Display(Name = "Supplier Invoice #")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Supplier Invoice # cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Supplier Invoice # cannot contain script tags.")]
     public string? InvoiceNumber { get; set; }
 
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Notes cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 
+    [Display(Name = "Lines")]
+    [NotEmptyList(ErrorMessage = "At least one purchase line is required.")]
     public List<InPurchaseLineView> Lines { get; set; } = new();
 }
 
@@ -225,28 +238,49 @@ public sealed class OutputPurchaseList
 
 public sealed class InGoodsReceiptView
 {
+    [Display(Name = "Purchase")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Purchase.")]
     public int IdPurchase { get; set; }
 
-    [Required]
-    [Display(Name = "Receipt date")]
+    [Display(Name = "Receipt Date")]
+    [Required(ErrorMessage = "The Receipt Date field is required.")]
     public DateOnly ReceiptDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
+    [Display(Name = "Notes")]
+    [StringLengthValidation(0, 1000, ErrorMessage = "The Notes cannot exceed 1000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
 
+    [Display(Name = "Lines")]
     public List<InGrnLineView> Lines { get; set; } = new();
 }
 
 public sealed class InGrnLineView
 {
+    [Display(Name = "Purchase Detail")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Purchase Detail.")]
     public int IdPurchaseDetail { get; set; }
+
+    [Display(Name = "Product")]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
+
+    [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int? FkProductVariant { get; set; }
+
+    [Display(Name = "Product Name")]
     public string ProductName { get; set; } = string.Empty;
+
+    [Display(Name = "Ordered Qty")]
     public decimal OrderedQty { get; set; }
+
+    [Display(Name = "Already Received Qty")]
     public decimal AlreadyReceivedQty { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Receive qty")]
+    [Display(Name = "Receive Qty")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Receive Qty must be greater than or equal to zero.")]
     public decimal ReceiveQty { get; set; }
 }
 
@@ -288,10 +322,15 @@ public sealed class OutputGoodsReceipt
 
 public sealed class InPurchaseCancelView
 {
+    [Display(Name = "Purchase")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Purchase.")]
     public int IdPurchase { get; set; }
 
-    [Required, MaxLength(500)]
     [Display(Name = "Reason")]
+    [Required(ErrorMessage = "The Reason field is required.")]
+    [StringLengthValidation(2, 500, ErrorMessage = "The Reason must be between 2 and 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Reason cannot contain script tags.")]
     public string Reason { get; set; } = string.Empty;
 }
 

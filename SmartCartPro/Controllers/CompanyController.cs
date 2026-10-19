@@ -32,8 +32,30 @@ public class CompanyController : Controller
 
         if (model.RequiresBootstrap || model.IdCompany <= 0)
         {
-            var created = await _svc.CreateCompanyAsync(
-                InputCompanyCreate.From(model, ActorId, CanBootstrap), ct);
+            var input = new InputCompanyCreate
+            {
+                ActorUserId = ActorId,
+                CanCreate = CanBootstrap,
+                CompanyName = model.CompanyName,
+                CompanyCode = model.CompanyCode,
+                LegalName = model.LegalName,
+                TaxNumber = model.TaxNumber,
+                RegistrationNo = model.RegistrationNo,
+                Email = model.Email,
+                Phone = model.Phone,
+                Website = model.Website,
+                AddressLine1 = model.AddressLine1,
+                AddressLine2 = model.AddressLine2,
+                City = model.City,
+                State = model.State,
+                PostalCode = model.PostalCode,
+                Country = model.Country,
+                CurrencyCode = model.CurrencyCode,
+                TimeZone = model.TimeZone,
+                Locale = model.Locale,
+                IsActive = model.IsActive
+            };
+            var created = await _svc.CreateCompanyAsync(input, ct);
             if (!created.Ok)
                 throw new UpdateFailedException("Unable to save company.", created.ResponseMsg ?? "Unable to save company.");
 
@@ -41,8 +63,30 @@ public class CompanyController : Controller
         }
         else
         {
-            var updated = await _svc.UpdateCompanyAsync(
-                InputCompanyUpdate.From(model, ActorId), ct);
+            var input = new InputCompanyUpdate
+            {
+                ActorUserId = ActorId,
+                IdCompany = model.IdCompany,
+                CompanyName = model.CompanyName,
+                CompanyCode = model.CompanyCode,
+                LegalName = model.LegalName,
+                TaxNumber = model.TaxNumber,
+                RegistrationNo = model.RegistrationNo,
+                Email = model.Email,
+                Phone = model.Phone,
+                Website = model.Website,
+                AddressLine1 = model.AddressLine1,
+                AddressLine2 = model.AddressLine2,
+                City = model.City,
+                State = model.State,
+                PostalCode = model.PostalCode,
+                Country = model.Country,
+                CurrencyCode = model.CurrencyCode,
+                TimeZone = model.TimeZone,
+                Locale = model.Locale,
+                IsActive = model.IsActive
+            };
+            var updated = await _svc.UpdateCompanyAsync(input, ct);
             if (!updated.Ok)
                 throw new UpdateFailedException("Unable to save company.", updated.ResponseMsg ?? "Unable to save company.");
 

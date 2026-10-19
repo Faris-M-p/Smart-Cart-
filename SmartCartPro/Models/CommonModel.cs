@@ -1,10 +1,23 @@
-using System.Collections.Generic;
-
 namespace SmartCartPro.Models;
 
+/// <summary>Shared enums and AJAX response envelope for SmartCartPro.</summary>
+public class CommonModel
+{
+    /// <summary>
+    /// License status (int for view/input). DB column <c>license.status</c> stores TEXT:
+    /// active | suspended | expired | trial.
+    /// </summary>
+    public enum LicenseStatus
+    {
+        Active = 1,
+        Suspended = 2,
+        Expired = 3,
+        Trial = 4
+    }
+}
+
 /// <summary>
-/// Shared AJAX envelope for Catalog create/update/delete (trial).
-/// Success and failure use the same shape; distinguish via <see cref="StatusCode"/> / <see cref="Status"/>.
+/// Shared AJAX envelope. Distinguish success vs failure via <see cref="StatusCode"/> / <see cref="Status"/>.
 /// </summary>
 public class CommonResponseModel
 {

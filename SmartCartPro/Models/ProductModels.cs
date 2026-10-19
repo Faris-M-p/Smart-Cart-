@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -10,56 +11,73 @@ namespace SmartCartPro.Models;
 
 public sealed class InProductCreateView
 {
-    [Required, MaxLength(50)]
-    [Display(Name = "Product code")]
+    [Display(Name = "Product Code")]
+    [Required(ErrorMessage = "The Product Code field is required.")]
+    [StringLengthValidation(1, 50, ErrorMessage = "The Product Code must be between 1 and 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Product Code cannot contain script tags.")]
     public string ProductCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(300)]
-    [Display(Name = "Product name")]
+    [Display(Name = "Product Name")]
+    [Required(ErrorMessage = "The Product Name field is required.")]
+    [TrimmedString(2, 300, ErrorMessage = "The Product Name must be between 2 and 300 characters.")]
+    [NoScriptTags(ErrorMessage = "The Product Name cannot contain script tags.")]
     public string ProductName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 2000, ErrorMessage = "The Description cannot exceed 2000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
-    [MaxLength(50)]
+    [Display(Name = "SKU")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The SKU cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The SKU cannot contain script tags.")]
     public string? Sku { get; set; }
 
-    [MaxLength(50)]
+    [Display(Name = "Barcode")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Barcode cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Barcode cannot contain script tags.")]
     public string? Barcode { get; set; }
 
     [Display(Name = "Category")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
     public int? FkCategory { get; set; }
 
-    [Display(Name = "Sub-category")]
+    [Display(Name = "Sub-Category")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Sub-Category.")]
     public int? FkSubcategory { get; set; }
 
     [Display(Name = "Brand")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Brand.")]
     public int? FkBrand { get; set; }
 
     [Display(Name = "Unit")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Unit.")]
     public int? FkUnit { get; set; }
 
     [Display(Name = "Tax")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Tax.")]
     public int? FkTax { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Cost price")]
+    [Display(Name = "Cost Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Cost Price must be greater than or equal to zero.")]
     public decimal CostPrice { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Selling price")]
+    [Display(Name = "Selling Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Selling Price must be greater than or equal to zero.")]
     public decimal SellingPrice { get; set; }
 
     [Display(Name = "MRP")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The MRP must be greater than or equal to zero.")]
     public decimal? Mrp { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Reorder level")]
+    [Display(Name = "Reorder Level")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Reorder Level must be greater than or equal to zero.")]
     public decimal ReorderLevel { get; set; }
 
     [Display(Name = "Active")]
     public bool IsActive { get; set; } = true;
 
-    [Display(Name = "Available online")]
+    [Display(Name = "Available Online")]
     public bool IsOnline { get; set; }
 }
 
@@ -81,26 +99,6 @@ public sealed class InputProductCreate
     public decimal ReorderLevel { get; set; }
     public bool IsActive { get; set; } = true;
     public bool IsOnline { get; set; }
-
-    public static InputProductCreate From(InProductCreateView v) => new()
-    {
-        ProductCode = v.ProductCode,
-        ProductName = v.ProductName,
-        Description = v.Description,
-        Sku = v.Sku,
-        Barcode = v.Barcode,
-        FkCategory = v.FkCategory,
-        FkSubcategory = v.FkSubcategory,
-        FkBrand = v.FkBrand,
-        FkUnit = v.FkUnit,
-        FkTax = v.FkTax,
-        CostPrice = v.CostPrice,
-        SellingPrice = v.SellingPrice,
-        Mrp = v.Mrp,
-        ReorderLevel = v.ReorderLevel,
-        IsActive = v.IsActive,
-        IsOnline = v.IsOnline
-    };
 }
 
 public sealed class OutputProductCreate
@@ -120,58 +118,78 @@ public sealed class OutputProductCreate
 
 public sealed class InProductUpdateView
 {
+    [Display(Name = "Product")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int IdProduct { get; set; }
 
-    [Required, MaxLength(50)]
-    [Display(Name = "Product code")]
+    [Display(Name = "Product Code")]
+    [Required(ErrorMessage = "The Product Code field is required.")]
+    [StringLengthValidation(1, 50, ErrorMessage = "The Product Code must be between 1 and 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Product Code cannot contain script tags.")]
     public string ProductCode { get; set; } = string.Empty;
 
-    [Required, MaxLength(300)]
-    [Display(Name = "Product name")]
+    [Display(Name = "Product Name")]
+    [Required(ErrorMessage = "The Product Name field is required.")]
+    [TrimmedString(2, 300, ErrorMessage = "The Product Name must be between 2 and 300 characters.")]
+    [NoScriptTags(ErrorMessage = "The Product Name cannot contain script tags.")]
     public string ProductName { get; set; } = string.Empty;
 
+    [Display(Name = "Description")]
+    [StringLengthValidation(0, 2000, ErrorMessage = "The Description cannot exceed 2000 characters.")]
+    [NoScriptTags(ErrorMessage = "The Description cannot contain script tags.")]
     public string? Description { get; set; }
 
-    [MaxLength(50)]
+    [Display(Name = "SKU")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The SKU cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The SKU cannot contain script tags.")]
     public string? Sku { get; set; }
 
-    [MaxLength(50)]
+    [Display(Name = "Barcode")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Barcode cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Barcode cannot contain script tags.")]
     public string? Barcode { get; set; }
 
     [Display(Name = "Category")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Category.")]
     public int? FkCategory { get; set; }
 
-    [Display(Name = "Sub-category")]
+    [Display(Name = "Sub-Category")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Sub-Category.")]
     public int? FkSubcategory { get; set; }
 
     [Display(Name = "Brand")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Brand.")]
     public int? FkBrand { get; set; }
 
     [Display(Name = "Unit")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Unit.")]
     public int? FkUnit { get; set; }
 
     [Display(Name = "Tax")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Tax.")]
     public int? FkTax { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Cost price")]
+    [Display(Name = "Cost Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Cost Price must be greater than or equal to zero.")]
     public decimal CostPrice { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Selling price")]
+    [Display(Name = "Selling Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Selling Price must be greater than or equal to zero.")]
     public decimal SellingPrice { get; set; }
 
     [Display(Name = "MRP")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The MRP must be greater than or equal to zero.")]
     public decimal? Mrp { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Reorder level")]
+    [Display(Name = "Reorder Level")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Reorder Level must be greater than or equal to zero.")]
     public decimal ReorderLevel { get; set; }
 
     [Display(Name = "Active")]
     public bool IsActive { get; set; } = true;
 
-    [Display(Name = "Available online")]
+    [Display(Name = "Available Online")]
     public bool IsOnline { get; set; }
 }
 
@@ -194,27 +212,6 @@ public sealed class InputProductUpdate
     public decimal ReorderLevel { get; set; }
     public bool IsActive { get; set; } = true;
     public bool IsOnline { get; set; }
-
-    public static InputProductUpdate From(InProductUpdateView v) => new()
-    {
-        IdProduct = v.IdProduct,
-        ProductCode = v.ProductCode,
-        ProductName = v.ProductName,
-        Description = v.Description,
-        Sku = v.Sku,
-        Barcode = v.Barcode,
-        FkCategory = v.FkCategory,
-        FkSubcategory = v.FkSubcategory,
-        FkBrand = v.FkBrand,
-        FkUnit = v.FkUnit,
-        FkTax = v.FkTax,
-        CostPrice = v.CostPrice,
-        SellingPrice = v.SellingPrice,
-        Mrp = v.Mrp,
-        ReorderLevel = v.ReorderLevel,
-        IsActive = v.IsActive,
-        IsOnline = v.IsOnline
-    };
 }
 
 public sealed class OutputProductUpdate
@@ -314,21 +311,29 @@ public sealed class OutputProductList
 
 public sealed class InVariantCreateView
 {
+    [Display(Name = "Product")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Variant name")]
+    [Display(Name = "Variant Name")]
+    [Required(ErrorMessage = "The Variant Name field is required.")]
+    [TrimmedString(1, 200, ErrorMessage = "The Variant Name must be between 1 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Variant Name cannot contain script tags.")]
     public string VariantName { get; set; } = string.Empty;
 
-    [MaxLength(50)]
-    [Display(Name = "SKU code")]
+    [Display(Name = "SKU Code")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The SKU Code cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The SKU Code cannot contain script tags.")]
     public string? SkuCode { get; set; }
 
-    [MaxLength(50)]
+    [Display(Name = "Barcode")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Barcode cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Barcode cannot contain script tags.")]
     public string? Barcode { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Additional price")]
+    [Display(Name = "Additional Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Additional Price must be greater than or equal to zero.")]
     public decimal AdditionalPrice { get; set; }
 
     [Display(Name = "Active")]
@@ -343,16 +348,6 @@ public sealed class InputVariantCreate
     public string? Barcode { get; set; }
     public decimal AdditionalPrice { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputVariantCreate From(InVariantCreateView v) => new()
-    {
-        FkProduct = v.FkProduct,
-        VariantName = v.VariantName,
-        SkuCode = v.SkuCode,
-        Barcode = v.Barcode,
-        AdditionalPrice = v.AdditionalPrice,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputVariantCreate
@@ -370,22 +365,34 @@ public sealed class OutputVariantCreate
 
 public sealed class InVariantUpdateView
 {
+    [Display(Name = "Variant")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Variant.")]
     public int IdProductVariant { get; set; }
+
+    [Display(Name = "Product")]
+    [Required]
+    [GreaterThanZero(ErrorMessage = "Something went wrong/Please select a valid Product.")]
     public int FkProduct { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Variant name")]
+    [Display(Name = "Variant Name")]
+    [Required(ErrorMessage = "The Variant Name field is required.")]
+    [TrimmedString(1, 200, ErrorMessage = "The Variant Name must be between 1 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Variant Name cannot contain script tags.")]
     public string VariantName { get; set; } = string.Empty;
 
-    [MaxLength(50)]
-    [Display(Name = "SKU code")]
+    [Display(Name = "SKU Code")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The SKU Code cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The SKU Code cannot contain script tags.")]
     public string? SkuCode { get; set; }
 
-    [MaxLength(50)]
+    [Display(Name = "Barcode")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Barcode cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Barcode cannot contain script tags.")]
     public string? Barcode { get; set; }
 
-    [Range(0, double.MaxValue)]
-    [Display(Name = "Additional price")]
+    [Display(Name = "Additional Price")]
+    [DecimalGreaterThanOrEqualToZero(ErrorMessage = "The Additional Price must be greater than or equal to zero.")]
     public decimal AdditionalPrice { get; set; }
 
     [Display(Name = "Active")]
@@ -401,17 +408,6 @@ public sealed class InputVariantUpdate
     public string? Barcode { get; set; }
     public decimal AdditionalPrice { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public static InputVariantUpdate From(InVariantUpdateView v) => new()
-    {
-        IdProductVariant = v.IdProductVariant,
-        FkProduct = v.FkProduct,
-        VariantName = v.VariantName,
-        SkuCode = v.SkuCode,
-        Barcode = v.Barcode,
-        AdditionalPrice = v.AdditionalPrice,
-        IsActive = v.IsActive
-    };
 }
 
 public sealed class OutputVariantUpdate

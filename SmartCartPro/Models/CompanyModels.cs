@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
 
@@ -27,30 +28,6 @@ public sealed class InputCompanyCreate
     public string TimeZone { get; set; } = "Asia/Kolkata";
     public string Locale { get; set; } = "en-IN";
     public bool IsActive { get; set; } = true;
-
-    public static InputCompanyCreate From(InCompanyUpdateView view, int actorUserId, bool canCreate) => new()
-    {
-        ActorUserId = actorUserId,
-        CanCreate = canCreate,
-        CompanyName = view.CompanyName,
-        CompanyCode = view.CompanyCode,
-        LegalName = view.LegalName,
-        TaxNumber = view.TaxNumber,
-        RegistrationNo = view.RegistrationNo,
-        Email = view.Email,
-        Phone = view.Phone,
-        Website = view.Website,
-        AddressLine1 = view.AddressLine1,
-        AddressLine2 = view.AddressLine2,
-        City = view.City,
-        State = view.State,
-        PostalCode = view.PostalCode,
-        Country = view.Country,
-        CurrencyCode = view.CurrencyCode,
-        TimeZone = view.TimeZone,
-        Locale = view.Locale,
-        IsActive = view.IsActive
-    };
 }
 
 public sealed class OutputCompanyCreate
@@ -88,65 +65,108 @@ public sealed class OutputCompanyCreate
 
 public sealed class InCompanyUpdateView
 {
+    [Display(Name = "Company")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Please select a valid Company.")]
     public int IdCompany { get; set; }
 
-    [Required, MaxLength(200)]
-    [Display(Name = "Company name")]
+    [Display(Name = "Company Name")]
+    [Required(ErrorMessage = "The Company Name field is required.")]
+    [TrimmedString(2, 200, ErrorMessage = "The Company Name must be between 2 and 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Company Name cannot contain script tags.")]
     public string CompanyName { get; set; } = string.Empty;
 
-    [Required, MaxLength(20)]
-    [Display(Name = "Company code")]
+    [Display(Name = "Company Code")]
+    [Required(ErrorMessage = "The Company Code field is required.")]
+    [StringLengthValidation(2, 20, ErrorMessage = "The Company Code must be between 2 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Company Code cannot contain script tags.")]
     public string CompanyCode { get; set; } = string.Empty;
 
-    [MaxLength(200)]
-    [Display(Name = "Legal name")]
+    [Display(Name = "Legal Name")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Legal Name cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Legal Name cannot contain script tags.")]
     public string? LegalName { get; set; }
 
-    [MaxLength(50)]
-    [Display(Name = "Tax number")]
+    [Display(Name = "Tax Number")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Tax Number cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Tax Number cannot contain script tags.")]
     public string? TaxNumber { get; set; }
 
-    [MaxLength(50)]
-    [Display(Name = "Registration no.")]
+    [Display(Name = "Registration No.")]
+    [StringLengthValidation(0, 50, ErrorMessage = "The Registration No. cannot exceed 50 characters.")]
+    [NoScriptTags(ErrorMessage = "The Registration No. cannot contain script tags.")]
     public string? RegistrationNo { get; set; }
 
-    [MaxLength(200), EmailAddress]
+    [Display(Name = "Email")]
+    [EmailIfNotEmpty]
+    [MatchRegexAllowNull(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "The Email format is invalid.")]
+    [NoScriptTags(ErrorMessage = "The Email cannot contain script tags.")]
     public string? Email { get; set; }
 
-    [MaxLength(30)]
+    [Display(Name = "Phone")]
+    [StringLength(15, ErrorMessage = "The Phone cannot exceed 15 characters.")]
+    [PhoneIfNotEmpty]
+    [PhoneNumber(ErrorMessage = "Invalid phone number format.")]
     public string? Phone { get; set; }
 
-    [MaxLength(200)]
+    [Display(Name = "Website")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Website cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Website cannot contain script tags.")]
     public string? Website { get; set; }
 
-    [Display(Name = "Address line 1")]
+    [Display(Name = "Address Line 1")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address Line 1 cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address Line 1 cannot contain script tags.")]
     public string? AddressLine1 { get; set; }
 
-    [Display(Name = "Address line 2")]
+    [Display(Name = "Address Line 2")]
+    [StringLengthValidation(0, 200, ErrorMessage = "The Address Line 2 cannot exceed 200 characters.")]
+    [NoScriptTags(ErrorMessage = "The Address Line 2 cannot contain script tags.")]
     public string? AddressLine2 { get; set; }
 
+    [Display(Name = "City")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The City cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The City cannot contain script tags.")]
     public string? City { get; set; }
+
+    [Display(Name = "State")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The State cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The State cannot contain script tags.")]
     public string? State { get; set; }
 
-    [Display(Name = "Postal code")]
+    [Display(Name = "Postal Code")]
+    [ZipCode(ErrorMessage = "Invalid postal code.")]
     public string? PostalCode { get; set; }
 
+    [Display(Name = "Country")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Country cannot exceed 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Country cannot contain script tags.")]
     public string? Country { get; set; }
 
-    [Required, MaxLength(3)]
-    [Display(Name = "Currency code")]
+    [Display(Name = "Currency Code")]
+    [Required(ErrorMessage = "The Currency Code field is required.")]
+    [StringLengthValidation(3, 3, ErrorMessage = "The Currency Code must be 3 characters.")]
+    [NoScriptTags(ErrorMessage = "The Currency Code cannot contain script tags.")]
     public string CurrencyCode { get; set; } = "INR";
 
-    [Required]
-    [Display(Name = "Time zone")]
+    [Display(Name = "Time Zone")]
+    [Required(ErrorMessage = "The Time Zone field is required.")]
+    [StringLengthValidation(2, 100, ErrorMessage = "The Time Zone must be between 2 and 100 characters.")]
+    [NoScriptTags(ErrorMessage = "The Time Zone cannot contain script tags.")]
     public string TimeZone { get; set; } = "Asia/Kolkata";
 
-    [Required]
+    [Display(Name = "Locale")]
+    [Required(ErrorMessage = "The Locale field is required.")]
+    [StringLengthValidation(2, 20, ErrorMessage = "The Locale must be between 2 and 20 characters.")]
+    [NoScriptTags(ErrorMessage = "The Locale cannot contain script tags.")]
     public string Locale { get; set; } = "en-IN";
 
+    [Display(Name = "Active")]
     public bool IsActive { get; set; } = true;
 
+    [Display(Name = "Can Edit")]
     public bool CanEdit { get; set; }
+
+    [Display(Name = "Requires Bootstrap")]
     public bool RequiresBootstrap { get; set; }
 }
 
@@ -173,30 +193,6 @@ public sealed class InputCompanyUpdate
     public string TimeZone { get; set; } = "Asia/Kolkata";
     public string Locale { get; set; } = "en-IN";
     public bool IsActive { get; set; } = true;
-
-    public static InputCompanyUpdate From(InCompanyUpdateView view, int actorUserId) => new()
-    {
-        ActorUserId = actorUserId,
-        IdCompany = view.IdCompany,
-        CompanyName = view.CompanyName,
-        CompanyCode = view.CompanyCode,
-        LegalName = view.LegalName,
-        TaxNumber = view.TaxNumber,
-        RegistrationNo = view.RegistrationNo,
-        Email = view.Email,
-        Phone = view.Phone,
-        Website = view.Website,
-        AddressLine1 = view.AddressLine1,
-        AddressLine2 = view.AddressLine2,
-        City = view.City,
-        State = view.State,
-        PostalCode = view.PostalCode,
-        Country = view.Country,
-        CurrencyCode = view.CurrencyCode,
-        TimeZone = view.TimeZone,
-        Locale = view.Locale,
-        IsActive = view.IsActive
-    };
 }
 
 public sealed class OutputCompanyUpdate

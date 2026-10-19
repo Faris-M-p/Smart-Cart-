@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartCartPro.Filters;
+using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
 
@@ -23,8 +24,7 @@ public class AuditController : Controller
     [RequirePermission("settings.manage")]
     public async Task<IActionResult> Index([FromQuery] InputAuditLogList input, CancellationToken ct)
     {
-        input.Page     = Math.Max(1, input.Page);
-        input.PageSize = input.PageSize is <= 0 or > 200 ? 50 : input.PageSize;
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.ListLogsAsync(input, ct);
         ViewBag.Filter = input;
@@ -36,8 +36,7 @@ public class AuditController : Controller
     [RequirePermission("settings.manage")]
     public async Task<IActionResult> ListJson([FromQuery] InputAuditLogList input, CancellationToken ct)
     {
-        input.Page     = Math.Max(1, input.Page);
-        input.PageSize = input.PageSize is <= 0 or > 200 ? 50 : input.PageSize;
+        CommonHelpers.ValidateModelState(ModelState);
         return Json(await _svc.ListLogsAsync(input, ct));
     }
 }
