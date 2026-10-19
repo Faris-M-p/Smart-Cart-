@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using SmartCartPro.Configuration;
 using SmartCartPro.Extensions;
+using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -23,12 +24,15 @@ builder.Services.AddControllersWithViews(options =>
         .RequireAuthenticatedUser()
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
+    options.Filters.AddService<LicenseGateFilter>();
 });
 
+builder.Services.AddMemoryCache();
 builder.Services.AddSmartCartExceptionHandling(builder.Configuration);
 builder.Services.AddSmartCartDataAccess(builder.Configuration);
 builder.Services.AddSmartCartAuth(builder.Configuration);
 builder.Services.AddSmartCartPolicies(); // includes AddAuthorization + PlatformSuperAdmin policy
+builder.Services.AddSmartCartFilters();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

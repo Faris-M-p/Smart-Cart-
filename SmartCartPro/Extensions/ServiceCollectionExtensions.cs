@@ -7,6 +7,7 @@ using SmartCartPro.Dapper;
 using SmartCartPro.Dapper.Interfaces;
 using SmartCartPro.Data;
 using SmartCartPro.Entities;
+using SmartCartPro.Filters;
 using SmartCartPro.Middleware;
 using SmartCartPro.Repositories;
 using SmartCartPro.Repositories.Interfaces;
@@ -72,6 +73,30 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICompanyService, CompanyService>();
+
+        // Module management
+        services.AddScoped<IModuleRepository, ModuleRepository>();
+        services.AddScoped<IModuleService, ModuleService>();
+
+        // User management
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserService, UserService>();
+
+        // Role management
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IRoleService, RoleService>();
+
+        // Document numbering
+        services.AddScoped<IDocumentNumberService, DocumentNumberService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddSmartCartFilters(this IServiceCollection services)
+    {
+        // LicenseGateFilter is registered as scoped so it can use ICompanyService.
+        // IMemoryCache (AddMemoryCache) must be registered before calling this.
+        services.AddScoped<LicenseGateFilter>();
         return services;
     }
 

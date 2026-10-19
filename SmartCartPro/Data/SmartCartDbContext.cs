@@ -36,6 +36,9 @@ public class SmartCartDbContext : DbContext
     public DbSet<InstallationModule> InstallationModules => Set<InstallationModule>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -210,6 +213,37 @@ public class SmartCartDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.FkStore)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Permission>(e =>
+        {
+            e.HasIndex(x => x.PermissionCode).IsUnique();
+            e.HasOne(x => x.Module)
+                .WithMany()
+                .HasForeignKey(x => x.FkModule)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RolePermission>(e =>
+        {
+            e.HasOne(x => x.Role)
+                .WithMany()
+                .HasForeignKey(x => x.FkRole)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Permission)
+                .WithMany()
+                .HasForeignKey(x => x.FkPermission)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkRole, x.FkPermission }).IsUnique();
+        });
+
+        modelBuilder.Entity<InvoiceSequence>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkStore, x.SequenceType }).IsUnique();
         });
     }
 }
