@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -38,13 +39,11 @@ public class ModuleController : Controller
             InputModuleAssign.From(model, ActorId), ct);
 
         if (!result.Ok)
-        {
-            TempData["ErrorMessage"] = result.ResponseMsg;
-            return RedirectToAction(nameof(Index));
-        }
+            throw new UpdateFailedException("Unable to save module assignment.", result.ResponseMsg ?? "Unable to save module assignment.");
 
-        TempData["SuccessMessage"] = $"Module assignment saved ({result.EnabledCount} modules enabled).";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse(
+            $"Module assignment saved ({result.EnabledCount} modules enabled).",
+            new { enabledCount = result.EnabledCount });
     }
 
     /// <summary>Apply a preset and immediately save it.</summary>
@@ -58,10 +57,7 @@ public class ModuleController : Controller
             string.Equals(p.PresetCode, model.SelectedPresetCode, StringComparison.OrdinalIgnoreCase));
 
         if (preset is null)
-        {
-            TempData["ErrorMessage"] = "Preset not found.";
-            return RedirectToAction(nameof(Index));
-        }
+            throw new ResourceNotFoundException("Preset not found.");
 
         var input = new InputModuleAssign
         {
@@ -70,9 +66,11 @@ public class ModuleController : Controller
         };
 
         var result = await _svc.AssignModulesAsync(input, ct);
-        TempData[result.Ok ? "SuccessMessage" : "ErrorMessage"] =
-            result.Ok ? $"Preset '{preset.PresetName}' applied ({result.EnabledCount} modules enabled)." : result.ResponseMsg;
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to apply preset.", result.ResponseMsg ?? "Unable to apply preset.");
 
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse(
+            $"Preset '{preset.PresetName}' applied ({result.EnabledCount} modules enabled).",
+            new { enabledCount = result.EnabledCount, presetCode = preset.PresetCode });
     }
 }

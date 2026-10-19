@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
+using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
 
@@ -33,18 +35,25 @@ public class CartController : Controller
     [HttpPost]
     public async Task<IActionResult> UpsertItem([FromBody] InputCartUpsertItem input, CancellationToken ct)
     {
-        if (input is null) return BadRequest("Request body required.");
+        if (input is null)
+            throw new ValidationException("Request body is required.", "Null body on UpsertItem.");
         var result = await _cartSvc.UpsertItemAsync(input, ct);
-        if (!result.Ok) return StatusCode(result.StatusCode, new { result.ResponseMsg });
-        return Ok(result);
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update cart.", result.ResponseMsg ?? "Unable to update cart.");
+
+        return CommonHelpers.SuccessResponse("Cart updated.", new { id = result.IdCart });
     }
 
     [HttpPost]
     public async Task<IActionResult> ClearCart([FromBody] InputCartClear input, CancellationToken ct)
     {
-        if (input is null) return BadRequest("Request body required.");
+        if (input is null)
+            throw new ValidationException("Request body is required.", "Null body on ClearCart.");
         var result = await _cartSvc.ClearCartAsync(input, ct);
-        return Ok(result);
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to clear cart.", result.ResponseMsg ?? "Unable to clear cart.");
+
+        return CommonHelpers.SuccessResponse("Cart cleared.");
     }
 
     // ── WISHLIST ─────────────────────────────────────────────────
@@ -59,9 +68,14 @@ public class CartController : Controller
     [HttpPost]
     public async Task<IActionResult> ToggleWishlist([FromBody] InputWishlistToggle input, CancellationToken ct)
     {
-        if (input is null) return BadRequest("Request body required.");
+        if (input is null)
+            throw new ValidationException("Request body is required.", "Null body on ToggleWishlist.");
         var result = await _wishlistSvc.ToggleItemAsync(input, ct);
-        if (!result.Ok) return StatusCode(result.StatusCode, new { result.ResponseMsg });
-        return Ok(result);
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update wishlist.", result.ResponseMsg ?? "Unable to update wishlist.");
+
+        return CommonHelpers.SuccessResponse(
+            result.IsWishlisted ? "Added to wishlist." : "Removed from wishlist.",
+            new { isWishlisted = result.IsWishlisted });
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -33,11 +34,13 @@ public class CustomersController : Controller
     [RequirePermission("pos.manage")]
     public async Task<IActionResult> Create(InCustomerCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateCustomerAsync(InputCustomerCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Customer created.";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to create customer.", result.ResponseMsg ?? "Unable to create customer.");
+
+        return CommonHelpers.SuccessResponse("Customer created.", new { id = result.IdCustomer });
     }
 
     [HttpGet]
@@ -54,11 +57,13 @@ public class CustomersController : Controller
     public async Task<IActionResult> Edit(int id, InCustomerUpdateView model, CancellationToken ct)
     {
         model.IdCustomer = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateCustomerAsync(InputCustomerUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Customer updated.";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update customer.", result.ResponseMsg ?? "Unable to update customer.");
+
+        return CommonHelpers.SuccessResponse("Customer updated.", new { id = result.IdCustomer });
     }
 
     /// <summary>JSON search by phone for POS customer lookup.</summary>

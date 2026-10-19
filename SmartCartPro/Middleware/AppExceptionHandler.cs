@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
 using SmartCartPro.Helpers;
+using SmartCartPro.Models;
 
 namespace SmartCartPro.Middleware;
 
@@ -65,23 +66,10 @@ public sealed class AppExceptionHandler : IExceptionHandler
             return false;
         }
 
-        var payload = new
-        {
-            statusCode = mapped.StatusCode,
-            status = "Error",
-            statusMessage = mapped.UserMessage,
-            userMessage = mapped.UserMessage,
-            developerMessage = string.Empty,
-            error = new
-            {
-                errorCode = mapped.StatusCode.ToString(),
-                message = mapped.UserMessage,
-                userMessage = mapped.UserMessage,
-                developerMessage = string.Empty
-            },
-            data = string.Empty,
-            timestamp = DateTime.UtcNow.ToString("o")
-        };
+        var payload = CommonResponseModel.Failure(
+            mapped.UserMessage,
+            errors: new[] { mapped.UserMessage },
+            statusCode: mapped.HttpStatusCode);
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = mapped.HttpStatusCode;

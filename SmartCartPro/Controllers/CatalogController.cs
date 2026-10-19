@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -13,7 +14,6 @@ namespace SmartCartPro.Controllers;
 public class CatalogController : Controller
 {
     private readonly ICatalogService _svc;
-    private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
     public CatalogController(ICatalogService svc) => _svc = svc;
 
@@ -38,11 +38,19 @@ public class CatalogController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateCategory(InCategoryCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateCategoryAsync(InputCategoryCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Category created.";
-        return RedirectToAction(nameof(Categories));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to create category.",
+                result.ResponseMsg ?? "Unable to create category.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Category created successfully.",
+            new { id = result.IdCategory });
     }
 
     [HttpGet]
@@ -59,14 +67,20 @@ public class CatalogController : Controller
     public async Task<IActionResult> EditCategory(int id, InCategoryUpdateView model, CancellationToken ct)
     {
         model.IdCategory = id;
-        if (!ModelState.IsValid) return View(model);
-        var result = await _svc.UpdateCategoryAsync(InputCategoryUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Category updated.";
-        return RedirectToAction(nameof(Categories));
-    }
+        CommonHelpers.ValidateModelState(ModelState);
 
-    // ─── JSON Lookup ──────────────────────────────────────────────
+        var result = await _svc.UpdateCategoryAsync(InputCategoryUpdate.From(model), ct);
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to update category.",
+                result.ResponseMsg ?? "Unable to update category.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Category updated successfully.",
+            new { id = result.IdCategory });
+    }
 
     [HttpGet]
     public async Task<IActionResult> CategoryLookup(CancellationToken ct)
@@ -101,20 +115,19 @@ public class CatalogController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateSubCategory(InSubCategoryCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Categories = await _svc.GetCategoryLookupAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateSubCategoryAsync(InputSubCategoryCreate.From(model), ct);
         if (!result.Ok)
         {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            ViewBag.Categories = await _svc.GetCategoryLookupAsync(ct);
-            return View(model);
+            throw new UpdateFailedException(
+                "Unable to create sub-category.",
+                result.ResponseMsg ?? "Unable to create sub-category.");
         }
-        TempData["SuccessMessage"] = "Sub-category created.";
-        return RedirectToAction(nameof(SubCategories));
+
+        return CommonHelpers.SuccessResponse(
+            "Sub-category created successfully.",
+            new { id = result.IdSubCategory });
     }
 
     [HttpGet]
@@ -132,20 +145,19 @@ public class CatalogController : Controller
     public async Task<IActionResult> EditSubCategory(int id, InSubCategoryUpdateView model, CancellationToken ct)
     {
         model.IdSubCategory = id;
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Categories = await _svc.GetCategoryLookupAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateSubCategoryAsync(InputSubCategoryUpdate.From(model), ct);
         if (!result.Ok)
         {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            ViewBag.Categories = await _svc.GetCategoryLookupAsync(ct);
-            return View(model);
+            throw new UpdateFailedException(
+                "Unable to update sub-category.",
+                result.ResponseMsg ?? "Unable to update sub-category.");
         }
-        TempData["SuccessMessage"] = "Sub-category updated.";
-        return RedirectToAction(nameof(SubCategories));
+
+        return CommonHelpers.SuccessResponse(
+            "Sub-category updated successfully.",
+            new { id = result.IdSubCategory });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -168,11 +180,19 @@ public class CatalogController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateBrand(InBrandCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateBrandAsync(InputBrandCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Brand created.";
-        return RedirectToAction(nameof(Brands));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to create brand.",
+                result.ResponseMsg ?? "Unable to create brand.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Brand created successfully.",
+            new { id = result.IdBrand });
     }
 
     [HttpGet]
@@ -189,11 +209,19 @@ public class CatalogController : Controller
     public async Task<IActionResult> EditBrand(int id, InBrandUpdateView model, CancellationToken ct)
     {
         model.IdBrand = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateBrandAsync(InputBrandUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Brand updated.";
-        return RedirectToAction(nameof(Brands));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to update brand.",
+                result.ResponseMsg ?? "Unable to update brand.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Brand updated successfully.",
+            new { id = result.IdBrand });
     }
 
     [HttpGet]
@@ -220,11 +248,19 @@ public class CatalogController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateUnit(InUnitCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateUnitAsync(InputUnitCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Unit created.";
-        return RedirectToAction(nameof(Units));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to create unit.",
+                result.ResponseMsg ?? "Unable to create unit.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Unit created successfully.",
+            new { id = result.IdUnit });
     }
 
     [HttpGet]
@@ -241,11 +277,19 @@ public class CatalogController : Controller
     public async Task<IActionResult> EditUnit(int id, InUnitUpdateView model, CancellationToken ct)
     {
         model.IdUnit = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateUnitAsync(InputUnitUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Unit updated.";
-        return RedirectToAction(nameof(Units));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to update unit.",
+                result.ResponseMsg ?? "Unable to update unit.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Unit updated successfully.",
+            new { id = result.IdUnit });
     }
 
     [HttpGet]
@@ -272,11 +316,19 @@ public class CatalogController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateTax(InTaxCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateTaxAsync(InputTaxCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Tax created.";
-        return RedirectToAction(nameof(Taxes));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to create tax.",
+                result.ResponseMsg ?? "Unable to create tax.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Tax created successfully.",
+            new { id = result.IdTax });
     }
 
     [HttpGet]
@@ -293,11 +345,19 @@ public class CatalogController : Controller
     public async Task<IActionResult> EditTax(int id, InTaxUpdateView model, CancellationToken ct)
     {
         model.IdTax = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateTaxAsync(InputTaxUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Tax updated.";
-        return RedirectToAction(nameof(Taxes));
+        if (!result.Ok)
+        {
+            throw new UpdateFailedException(
+                "Unable to update tax.",
+                result.ResponseMsg ?? "Unable to update tax.");
+        }
+
+        return CommonHelpers.SuccessResponse(
+            "Tax updated successfully.",
+            new { id = result.IdTax });
     }
 
     [HttpGet]

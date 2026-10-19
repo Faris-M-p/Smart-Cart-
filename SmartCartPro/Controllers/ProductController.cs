@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -50,20 +51,13 @@ public class ProductController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Create(InProductCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            await LoadDropdownsAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateProductAsync(InputProductCreate.From(model), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            await LoadDropdownsAsync(ct);
-            return View(model);
-        }
-        TempData["SuccessMessage"] = "Product created.";
-        return RedirectToAction(nameof(Index));
+            throw new UpdateFailedException("Unable to create product.", result.ResponseMsg ?? "Unable to create product.");
+
+        return CommonHelpers.SuccessResponse("Product created.", new { id = result.IdProduct });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -85,20 +79,13 @@ public class ProductController : Controller
     public async Task<IActionResult> Edit(int id, InProductUpdateView model, CancellationToken ct)
     {
         model.IdProduct = id;
-        if (!ModelState.IsValid)
-        {
-            await LoadDropdownsAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateProductAsync(InputProductUpdate.From(model), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            await LoadDropdownsAsync(ct);
-            return View(model);
-        }
-        TempData["SuccessMessage"] = "Product updated.";
-        return RedirectToAction(nameof(Index));
+            throw new UpdateFailedException("Unable to update product.", result.ResponseMsg ?? "Unable to update product.");
+
+        return CommonHelpers.SuccessResponse("Product updated.", new { id = result.IdProduct });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -119,11 +106,13 @@ public class ProductController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateVariant(InVariantCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateVariantAsync(InputVariantCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Variant created.";
-        return RedirectToAction(nameof(Variants), new { productId = model.FkProduct });
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to create variant.", result.ResponseMsg ?? "Unable to create variant.");
+
+        return CommonHelpers.SuccessResponse("Variant created.", new { id = result.IdProductVariant, productId = model.FkProduct });
     }
 
     [HttpGet]
@@ -140,11 +129,13 @@ public class ProductController : Controller
     public async Task<IActionResult> EditVariant(int id, InVariantUpdateView model, CancellationToken ct)
     {
         model.IdProductVariant = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateVariantAsync(InputVariantUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Variant updated.";
-        return RedirectToAction(nameof(Variants), new { productId = model.FkProduct });
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update variant.", result.ResponseMsg ?? "Unable to update variant.");
+
+        return CommonHelpers.SuccessResponse("Variant updated.", new { id = result.IdProductVariant, productId = model.FkProduct });
     }
 
     // ═══════════════════════════════════════════════════════════════

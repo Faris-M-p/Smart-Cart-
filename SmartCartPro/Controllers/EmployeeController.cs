@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -44,12 +45,7 @@ public class EmployeeController : Controller
     [Authorize(Policy = "PlatformSuperAdmin")]
     public async Task<IActionResult> Create(InUserCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Roles = (await _roleSvc.ListRolesAsync(new InputRoleList(), ct)).Roles;
-            ViewBag.Stores = (await _companySvc.ListStoresAsync(new InputStoreList(), ct)).Stores;
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputUserCreate
         {
@@ -65,15 +61,11 @@ public class EmployeeController : Controller
 
         var result = await _userSvc.CreateUserAsync(input, model.InitialPassword, ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            ViewBag.Roles = (await _roleSvc.ListRolesAsync(new InputRoleList(), ct)).Roles;
-            ViewBag.Stores = (await _companySvc.ListStoresAsync(new InputStoreList(), ct)).Stores;
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to create employee.", result.ResponseMsg ?? "Unable to create employee.");
 
-        TempData["SuccessMessage"] = $"Employee '{result.UserName}' created.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse(
+            $"Employee '{result.UserName}' created.",
+            new { id = result.IdUser, userName = result.UserName });
     }
 
     [HttpGet]
@@ -99,20 +91,13 @@ public class EmployeeController : Controller
     public async Task<IActionResult> Edit(int id, InUserUpdateView model, CancellationToken ct)
     {
         model.IdUser = id;
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _userSvc.UpdateUserAsync(InputUserUpdate.From(model, ActorId), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to update employee.", result.ResponseMsg ?? "Unable to update employee.");
 
-        TempData["SuccessMessage"] = "Employee updated.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Employee updated.", new { id });
     }
 
     [HttpPost]
@@ -121,8 +106,7 @@ public class EmployeeController : Controller
     public async Task<IActionResult> Deactivate(int id, CancellationToken ct)
     {
         await _userSvc.DeactivateUserAsync(id, ct);
-        TempData["SuccessMessage"] = "Employee deactivated.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Employee deactivated.", new { id });
     }
 
     [HttpPost]
@@ -131,14 +115,10 @@ public class EmployeeController : Controller
     public async Task<IActionResult> ResetPassword(int id, string newPassword, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
-        {
-            TempData["ErrorMessage"] = "Password must be at least 8 characters.";
-            return RedirectToAction(nameof(Edit), new { id });
-        }
+            throw new ValidationException("Password must be at least 8 characters.", "Password too short.");
 
         await _userSvc.ResetPasswordAsync(id, newPassword, ct);
-        TempData["SuccessMessage"] = "Password reset. Employee must change password on next login.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Password reset. Employee must change password on next login.", new { id });
     }
 
     [HttpGet]
@@ -159,8 +139,7 @@ public class EmployeeController : Controller
     public async Task<IActionResult> AssignStores(int id, List<int> storeIds, CancellationToken ct)
     {
         await _userSvc.AssignStoresToUserAsync(id, storeIds, ct);
-        TempData["SuccessMessage"] = "Store access updated.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Store access updated.", new { id });
     }
 
     [HttpPost]
@@ -169,7 +148,6 @@ public class EmployeeController : Controller
     public async Task<IActionResult> AssignRole(int id, int roleId, CancellationToken ct)
     {
         await _userSvc.AssignRoleToUserAsync(id, roleId, ct);
-        TempData["SuccessMessage"] = "Role assigned.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Role assigned.", new { id, roleId });
     }
 }

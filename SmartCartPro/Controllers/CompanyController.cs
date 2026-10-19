@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -27,38 +28,25 @@ public class CompanyController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InCompanyUpdateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            return View(nameof(Index), model);
-        }
-
-        if (ActorId <= 0)
-        {
-            return RedirectToAction("Login", "Auth");
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         if (model.RequiresBootstrap || model.IdCompany <= 0)
         {
             var created = await _svc.CreateCompanyAsync(
                 InputCompanyCreate.From(model, ActorId, CanBootstrap), ct);
             if (!created.Ok)
-            {
-                ModelState.AddModelError(string.Empty, created.ResponseMsg);
-                return View(nameof(Index), model);
-            }
+                throw new UpdateFailedException("Unable to save company.", created.ResponseMsg ?? "Unable to save company.");
+
+            return CommonHelpers.SuccessResponse("Company profile saved.", new { id = created.IdCompany });
         }
         else
         {
             var updated = await _svc.UpdateCompanyAsync(
                 InputCompanyUpdate.From(model, ActorId), ct);
             if (!updated.Ok)
-            {
-                ModelState.AddModelError(string.Empty, updated.ResponseMsg);
-                return View(nameof(Index), model);
-            }
-        }
+                throw new UpdateFailedException("Unable to save company.", updated.ResponseMsg ?? "Unable to save company.");
 
-        TempData["SuccessMessage"] = "Company profile saved.";
-        return RedirectToAction(nameof(Index));
+            return CommonHelpers.SuccessResponse("Company profile saved.", new { id = updated.IdCompany });
+        }
     }
 }

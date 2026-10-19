@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -43,22 +44,15 @@ public class LicenseController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InLicenseUpdateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            return View(nameof(Index), model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.UpdateLicenseAsync(
             InputLicenseUpdate.From(model, ActorId, canEditLicense: true), ct);
 
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            return View(nameof(Index), model);
-        }
+            throw new UpdateFailedException("Unable to save license.", result.ResponseMsg ?? "Unable to save license.");
 
-        TempData["SuccessMessage"] = "License saved.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("License saved.", new { id = result.IdLicense });
     }
 
     [HttpPost]
@@ -67,10 +61,7 @@ public class LicenseController : Controller
     {
         var license = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
         if (license is null)
-        {
-            TempData["ErrorMessage"] = "No license found.";
-            return RedirectToAction(nameof(Index));
-        }
+            throw new ResourceNotFoundException("No license found.");
 
         var input = new InputLicenseUpdate
         {
@@ -86,10 +77,10 @@ public class LicenseController : Controller
         };
 
         var result = await _svc.UpdateLicenseAsync(input, ct);
-        TempData[result.Ok ? "SuccessMessage" : "ErrorMessage"] =
-            result.Ok ? "License suspended." : result.ResponseMsg;
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to suspend license.", result.ResponseMsg ?? "Unable to suspend license.");
 
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("License suspended.", new { id = result.IdLicense });
     }
 
     [HttpPost]
@@ -98,10 +89,7 @@ public class LicenseController : Controller
     {
         var license = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
         if (license is null)
-        {
-            TempData["ErrorMessage"] = "No license found.";
-            return RedirectToAction(nameof(Index));
-        }
+            throw new ResourceNotFoundException("No license found.");
 
         var input = new InputLicenseUpdate
         {
@@ -117,9 +105,9 @@ public class LicenseController : Controller
         };
 
         var result = await _svc.UpdateLicenseAsync(input, ct);
-        TempData[result.Ok ? "SuccessMessage" : "ErrorMessage"] =
-            result.Ok ? "License activated." : result.ResponseMsg;
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to activate license.", result.ResponseMsg ?? "Unable to activate license.");
 
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("License activated.", new { id = result.IdLicense });
     }
 }

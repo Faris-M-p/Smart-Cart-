@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -44,11 +45,15 @@ public class InventoryController : Controller
     [RequirePermission("inventory.manage")]
     public async Task<IActionResult> Opening(InOpeningStockView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.ApplyOpeningStockAsync(model, ActorId, ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = $"Opening stock saved. New balance: {result.NewQuantityOnHand}";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to save opening stock.", result.ResponseMsg ?? "Unable to save opening stock.");
+
+        return CommonHelpers.SuccessResponse(
+            $"Opening stock saved. New balance: {result.NewQuantityOnHand}",
+            new { newQuantityOnHand = result.NewQuantityOnHand });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -64,11 +69,15 @@ public class InventoryController : Controller
     [RequirePermission("inventory.manage")]
     public async Task<IActionResult> Adjust(InStockAdjustView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.AdjustStockAsync(model, ActorId, ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = $"Stock adjusted. New balance: {result.NewQuantityOnHand}";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to adjust stock.", result.ResponseMsg ?? "Unable to adjust stock.");
+
+        return CommonHelpers.SuccessResponse(
+            $"Stock adjusted. New balance: {result.NewQuantityOnHand}",
+            new { newQuantityOnHand = result.NewQuantityOnHand });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -84,7 +93,8 @@ public class InventoryController : Controller
     [RequirePermission("inventory.manage")]
     public async Task<IActionResult> Transfer(InStockTransferView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var input = new InputStockTransfer
         {
             FromStoreId = model.FromStoreId,
@@ -96,9 +106,10 @@ public class InventoryController : Controller
             CreatedBy = ActorId
         };
         var result = await _svc.TransferStockAsync(input, ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Stock transfer completed.";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to transfer stock.", result.ResponseMsg ?? "Unable to transfer stock.");
+
+        return CommonHelpers.SuccessResponse("Stock transfer completed.", new { fromStoreId = model.FromStoreId, toStoreId = model.ToStoreId });
     }
 
     // ═══════════════════════════════════════════════════════════════

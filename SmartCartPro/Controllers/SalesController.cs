@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -32,8 +33,7 @@ public class SalesController : Controller
     [RequirePermission("pos.view")]
     public async Task<IActionResult> CreateSale([FromBody] InSaleCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputSaleCreate
         {
@@ -61,9 +61,11 @@ public class SalesController : Controller
 
         var result = await _svc.CreateSaleAsync(input, ct);
         if (!result.Ok)
-            return StatusCode(result.StatusCode, new { result.ResponseMsg });
+            throw new UpdateFailedException("Unable to create sale.", result.ResponseMsg ?? "Unable to create sale.");
 
-        return Ok(result);
+        return CommonHelpers.SuccessResponse(
+            "Sale created successfully.",
+            new { id = result.IdSale, invoiceNumber = result.InvoiceNumber, totalAmount = result.TotalAmount, changeGiven = result.ChangeGiven });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -111,7 +113,7 @@ public class SalesController : Controller
     public async Task<IActionResult> CancelSale(int id, InSaleCancelView model, CancellationToken ct)
     {
         model.IdSale = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.CancelSaleAsync(new InputSaleCancel
         {
@@ -121,9 +123,10 @@ public class SalesController : Controller
             CancelledBy = ActorId
         }, ct);
 
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Sale cancelled and stock reversed.";
-        return RedirectToAction(nameof(Invoices));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to cancel sale.", result.ResponseMsg ?? "Unable to cancel sale.");
+
+        return CommonHelpers.SuccessResponse("Sale cancelled and stock reversed.", new { id });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -159,7 +162,7 @@ public class SalesController : Controller
     public async Task<IActionResult> Returns(int id, InSaleReturnView model, CancellationToken ct)
     {
         model.IdSale = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputSaleReturn
         {
@@ -179,9 +182,12 @@ public class SalesController : Controller
         };
 
         var result = await _svc.ReturnSaleAsync(input, ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = $"Return {result.ReturnNumber} processed. Amount: {result.TotalAmount:C}";
-        return RedirectToAction(nameof(Invoices));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to process return.", result.ResponseMsg ?? "Unable to process return.");
+
+        return CommonHelpers.SuccessResponse(
+            $"Return {result.ReturnNumber} processed.",
+            new { id, returnNumber = result.ReturnNumber, totalAmount = result.TotalAmount });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -201,7 +207,8 @@ public class SalesController : Controller
     [RequirePermission("pos.view")]
     public async Task<IActionResult> OpenSession(InCashSessionOpenView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) { ViewBag.OpenSession = null; return View("Session", model); }
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.OpenSessionAsync(new InputCashSessionOpen
         {
             FkStore = model.FkStore > 0 ? model.FkStore : StoreId,
@@ -209,16 +216,18 @@ public class SalesController : Controller
             OpeningFloat = model.OpeningFloat,
             Notes = model.Notes
         }, ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); ViewBag.OpenSession = null; return View("Session", model); }
-        TempData["SuccessMessage"] = "Cash session opened.";
-        return RedirectToAction(nameof(Session));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to open cash session.", result.ResponseMsg ?? "Unable to open cash session.");
+
+        return CommonHelpers.SuccessResponse("Cash session opened.", new { id = result.IdCashSession });
     }
 
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> CloseSession(InCashSessionCloseView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return RedirectToAction(nameof(Session));
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CloseSessionAsync(new InputCashSessionClose
         {
             IdCashSession = model.IdCashSession,
@@ -226,9 +235,12 @@ public class SalesController : Controller
             ClosingCash = model.ClosingCash,
             Notes = model.Notes
         }, ct);
-        if (!result.Ok) { TempData["ErrorMessage"] = result.ResponseMsg; return RedirectToAction(nameof(Session)); }
-        TempData["SuccessMessage"] = $"Session closed. Variance: {result.Variance:C}";
-        return RedirectToAction(nameof(DayClose), new { id = model.IdCashSession });
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to close session.", result.ResponseMsg ?? "Unable to close session.");
+
+        return CommonHelpers.SuccessResponse(
+            $"Session closed. Variance: {result.Variance:C}",
+            new { id = model.IdCashSession, variance = result.Variance, expectedCash = result.ExpectedCash });
     }
 
     // ═══════════════════════════════════════════════════════════════

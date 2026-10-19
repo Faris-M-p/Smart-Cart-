@@ -81,8 +81,18 @@ public static class ExceptionErrorMapper
 
     public static bool WantsJsonResponse(HttpRequest request)
     {
-        if (request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-            || request.Path.StartsWithSegments("/Filter", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(
+                request.Headers["X-Requested-With"],
+                "XMLHttpRequest",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // POST/PUT/DELETE/PATCH on these MVC controller prefixes always return JSON
+        // so that AppExceptionHandler serialises thrown exceptions as CommonResponseModel.
+        if (IsMutatingMethod(request.Method)
+            && IsMvcJsonControllerPath(request.Path))
         {
             return true;
         }
@@ -96,6 +106,39 @@ public static class ExceptionErrorMapper
         return accept.Contains("application/json", StringComparison.OrdinalIgnoreCase)
                && !accept.Contains("text/html", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool IsMutatingMethod(string method) =>
+        HttpMethods.IsPost(method)
+        || HttpMethods.IsPut(method)
+        || HttpMethods.IsDelete(method)
+        || HttpMethods.IsPatch(method);
+
+    private static readonly string[] JsonControllerPrefixes =
+    [
+        "/api",
+        "/Filter",
+        "/Catalog",
+        "/Company",
+        "/Store",
+        "/License",
+        "/Module",
+        "/Employee",
+        "/Role",
+        "/Product",
+        "/Customers",
+        "/Inventory",
+        "/Supplier",
+        "/Purchase",
+        "/Sales",
+        "/Setting",
+        "/ProductReview",
+        "/OnlineOrder",
+        "/Cart"
+    ];
+
+    private static bool IsMvcJsonControllerPath(PathString path) =>
+        JsonControllerPrefixes.Any(prefix =>
+            path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase));
 
     private static int MapAppExceptionStatusCode(AppException exception) =>
         exception switch

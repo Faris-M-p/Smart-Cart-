@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -37,26 +38,14 @@ public class StoreController : Controller
     [Authorize(Policy = "PlatformSuperAdmin")]
     public async Task<IActionResult> Create(InStoreCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        if (ActorId <= 0)
-        {
-            return RedirectToAction("Login", "Auth");
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.CreateStoreAsync(
             InputStoreCreate.From(model, ActorId, canCreate: true), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to create store.", result.ResponseMsg ?? "Unable to create store.");
 
-        TempData["SuccessMessage"] = "Store created.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Store created.", new { id = result.IdStore });
     }
 
     [HttpGet]
@@ -76,25 +65,13 @@ public class StoreController : Controller
     public async Task<IActionResult> Edit(int id, InStoreUpdateView model, CancellationToken ct)
     {
         model.IdStore = id;
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        if (ActorId <= 0)
-        {
-            return RedirectToAction("Login", "Auth");
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.UpdateStoreAsync(InputStoreUpdate.From(model, ActorId), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to update store.", result.ResponseMsg ?? "Unable to update store.");
 
-        TempData["SuccessMessage"] = "Store updated.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Store updated.", new { id = result.IdStore });
     }
 
     /// <summary>
@@ -105,27 +82,22 @@ public class StoreController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetCurrentStore(int storeId, string? returnUrl, CancellationToken ct)
     {
-        if (ActorId <= 0)
-        {
-            return RedirectToAction("Login", "Auth");
-        }
-
         var rememberMe = Request.Cookies.ContainsKey(AuthClaims.TokenCookieName);
 
         var result = await _authSvc.SwitchStoreAsync(ActorId, storeId, rememberMe, ct);
         if (!result.Success)
-        {
-            TempData["ErrorMessage"] = result.ErrorMessage ?? "Could not switch store.";
-            return RedirectToAction(nameof(Index));
-        }
+            throw new UpdateFailedException(
+                "Could not switch store.",
+                result.ErrorMessage ?? "Could not switch store.");
 
         _authSvc.SetAuthCookie(result.Token!, result.ExpiresAt, rememberMe);
 
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
-        {
-            return LocalRedirect(returnUrl);
-        }
+        var redirectUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Action("Index", "Home")!;
 
-        return RedirectToAction("Index", "Home");
+        return CommonHelpers.SuccessResponse(
+            "Store switched successfully.",
+            new { storeId, storeName = result.StoreName, redirectUrl });
     }
 }

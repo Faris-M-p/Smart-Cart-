@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -58,8 +59,10 @@ public class ProductReviewController : Controller
             UpdatedBy       = ActorId
         }, ct);
 
-        TempData[result.Ok ? "SuccessMessage" : "ErrorMessage"] = result.ResponseMsg;
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to hide review.", result.ResponseMsg ?? "Unable to hide review.");
+
+        return CommonHelpers.SuccessResponse("Review hidden.", new { id });
     }
 
     /// <summary>Approve (make visible) a review.</summary>
@@ -74,8 +77,10 @@ public class ProductReviewController : Controller
             UpdatedBy       = ActorId
         }, ct);
 
-        TempData[result.Ok ? "SuccessMessage" : "ErrorMessage"] = result.ResponseMsg;
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to approve review.", result.ResponseMsg ?? "Unable to approve review.");
+
+        return CommonHelpers.SuccessResponse("Review approved.", new { id });
     }
 
     /// <summary>JSON hide/show toggle for AJAX.</summary>
@@ -83,10 +88,13 @@ public class ProductReviewController : Controller
     [RequirePermission("products.manage")]
     public async Task<IActionResult> HideJson([FromBody] InputProductReviewHide input, CancellationToken ct)
     {
-        if (input is null) return BadRequest();
+        if (input is null)
+            throw new ValidationException("Request body is required.", "Null body on HideJson.");
         input.UpdatedBy = ActorId;
         var result = await _svc.HideReviewAsync(input, ct);
-        if (!result.Ok) return StatusCode(result.StatusCode, new { result.ResponseMsg });
-        return Ok(result);
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update review.", result.ResponseMsg ?? "Unable to update review.");
+
+        return CommonHelpers.SuccessResponse("Review updated.", new { id = input.IdProductReview });
     }
 }

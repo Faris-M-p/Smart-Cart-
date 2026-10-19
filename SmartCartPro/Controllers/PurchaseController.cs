@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -52,28 +53,16 @@ public class PurchaseController : Controller
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Create(InPurchaseCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         if (!model.Lines.Any())
-        {
-            ModelState.AddModelError(string.Empty, "At least one line item is required.");
-            ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-            return View(model);
-        }
+            throw new ValidationException("At least one line item is required.", "Purchase must have at least one line.");
 
         var result = await _svc.CreatePurchaseAsync(InputPurchaseCreate.From(model, ActorId), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-            return View(model);
-        }
-        TempData["SuccessMessage"] = "Purchase order created.";
-        return RedirectToAction(nameof(Details), new { id = result.IdPurchase });
+            throw new UpdateFailedException("Unable to create purchase order.", result.ResponseMsg ?? "Unable to create purchase order.");
+
+        return CommonHelpers.SuccessResponse("Purchase order created.", new { id = result.IdPurchase });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -126,11 +115,7 @@ public class PurchaseController : Controller
     public async Task<IActionResult> Edit(int id, InPurchaseUpdateView model, CancellationToken ct)
     {
         model.IdPurchase = id;
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputPurchaseUpdate
         {
@@ -151,13 +136,9 @@ public class PurchaseController : Controller
 
         var result = await _svc.UpdatePurchaseAsync(input, ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            ViewBag.Suppliers = await _supplierSvc.GetSupplierLookupAsync(ct);
-            return View(model);
-        }
-        TempData["SuccessMessage"] = "Purchase order updated.";
-        return RedirectToAction(nameof(Details), new { id });
+            throw new UpdateFailedException("Unable to update purchase order.", result.ResponseMsg ?? "Unable to update purchase order.");
+
+        return CommonHelpers.SuccessResponse("Purchase order updated.", new { id });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -194,7 +175,7 @@ public class PurchaseController : Controller
     public async Task<IActionResult> Receive(int id, InGoodsReceiptView model, CancellationToken ct)
     {
         model.IdPurchase = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
 
         var input = new InputGoodsReceipt
         {
@@ -215,9 +196,12 @@ public class PurchaseController : Controller
         };
 
         var result = await _svc.ReceiveGoodsAsync(input, ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = $"GRN {result.GrnNumber} recorded. PO status: {result.NewPurchaseStatus}";
-        return RedirectToAction(nameof(Details), new { id });
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to receive goods.", result.ResponseMsg ?? "Unable to receive goods.");
+
+        return CommonHelpers.SuccessResponse(
+            $"GRN {result.GrnNumber} recorded. PO status: {result.NewPurchaseStatus}",
+            new { id, grnNumber = result.GrnNumber, purchaseStatus = result.NewPurchaseStatus });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -234,7 +218,7 @@ public class PurchaseController : Controller
     public async Task<IActionResult> Cancel(int id, InPurchaseCancelView model, CancellationToken ct)
     {
         model.IdPurchase = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.CancelPurchaseAsync(new InputPurchaseCancel
         {
@@ -243,8 +227,9 @@ public class PurchaseController : Controller
             CancelledBy = ActorId
         }, ct);
 
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Purchase order cancelled.";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to cancel purchase order.", result.ResponseMsg ?? "Unable to cancel purchase order.");
+
+        return CommonHelpers.SuccessResponse("Purchase order cancelled.", new { id });
     }
 }

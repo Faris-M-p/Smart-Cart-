@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -33,11 +34,13 @@ public class SupplierController : Controller
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Create(InSupplierCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.CreateSupplierAsync(InputSupplierCreate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Supplier created.";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to create supplier.", result.ResponseMsg ?? "Unable to create supplier.");
+
+        return CommonHelpers.SuccessResponse("Supplier created.", new { id = result.IdSupplier });
     }
 
     [HttpGet]
@@ -54,11 +57,13 @@ public class SupplierController : Controller
     public async Task<IActionResult> Edit(int id, InSupplierUpdateView model, CancellationToken ct)
     {
         model.IdSupplier = id;
-        if (!ModelState.IsValid) return View(model);
+        CommonHelpers.ValidateModelState(ModelState);
+
         var result = await _svc.UpdateSupplierAsync(InputSupplierUpdate.From(model), ct);
-        if (!result.Ok) { ModelState.AddModelError(string.Empty, result.ResponseMsg); return View(model); }
-        TempData["SuccessMessage"] = "Supplier updated.";
-        return RedirectToAction(nameof(Index));
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update supplier.", result.ResponseMsg ?? "Unable to update supplier.");
+
+        return CommonHelpers.SuccessResponse("Supplier updated.", new { id = result.IdSupplier });
     }
 
     [HttpGet]

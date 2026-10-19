@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -96,13 +97,7 @@ public class OnlineOrderController : Controller
     public async Task<IActionResult> UpdateStatus(int id, InOnlineOrderStatusView model, CancellationToken ct)
     {
         model.IdOnlineOrder = id;
-
-        if (!ModelState.IsValid)
-        {
-            var order = await _svc.GetOrderAsync(new InputOnlineOrderSelect { IdOnlineOrder = id }, ct);
-            ViewBag.Order = order;
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.UpdateStatusAsync(new InputOnlineOrderStatusUpdate
         {
@@ -113,15 +108,11 @@ public class OnlineOrderController : Controller
         }, ct);
 
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            var order = await _svc.GetOrderAsync(new InputOnlineOrderSelect { IdOnlineOrder = id }, ct);
-            ViewBag.Order = order;
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to update order status.", result.ResponseMsg ?? "Unable to update order status.");
 
-        TempData["SuccessMessage"] = $"Order status updated to '{result.NewStatus}'.";
-        return RedirectToAction(nameof(Details), new { id });
+        return CommonHelpers.SuccessResponse(
+            $"Order status updated to '{result.NewStatus}'.",
+            new { id, newStatus = result.NewStatus });
     }
 
     /// <summary>JSON status update endpoint (for AJAX callers).</summary>
@@ -129,11 +120,16 @@ public class OnlineOrderController : Controller
     [RequirePermission("pos.sell")]
     public async Task<IActionResult> UpdateStatusJson([FromBody] InputOnlineOrderStatusUpdate input, CancellationToken ct)
     {
-        if (input is null) return BadRequest("Request body required.");
+        if (input is null)
+            throw new ValidationException("Request body is required.", "Null body on UpdateStatusJson.");
         input.UpdatedBy = ActorId;
 
         var result = await _svc.UpdateStatusAsync(input, ct);
-        if (!result.Ok) return StatusCode(result.StatusCode, new { result.ResponseMsg });
-        return Ok(result);
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to update order status.", result.ResponseMsg ?? "Unable to update order status.");
+
+        return CommonHelpers.SuccessResponse(
+            $"Order status updated to '{result.NewStatus}'.",
+            new { id = input.IdOnlineOrder, newStatus = result.NewStatus });
     }
 }

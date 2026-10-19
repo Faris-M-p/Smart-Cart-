@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -35,22 +36,13 @@ public class RoleController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(InRoleCreateView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-        {
-            ViewBag.AllPermissions = await _svc.ListPermissionsAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.CreateRoleAsync(InputRoleCreate.From(model, ActorId), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            ViewBag.AllPermissions = await _svc.ListPermissionsAsync(ct);
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to create role.", result.ResponseMsg ?? "Unable to create role.");
 
-        TempData["SuccessMessage"] = "Role created.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Role created.", new { id = result.IdRole });
     }
 
     [HttpGet]
@@ -81,22 +73,13 @@ public class RoleController : Controller
     public async Task<IActionResult> Edit(int id, InRoleUpdateView model, CancellationToken ct)
     {
         model.IdRole = id;
-        if (!ModelState.IsValid)
-        {
-            model.AllPermissions = await _svc.ListPermissionsAsync(ct);
-            return View(model);
-        }
+        CommonHelpers.ValidateModelState(ModelState);
 
         var result = await _svc.UpdateRoleAsync(InputRoleUpdate.From(model, ActorId), ct);
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            model.AllPermissions = await _svc.ListPermissionsAsync(ct);
-            return View(model);
-        }
+            throw new UpdateFailedException("Unable to update role.", result.ResponseMsg ?? "Unable to update role.");
 
-        TempData["SuccessMessage"] = "Role updated.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Role updated.", new { id });
     }
 
     [HttpPost]
@@ -105,9 +88,9 @@ public class RoleController : Controller
     {
         var result = await _svc.DeleteRoleAsync(new InputRoleDelete { ActorUserId = ActorId, IdRole = id }, ct);
 
-        TempData[result.Ok ? "SuccessMessage" : "ErrorMessage"] =
-            result.Ok ? "Role deleted." : result.ResponseMsg;
+        if (!result.Ok)
+            throw new UpdateFailedException("Unable to delete role.", result.ResponseMsg ?? "Unable to delete role.");
 
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Role deleted.", new { id });
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
@@ -58,7 +59,7 @@ public class SettingController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InSettingView model, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View("Index", model);
+        CommonHelpers.ValidateModelState(ModelState);
 
         var values = new Dictionary<string, string?>
         {
@@ -77,12 +78,8 @@ public class SettingController : Controller
         }, ct);
 
         if (!result.Ok)
-        {
-            ModelState.AddModelError(string.Empty, result.ResponseMsg);
-            return View("Index", model);
-        }
+            throw new UpdateFailedException("Unable to save settings.", result.ResponseMsg ?? "Unable to save settings.");
 
-        TempData["SuccessMessage"] = "Settings saved successfully.";
-        return RedirectToAction(nameof(Index));
+        return CommonHelpers.SuccessResponse("Settings saved successfully.");
     }
 }
