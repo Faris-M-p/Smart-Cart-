@@ -1,32 +1,36 @@
-# Admin Module — Settings
+# Settings — Phase 7
 
-## Module Overview
-- **Area:** ADMIN
-- **Module Name:** Settings
-- **Current Status:** `UI SHELL` (seed keys exist)
+## Status
+IMPLEMENTED (Phase 7)
 
-## Purpose & Responsibilities
-Company/store/platform settings (`settings` table).
+## Table
+`settings` — key-value store with scope (`platform` | `company` | `store`).
 
-## Implemented Features
-- `Admin/Settings` form shell
-- Seed: `02_Seed/003_DefaultSettings.sql`
+## Known Keys (company scope, fk_store = NULL)
+| Key | Type | Description |
+|---|---|---|
+| `pos.invoice_prefix` | string | Prefix for POS invoice numbers |
+| `pos.allow_negative_stock` | bool | Allow selling below zero stock |
+| `default_tax_code` | string | Default tax code applied at POS |
+| `locale.currency` | string | ISO currency code (e.g. INR) |
+| `locale.timezone` | string | Default timezone (e.g. Asia/Kolkata) |
 
-## Filters / Search / Sorting
-- N/A
+## Files
+| Layer | File |
+|---|---|
+| Entity | `Entities/Setting.cs` |
+| Models | `Models/SettingModels.cs` |
+| Repository interface | `Repositories/Interfaces/ISettingRepository.cs` |
+| Repository impl | `Repositories/SettingRepository.cs` |
+| Service interface | `Services/Interfaces/ISettingService.cs` |
+| Service impl | `Services/SettingService.cs` |
+| Controller | `Controllers/SettingController.cs` |
 
-## Data
-- Table: `settings` (`setting_scope`, optional `fk_store`, `settingkey`)
+## Endpoints
+| Method | Route | Module | Permission | Description |
+|---|---|---|---|---|
+| GET | `/Setting` | SETTINGS | settings.manage | Settings form (Index) |
+| POST | `/Setting/Save` | SETTINGS | settings.manage | Upsert known keys |
 
-## Database Dependencies
-- CHECK: store scope requires `fk_store`
-
-## API & Data Access
-- `AdminController.Settings`
-- View: `Views/Admin/Settings.cshtml`
-
-## Business Rules
-- Do not put secrets in settings without encryption strategy
-
-## Dependencies & Related Modules
-- `stores.md`, `pos.md`
+## Utility
+`ISettingService.GetValueAsync(key, scope, fkStore)` — single-key lookup for other services.

@@ -76,5 +76,7 @@ public class Order
 
     [ForeignKey(nameof(FkStore))]
     public Store? Store { get; set; }
+
+    public ICollection<OnlineOrderItem> Items { get; set; } = new List<OnlineOrderItem>();
 }
 

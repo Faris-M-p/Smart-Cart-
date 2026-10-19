@@ -1,43 +1,252 @@
 using Microsoft.EntityFrameworkCore;
 using SmartCartPro.Data;
 using SmartCartPro.Entities;
+using SmartCartPro.Models;
 using SmartCartPro.Repositories.Interfaces;
 
 namespace SmartCartPro.Repositories;
 
-public class OrderRepository : IOrderRepository
+/// <summary>
+/// Online order repository — Phase 7 rewrite.
+/// Entities (Order, OnlineOrderItem) are used only inside this class.
+/// On status transitions:
+///   pending → confirmed  : deducts stock (movement type "sale") via IStockRepository
+///   confirmed/packed/shipped → cancelled : restores stock (movement type "return_in") via IStockRepository
+/// </summary>
+public class OnlineOrderRepository : IOnlineOrderRepository
 {
     private readonly SmartCartDbContext _db;
+    private readonly IStockRepository _stock;
 
-    public OrderRepository(SmartCartDbContext db)
+    // Valid forward transitions (from → allowed nexts)
+    private static readonly Dictionary<string, string[]> AllowedTransitions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["pending"]   = ["confirmed", "cancelled"],
+        ["confirmed"] = ["packed", "cancelled"],
+        ["packed"]    = ["shipped", "cancelled"],
+        ["shipped"]   = ["delivered", "cancelled"],
+        ["delivered"] = [],
+        ["cancelled"] = [],
+    };
+
+    // Statuses from which stock was already deducted (cancel → must restore)
+    private static readonly HashSet<string> StockDeductedStatuses = new(StringComparer.OrdinalIgnoreCase)
+        { "confirmed", "packed", "shipped", "delivered" };
+
+    public OnlineOrderRepository(SmartCartDbContext db, IStockRepository stock)
     {
         _db = db;
+        _stock = stock;
     }
 
-    public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        _db.Orders.AsNoTracking().FirstOrDefaultAsync(x => x.IdOnlineOrder == id, cancellationToken);
-
-    public async Task<IReadOnlyList<Order>> ListAsync(CancellationToken cancellationToken = default) =>
-        await _db.Orders.AsNoTracking().OrderByDescending(x => x.OrderDate).ToListAsync(cancellationToken);
-
-    public Task AddAsync(Order order, CancellationToken cancellationToken = default)
+    public async Task<OutputOnlineOrderSelect?> GetOrderAsync(InputOnlineOrderSelect input, CancellationToken ct = default)
     {
-        _db.Orders.Add(order);
-        return Task.CompletedTask;
+        return await _db.Orders
+            .Include(o => o.Store)
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+            .Where(o => o.IdOnlineOrder == input.IdOnlineOrder)
+            .Select(o => new OutputOnlineOrderSelect
+            {
+                IdOnlineOrder  = o.IdOnlineOrder,
+                FkStore        = o.FkStore,
+                StoreName      = o.Store != null ? o.Store.StoreName : string.Empty,
+                FkCustomer     = o.FkCustomer,
+                CustomerName   = _db.Customers
+                                    .Where(c => c.IdCustomer == o.FkCustomer)
+                                    .Select(c => c.FullName)
+                                    .FirstOrDefault() ?? string.Empty,
+                OrderNumber    = o.OrderNumber,
+                OrderDate      = o.OrderDate,
+                Status         = o.Status,
+                Subtotal       = o.Subtotal,
+                TaxAmount      = o.TaxAmount,
+                ShippingAmount = o.ShippingAmount,
+                DiscountAmount = o.DiscountAmount,
+                TotalAmount    = o.TotalAmount,
+                ShippingAddress = o.ShippingAddress,
+                Notes          = o.Notes,
+                Cancelled      = o.Cancelled,
+                CancelledReason = o.CancelledReason,
+                CreatedAt      = o.CreatedAt,
+                Items = o.Items.Select(i => new OutputOnlineOrderItem
+                {
+                    IdOnlineOrderItem = i.IdOnlineOrderItem,
+                    FkProduct         = i.FkProduct,
+                    ProductName       = i.Product != null ? i.Product.ProductName : string.Empty,
+                    FkProductVariant  = i.FkProductVariant,
+                    Quantity          = i.Quantity,
+                    UnitPrice         = i.UnitPrice,
+                    LineTotal         = i.LineTotal
+                }).ToList()
+            })
+            .FirstOrDefaultAsync(ct);
     }
 
-    public Task UpdateAsync(Order order, CancellationToken cancellationToken = default)
+    public async Task<OutputOnlineOrderList> ListOrdersAsync(InputOnlineOrderList input, CancellationToken ct = default)
     {
-        _db.Orders.Update(order);
-        return Task.CompletedTask;
+        var q = _db.Orders
+            .Include(o => o.Store)
+            .AsQueryable();
+
+        if (input.FkStore.HasValue)
+            q = q.Where(o => o.FkStore == input.FkStore.Value);
+
+        if (!string.IsNullOrWhiteSpace(input.Status))
+            q = q.Where(o => o.Status == input.Status);
+
+        if (input.From.HasValue)
+            q = q.Where(o => o.OrderDate >= input.From.Value);
+
+        if (input.To.HasValue)
+            q = q.Where(o => o.OrderDate <= input.To.Value);
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+            q = q.Where(o => o.OrderNumber.Contains(input.Search));
+
+        var total = await q.CountAsync(ct);
+
+        var rows = await q
+            .OrderByDescending(o => o.OrderDate)
+            .Skip((input.Page - 1) * input.PageSize)
+            .Take(input.PageSize)
+            .Select(o => new OutputOnlineOrderListItem
+            {
+                IdOnlineOrder = o.IdOnlineOrder,
+                FkStore       = o.FkStore,
+                StoreName     = o.Store != null ? o.Store.StoreName : string.Empty,
+                FkCustomer    = o.FkCustomer,
+                CustomerName  = _db.Customers
+                                    .Where(c => c.IdCustomer == o.FkCustomer)
+                                    .Select(c => c.FullName)
+                                    .FirstOrDefault() ?? string.Empty,
+                OrderNumber   = o.OrderNumber,
+                OrderDate     = o.OrderDate,
+                Status        = o.Status,
+                TotalAmount   = o.TotalAmount,
+                Cancelled     = o.Cancelled
+            })
+            .ToListAsync(ct);
+
+        return new OutputOnlineOrderList
+        {
+            TotalCount = total,
+            Page       = input.Page,
+            PageSize   = input.PageSize,
+            Items      = rows
+        };
     }
 
-    public Task DeleteAsync(Order order, CancellationToken cancellationToken = default)
+    public async Task<OutputOnlineOrderStatusUpdate> UpdateStatusAsync(
+        InputOnlineOrderStatusUpdate input, CancellationToken ct = default)
     {
-        _db.Orders.Remove(order);
-        return Task.CompletedTask;
-    }
+        var order = await _db.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.IdOnlineOrder == input.IdOnlineOrder, ct);
 
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        _db.SaveChangesAsync(cancellationToken);
+        if (order is null)
+            return new OutputOnlineOrderStatusUpdate
+                { ResponseCode = 1, ResponseMsg = "Order not found.", StatusCode = 404 };
+
+        if (order.Cancelled)
+            return new OutputOnlineOrderStatusUpdate
+                { ResponseCode = 2, ResponseMsg = "Order is already cancelled.", StatusCode = 422 };
+
+        var currentStatus = order.Status;
+
+        if (!AllowedTransitions.TryGetValue(currentStatus, out var allowed))
+            return new OutputOnlineOrderStatusUpdate
+                { ResponseCode = 3, ResponseMsg = $"Unknown current status '{currentStatus}'.", StatusCode = 422 };
+
+        if (!allowed.Contains(input.NewStatus, StringComparer.OrdinalIgnoreCase))
+            return new OutputOnlineOrderStatusUpdate
+            {
+                ResponseCode = 4,
+                ResponseMsg  = $"Cannot transition from '{currentStatus}' to '{input.NewStatus}'.",
+                StatusCode   = 422
+            };
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            // ── Confirm: deduct stock for each item ────────────────
+            if (string.Equals(input.NewStatus, "confirmed", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var item in order.Items)
+                {
+                    var stockResult = await _stock.ApplyMovementAsync(new InputStockMovement
+                    {
+                        FkStore       = item.FkStore,
+                        FkProduct     = item.FkProduct,
+                        FkProductVariant = item.FkProductVariant,
+                        MovementType  = "sale",
+                        Quantity      = item.Quantity,
+                        ReferenceType = "online_order",
+                        ReferenceId   = order.IdOnlineOrder,
+                        Notes         = $"Online order {order.OrderNumber} confirmed",
+                        CreatedBy     = input.UpdatedBy
+                    }, ct);
+
+                    if (!stockResult.Ok)
+                    {
+                        await tx.RollbackAsync(ct);
+                        return new OutputOnlineOrderStatusUpdate
+                        {
+                            ResponseCode = 5,
+                            ResponseMsg  = $"Stock deduction failed for product {item.FkProduct}: {stockResult.ResponseMsg}",
+                            StatusCode   = 422
+                        };
+                    }
+                }
+            }
+
+            // ── Cancel from a stock-deducted status: restore stock ─
+            if (string.Equals(input.NewStatus, "cancelled", StringComparison.OrdinalIgnoreCase)
+                && StockDeductedStatuses.Contains(currentStatus))
+            {
+                foreach (var item in order.Items)
+                {
+                    await _stock.ApplyMovementAsync(new InputStockMovement
+                    {
+                        FkStore       = item.FkStore,
+                        FkProduct     = item.FkProduct,
+                        FkProductVariant = item.FkProductVariant,
+                        MovementType  = "return_in",
+                        Quantity      = item.Quantity,
+                        ReferenceType = "online_order",
+                        ReferenceId   = order.IdOnlineOrder,
+                        Notes         = $"Online order {order.OrderNumber} cancelled – stock restored",
+                        CreatedBy     = input.UpdatedBy
+                    }, ct);
+                }
+            }
+
+            // ── Update order record ────────────────────────────────
+            order.Status    = input.NewStatus.ToLowerInvariant();
+            order.UpdatedAt = DateTime.UtcNow;
+
+            if (string.Equals(input.NewStatus, "cancelled", StringComparison.OrdinalIgnoreCase))
+            {
+                order.Cancelled       = true;
+                order.CancelledOn     = DateTime.UtcNow;
+                order.CancelledReason = input.Reason;
+            }
+
+            await _db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return new OutputOnlineOrderStatusUpdate
+            {
+                ResponseCode = 0,
+                ResponseMsg  = $"Order status updated to '{order.Status}'.",
+                StatusCode   = 200,
+                NewStatus    = order.Status
+            };
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
 }

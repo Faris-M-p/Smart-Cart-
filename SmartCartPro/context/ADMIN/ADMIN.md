@@ -48,13 +48,16 @@ Documented under `modules/`:
 - [`pos.md`](modules/pos.md) — POS billing
 - [`invoices.md`](modules/invoices.md) — Sales invoices
 - [`returns.md`](modules/returns.md) — Sales returns
-- [`online-orders.md`](modules/online-orders.md) — Online orders
+- [`online-orders.md`](modules/online-orders.md) — Online orders (Phase 7: full status flow + stock)
 - [`customers.md`](modules/customers.md) — Customers
-- [`reports.md`](modules/reports.md) — Reports
+- [`reviews.md`](modules/reviews.md) — Product reviews (Phase 7: admin moderation)
+- [`cart-wishlist.md`](modules/cart-wishlist.md) — Cart & wishlist (Phase 7: repo+service+JSON controller)
+- [`reports.md`](modules/reports.md) — Reports (Phase 7: SalesByDate, StockValuation, LowStock, TaxSummary, TopSelling)
 - [`employee.md`](modules/employee.md) — Employees
 - [`roles.md`](modules/roles.md) — Roles & permissions
 - [`stores.md`](modules/stores.md) — Company & stores
-- [`settings.md`](modules/settings.md) — Settings
+- [`settings.md`](modules/settings.md) — Settings (Phase 7: known keys via SettingController)
+- [`audit.md`](modules/audit.md) — Audit log viewer (Phase 7)
 
 ## Business rules (cross-cutting)
 

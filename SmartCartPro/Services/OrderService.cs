@@ -1,34 +1,28 @@
-using SmartCartPro.Entities;
+using SmartCartPro.Models;
 using SmartCartPro.Repositories.Interfaces;
 using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Services;
 
-public class OrderService : IOrderService
+/// <summary>
+/// Online order service — Phase 7 rewrite.
+/// Delegates directly to IOnlineOrderRepository; thin orchestration layer.
+/// </summary>
+public class OnlineOrderService : IOnlineOrderService
 {
-    private readonly IOrderRepository _orders;
+    private readonly IOnlineOrderRepository _repo;
 
-    public OrderService(IOrderRepository orders)
-    {
-        _orders = orders;
-    }
+    public OnlineOrderService(IOnlineOrderRepository repo) => _repo = repo;
 
-    public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        _orders.GetByIdAsync(id, cancellationToken);
+    public Task<OutputOnlineOrderSelect?> GetOrderAsync(
+        InputOnlineOrderSelect input, CancellationToken ct = default) =>
+        _repo.GetOrderAsync(input, ct);
 
-    public Task<IReadOnlyList<Order>> ListAsync(CancellationToken cancellationToken = default) =>
-        _orders.ListAsync(cancellationToken);
+    public Task<OutputOnlineOrderList> ListOrdersAsync(
+        InputOnlineOrderList input, CancellationToken ct = default) =>
+        _repo.ListOrdersAsync(input, ct);
 
-    public async Task<Order> CreateAsync(Order order, CancellationToken cancellationToken = default)
-    {
-        if (order.CreatedAt == default)
-        {
-            order.CreatedAt = DateTime.UtcNow;
-            order.OrderDate = DateTime.UtcNow;
-        }
-
-        await _orders.AddAsync(order, cancellationToken);
-        await _orders.SaveChangesAsync(cancellationToken);
-        return order;
-    }
+    public Task<OutputOnlineOrderStatusUpdate> UpdateStatusAsync(
+        InputOnlineOrderStatusUpdate input, CancellationToken ct = default) =>
+        _repo.UpdateStatusAsync(input, ct);
 }

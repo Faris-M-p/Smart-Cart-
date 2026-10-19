@@ -1,34 +1,51 @@
-# Admin Module — Online orders
+# Online Orders — Phase 7
 
-## Module Overview
-- **Area:** ADMIN
-- **Module Name:** Online orders
-- **Current Status:** `UI SHELL`
+## Status
+IMPLEMENTED (Phase 7)
 
-## Purpose & Responsibilities
-Fulfill storefront orders assigned to a store.
+## Tables
+- `online_orders` — order header (store-scoped via `fk_store`)
+- `online_order_items` — line items (FK → online_orders, products, product_variants)
 
-## Implemented Features
-- `Sales/OnlineOrders` sample list
-- Entity `Order` mapped to `online_orders` (with `FkStore`)
+## Status Flow
+```
+pending → confirmed → packed → shipped → delivered
+                                       → cancelled  (from any non-terminal state)
+```
 
-## Filters / Search / Sorting
-- Planned (status, date)
+## Stock Integration
+- **Confirm** (`pending → confirmed`): deducts stock via `IStockRepository.ApplyMovementAsync("sale")`
+  - Reference type: `online_order`, reference ID: order ID
+  - Rolls back entire transition if any item fails stock check
+- **Cancel** (from `confirmed`, `packed`, `shipped`, or `delivered`): restores stock via movement type `return_in`
+  - Rolls back were stock was previously deducted
 
-## Data
-- `online_orders`, `online_order_items`
+## Module Access Decision
+Module code: **`POS`**
+Rationale: No dedicated `ORDERS` module exists in seed data. Online order fulfillment is the same business domain as POS (order → stock → delivery). Update to a dedicated `ORDERS` module when added to seed.
 
-## Database Dependencies
-- Store-scoped fulfillment
+## Files
+| Layer | File |
+|---|---|
+| Entity | `Entities/Order.cs` + `Entities/OnlineOrderItem.cs` |
+| Models | `Models/OnlineOrderModels.cs` |
+| Repository interface | `Repositories/Interfaces/IOrderRepository.cs` → `IOnlineOrderRepository` |
+| Repository impl | `Repositories/OrderRepository.cs` → `OnlineOrderRepository` |
+| Service interface | `Services/Interfaces/IOrderService.cs` → `IOnlineOrderService` |
+| Service impl | `Services/OrderService.cs` → `OnlineOrderService` |
+| Controller | `Controllers/OnlineOrderController.cs` |
 
-## API & Data Access
-- `SalesController.OnlineOrders`
-- `IOrderService` / `OrderRepository` (scaffold)
-- View: `Views/Sales/OnlineOrders.cshtml`
+## Endpoints
+| Method | Route | Permission | Description |
+|---|---|---|---|
+| GET | `/OnlineOrder` | pos.sell | Paginated list (filter: status, store, date, search) |
+| GET | `/OnlineOrder/ListJson` | pos.sell | JSON list |
+| GET | `/OnlineOrder/Details/{id}` | pos.sell | Single order with items |
+| GET | `/OnlineOrder/DetailsJson/{id}` | pos.sell | JSON detail |
+| GET | `/OnlineOrder/UpdateStatus/{id}` | pos.sell | Status change form |
+| POST | `/OnlineOrder/UpdateStatus/{id}` | pos.sell | Submit status change |
+| POST | `/OnlineOrder/UpdateStatusJson` | pos.sell | JSON status update |
 
-## Business Rules
-- Soft cancel; status workflow TBD (align with Ecommerce when porting)
-
-## Dependencies & Related Modules
-- `customers.md`, `product.md`, `inventory.md`
-- Future: `USER` storefront modules
+## Dead Scaffold Removal
+Old entity-leaking `IOrderRepository` / `OrderRepository` / `IOrderService` / `OrderService`
+files have been fully rewritten — entities no longer cross the repository boundary.

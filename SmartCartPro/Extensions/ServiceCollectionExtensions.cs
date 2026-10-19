@@ -39,9 +39,30 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<SmartCartDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        // ── Legacy (kept for backward compat) ─────────────────────
-        services.AddScoped<IOrderRepository, OrderRepository>();
-        services.AddScoped<IOrderService, OrderService>();
+        // ── Phase 7: Online Orders ────────────────────────────────
+        services.AddScoped<IOnlineOrderRepository, OnlineOrderRepository>();
+        services.AddScoped<IOnlineOrderService, OnlineOrderService>();
+
+        // ── Phase 7: Reviews ──────────────────────────────────────
+        services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
+        services.AddScoped<IProductReviewService, ProductReviewService>();
+
+        // ── Phase 7: Cart & Wishlist ──────────────────────────────
+        services.AddScoped<ICartRepository, CartRepository>();
+        services.AddScoped<ICartService, CartService>();
+        services.AddScoped<IWishlistRepository, WishlistRepository>();
+        services.AddScoped<IWishlistService, WishlistService>();
+
+        // ── Phase 7: Settings ─────────────────────────────────────
+        services.AddScoped<ISettingRepository, SettingRepository>();
+        services.AddScoped<ISettingService, SettingService>();
+
+        // ── Phase 7: Audit ────────────────────────────────────────
+        services.AddScoped<IAuditRepository, AuditRepository>();
+        services.AddScoped<IAuditService, AuditService>();
+
+        // ── Phase 7: Reports ──────────────────────────────────────
+        services.AddScoped<IReportService, ReportService>();
 
         // Optional Dapper (reports / justified queries only)
         services.AddScoped<IProductReportRepository, ProductReportRepository>();

@@ -1,13 +1,14 @@
-using SmartCartPro.Entities;
+using SmartCartPro.Models;
 
 namespace SmartCartPro.Repositories.Interfaces;
 
-public interface IOrderRepository
+/// <summary>
+/// Online order repository — rewritten in Phase 7 to use Input/Output models.
+/// Entities stay internal to this repository only.
+/// </summary>
+public interface IOnlineOrderRepository
 {
-    Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Order>> ListAsync(CancellationToken cancellationToken = default);
-    Task AddAsync(Order order, CancellationToken cancellationToken = default);
-    Task UpdateAsync(Order order, CancellationToken cancellationToken = default);
-    Task DeleteAsync(Order order, CancellationToken cancellationToken = default);
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<OutputOnlineOrderSelect?> GetOrderAsync(InputOnlineOrderSelect input, CancellationToken ct = default);
+    Task<OutputOnlineOrderList> ListOrdersAsync(InputOnlineOrderList input, CancellationToken ct = default);
+    Task<OutputOnlineOrderStatusUpdate> UpdateStatusAsync(InputOnlineOrderStatusUpdate input, CancellationToken ct = default);
 }

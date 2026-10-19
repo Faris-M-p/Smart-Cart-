@@ -49,8 +49,17 @@ public class SmartCartDbContext : DbContext
     public DbSet<SalesReturn> SalesReturns => Set<SalesReturn>();
     public DbSet<SalesReturnDetail> SalesReturnDetails => Set<SalesReturnDetail>();
 
-    // ── Online Orders (legacy stub) ───────────────────────────────
+    // ── Online Orders (Phase 7) ───────────────────────────────────
     public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OnlineOrderItem> OnlineOrderItems => Set<OnlineOrderItem>();
+
+    // ── Phase 7: Reviews, Cart, Wishlist, Settings ────────────────
+    public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<Wishlist> Wishlists => Set<Wishlist>();
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+    public DbSet<Setting> Settings => Set<Setting>();
 
     // ── Platform / super-admin entities ──────────────────────────
     public DbSet<License> Licenses => Set<License>();
@@ -470,6 +479,107 @@ public class SmartCartDbContext : DbContext
                 .HasForeignKey(x => x.FkProduct)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => x.FkSalesReturn);
+        });
+
+        // ── Phase 7: Online Order Items ────────────────────────────────
+
+        modelBuilder.Entity<OnlineOrderItem>(e =>
+        {
+            e.HasOne(x => x.Order)
+                .WithMany(o => o.Items)
+                .HasForeignKey(x => x.FkOnlineOrder)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkOnlineOrder);
+            e.HasIndex(x => x.FkStore);
+        });
+
+        // ── Phase 7: Product Reviews ───────────────────────────────────
+
+        modelBuilder.Entity<ProductReview>(e =>
+        {
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.FkCustomer)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkProduct);
+            // Unique: one review per customer per order item (enforced via patch column fk_onlineorderitem)
+            e.HasIndex(x => new { x.FkCustomer, x.FkOnlineOrderItem })
+                .IsUnique()
+                .HasFilter("\"fk_onlineorderitem\" IS NOT NULL");
+        });
+
+        // ── Phase 7: Cart & CartItem ───────────────────────────────────
+
+        modelBuilder.Entity<Cart>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.FkCustomer)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => new { x.FkStore, x.FkCustomer });
+            e.HasIndex(x => new { x.FkStore, x.SessionKey });
+        });
+
+        modelBuilder.Entity<CartItem>(e =>
+        {
+            e.HasOne(x => x.Cart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(x => x.FkCart)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkStore);
+            e.HasIndex(x => new { x.FkCart, x.FkProduct, x.FkProductVariant }).IsUnique();
+        });
+
+        // ── Phase 7: Wishlist & WishlistItem ──────────────────────────
+
+        modelBuilder.Entity<Wishlist>(e =>
+        {
+            e.HasOne(x => x.Store)
+                .WithMany()
+                .HasForeignKey(x => x.FkStore)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.FkCustomer)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkStore, x.FkCustomer }).IsUnique();
+        });
+
+        modelBuilder.Entity<WishlistItem>(e =>
+        {
+            e.HasOne(x => x.Wishlist)
+                .WithMany(w => w.Items)
+                .HasForeignKey(x => x.FkWishlist)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.FkProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkWishlist, x.FkProduct }).IsUnique();
+            e.HasIndex(x => x.FkStore);
+        });
+
+        // ── Phase 7: Settings ──────────────────────────────────────────
+
+        modelBuilder.Entity<Setting>(e =>
+        {
+            e.HasIndex(x => new { x.SettingScope, x.FkStore, x.SettingKey }).IsUnique();
         });
     }
 }

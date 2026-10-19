@@ -1,10 +1,13 @@
-using SmartCartPro.Entities;
+using SmartCartPro.Models;
 
 namespace SmartCartPro.Services.Interfaces;
 
-public interface IOrderService
+/// <summary>
+/// Online order service — Phase 7 rewrite. All entity references removed.
+/// </summary>
+public interface IOnlineOrderService
 {
-    Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Order>> ListAsync(CancellationToken cancellationToken = default);
-    Task<Order> CreateAsync(Order order, CancellationToken cancellationToken = default);
+    Task<OutputOnlineOrderSelect?> GetOrderAsync(InputOnlineOrderSelect input, CancellationToken ct = default);
+    Task<OutputOnlineOrderList> ListOrdersAsync(InputOnlineOrderList input, CancellationToken ct = default);
+    Task<OutputOnlineOrderStatusUpdate> UpdateStatusAsync(InputOnlineOrderStatusUpdate input, CancellationToken ct = default);
 }
