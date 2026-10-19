@@ -28,7 +28,7 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddSmartCartExceptionHandling(builder.Configuration);
 builder.Services.AddSmartCartDataAccess(builder.Configuration);
 builder.Services.AddSmartCartAuth(builder.Configuration);
-builder.Services.AddSmartCartPolicies();
+builder.Services.AddSmartCartPolicies(); // includes AddAuthorization + PlatformSuperAdmin policy
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -85,8 +85,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
-
 var app = builder.Build();
 
 // IExceptionHandler (JSON APIs) first; HTML falls through to /Home/Error page.
@@ -112,11 +110,6 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapControllers();
-
-app.MapControllerRoute(
-    name: "superAdmin",
-    pattern: "SuperAdmin/{action=Dashboard}/{id?}",
-    defaults: new { controller = "SuperAdmin" });
 
 app.MapControllerRoute(
     name: "default",

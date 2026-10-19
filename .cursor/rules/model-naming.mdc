@@ -1,0 +1,50 @@
+---
+description: SmartCartPro model & layer rules (apply to ALL code)
+alwaysApply: true
+---
+
+# MODEL RULES – SmartCartPro
+
+## 1. Entities are DB-only
+- Classes in SmartCartPro.Entities (Company, Store, License, AuditLog …) are used ONLY inside Repositories (EF/DB mapping).
+- NEVER return, accept or expose an Entity from a Repository interface, Service, Controller or View.
+- No "Dto" suffix classes. Remove/replace existing *Dto classes.
+
+## 2. Three model types per operation – exact naming
+| Purpose | Name format | Example | Used between |
+|---|---|---|---|
+| View / form model (Razor + validation) | In{Entity}{Action}View | InStoreUpdateView | View ⇄ Controller |
+| Input passed down | Input{Entity}{Action} | InputStoreUpdate | Controller → Service → Repository interface |
+| Output returned up | Output{Entity}{Action} | OutputStoreUpdate | Repository → Service → Controller |
+
+Actions: Create, Update, Select (single), List, Delete, Upsert.
+Examples: InStoreCreateView / InputStoreCreate / OutputStoreCreate,
+InputStoreSelect / OutputStoreSelect, InputStoreList / OutputStoreList,
+InCompanyUpdateView / InputCompanyUpdate / OutputCompanyUpdate,
+InLicenseUpdateView / InputLicenseUpdate / OutputLicenseUpdate.
+
+## 3. Where each model lives
+- One file per module under Models/:
+  - Models/CompanyModels.cs, Models/StoreModels.cs, Models/LicenseModels.cs, Models/AuditModels.cs
+- Namespace: SmartCartPro.Models for all of them.
+- Inside each file, one #region per operation (Create, Update, Select, List, Delete — only regions that have classes).
+  Each region holds In{Entity}{Action}View, Input{Entity}{Action}, Output{Entity}{Action} together (only the ones that exist).
+- DataAnnotations ([Required], [MaxLength], [Display(Name="…")]) ONLY on In…View classes.
+- Input… → plain properties, no annotations.
+- Output… → plain properties + ResponseCode, ResponseMsg, StatusCode where it is a save/update.
+
+## 4. Mapping
+- Controller: InXxxView → InputXxx (manual mapping, small private method or static Map method in the Input class).
+- Repository: InputXxx → Entity (inside repository only), Entity → OutputXxx (inside repository only, use Select(...) projection for reads – never load full entity just to map).
+- Controller: OutputXxx → View model for display (or pass OutputXxx directly to the view for read-only pages).
+
+## 5. Interface signatures (pattern)
+Task<OutputStoreSelect?> GetStoreAsync(InputStoreSelect input, CancellationToken ct = default);
+Task<OutputStoreList>    ListStoresAsync(InputStoreList input, CancellationToken ct = default);
+Task<OutputStoreCreate>  CreateStoreAsync(InputStoreCreate input, CancellationToken ct = default);
+Task<OutputStoreUpdate>  UpdateStoreAsync(InputStoreUpdate input, CancellationToken ct = default);
+
+## 6. Do not
+- Do not put [Required]/[MaxLength] on Input/Output classes.
+- Do not reuse one model for both input and output.
+- Do not add a model that is not used.

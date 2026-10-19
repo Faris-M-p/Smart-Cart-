@@ -70,14 +70,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<ISuperAdminRepository, SuperAdminRepository>();
-        services.AddScoped<ISuperAdminService, SuperAdminService>();
+        services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<ICompanyService, CompanyService>();
         return services;
     }
 
     /// <summary>
-    /// Registers the <c>PlatformSuperAdmin</c> authorization policy used to
-    /// protect every Super Admin controller action.
+    /// Platform claim policy — store create / company bootstrap.
     /// </summary>
     public static IServiceCollection AddSmartCartPolicies(this IServiceCollection services)
     {

@@ -1,0 +1,13 @@
+@model SmartCartPro.Models.InStoreCreateView
+@{
+    ViewData["Title"] = "Create store";
+}
+<h1 class="h4 mb-3">Create store</h1>
+<p class="text-muted small">Super Admin only.</p>
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <partial name="_StoreCreateForm" />
+    <button type="submit" class="btn btn-primary mt-3">Create</button>
+    <a class="btn btn-outline-secondary mt-3" asp-action="Index">Cancel</a>
+</form>

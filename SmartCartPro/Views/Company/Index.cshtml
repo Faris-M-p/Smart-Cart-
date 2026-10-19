@@ -1,0 +1,88 @@
+@model SmartCartPro.Models.InCompanyUpdateView
+@{
+    ViewData["Title"] = "Company profile";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Company profile</h1>
+</div>
+@if (TempData["SuccessMessage"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+@if (Model.RequiresBootstrap && !Model.CanEdit)
+{
+    <p class="text-muted">Company is not set up yet. Ask a Super Admin to create it.</p>
+}
+else
+{
+    <form asp-action="Save" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IdCompany" />
+        <input type="hidden" asp-for="RequiresBootstrap" />
+        <input type="hidden" asp-for="CanEdit" />
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" asp-for="CompanyName"></label>
+                <input class="form-control" asp-for="CompanyName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="CompanyCode"></label>
+                <input class="form-control" asp-for="CompanyCode" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="LegalName"></label>
+                <input class="form-control" asp-for="LegalName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="TaxNumber"></label>
+                <input class="form-control" asp-for="TaxNumber" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="Email"></label>
+                <input class="form-control" asp-for="Email" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="Phone"></label>
+                <input class="form-control" asp-for="Phone" />
+            </div>
+            <div class="col-md-12">
+                <label class="form-label" asp-for="Website"></label>
+                <input class="form-control" asp-for="Website" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="AddressLine1"></label>
+                <input class="form-control" asp-for="AddressLine1" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" asp-for="AddressLine2"></label>
+                <input class="form-control" asp-for="AddressLine2" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="City"></label>
+                <input class="form-control" asp-for="City" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="State"></label>
+                <input class="form-control" asp-for="State" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="PostalCode"></label>
+                <input class="form-control" asp-for="PostalCode" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="Country"></label>
+                <input class="form-control" asp-for="Country" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="CurrencyCode"></label>
+                <input class="form-control" asp-for="CurrencyCode" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="TimeZone"></label>
+                <input class="form-control" asp-for="TimeZone" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-4">Save</button>
+    </form>
+}

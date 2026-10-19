@@ -14,8 +14,8 @@ Controllers under `Controllers/` (domain-grouped, not `Controllers/Admin/` prefi
 
 - Routes: `/Auth/Login`, ChangePassword, ForgotPassword, ResetPassword (**no Register**)
 - Status: **IMPLEMENTED** for employee JWT cookie auth — see [`modules/auth.md`](modules/auth.md)
-- Company onboarding is Super Admin only — see [`modules/super-admin.md`](modules/super-admin.md)
-- **Platform Super Admin** (`/platform-access` + OTP, licenses, packages): **PLANNED / hold** — do not implement until requested.
+- Company/Store: normal MVC `CompanyController` / `StoreController` — Super Admin creates stores; admin edits — see [`modules/company.md`](modules/company.md)
+- **No** SuperAdmin controller and **no** `/api/admin` company APIs
 
 ## Authorization (target)
 
@@ -33,7 +33,8 @@ Roles/permissions seeded in SQL; enforce via claims + permission checks (`Requir
 Documented under `modules/`:
 
 - [`auth.md`](modules/auth.md) — Sign-in / register / password
-- [`super-admin.md`](modules/super-admin.md) — Platform Super Admin (**PLANNED / hold**)
+- [`super-admin.md`](modules/super-admin.md) — Platform Super Admin role/claim (no separate controller)
+- [`company.md`](modules/company.md) — Company master + store/setup APIs
 - [`dashboard.md`](modules/dashboard.md) — Home dashboard
 - [`filter.md`](modules/filter.md) — Common dropdown fill API
 - [`category.md`](modules/category.md) — Categories

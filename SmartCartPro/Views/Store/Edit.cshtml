@@ -1,0 +1,13 @@
+@model SmartCartPro.Models.InStoreUpdateView
+@{
+    ViewData["Title"] = "Edit store";
+}
+<h1 class="h4 mb-3">Edit store</h1>
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<form asp-action="Edit" asp-route-id="@Model.IdStore" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IdStore" />
+    <partial name="_StoreUpdateForm" />
+    <button type="submit" class="btn btn-primary mt-3">Save</button>
+    <a class="btn btn-outline-secondary mt-3" asp-action="Index">Cancel</a>
+</form>

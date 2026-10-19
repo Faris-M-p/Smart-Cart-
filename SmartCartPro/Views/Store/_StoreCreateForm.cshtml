@@ -1,0 +1,47 @@
+@model SmartCartPro.Models.InStoreCreateView
+<div class="row g-3">
+    <div class="col-md-4">
+        <label class="form-label" asp-for="StoreCode"></label>
+        <input class="form-control" asp-for="StoreCode" />
+    </div>
+    <div class="col-md-8">
+        <label class="form-label" asp-for="StoreName"></label>
+        <input class="form-control" asp-for="StoreName" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" asp-for="Email"></label>
+        <input class="form-control" asp-for="Email" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" asp-for="Phone"></label>
+        <input class="form-control" asp-for="Phone" />
+    </div>
+    <div class="col-md-12">
+        <label class="form-label" asp-for="AddressLine1"></label>
+        <input class="form-control" asp-for="AddressLine1" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" asp-for="City"></label>
+        <input class="form-control" asp-for="City" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" asp-for="State"></label>
+        <input class="form-control" asp-for="State" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" asp-for="PostalCode"></label>
+        <input class="form-control" asp-for="PostalCode" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" asp-for="Country"></label>
+        <input class="form-control" asp-for="Country" />
+    </div>
+    <div class="col-md-3 form-check mt-4">
+        <input class="form-check-input" asp-for="IsDefault" />
+        <label class="form-check-label" asp-for="IsDefault"></label>
+    </div>
+    <div class="col-md-3 form-check mt-4">
+        <input class="form-check-input" asp-for="IsActive" />
+        <label class="form-check-label" asp-for="IsActive"></label>
+    </div>
+</div>

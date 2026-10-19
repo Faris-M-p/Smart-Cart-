@@ -1,0 +1,43 @@
+@model SmartCartPro.Models.OutputStoreList
+@{
+    ViewData["Title"] = "Stores";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Stores</h1>
+        <p class="text-muted small mb-0">@Model.CurrentStoreCount / @Model.MaxStores stores</p>
+    </div>
+    @if (Model.CanCreateStore)
+    {
+        <a class="btn btn-primary btn-sm" asp-action="Create">Create store</a>
+    }
+</div>
+@if (TempData["SuccessMessage"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+<table class="table table-sm align-middle">
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>City</th>
+            <th>Default</th>
+            <th>Active</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var s in Model.Stores)
+    {
+        <tr>
+            <td>@s.StoreCode</td>
+            <td>@s.StoreName</td>
+            <td>@s.City</td>
+            <td>@(s.IsDefault ? "Yes" : "")</td>
+            <td>@(s.IsActive ? "Yes" : "No")</td>
+            <td><a asp-action="Edit" asp-route-id="@s.IdStore">Edit</a></td>
+        </tr>
+    }
+    </tbody>
+</table>
