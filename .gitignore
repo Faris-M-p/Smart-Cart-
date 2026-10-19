@@ -14,3 +14,7 @@ appsettings.*.json
 
 # Wrangler CLI cache from Cloudflare experiments
 .wrangler/
+
+# Documentation — always track Markdown under docs/
+!docs/
+!docs/**/*.md
