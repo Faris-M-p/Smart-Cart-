@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Identity;
-using SmartCartPro.Entities;
 using SmartCartPro.Models;
 using SmartCartPro.Repositories.Interfaces;
 using SmartCartPro.Services.Interfaces;
@@ -9,9 +8,9 @@ namespace SmartCartPro.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _repo;
-    private readonly IPasswordHasher<User> _hasher;
+    private readonly IPasswordHasher<object> _hasher;
 
-    public UserService(IUserRepository repo, IPasswordHasher<User> hasher)
+    public UserService(IUserRepository repo, IPasswordHasher<object> hasher)
     {
         _repo = repo;
         _hasher = hasher;
@@ -39,7 +38,7 @@ public class UserService : IUserService
         }
 
         // Hash using a dummy user carrier (PasswordHasher is stateless on the object)
-        input.PasswordHash = _hasher.HashPassword(new User(), plainPassword);
+        input.PasswordHash = _hasher.HashPassword(new object(), plainPassword);
         return _repo.CreateUserAsync(input, ct);
     }
 
@@ -51,7 +50,7 @@ public class UserService : IUserService
 
     public Task<bool> ResetPasswordAsync(int idUser, string newPlainPassword, CancellationToken ct = default)
     {
-        var hash = _hasher.HashPassword(new User(), newPlainPassword);
+        var hash = _hasher.HashPassword(new object(), newPlainPassword);
         return _repo.ResetPasswordHashAsync(idUser, hash, ct);
     }
 
