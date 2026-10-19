@@ -24,6 +24,10 @@ public class ProductReviewController : Controller
 
     // ── ADMIN LIST ───────────────────────────────────────────────
 
+    /// <summary>
+    /// Moderation list of customer product reviews.
+    /// Used from products admin to filter and act on reviews.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Index([FromQuery] InputProductReviewList input, CancellationToken ct)

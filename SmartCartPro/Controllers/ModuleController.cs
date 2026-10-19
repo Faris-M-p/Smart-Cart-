@@ -16,6 +16,10 @@ public class ModuleController : Controller
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
+    /// <summary>
+    /// Shows module toggles and preset options for the tenant.
+    /// Platform super admins configure licensed features.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -31,6 +35,10 @@ public class ModuleController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Saves the selected enabled modules for the company.
+    /// Platform super admins after reviewing module assignment.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InModuleAssignView model, CancellationToken ct)

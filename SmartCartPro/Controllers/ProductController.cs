@@ -27,6 +27,10 @@ public class ProductController : Controller
     // PRODUCT LIST
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists store products with pricing, stock hints, and catalog links for maintenance.
+    /// Staff with products.view open this as the main product master grid before POS sales.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Index([FromQuery] InputProductList input, CancellationToken ct)
@@ -39,6 +43,10 @@ public class ProductController : Controller
     // CREATE
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Shows the form to add a sellable SKU with barcode, prices, and catalog links.
+    /// Managers with products.manage use it when onboarding items for register and online.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Create(CancellationToken ct)
@@ -47,6 +55,10 @@ public class ProductController : Controller
         return View(new InProductCreateView { IsActive = true });
     }
 
+    /// <summary>
+    /// Persists a new product available for POS scan, inventory, and optional online sale.
+    /// Managers submit the create product form after validating codes and tax assignment.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Create(InProductCreateView model, CancellationToken ct)
@@ -83,6 +95,10 @@ public class ProductController : Controller
     // EDIT
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Loads one product for editing prices, barcode, category, and active or online flags.
+    /// Managers open this from the product list when correcting shelf or register data.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
@@ -93,6 +109,10 @@ public class ProductController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Saves product changes reflected immediately on POS lookup and stock reports.
+    /// Managers submit the edit product form after updating merchandising or pricing.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Edit(int id, InProductUpdateView model, CancellationToken ct)
@@ -131,16 +151,28 @@ public class ProductController : Controller
     // VARIANTS
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists size, color, or other variants tied to a parent product for separate SKUs.
+    /// Staff with products.view review variants before cashiers scan variant barcodes at POS.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Variants(int productId, CancellationToken ct)
         => View(await _svc.ListVariantsAsync(new InputVariantList { FkProduct = productId }, ct));
 
+    /// <summary>
+    /// Shows the form to add a variant with its own barcode and price adjustment.
+    /// Managers with products.manage add variants for multi-SKU items like apparel sizes.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public IActionResult CreateVariant(int productId)
         => View(new InVariantCreateView { FkProduct = productId, IsActive = true });
 
+    /// <summary>
+    /// Saves a new variant scannable at checkout under the parent product.
+    /// Managers submit the create variant form from the product variants screen.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateVariant(InVariantCreateView model, CancellationToken ct)
@@ -163,6 +195,10 @@ public class ProductController : Controller
         return CommonHelpers.SuccessResponse("Variant created.", new { id = result.IdProductVariant, productId = model.FkProduct });
     }
 
+    /// <summary>
+    /// Loads one variant for editing name, SKU, barcode, or supplemental price.
+    /// Managers navigate here from the variant list when fixing register scan issues.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditVariant(int id, CancellationToken ct)
@@ -172,6 +208,10 @@ public class ProductController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists variant updates used when cashiers scan or search by variant barcode.
+    /// Managers submit the edit variant form after revising sellable child SKUs.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditVariant(int id, InVariantUpdateView model, CancellationToken ct)
@@ -200,6 +240,10 @@ public class ProductController : Controller
     // BARCODE / SKU JSON LOOKUP
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Resolves a scanned or keyed barcode to product or variant details as JSON.
+    /// POS and receiving UIs call this during fast item lookup without a full page load.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> FindByBarcode(string barcode, CancellationToken ct)
     {

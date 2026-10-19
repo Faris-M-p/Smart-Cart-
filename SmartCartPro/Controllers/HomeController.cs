@@ -18,8 +18,16 @@ public class HomeController : Controller
         _environmentSettings = environmentSettings.Value;
     }
 
+    /// <summary>
+    /// Default home page after sign-in or when visiting the site root.
+    /// Rendered for authenticated and anonymous users per routing.
+    /// </summary>
     public IActionResult Index() => View();
 
+    /// <summary>
+    /// Renders a user-safe error page for unhandled exceptions.
+    /// Invoked by the exception handler middleware when a request fails.
+    /// </summary>
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
@@ -57,6 +65,10 @@ public class HomeController : Controller
         });
     }
 
+    /// <summary>
+    /// Renders status-specific error views for non-success HTTP codes.
+    /// Used by status-code re-execution (404 vs generic error layout).
+    /// </summary>
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult StatusCodePage(int code)
@@ -85,6 +97,10 @@ public class HomeController : Controller
         });
     }
 
+    /// <summary>
+    /// Dedicated 404 page when a route or link targets a missing resource.
+    /// Called directly or from routing when a not-found view is needed.
+    /// </summary>
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult NotFoundPage()

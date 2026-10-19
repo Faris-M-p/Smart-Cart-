@@ -18,6 +18,10 @@ public class CustomersController : Controller
 
     public CustomersController(ICustomerService svc) => _svc = svc;
 
+    /// <summary>
+    /// Lists customer accounts used for loyalty, receipts, and repeat POS visits.
+    /// Staff with pos.view browse this from the POS module customer master screen.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> Index([FromQuery] InputCustomerList input, CancellationToken ct)
@@ -26,10 +30,18 @@ public class CustomersController : Controller
         return View(await _svc.ListCustomersAsync(input, ct));
     }
 
+    /// <summary>
+    /// Shows the form to register a shopper for checkout attachment and follow-up contact.
+    /// Cashiers or supervisors with pos.manage use it when adding walk-in customers.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.manage")]
     public IActionResult Create() => View(new InCustomerCreateView { IsActive = true });
 
+    /// <summary>
+    /// Saves a new customer record linkable to sales tickets and phone search at register.
+    /// Staff with pos.manage submit the create customer form during or after a sale.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.manage")]
     public async Task<IActionResult> Create(InCustomerCreateView model, CancellationToken ct)
@@ -51,6 +63,10 @@ public class CustomersController : Controller
         return CommonHelpers.SuccessResponse("Customer created.", new { id = result.IdCustomer });
     }
 
+    /// <summary>
+    /// Loads one customer for editing name, phone, email, or active status.
+    /// Supervisors with pos.manage open this from the customer list to fix profile data.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.manage")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
@@ -60,6 +76,10 @@ public class CustomersController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists customer profile updates used on future POS lookups and receipts.
+    /// Staff with pos.manage submit the edit customer form after correcting details.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.manage")]
     public async Task<IActionResult> Edit(int id, InCustomerUpdateView model, CancellationToken ct)

@@ -20,6 +20,10 @@ public class AuditController : Controller
 
     public AuditController(IAuditService svc) => _svc = svc;
 
+    /// <summary>
+    /// Shows paginated audit logs with query-string filters.
+    /// Platform super admins or users with settings.manage permission.
+    /// </summary>
     [HttpGet]
     [RequirePermission("settings.manage")]
     public async Task<IActionResult> Index([FromQuery] InputAuditLogList input, CancellationToken ct)

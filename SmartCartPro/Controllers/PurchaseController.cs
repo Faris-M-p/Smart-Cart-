@@ -28,6 +28,10 @@ public class PurchaseController : Controller
     // LIST
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Paginated purchase order list for the current store.
+    /// Used from the purchases index page and filters.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.view")]
     public async Task<IActionResult> Index([FromQuery] InputPurchaseList input, CancellationToken ct)
@@ -41,6 +45,10 @@ public class PurchaseController : Controller
     // CREATE
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Shows the form to create a new purchase order.
+    /// Used when staff start a new PO from purchasing.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Create(CancellationToken ct)
@@ -49,6 +57,10 @@ public class PurchaseController : Controller
         return View(new InPurchaseCreateView { FkStore = StoreId, PurchaseDate = DateOnly.FromDateTime(DateTime.Today) });
     }
 
+    /// <summary>
+    /// Persists a new purchase order with line items.
+    /// Used on submit of the create PO form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Create(InPurchaseCreateView model, CancellationToken ct)
@@ -85,6 +97,10 @@ public class PurchaseController : Controller
     // DETAILS / EDIT
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Read-only purchase order detail including lines and status.
+    /// Used when opening a PO from the list or after save.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.view")]
     public async Task<IActionResult> Details(int id, CancellationToken ct)
@@ -94,6 +110,10 @@ public class PurchaseController : Controller
         return View(item);
     }
 
+    /// <summary>
+    /// Loads the edit form for a posted purchase order.
+    /// Used when correcting PO header or lines before receipt.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
@@ -126,6 +146,10 @@ public class PurchaseController : Controller
         return View(view);
     }
 
+    /// <summary>
+    /// Saves changes to an editable posted purchase order.
+    /// Used on submit of the edit PO form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Edit(int id, InPurchaseUpdateView model, CancellationToken ct)
@@ -161,6 +185,10 @@ public class PurchaseController : Controller
     // GOODS RECEIPT (GRN)
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Shows goods receipt (GRN) entry for a purchase order.
+    /// Used when recording inbound stock against a PO.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Receive(int id, CancellationToken ct)
@@ -186,6 +214,10 @@ public class PurchaseController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Posts a GRN and updates PO receipt status and inventory.
+    /// Used on submit of the receive-goods form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Receive(int id, InGoodsReceiptView model, CancellationToken ct)
@@ -224,11 +256,19 @@ public class PurchaseController : Controller
     // CANCEL
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Shows cancellation reason form for a purchase order.
+    /// Used before voiding an open or posted PO.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.manage")]
     public IActionResult Cancel(int id)
         => View(new InPurchaseCancelView { IdPurchase = id });
 
+    /// <summary>
+    /// Cancels a purchase order with a documented reason.
+    /// Used on submit of the cancel PO form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Cancel(int id, InPurchaseCancelView model, CancellationToken ct)

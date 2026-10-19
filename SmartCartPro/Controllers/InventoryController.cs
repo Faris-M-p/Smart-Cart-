@@ -23,6 +23,10 @@ public class InventoryController : Controller
     // STOCK BALANCE LIST
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Paginated on-hand stock balances by product and store.
+    /// Used from the inventory dashboard and stock lookup.
+    /// </summary>
     [HttpGet]
     [RequirePermission("inventory.view")]
     public async Task<IActionResult> Index([FromQuery] InputInventoryList input, CancellationToken ct)
@@ -36,11 +40,19 @@ public class InventoryController : Controller
     // OPENING STOCK
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Form to set initial opening quantities for a SKU.
+    /// Used once when onboarding stock or new locations.
+    /// </summary>
     [HttpGet]
     [RequirePermission("inventory.manage")]
     public IActionResult Opening()
         => View(new InOpeningStockView { FkStore = StoreId });
 
+    /// <summary>
+    /// Applies opening stock and writes the opening movement.
+    /// Used on submit of the opening stock form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("inventory.manage")]
     public async Task<IActionResult> Opening(InOpeningStockView model, CancellationToken ct)
@@ -60,11 +72,19 @@ public class InventoryController : Controller
     // ADJUSTMENT
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Form to increase or decrease stock with a reason.
+    /// Used for shrinkage, corrections, and cycle counts.
+    /// </summary>
     [HttpGet]
     [RequirePermission("inventory.manage")]
     public IActionResult Adjust()
         => View(new InStockAdjustView { FkStore = StoreId });
 
+    /// <summary>
+    /// Posts a stock adjustment and updates on-hand balance.
+    /// Used on submit of the adjust stock form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("inventory.manage")]
     public async Task<IActionResult> Adjust(InStockAdjustView model, CancellationToken ct)
@@ -84,11 +104,19 @@ public class InventoryController : Controller
     // TRANSFER
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Form to move quantity between stores or warehouses.
+    /// Used for inter-location stock replenishment.
+    /// </summary>
     [HttpGet]
     [RequirePermission("inventory.manage")]
     public IActionResult Transfer()
         => View(new InStockTransferView { FromStoreId = StoreId });
 
+    /// <summary>
+    /// Executes a store-to-store transfer in one transaction.
+    /// Used on submit of the transfer stock form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("inventory.manage")]
     public async Task<IActionResult> Transfer(InStockTransferView model, CancellationToken ct)
@@ -116,6 +144,10 @@ public class InventoryController : Controller
     // HISTORY
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Audit trail of stock movements with filters.
+    /// Used to trace sales, receipts, and adjustments.
+    /// </summary>
     [HttpGet]
     [RequirePermission("inventory.view")]
     public async Task<IActionResult> History([FromQuery] InputStockMovementList input, CancellationToken ct)
@@ -129,6 +161,10 @@ public class InventoryController : Controller
     // LOW STOCK
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists SKUs at or below reorder thresholds.
+    /// Used for replenishment alerts and purchasing.
+    /// </summary>
     [HttpGet]
     [RequirePermission("inventory.view")]
     public async Task<IActionResult> LowStock([FromQuery] InputLowStockList input, CancellationToken ct)

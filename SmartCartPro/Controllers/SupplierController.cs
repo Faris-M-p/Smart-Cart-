@@ -18,6 +18,10 @@ public class SupplierController : Controller
 
     public SupplierController(ISupplierService svc) => _svc = svc;
 
+    /// <summary>
+    /// Lists vendors used when raising purchase orders and receiving stock into the store.
+    /// Staff with purchasing.view open this from the Purchases supplier master screen.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.view")]
     public async Task<IActionResult> Index([FromQuery] InputSupplierList input, CancellationToken ct)
@@ -26,10 +30,18 @@ public class SupplierController : Controller
         return View(await _svc.ListSuppliersAsync(input, ct));
     }
 
+    /// <summary>
+    /// Shows the form to onboard a supplier with contact, address, and tax details.
+    /// Buyers with purchasing.manage use it before creating POs or GRN receipts.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.manage")]
     public IActionResult Create() => View(new InSupplierCreateView { IsActive = true });
 
+    /// <summary>
+    /// Saves a new supplier available on purchase documents and payable tracking.
+    /// Buyers submit the create supplier form during vendor setup for the store.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Create(InSupplierCreateView model, CancellationToken ct)
@@ -58,6 +70,10 @@ public class SupplierController : Controller
         return CommonHelpers.SuccessResponse("Supplier created.", new { id = result.IdSupplier });
     }
 
+    /// <summary>
+    /// Loads one supplier for editing contacts, remit-to address, or tax registration.
+    /// Buyers with purchasing.manage navigate here from the supplier list for corrections.
+    /// </summary>
     [HttpGet]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
@@ -67,6 +83,10 @@ public class SupplierController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists supplier updates reflected on open POs and receiving workflows.
+    /// Buyers submit the edit supplier form after revising vendor master data.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchasing.manage")]
     public async Task<IActionResult> Edit(int id, InSupplierUpdateView model, CancellationToken ct)
@@ -97,6 +117,10 @@ public class SupplierController : Controller
         return CommonHelpers.SuccessResponse("Supplier updated.", new { id = result.IdSupplier });
     }
 
+    /// <summary>
+    /// Returns active suppliers as JSON for purchase order and GRN vendor pickers.
+    /// Purchasing screens call this via AJAX when selecting a vendor on a document.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Lookup(CancellationToken ct)
         => Json(await _svc.GetSupplierLookupAsync(ct));

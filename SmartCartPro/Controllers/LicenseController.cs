@@ -16,6 +16,10 @@ public class LicenseController : Controller
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
+    /// <summary>
+    /// Displays the current platform license details and provides default values when no license exists.
+    /// Used by the Platform Super Admin to view and manage license settings.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -40,6 +44,10 @@ public class LicenseController : Controller
         return View(view);
     }
 
+    /// <summary>
+    /// Creates or updates the platform license key, type, dates, store limit, and status.
+    /// Used when the Platform Super Admin saves license settings from the license form.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InLicenseUpdateView model, CancellationToken ct)
@@ -66,6 +74,10 @@ public class LicenseController : Controller
         return CommonHelpers.SuccessResponse("License saved.", new { id = result.IdLicense });
     }
 
+    /// <summary>
+    /// Suspends the active platform license so non–super-admin access is blocked.
+    /// Used when the Platform Super Admin temporarily disables the installation.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Suspend(CancellationToken ct)
@@ -94,6 +106,10 @@ public class LicenseController : Controller
         return CommonHelpers.SuccessResponse("License suspended.", new { id = result.IdLicense });
     }
 
+    /// <summary>
+    /// Reactivates a suspended platform license and restores normal store operations.
+    /// Used when the Platform Super Admin re-enables a previously suspended installation.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Activate(CancellationToken ct)

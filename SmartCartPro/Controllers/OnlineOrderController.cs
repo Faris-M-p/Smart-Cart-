@@ -34,6 +34,10 @@ public class OnlineOrderController : Controller
 
     // ── LIST ─────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Admin list of storefront online orders for fulfillment.
+    /// Used from the orders queue with status filters.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.sell")]
     public async Task<IActionResult> Index([FromQuery] InputOnlineOrderList input, CancellationToken ct)
@@ -60,6 +64,10 @@ public class OnlineOrderController : Controller
 
     // ── DETAILS ──────────────────────────────────────────────────
 
+    /// <summary>
+    /// Full online order detail with lines and customer info.
+    /// Used when staff open an order from the list.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.sell")]
     public async Task<IActionResult> Details(int id, CancellationToken ct)
@@ -81,6 +89,10 @@ public class OnlineOrderController : Controller
 
     // ── UPDATE STATUS ────────────────────────────────────────────
 
+    /// <summary>
+    /// Form to advance or cancel an online order status.
+    /// Used for confirm, pack, ship, deliver, or cancel steps.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.sell")]
     public async Task<IActionResult> UpdateStatus(int id, CancellationToken ct)
@@ -92,6 +104,10 @@ public class OnlineOrderController : Controller
         return View(new InOnlineOrderStatusView { IdOnlineOrder = id });
     }
 
+    /// <summary>
+    /// Applies a status change and related stock effects.
+    /// Used on submit of the update status form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.sell")]
     public async Task<IActionResult> UpdateStatus(int id, InOnlineOrderStatusView model, CancellationToken ct)

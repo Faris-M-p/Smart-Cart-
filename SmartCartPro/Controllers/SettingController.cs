@@ -38,6 +38,10 @@ public class SettingController : Controller
         "locale.timezone"
     ];
 
+    /// <summary>
+    /// Displays company-scoped POS and locale settings on one form.
+    /// Users with settings.manage permission in the SETTINGS module.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -56,6 +60,10 @@ public class SettingController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Persists known company configuration keys from the form.
+    /// Users with settings.manage permission after editing settings.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InSettingView model, CancellationToken ct)
     {

@@ -24,10 +24,22 @@ public class ReportsController : Controller
 
     // ── Shell views (no data — loaded via AJAX) ──────────────────
 
+    /// <summary>
+    /// Shell view for sales reports and charts.
+    /// Data is loaded client-side via JSON actions such as SalesByDate.
+    /// </summary>
     public IActionResult Sales() => View();
 
+    /// <summary>
+    /// Shell view for product and inventory report pages.
+    /// Data is loaded via AJAX from StockValuation, LowStock, and TopSelling.
+    /// </summary>
     public IActionResult Products() => View();
 
+    /// <summary>
+    /// Shell view for customer-focused report pages.
+    /// Used when customer analytics UI is expanded in the reports module.
+    /// </summary>
     public IActionResult Customers() => View();
 
     // ── JSON data actions ────────────────────────────────────────

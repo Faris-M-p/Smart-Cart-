@@ -23,6 +23,10 @@ public class SalesController : Controller
     // POS
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Renders the point-of-sale checkout screen.
+    /// Used when cashiers ring up in-store sales.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.view")]
     public IActionResult Pos() => View();
@@ -72,6 +76,10 @@ public class SalesController : Controller
     // INVOICES
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Paginated list of completed sales invoices for the store.
+    /// Used from billing history and invoice search.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> Invoices([FromQuery] InputSaleList input, CancellationToken ct)
@@ -81,6 +89,10 @@ public class SalesController : Controller
         return View(await _svc.ListSalesAsync(input, ct));
     }
 
+    /// <summary>
+    /// Full invoice detail view with lines and payments.
+    /// Used when opening an invoice from the list or POS.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> InvoiceDetails(int id, CancellationToken ct)
@@ -103,11 +115,19 @@ public class SalesController : Controller
     // CANCEL SALE
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Shows cancellation form for a completed sale.
+    /// Used before voiding an invoice and reversing stock.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.cancel")]
     public IActionResult CancelSale(int id)
         => View(new InSaleCancelView { IdSale = id });
 
+    /// <summary>
+    /// Voids a sale and reverses inventory movements.
+    /// Used on submit of the cancel sale form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.cancel")]
     public async Task<IActionResult> CancelSale(int id, InSaleCancelView model, CancellationToken ct)
@@ -134,6 +154,10 @@ public class SalesController : Controller
     // RETURNS
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Shows partial or full return entry for a sale.
+    /// Used when processing customer refunds after sale.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.return")]
     public async Task<IActionResult> Returns(int id, CancellationToken ct)
@@ -158,6 +182,10 @@ public class SalesController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Posts a sale return and restores stock where applicable.
+    /// Used on submit of the returns form.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.return")]
     public async Task<IActionResult> Returns(int id, InSaleReturnView model, CancellationToken ct)
@@ -195,6 +223,10 @@ public class SalesController : Controller
     // CASH SESSION
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Cash drawer session page with open session status.
+    /// Used at shift start to open or review the till.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> Session(CancellationToken ct)
@@ -204,6 +236,10 @@ public class SalesController : Controller
         return View(new InCashSessionOpenView { FkStore = StoreId });
     }
 
+    /// <summary>
+    /// Opens a new cash session with opening float.
+    /// Used when a cashier starts a shift on POS.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> OpenSession(InCashSessionOpenView model, CancellationToken ct)
@@ -224,6 +260,10 @@ public class SalesController : Controller
         return CommonHelpers.SuccessResponse("Cash session opened.", new { id = result.IdCashSession });
     }
 
+    /// <summary>
+    /// Closes the active cash session and records variance.
+    /// Used at shift end before day-close reconciliation.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> CloseSession(InCashSessionCloseView model, CancellationToken ct)
@@ -250,6 +290,10 @@ public class SalesController : Controller
     // DAY CLOSE / CASH SUMMARY
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// End-of-day cash summary for a closed session.
+    /// Used for manager review and Z-report style close.
+    /// </summary>
     [HttpGet]
     [RequirePermission("pos.view")]
     public async Task<IActionResult> DayClose(int id, CancellationToken ct)
@@ -264,6 +308,10 @@ public class SalesController : Controller
     // ONLINE ORDERS (stub — separate phase)
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Placeholder page linking to online order fulfillment.
+    /// Used from POS menu until dedicated orders UI ships.
+    /// </summary>
     [HttpGet]
     public IActionResult OnlineOrders() => View();
 }

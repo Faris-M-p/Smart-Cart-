@@ -16,6 +16,10 @@ public class RoleController : Controller
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
+    /// <summary>
+    /// Lists roles and their status for permission management.
+    /// Platform super admins maintain access control definitions.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -23,6 +27,10 @@ public class RoleController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Renders the role creation form with all permissions.
+    /// Platform super admins define new roles.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Create(CancellationToken ct)
     {
@@ -32,6 +40,10 @@ public class RoleController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Creates a role and attaches selected permissions.
+    /// Platform super admins submit the create form.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(InRoleCreateView model, CancellationToken ct)
@@ -54,6 +66,10 @@ public class RoleController : Controller
         return CommonHelpers.SuccessResponse("Role created.", new { id = result.IdRole });
     }
 
+    /// <summary>
+    /// Loads a role and permissions into the edit form.
+    /// Platform super admins update non-system roles.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
@@ -77,6 +93,10 @@ public class RoleController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Updates role metadata and permission assignments.
+    /// Platform super admins submit the edit form.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, InRoleUpdateView model, CancellationToken ct)
@@ -100,6 +120,10 @@ public class RoleController : Controller
         return CommonHelpers.SuccessResponse("Role updated.", new { id });
     }
 
+    /// <summary>
+    /// Soft-deletes or removes a custom role when allowed.
+    /// Platform super admins from the role list or edit UI.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

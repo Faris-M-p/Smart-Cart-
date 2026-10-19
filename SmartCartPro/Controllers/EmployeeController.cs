@@ -24,6 +24,10 @@ public class EmployeeController : Controller
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
     private bool IsPlatformAdmin => AuthClaims.IsPlatformSuperAdminUser(User);
 
+    /// <summary>
+    /// Lists employees (users) for the tenant.
+    /// Used by authorized staff managing workforce accounts.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -31,6 +35,10 @@ public class EmployeeController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Renders the new-employee form with roles and stores.
+    /// Platform super admins only.
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = "PlatformSuperAdmin")]
     public async Task<IActionResult> Create(CancellationToken ct)
@@ -40,6 +48,10 @@ public class EmployeeController : Controller
         return View(new InUserCreateView());
     }
 
+    /// <summary>
+    /// Creates an employee account with role and store access.
+    /// Platform super admins submit the create form.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
@@ -68,6 +80,10 @@ public class EmployeeController : Controller
             new { id = result.IdUser, userName = result.UserName });
     }
 
+    /// <summary>
+    /// Loads employee profile fields into the edit form.
+    /// Used by authorized users with employee management access.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
@@ -86,6 +102,10 @@ public class EmployeeController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Updates employee profile and active status.
+    /// Used by authorized users with employee management access.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, InUserUpdateView model, CancellationToken ct)
@@ -109,6 +129,10 @@ public class EmployeeController : Controller
         return CommonHelpers.SuccessResponse("Employee updated.", new { id });
     }
 
+    /// <summary>
+    /// Deactivates an employee so they cannot sign in.
+    /// Platform super admins from employee administration.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
@@ -118,6 +142,10 @@ public class EmployeeController : Controller
         return CommonHelpers.SuccessResponse("Employee deactivated.", new { id });
     }
 
+    /// <summary>
+    /// Sets a new password and forces change on next login.
+    /// Platform super admins assisting locked-out employees.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
@@ -130,6 +158,10 @@ public class EmployeeController : Controller
         return CommonHelpers.SuccessResponse("Password reset. Employee must change password on next login.", new { id });
     }
 
+    /// <summary>
+    /// Shows store checkboxes for an employee's access.
+    /// Platform super admins configure multi-store permissions.
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = "PlatformSuperAdmin")]
     public async Task<IActionResult> AssignStores(int id, CancellationToken ct)
@@ -142,6 +174,10 @@ public class EmployeeController : Controller
         return View(user);
     }
 
+    /// <summary>
+    /// Replaces the employee's allowed store list.
+    /// Platform super admins submit the assign-stores form.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
@@ -151,6 +187,10 @@ public class EmployeeController : Controller
         return CommonHelpers.SuccessResponse("Store access updated.", new { id });
     }
 
+    /// <summary>
+    /// Assigns a single role to the employee.
+    /// Platform super admins from employee administration actions.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]

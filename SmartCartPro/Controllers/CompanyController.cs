@@ -17,6 +17,10 @@ public class CompanyController : Controller
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
     private bool CanBootstrap => AuthClaims.IsPlatformSuperAdminUser(User);
 
+    /// <summary>
+    /// Shows the company profile form with current tenant details.
+    /// Used by authorized admins and platform super admins during bootstrap.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -24,6 +28,10 @@ public class CompanyController : Controller
         return View(output.ToView());
     }
 
+    /// <summary>
+    /// Creates or updates the company profile from the form submission.
+    /// Platform super admins bootstrap; others update existing company data.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(InCompanyUpdateView model, CancellationToken ct)

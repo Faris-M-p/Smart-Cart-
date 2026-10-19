@@ -22,6 +22,10 @@ public class StoreController : Controller
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
     private bool CanCreateStore => AuthClaims.IsPlatformSuperAdminUser(User);
 
+    /// <summary>
+    /// Lists stores for the current company with create affordances when allowed.
+    /// Used by authenticated users managing multi-store operations.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -29,10 +33,18 @@ public class StoreController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Renders the new-store creation form.
+    /// Platform super admins only.
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = "PlatformSuperAdmin")]
     public IActionResult Create() => View(new InStoreCreateView { IsActive = true });
 
+    /// <summary>
+    /// Persists a new store from submitted details.
+    /// Platform super admins only.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
@@ -64,6 +76,10 @@ public class StoreController : Controller
         return CommonHelpers.SuccessResponse("Store created.", new { id = result.IdStore });
     }
 
+    /// <summary>
+    /// Loads a store into the edit form by identifier.
+    /// Used by authenticated users with store access.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
@@ -76,6 +92,10 @@ public class StoreController : Controller
         return View(store.ToUpdateView());
     }
 
+    /// <summary>
+    /// Updates store details from the edit form.
+    /// Used by authenticated users with store access.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, InStoreUpdateView model, CancellationToken ct)

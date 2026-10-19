@@ -19,6 +19,10 @@ public class AuthController : Controller
         _authService = authService;
     }
 
+    /// <summary>
+    /// Shows the shared sign-in form for store admins and Super Admin.
+    /// Used when an unauthenticated user opens a protected page or signs in directly.
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
@@ -32,6 +36,10 @@ public class AuthController : Controller
         return View(new LoginInput());
     }
 
+    /// <summary>
+    /// Validates credentials and issues a JWT cookie or redirects to OTP for Super Admin.
+    /// Submitted from the login form; honors returnUrl and forced password-change flows.
+    /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
@@ -76,6 +84,10 @@ public class AuthController : Controller
         return RedirectToLocal(returnUrl);
     }
 
+    /// <summary>
+    /// Displays the email OTP entry screen after Super Admin password success.
+    /// Opened via redirect from login when RequiresOtp is returned.
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public IActionResult VerifyOtp(string challengeToken, string? returnUrl = null)
@@ -96,6 +108,10 @@ public class AuthController : Controller
         });
     }
 
+    /// <summary>
+    /// Verifies the OTP and completes Super Admin sign-in with a JWT cookie.
+    /// Posted from the OTP form using the challenge token from login.
+    /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
@@ -128,6 +144,10 @@ public class AuthController : Controller
         return RedirectToLocal(input.ReturnUrl);
     }
 
+    /// <summary>
+    /// Requests a new OTP for an in-progress Super Admin challenge.
+    /// Used from the verify-OTP page when the user did not receive or expired a code.
+    /// </summary>
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
@@ -149,10 +169,18 @@ public class AuthController : Controller
         });
     }
 
+    /// <summary>
+    /// Shows the password change form for signed-in users.
+    /// Used after login when MustChangePassword is set or from account settings.
+    /// </summary>
     [HttpGet]
     [Authorize]
     public IActionResult ChangePassword() => View(new ChangePasswordInput());
 
+    /// <summary>
+    /// Updates the current user's password and refreshes the auth cookie.
+    /// Posted from the change-password form; requires an authenticated session.
+    /// </summary>
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -181,14 +209,26 @@ public class AuthController : Controller
         return RedirectToAction("Index", "Home");
     }
 
+    /// <summary>
+    /// Placeholder page to start password recovery by email.
+    /// Linked from the login screen when recovery is offered.
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public IActionResult ForgotPassword() => View();
 
+    /// <summary>
+    /// Placeholder page to set a new password from a reset link.
+    /// Used when the user follows an emailed reset token (future flow).
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public IActionResult ResetPassword() => View();
 
+    /// <summary>
+    /// Signs out by clearing the JWT auth cookie.
+    /// Posted from in-app sign-out controls that use a form POST.
+    /// </summary>
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -198,6 +238,10 @@ public class AuthController : Controller
         return RedirectToAction(nameof(Login));
     }
 
+    /// <summary>
+    /// Signs out via GET by clearing the JWT auth cookie.
+    /// Used for simple sign-out links that cannot POST anti-forgery tokens.
+    /// </summary>
     [HttpGet]
     [Authorize]
     public IActionResult LogoutGet()

@@ -21,6 +21,10 @@ public class CatalogController : Controller
     // CATEGORY
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists product categories that group SKUs for merchandising and reports.
+    /// Staff with products.view use this from Products catalog admin.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Categories([FromQuery] InputCategoryList input, CancellationToken ct)
@@ -30,10 +34,18 @@ public class CatalogController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Shows the form to add a new merchandising category for the store catalog.
+    /// Managers with products.manage open this before assigning products to categories.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public IActionResult CreateCategory() => View(new InCategoryCreateView { IsActive = true });
 
+    /// <summary>
+    /// Saves a new category used on product forms, POS filters, and online listings.
+    /// Managers submit the create category form after entering code, name, and display order.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateCategory(InCategoryCreateView model, CancellationToken ct)
@@ -61,6 +73,10 @@ public class CatalogController : Controller
             new { id = result.IdCategory });
     }
 
+    /// <summary>
+    /// Loads one category for editing name, sort order, or active flag.
+    /// Managers with products.manage navigate here from the category list.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditCategory(int id, CancellationToken ct)
@@ -70,6 +86,10 @@ public class CatalogController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists category changes reflected on products and checkout item grouping.
+    /// Managers submit the edit category form after updating catalog master data.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditCategory(int id, InCategoryUpdateView model, CancellationToken ct)
@@ -99,10 +119,18 @@ public class CatalogController : Controller
             new { id = result.IdCategory });
     }
 
+    /// <summary>
+    /// Returns active categories as JSON for product and filter dropdowns.
+    /// Product create/edit screens and POS catalog filters call this via AJAX.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> CategoryLookup(CancellationToken ct)
         => Json(await _svc.GetCategoryLookupAsync(ct));
 
+    /// <summary>
+    /// Returns subcategories for a selected parent category as JSON.
+    /// Used when cascading category picks on product forms and inventory filters.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> SubCategoryLookup(int fkCategory, CancellationToken ct)
         => Json(await _svc.GetSubCategoryLookupAsync(fkCategory, ct));
@@ -111,6 +139,10 @@ public class CatalogController : Controller
     // SUB-CATEGORY
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists subcategories under parent categories for finer product organization.
+    /// Staff with products.view browse this from catalog admin when maintaining hierarchy.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> SubCategories([FromQuery] InputSubCategoryList input, CancellationToken ct)
@@ -120,6 +152,10 @@ public class CatalogController : Controller
         return View(model);
     }
 
+    /// <summary>
+    /// Shows the form to add a subcategory linked to a parent category.
+    /// Managers with products.manage use it when expanding aisle or menu groupings.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateSubCategory(CancellationToken ct)
@@ -128,6 +164,10 @@ public class CatalogController : Controller
         return View(new InSubCategoryCreateView { IsActive = true });
     }
 
+    /// <summary>
+    /// Saves a new subcategory for product assignment and POS or online filtering.
+    /// Managers submit after choosing parent category and subcategory details.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateSubCategory(InSubCategoryCreateView model, CancellationToken ct)
@@ -155,6 +195,10 @@ public class CatalogController : Controller
             new { id = result.IdSubCategory });
     }
 
+    /// <summary>
+    /// Loads one subcategory for editing parent link, name, or active status.
+    /// Managers open this from the subcategory list in catalog admin.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditSubCategory(int id, CancellationToken ct)
@@ -165,6 +209,10 @@ public class CatalogController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists subcategory changes used on product records and sales reports.
+    /// Managers submit the edit subcategory form after updating master data.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditSubCategory(int id, InSubCategoryUpdateView model, CancellationToken ct)
@@ -198,6 +246,10 @@ public class CatalogController : Controller
     // BRAND
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists product brands for supplier alignment and shelf labeling.
+    /// Staff with products.view maintain brand masters from catalog admin.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Brands([FromQuery] InputBrandList input, CancellationToken ct)
@@ -206,10 +258,18 @@ public class CatalogController : Controller
         return View(await _svc.ListBrandsAsync(input, ct));
     }
 
+    /// <summary>
+    /// Shows the form to register a brand name for new or existing products.
+    /// Managers with products.manage add brands before linking items at receiving.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public IActionResult CreateBrand() => View(new InBrandCreateView { IsActive = true });
 
+    /// <summary>
+    /// Saves a new brand available on product create and purchase line items.
+    /// Managers submit the create brand form from catalog maintenance.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateBrand(InBrandCreateView model, CancellationToken ct)
@@ -235,6 +295,10 @@ public class CatalogController : Controller
             new { id = result.IdBrand });
     }
 
+    /// <summary>
+    /// Loads one brand record for editing name, description, or active flag.
+    /// Managers navigate here from the brand list when correcting catalog data.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditBrand(int id, CancellationToken ct)
@@ -244,6 +308,10 @@ public class CatalogController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists brand updates shown on product labels and inventory reports.
+    /// Managers submit the edit brand form after revising master details.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditBrand(int id, InBrandUpdateView model, CancellationToken ct)
@@ -271,6 +339,10 @@ public class CatalogController : Controller
             new { id = result.IdBrand });
     }
 
+    /// <summary>
+    /// Returns active brands as JSON for product form brand pickers.
+    /// Product create and edit screens request this when loading dropdown options.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> BrandLookup(CancellationToken ct)
         => Json(await _svc.GetBrandLookupAsync(ct));
@@ -279,6 +351,10 @@ public class CatalogController : Controller
     // UNIT
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists units of measure for stocking, pricing, and receipt quantities.
+    /// Staff with products.view review units from catalog admin before POS go-live.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Units([FromQuery] InputUnitList input, CancellationToken ct)
@@ -287,10 +363,18 @@ public class CatalogController : Controller
         return View(await _svc.ListUnitsAsync(input, ct));
     }
 
+    /// <summary>
+    /// Shows the form to define a sell or stock unit such as each, kg, or pack.
+    /// Managers with products.manage add units before assigning them to SKUs.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public IActionResult CreateUnit() => View(new InUnitCreateView { IsActive = true });
 
+    /// <summary>
+    /// Saves a new unit used on product cost, quantity, and barcode sale lines.
+    /// Managers submit the create unit form during catalog setup.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateUnit(InUnitCreateView model, CancellationToken ct)
@@ -316,6 +400,10 @@ public class CatalogController : Controller
             new { id = result.IdUnit });
     }
 
+    /// <summary>
+    /// Loads one unit for editing code, display name, or active status.
+    /// Managers open this from the unit list when correcting measure labels.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditUnit(int id, CancellationToken ct)
@@ -325,6 +413,10 @@ public class CatalogController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists unit changes reflected on products and purchase order quantities.
+    /// Managers submit the edit unit form after updating master data.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditUnit(int id, InUnitUpdateView model, CancellationToken ct)
@@ -352,6 +444,10 @@ public class CatalogController : Controller
             new { id = result.IdUnit });
     }
 
+    /// <summary>
+    /// Returns active units as JSON for product unit dropdowns.
+    /// Product forms and receiving screens call this when loading measure options.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> UnitLookup(CancellationToken ct)
         => Json(await _svc.GetUnitLookupAsync(ct));
@@ -360,6 +456,10 @@ public class CatalogController : Controller
     // TAX
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Lists tax profiles applied at POS checkout and on product pricing.
+    /// Staff with products.view review tax masters from catalog admin.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
     public async Task<IActionResult> Taxes([FromQuery] InputTaxList input, CancellationToken ct)
@@ -368,10 +468,18 @@ public class CatalogController : Controller
         return View(await _svc.ListTaxesAsync(input, ct));
     }
 
+    /// <summary>
+    /// Shows the form to define a tax rate and inclusive or exclusive behavior.
+    /// Managers with products.manage configure taxes before assigning them to items.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public IActionResult CreateTax() => View(new InTaxCreateView { IsActive = true });
 
+    /// <summary>
+    /// Saves a new tax profile used when ringing sales and printing receipts.
+    /// Managers submit the create tax form during store fiscal setup.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> CreateTax(InTaxCreateView model, CancellationToken ct)
@@ -399,6 +507,10 @@ public class CatalogController : Controller
             new { id = result.IdTax });
     }
 
+    /// <summary>
+    /// Loads one tax record for editing rate, code, or inclusive pricing flag.
+    /// Managers navigate here from the tax list when regulations or rates change.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditTax(int id, CancellationToken ct)
@@ -408,6 +520,10 @@ public class CatalogController : Controller
         return View(item.ToUpdateView());
     }
 
+    /// <summary>
+    /// Persists tax updates applied to linked products and open register totals.
+    /// Managers submit the edit tax form after revising compliance settings.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> EditTax(int id, InTaxUpdateView model, CancellationToken ct)
@@ -437,6 +553,10 @@ public class CatalogController : Controller
             new { id = result.IdTax });
     }
 
+    /// <summary>
+    /// Returns active tax profiles as JSON for product tax assignment dropdowns.
+    /// Product create and edit screens request this when loading fiscal options.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> TaxLookup(CancellationToken ct)
         => Json(await _svc.GetTaxLookupAsync(ct));

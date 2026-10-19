@@ -25,6 +25,10 @@ public class CartController : Controller
 
     // ── CART ─────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Returns the caller's cart lines and totals as JSON.
+    /// Used by storefront checkout and cart widgets.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetCart([FromQuery] InputCartSelect input, CancellationToken ct)
     {
@@ -32,6 +36,10 @@ public class CartController : Controller
         return result is null ? Json(new OutputCartSelect()) : Json(result);
     }
 
+    /// <summary>
+    /// Adds or updates a line quantity in the cart.
+    /// Used when shoppers change items before checkout.
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> UpsertItem([FromBody] InputCartUpsertItem input, CancellationToken ct)
     {
@@ -44,6 +52,10 @@ public class CartController : Controller
         return CommonHelpers.SuccessResponse("Cart updated.", new { id = result.IdCart });
     }
 
+    /// <summary>
+    /// Removes all lines from the caller's cart.
+    /// Used after order placement or explicit empty cart.
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> ClearCart([FromBody] InputCartClear input, CancellationToken ct)
     {
@@ -58,6 +70,10 @@ public class CartController : Controller
 
     // ── WISHLIST ─────────────────────────────────────────────────
 
+    /// <summary>
+    /// Returns wishlist items for the caller as JSON.
+    /// Used on account and product pages in storefront.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetWishlist([FromQuery] InputWishlistSelect input, CancellationToken ct)
     {
@@ -65,6 +81,10 @@ public class CartController : Controller
         return result is null ? Json(new OutputWishlistSelect()) : Json(result);
     }
 
+    /// <summary>
+    /// Adds or removes a product on the wishlist.
+    /// Used when shoppers tap save or heart on a SKU.
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> ToggleWishlist([FromBody] InputWishlistToggle input, CancellationToken ct)
     {
