@@ -10,8 +10,13 @@ namespace SmartCartPro.Controllers;
 public class StoreController : Controller
 {
     private readonly ICompanyService _svc;
+    private readonly IAuthService _authSvc;
 
-    public StoreController(ICompanyService svc) => _svc = svc;
+    public StoreController(ICompanyService svc, IAuthService authSvc)
+    {
+        _svc = svc;
+        _authSvc = authSvc;
+    }
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
     private bool CanCreateStore => AuthClaims.IsPlatformSuperAdminUser(User);
@@ -90,5 +95,37 @@ public class StoreController : Controller
 
         TempData["SuccessMessage"] = "Store updated.";
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Switches the current user's active store context and re-issues the auth cookie.
+    /// Validates that the user has access to the requested store via user_store_access.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetCurrentStore(int storeId, string? returnUrl, CancellationToken ct)
+    {
+        if (ActorId <= 0)
+        {
+            return RedirectToAction("Login", "Auth");
+        }
+
+        var rememberMe = Request.Cookies.ContainsKey(AuthClaims.TokenCookieName);
+
+        var result = await _authSvc.SwitchStoreAsync(ActorId, storeId, rememberMe, ct);
+        if (!result.Success)
+        {
+            TempData["ErrorMessage"] = result.ErrorMessage ?? "Could not switch store.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        _authSvc.SetAuthCookie(result.Token!, result.ExpiresAt, rememberMe);
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return LocalRedirect(returnUrl);
+        }
+
+        return RedirectToAction("Index", "Home");
     }
 }
