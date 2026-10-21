@@ -21,9 +21,9 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
         <h1 class="h3 mb-1">Dashboard</h1>
-        @if (Model.Mode == "platform")
+        @if (Model.Mode == "setup")
         {
-            <p class="text-muted mb-0">Installation licence and store capacity.</p>
+            <p class="text-muted mb-0">Create the company and first store. You have full access once a store is selected.</p>
         }
         else if (Model.Mode == "store")
         {
@@ -52,45 +52,6 @@
         </div>
     }
 </div>
-
-@if (Model.Mode == "platform" && Model.Platform is { } platform)
-{
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small">Plan</div>
-                    <div class="fs-4 fw-semibold text-capitalize">@platform.LicenseType</div>
-                    <span class="small text-muted">@platform.StatusLabel</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small">Expiry</div>
-                    <div class="fs-4 fw-semibold">@(platform.ExpiryDate == default ? "—" : platform.ExpiryDate.ToString("dd MMM yyyy"))</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small">Stores</div>
-                    <div class="fs-4 fw-semibold">@platform.StoresUsed / @platform.MaxStores</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small">Enabled modules</div>
-                    <div class="fs-4 fw-semibold">@platform.ModuleCount</div>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @if (Model.Mode == "store" && kpis is not null)
 {

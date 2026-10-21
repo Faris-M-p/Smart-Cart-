@@ -11,7 +11,7 @@ Signed-in home (`Home/Index`) and live refresh (`Dashboard/Snapshot`). Every aut
 ## Implemented Features
 - **Store dashboard** (`dashboard.view` + store claim): KPIs for sales today (vs yesterday %), month-to-date, low stock (`qty <= reorder` when reorder &gt; 0, else `qty <= 0`), pending POs (`posted` + `partially_received`), pending online orders, open cash sessions. Charts: 7/30-day net trend, payment donut (MTD), top 5 products (MTD). Tables: recent invoices (link `Sales/InvoiceDetails`) and low stock (link `Inventory/LowStock`). Quick actions gated by permission + enabled module. First paint is server-rendered. Refresh button + optional 60s poll while the tab is visible (`Dashboard/Snapshot` JSON envelope).
 - **Welcome**: users without `dashboard.view` (or without a store) see a welcome message and allowed quick actions only — never an error.
-- **Platform Super Admin** (store 0): licence plan, status, expiry, stores used/max, enabled module count, links to License / Module / Store / Company.
+- **Super Admin setup** (no store yet): company / create store / license / modules. Home does not load or gate on license. After a store is selected, Super Admin gets the full store dashboard.
 
 ## Filters / Search / Sorting
 - N/A. Business day bounds use `locale.timezone`.
@@ -26,7 +26,7 @@ Signed-in home (`Home/Index`) and live refresh (`Dashboard/Snapshot`). Every aut
 ## API & Data Access
 - `HomeController.Index` → `IDashboardService.GetHomeAsync` (no `dashboard.view`, no `DASHBOARD` module gate).
 - `DashboardController.Snapshot` → `IDashboardService.GetSnapshotAsync` — `[RequirePermission("dashboard.view")]` `[ModuleAccess("DASHBOARD")]`, returns `CommonResponseModel`.
-- `DashboardService` → `IDashboardRepository` / `DashboardRepository` (EF LINQ). Locale via `ISettingService`. Platform cards via `ICompanyService` + `IModuleService`.
+- `DashboardService` → `IDashboardRepository` / `DashboardRepository` (EF LINQ). Locale via `ISettingService`.
 - `DashboardController` does not inject `SmartCartDbContext`.
 - Request orchestrator register:
   - `services.AddScoped<IDashboardService, DashboardService>();`

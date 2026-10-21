@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SmartCartPro.Data;
 using SmartCartPro.Entities;
 using SmartCartPro.Models;
@@ -295,30 +296,58 @@ public class CompanyRepository : ICompanyRepository
         InputStoreAccessibleList input,
         CancellationToken ct = default)
     {
-        var stores = await (
-            from a in _db.UserStoreAccess.AsNoTracking()
-            join s in _db.Stores.AsNoTracking() on a.FkStore equals s.IdStore
-            where a.FkUser == input.IdUser
-                  && !a.Cancelled
-                  && !s.Cancelled
-                  && s.IsActive
-            orderby s.IsDefault descending, s.StoreName
-            select new OutputStoreSelect
-            {
-                IdStore = s.IdStore,
-                StoreCode = s.StoreCode,
-                StoreName = s.StoreName,
-                Email = s.Email,
-                Phone = s.Phone,
-                AddressLine1 = s.AddressLine1,
-                AddressLine2 = s.AddressLine2,
-                City = s.City,
-                State = s.State,
-                PostalCode = s.PostalCode,
-                Country = s.Country,
-                IsDefault = s.IsDefault,
-                IsActive = s.IsActive
-            }).ToListAsync(ct);
+        List<OutputStoreSelect> stores;
+        if (input.AllActiveStores)
+        {
+            stores = await _db.Stores.AsNoTracking()
+                .Where(s => !s.Cancelled && s.IsActive)
+                .OrderByDescending(s => s.IsDefault)
+                .ThenBy(s => s.StoreName)
+                .Select(s => new OutputStoreSelect
+                {
+                    IdStore = s.IdStore,
+                    StoreCode = s.StoreCode,
+                    StoreName = s.StoreName,
+                    Email = s.Email,
+                    Phone = s.Phone,
+                    AddressLine1 = s.AddressLine1,
+                    AddressLine2 = s.AddressLine2,
+                    City = s.City,
+                    State = s.State,
+                    PostalCode = s.PostalCode,
+                    Country = s.Country,
+                    IsDefault = s.IsDefault,
+                    IsActive = s.IsActive
+                })
+                .ToListAsync(ct);
+        }
+        else
+        {
+            stores = await (
+                from a in _db.UserStoreAccess.AsNoTracking()
+                join s in _db.Stores.AsNoTracking() on a.FkStore equals s.IdStore
+                where a.FkUser == input.IdUser
+                      && !a.Cancelled
+                      && !s.Cancelled
+                      && s.IsActive
+                orderby s.IsDefault descending, s.StoreName
+                select new OutputStoreSelect
+                {
+                    IdStore = s.IdStore,
+                    StoreCode = s.StoreCode,
+                    StoreName = s.StoreName,
+                    Email = s.Email,
+                    Phone = s.Phone,
+                    AddressLine1 = s.AddressLine1,
+                    AddressLine2 = s.AddressLine2,
+                    City = s.City,
+                    State = s.State,
+                    PostalCode = s.PostalCode,
+                    Country = s.Country,
+                    IsDefault = s.IsDefault,
+                    IsActive = s.IsActive
+                }).ToListAsync(ct);
+        }
 
         return new OutputStoreAccessibleList { Stores = stores };
     }
@@ -548,35 +577,42 @@ public class CompanyRepository : ICompanyRepository
 
     public async Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default)
     {
-        var row = await _db.Licenses.AsNoTracking()
-            .Where(l => !l.Cancelled)
-            .Select(l => new
-            {
-                l.IdLicense,
-                l.LicenseKey,
-                l.LicenseType,
-                l.Status,
-                l.StartDate,
-                l.ExpiryDate,
-                l.MaxStores,
-                l.Notes
-            })
-            .FirstOrDefaultAsync(ct);
-
-        if (row is null)
-            return null;
-
-        return new OutputLicenseSelect
+        try
         {
-            IdLicense = row.IdLicense,
-            LicenseKey = row.LicenseKey,
-            LicenseType = row.LicenseType,
-            Status = MapLicenseStatusFromDb(row.Status),
-            StartDate = row.StartDate,
-            ExpiryDate = row.ExpiryDate,
-            MaxStores = row.MaxStores,
-            Notes = row.Notes
-        };
+            var row = await _db.Licenses.AsNoTracking()
+                .Where(l => !l.Cancelled)
+                .Select(l => new
+                {
+                    l.IdLicense,
+                    l.LicenseKey,
+                    l.LicenseType,
+                    l.Status,
+                    l.StartDate,
+                    l.ExpiryDate,
+                    l.MaxStores,
+                    l.Notes
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (row is null)
+                return null;
+
+            return new OutputLicenseSelect
+            {
+                IdLicense = row.IdLicense,
+                LicenseKey = row.LicenseKey,
+                LicenseType = row.LicenseType,
+                Status = MapLicenseStatusFromDb(row.Status),
+                StartDate = row.StartDate,
+                ExpiryDate = row.ExpiryDate,
+                MaxStores = row.MaxStores,
+                Notes = row.Notes
+            };
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedTable)
+        {
+            return null;
+        }
     }
 
     public async Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default)

@@ -43,6 +43,10 @@ public class User
     [Column("is_platform_super_admin")]
     public bool IsPlatformSuperAdmin { get; set; }
 
+    /// <summary>SQL <c>session_version</c>. Incremented on every new sign-in so older cookies stop working.</summary>
+    [Column("session_version")]
+    public int SessionVersion { get; set; }
+
     [Column("lastloginat")]
     public DateTime? LastLoginAt { get; set; }
 

@@ -113,19 +113,9 @@ public class CompanyService : ICompanyService
                 "Company row is missing.");
         }
 
-        var lic = await GetLicenseAsync(new InputLicenseSelect(), ct);
-        if (lic is null
-            || (lic.Status != (int)CommonModel.LicenseStatus.Active
-                && lic.Status != (int)CommonModel.LicenseStatus.Trial)
-            || lic.IsExpired)
-        {
-            throw new ValidationException(
-                "An active license is required to create stores.",
-                "License missing, suspended, expired, or not active/trial.");
-        }
-
         var count = await _repo.GetActiveStoreCountAsync(ct);
-        if (count >= lic.MaxStores)
+        var lic = await GetLicenseAsync(new InputLicenseSelect(), ct);
+        if (lic is not null && count >= lic.MaxStores)
         {
             throw new ConflictException(
                 $"Store limit reached ({lic.MaxStores}).",

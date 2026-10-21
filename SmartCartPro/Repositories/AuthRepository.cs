@@ -44,6 +44,14 @@ public class AuthRepository : IAuthRepository
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<int?> GetSessionVersionAsync(int idUser, CancellationToken cancellationToken = default)
+    {
+        return await _db.Users.AsNoTracking()
+            .Where(u => u.IdUser == idUser && !u.Cancelled)
+            .Select(u => (int?)u.SessionVersion)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<AuthUserStoreInfo?> GetPreferredStoreAsync(
         int idUser,
         CancellationToken cancellationToken = default)
@@ -88,6 +96,40 @@ public class AuthRepository : IAuthRepository
                 StoreName = s.StoreName,
                 IsDefault = a.IsDefault
             }).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<AuthUserStoreInfo?> GetAnyActiveStoreAsync(CancellationToken cancellationToken = default)
+    {
+        return await _db.Stores.AsNoTracking()
+            .Where(s => !s.Cancelled && s.IsActive)
+            .OrderByDescending(s => s.IsDefault)
+            .ThenBy(s => s.StoreName)
+            .Select(s => new AuthUserStoreInfo
+            {
+                Fk_Store = s.IdStore,
+                Fk_Company = s.FkCompany,
+                StoreCode = s.StoreCode,
+                StoreName = s.StoreName,
+                IsDefault = s.IsDefault
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<AuthUserStoreInfo?> GetActiveStoreByIdAsync(
+        int fkStore,
+        CancellationToken cancellationToken = default)
+    {
+        return await _db.Stores.AsNoTracking()
+            .Where(s => s.IdStore == fkStore && !s.Cancelled && s.IsActive)
+            .Select(s => new AuthUserStoreInfo
+            {
+                Fk_Store = s.IdStore,
+                Fk_Company = s.FkCompany,
+                StoreCode = s.StoreCode,
+                StoreName = s.StoreName,
+                IsDefault = s.IsDefault
+            })
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task AddOtpChallengeAsync(AuthOtpChallenge challenge, CancellationToken cancellationToken = default)

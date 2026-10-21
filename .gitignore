@@ -8,8 +8,8 @@ obj/
 *.user
 *.suo
 
-# Config (optional – careful!)
-appsettings.json
+# Local overrides only. Shared appsettings.json stays in git.
+# appsettings.Development.json holds this machine's database and mail passwords.
 appsettings.*.json
 
 # Wrangler CLI cache from Cloudflare experiments

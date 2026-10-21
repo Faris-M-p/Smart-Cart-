@@ -6,15 +6,15 @@
 - **Current Status:** `IMPLEMENTED` (server + AJAX UI). Written without a build or a browser run; the first build and click-through still has to confirm it (see Notes).
 
 ## Purpose & Responsibilities
-Store master for the company: list, create (platform only), edit, activate/deactivate, and the header store switcher for users with more than one accessible store. Exactly one default store. No hard delete.
+Store master for the company: list, create (platform only), edit, activate/deactivate, and the header store switcher. Super Admin sees every active store; other users see stores they can access. Exactly one default store. No hard delete.
 
 ## Implemented Features
 - `Store/Index` list: search (name/code/city), status filter, sorting, paging, Default badge, license usage subtitle (`x of y` from `license.maxstores`), Edit, Activate / Deactivate (`data-sc-post`).
 - `Store/Create` (platform Super Admin): full-page form. MaxStores enforced. First store is always default.
 - `Store/Edit`: code, name, contact, address, default and active flags.
 - `Store/SetActive` (POST): activate/deactivate from the list. Deactivating the current default throws `ConflictException`.
-- `Store/SetCurrentStore` (POST, signed-in): verifies `user_store_access`, re-issues the JWT cookie via `IAuthService.SwitchStoreAsync` + `SetAuthCookie`, returns `SuccessResponse` (no redirect).
-- Header `StoreSwitcher` view component: nothing for platform Super Admin; current-store badge when the user has one store; dropdown when they have more than one (`data-sc-post` `Store/SetCurrentStore`, `data-sc-after=reload`).
+- `Store/SetCurrentStore` (POST, signed-in): Super Admin may enter any active store; other users need `user_store_access`. Re-issues the JWT cookie via `IAuthService.SwitchStoreAsync` + `SetAuthCookie`, returns `SuccessResponse` (no redirect).
+- Header `StoreSwitcher` view component: Super Admin lists all active stores; other users list accessible stores. Current-store badge when there is one store; dropdown when there is more than one (`data-sc-post` `Store/SetCurrentStore`, `data-sc-after=reload`).
 
 ## Routes & Permissions
 `settings.manage` for list/edit/activate. Create is `PlatformSuperAdmin` policy. SetCurrentStore is `[Authorize]` only (any signed-in user with access to that store).
@@ -52,11 +52,11 @@ Store master for the company: list, create (platform only), edit, activate/deact
 - Switcher is a `<details>` dropdown (no `window.bootstrap`).
 
 ## Business Rules
-- Create is platform-only. Active count must be below MaxStores; an active license (or trial) that is not expired is required.
+- Create is platform-only. Super Admin is not blocked by a missing license. MaxStores applies only when a license row exists.
 - Exactly one default. Un-flagging or deactivating the current default without promoting another is `ConflictException`.
 - Promoting a store to default unsets the previous default first, then sets the new one.
 - Activate is refused when it would exceed MaxStores.
-- Store switcher and SetCurrentStore require an active, non-cancelled `user_store_access` row (same rule as `AuthRepository.GetStoreAccessAsync`).
+- Store switcher and SetCurrentStore: Super Admin uses any active store; other users need an active, non-cancelled `user_store_access` row.
 - Audit (`Store` entity): Create, Update, Activate, Deactivate.
 - Soft deactivate only — no hard delete / cancel from the UI.
 
@@ -65,6 +65,6 @@ Store master for the company: list, create (platform only), edit, activate/deact
 
 ## Notes
 - Sample `Admin/Stores` UI is gone; this module owns `StoreController` only.
-- `SwitchStoreAsync` already checks `user_store_access` and `store.isactive`. SetCurrentStore checks access again through `ListAccessibleStoresAsync` before calling it.
+- `SwitchStoreAsync` uses any active store for Super Admin, and `user_store_access` for everyone else. SetCurrentStore checks the same list through `ListAccessibleStoresAsync` before calling it. Creating a store switches Super Admin into that store.
 - Remember-me on switch is taken from the JWT `remember_me` claim set at sign-in, so a session cookie stays a session cookie.
 - Not built or run when this was written: compile and click-through checks are still open.

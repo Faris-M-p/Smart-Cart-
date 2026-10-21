@@ -6,8 +6,8 @@ using SmartCartPro.Services.Interfaces;
 namespace SmartCartPro.ViewComponents;
 
 /// <summary>
-/// Header store picker for users with more than one accessible store.
-/// Platform Super Admin and single-store users see nothing.
+/// Header store picker. Super Admin sees every active store; other users see stores they can access.
+/// Hidden when there are no stores to pick.
 /// </summary>
 public sealed class StoreSwitcherViewComponent : ViewComponent
 {
@@ -18,18 +18,17 @@ public sealed class StoreSwitcherViewComponent : ViewComponent
     public async Task<IViewComponentResult> InvokeAsync()
     {
         var user = HttpContext?.User;
-        if (AuthClaims.IsPlatformSuperAdminUser(user))
-        {
-            return Content(string.Empty);
-        }
-
         var userId = AuthClaims.GetUserId(user) ?? 0;
         if (userId <= 0)
         {
             return Content(string.Empty);
         }
 
-        var input = new InputStoreAccessibleList { IdUser = userId };
+        var input = new InputStoreAccessibleList
+        {
+            IdUser = userId,
+            AllActiveStores = AuthClaims.IsPlatformSuperAdminUser(user)
+        };
         var list = await _svc.ListAccessibleStoresAsync(input, HttpContext!.RequestAborted);
         if (list.Stores.Count == 0)
         {

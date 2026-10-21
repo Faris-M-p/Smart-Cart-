@@ -76,11 +76,22 @@ public class StoreController : Controller
             IsDefault = model.IsDefault,
             IsActive = model.IsActive
         };
+        var previousStore = AuthClaims.GetFkStore(User) ?? 0;
         var result = await _svc.CreateStoreAsync(input, ct);
-        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Index))!;
+
+        var rememberMe = AuthClaims.WantsPersistentSession(User);
+        var switched = await _authSvc.SwitchStoreAsync(ActorId, result.IdStore, rememberMe, ct);
+        if (switched.Success)
+        {
+            _authSvc.SetAuthCookie(switched.Token!, switched.ExpiresAt, rememberMe);
+        }
+
+        var redirectUrl = previousStore <= 0
+            ? Url.Action("Index", "Home")!
+            : SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Index))!;
         return CommonHelpers.SuccessResponse(
             "Store created.",
-            new { id = result.IdStore, redirectUrl = listUrl });
+            new { id = result.IdStore, redirectUrl });
     }
 
     /// <summary>
@@ -160,26 +171,26 @@ public class StoreController : Controller
 
     /// <summary>
     /// Switches the signed-in user's current store and re-issues the JWT cookie.
-    /// Requires an active user_store_access row for the target store; used by the header store switcher.
+    /// Super Admin may enter any active store; other users need user_store_access.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetCurrentStore(int storeId, CancellationToken ct)
     {
-        if (AuthClaims.IsPlatformSuperAdminUser(User))
+        var isSuperAdmin = AuthClaims.IsPlatformSuperAdminUser(User);
+        var accessInput = new InputStoreAccessibleList
         {
-            throw new ForbiddenException(
-                "Platform administrators are not tied to a store.",
-                $"Actor {ActorId} is a platform Super Admin.");
-        }
-
-        var accessInput = new InputStoreAccessibleList { IdUser = ActorId };
+            IdUser = ActorId,
+            AllActiveStores = isSuperAdmin
+        };
         var accessible = await _svc.ListAccessibleStoresAsync(accessInput, ct);
         if (!accessible.Stores.Any(s => s.IdStore == storeId))
         {
             throw new ForbiddenException(
                 "You do not have access to that store.",
-                $"User {ActorId} has no user_store_access row for store {storeId}.");
+                isSuperAdmin
+                    ? $"Super Admin {ActorId} requested inactive or missing store {storeId}."
+                    : $"User {ActorId} has no user_store_access row for store {storeId}.");
         }
 
         var rememberMe = AuthClaims.WantsPersistentSession(User);

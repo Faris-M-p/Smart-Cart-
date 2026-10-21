@@ -6,7 +6,7 @@
 - **Current Status:** `IMPLEMENTED` (server + AJAX UI)
 
 ## Purpose & Responsibilities
-Shared employee + platform Super Admin sign-in on `/Auth/Login`. Store admins get a JWT cookie after password. Platform Super Admin (`is_platform_super_admin`) gets an email OTP, then a JWT with the platform claim. No public register. Password recovery by emailed link.
+Shared employee + platform Super Admin sign-in on `/Auth/Login`. Store admins get a JWT cookie after password. Platform Super Admin (`is_platform_super_admin`) gets an email OTP, then a JWT with the platform claim and the default/first active store when one exists. No public register. Password recovery by emailed link.
 
 ## Implemented Features
 - **Login (shared):** password verify; store user → cookie; Super Admin → OTP email → `/Auth/VerifyOtp`.
@@ -32,7 +32,8 @@ Shared employee + platform Super Admin sign-in on `/Auth/Login`. Store admins ge
 ## Business Rules
 - Super Admin login identifier is email (seed username = email).
 - Store users still need `user_store_access` (active store) to sign in.
-- Super Admin session has no store (`fk_store=0`, badge “Super Admin”).
+- Super Admin is not license-gated. After OTP the session attaches the default/first active store. `fk_store=0` only when no store exists yet (setup). Super Admin can switch into any active store without `user_store_access`.
+- One sign-in per user. Each new login, store switch, or password reset increments `users.session_version`. A cookie from Edge stays in Edge only. After a sign-in in Chrome, the Edge cookie fails the version check and that browser returns to the login page.
 - New passwords: 8–64 chars with upper, lower, digit and special character (`[StrongPassword(8, 64)]`).
 - SMTP must be configured for Super Admin OTP and password reset emails.
 

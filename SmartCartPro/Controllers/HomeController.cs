@@ -27,7 +27,7 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Signed-in home: store KPIs when allowed, a welcome page, or the platform licence overview.
+    /// Signed-in home: store KPIs when a store is selected, a Super Admin setup page, or a welcome page.
     /// Every authenticated user can open this; dashboard.view is not required.
     /// </summary>
     public async Task<IActionResult> Index(CancellationToken ct)

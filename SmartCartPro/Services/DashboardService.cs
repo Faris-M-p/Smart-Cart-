@@ -6,26 +6,20 @@ using SmartCartPro.Services.Interfaces;
 namespace SmartCartPro.Services;
 
 /// <summary>
-/// Home dashboard orchestration: platform overview, store KPIs, or a welcome page.
+/// Home dashboard orchestration: store KPIs, a setup page, or a welcome page.
 /// Store metrics use locale.timezone business days converted to UTC for queries.
 /// </summary>
 public class DashboardService : IDashboardService
 {
     private readonly IDashboardRepository _repo;
     private readonly ISettingService _settings;
-    private readonly ICompanyService _company;
-    private readonly IModuleService _modules;
 
     public DashboardService(
         IDashboardRepository repo,
-        ISettingService settings,
-        ICompanyService company,
-        IModuleService modules)
+        ISettingService settings)
     {
         _repo = repo;
         _settings = settings;
-        _company = company;
-        _modules = modules;
     }
 
     public async Task<OutputDashboardSelect> GetHomeAsync(InputDashboardSelect input, CancellationToken ct = default)
@@ -34,22 +28,22 @@ public class DashboardService : IDashboardService
         var actions = BuildQuickActions(input);
         var generated = DateTime.UtcNow;
 
-        if (input.IsPlatformSuperAdmin && input.ActorFkStore <= 0)
+        if (input.ActorFkStore <= 0)
         {
             return new OutputDashboardSelect
             {
-                Mode = "platform",
+                Mode = input.IsPlatformSuperAdmin ? "setup" : "welcome",
                 Currency = currency,
                 TimeZoneId = timeZoneId,
-                DisplayName = "Platform",
+                StoreName = input.StoreName,
+                DisplayName = input.IsPlatformSuperAdmin ? "Get started" : "Welcome",
                 CanRefresh = false,
-                QuickActions = PlatformActions(),
-                Platform = await LoadPlatformAsync(ct),
+                QuickActions = input.IsPlatformSuperAdmin ? SetupActions() : actions,
                 GeneratedAt = generated
             };
         }
 
-        if (!input.HasDashboardView || input.ActorFkStore <= 0)
+        if (!input.HasDashboardView)
         {
             return new OutputDashboardSelect
             {
@@ -166,23 +160,6 @@ public class DashboardService : IDashboardService
         };
     }
 
-    private async Task<OutputDashboardPlatform> LoadPlatformAsync(CancellationToken ct)
-    {
-        var license = await _company.GetLicenseAsync(new InputLicenseSelect(), ct);
-        var stores = await _company.ListStoresAsync(new InputStoreList(), ct);
-        var modules = await _modules.GetEnabledModuleCodesAsync(ct);
-
-        return new OutputDashboardPlatform
-        {
-            LicenseType = license?.LicenseType ?? "—",
-            StatusLabel = license?.StatusLabel ?? "None",
-            ExpiryDate = license?.ExpiryDate ?? default,
-            StoresUsed = stores.CurrentStoreCount,
-            MaxStores = stores.MaxStores,
-            ModuleCount = modules.Count
-        };
-    }
-
     private async Task<(string Currency, string TimeZoneId, TimeZoneInfo TimeZone)> LoadLocaleAsync(int actorFkStore, CancellationToken ct)
     {
         var fkStore = actorFkStore > 0 ? actorFkStore : (int?)null;
@@ -214,13 +191,13 @@ public class DashboardService : IDashboardService
         return list;
     }
 
-    private static List<OutputDashboardQuickAction> PlatformActions() =>
+    private static List<OutputDashboardQuickAction> SetupActions() =>
         new()
         {
+            Action("Company", "Company", "Index", "bi-building"),
+            Action("Create store", "Store", "Create", "bi-shop"),
             Action("License", "License", "Index", "bi-award"),
-            Action("Modules", "Module", "Index", "bi-grid"),
-            Action("Stores", "Store", "Index", "bi-shop"),
-            Action("Company", "Company", "Index", "bi-building")
+            Action("Modules", "Module", "Index", "bi-grid")
         };
 
     private static OutputDashboardQuickAction Action(string title, string controller, string action, string icon) =>

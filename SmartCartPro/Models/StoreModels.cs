@@ -321,6 +321,7 @@ public sealed class OutputStoreStatusUpdate
 public sealed class InputStoreAccessibleList
 {
     public int IdUser { get; set; }
+    public bool AllActiveStores { get; set; }
 }
 
 public sealed class OutputStoreAccessibleList

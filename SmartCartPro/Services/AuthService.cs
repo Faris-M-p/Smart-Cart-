@@ -66,13 +66,13 @@ public class AuthService : IAuthService
 
         if (user is null)
         {
-            return Fail("Invalid username/email or password.");
+            return Fail("Invalid username email or password.");
         }
 
         var verify = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, input.Password);
         if (verify == PasswordVerificationResult.Failed)
         {
-            return Fail("Invalid username/email or password.");
+            return Fail("Invalid username email or password.");
         }
 
         if (user.IsPlatformSuperAdmin)
@@ -90,7 +90,7 @@ public class AuthService : IAuthService
         user.LastLoginAt = DateTime.UtcNow;
         await _authRepository.UpdateUserAsync(user, cancellationToken);
 
-        return IssueSession(user, store, input.RememberMe, isPlatformSuperAdmin: false);
+        return await IssueSessionAsync(user, store, input.RememberMe, isPlatformSuperAdmin: false, cancellationToken);
     }
 
     public async Task<OutputAuthSession> VerifyOtpAsync(
@@ -133,7 +133,7 @@ public class AuthService : IAuthService
         user.LastLoginAt = DateTime.UtcNow;
         await _authRepository.UpdateUserAsync(user, cancellationToken);
 
-        return IssuePlatformSession(user, challenge.RememberMe);
+        return await IssueSuperAdminSessionAsync(user, challenge.RememberMe, cancellationToken);
     }
 
     public async Task<OutputAuthSession> ResendOtpAsync(
@@ -177,7 +177,7 @@ public class AuthService : IAuthService
 
         if (user.IsPlatformSuperAdmin)
         {
-            return IssuePlatformSession(user, rememberMe: false);
+            return await IssueSuperAdminSessionAsync(user, rememberMe: false, cancellationToken);
         }
 
         var store = await _authRepository.GetPreferredStoreAsync(user.IdUser, cancellationToken);
@@ -186,7 +186,7 @@ public class AuthService : IAuthService
             return Fail("Password updated, but no store access was found. Contact an administrator.");
         }
 
-        return IssueSession(user, store, rememberMe: false, isPlatformSuperAdmin: false);
+        return await IssueSessionAsync(user, store, rememberMe: false, isPlatformSuperAdmin: false, cancellationToken);
     }
 
     public async Task<OutputAuthForgotPassword> RequestPasswordResetAsync(
@@ -251,6 +251,8 @@ public class AuthService : IAuthService
         // New hash changes the token fingerprint, so this link (and any older one) cannot be reused.
         user.PasswordHash = _passwordHasher.HashPassword(user, input.NewPassword);
         user.MustChangePassword = false;
+        user.SessionVersion += 1;
+        user.UpdatedAt = DateTime.UtcNow;
         await _authRepository.UpdateUserAsync(user, cancellationToken);
 
         return new OutputAuthResetPassword { Success = true };
@@ -268,13 +270,17 @@ public class AuthService : IAuthService
             return Fail("User not found.");
         }
 
-        var store = await _authRepository.GetStoreAccessAsync(idUser, fkStore, cancellationToken);
+        var store = user.IsPlatformSuperAdmin
+            ? await _authRepository.GetActiveStoreByIdAsync(fkStore, cancellationToken)
+            : await _authRepository.GetStoreAccessAsync(idUser, fkStore, cancellationToken);
         if (store is null)
         {
-            return Fail("You do not have access to that store.");
+            return Fail(user.IsPlatformSuperAdmin
+                ? "That store is not available."
+                : "You do not have access to that store.");
         }
 
-        return IssueSession(user, store, rememberMe, isPlatformSuperAdmin: user.IsPlatformSuperAdmin);
+        return await IssueSessionAsync(user, store, rememberMe, isPlatformSuperAdmin: user.IsPlatformSuperAdmin, cancellationToken);
     }
 
     public void SetAuthCookie(string token, DateTime? expiresAt, bool rememberMe)
@@ -369,8 +375,18 @@ public class AuthService : IAuthService
         };
     }
 
-    private OutputAuthSession IssuePlatformSession(User user, bool rememberMe)
+    private async Task<OutputAuthSession> IssueSuperAdminSessionAsync(
+        User user,
+        bool rememberMe,
+        CancellationToken cancellationToken)
     {
+        var store = await _authRepository.GetAnyActiveStoreAsync(cancellationToken);
+        if (store is not null)
+        {
+            return await IssueSessionAsync(user, store, rememberMe, isPlatformSuperAdmin: true, cancellationToken);
+        }
+
+        var sessionVersion = await NextSessionVersionAsync(user, cancellationToken);
         var (token, expiresAt) = _jwtTokenService.CreateToken(
             user.IdUser,
             user.UserName,
@@ -378,11 +394,12 @@ public class AuthService : IAuthService
             user.Email,
             fkStore: 0,
             fkCompany: 0,
-            storeCode: "PLATFORM",
-            storeName: "Platform",
+            storeCode: string.Empty,
+            storeName: string.Empty,
             mustChangePassword: user.MustChangePassword,
             rememberMe: rememberMe,
-            isPlatformSuperAdmin: true);
+            isPlatformSuperAdmin: true,
+            sessionVersion: sessionVersion);
 
         return new OutputAuthSession
         {
@@ -393,17 +410,27 @@ public class AuthService : IAuthService
             IsPlatformSuperAdmin = true,
             Fk_Store = 0,
             Fk_Company = 0,
-            StoreName = "Platform",
+            StoreName = string.Empty,
             FullName = user.FullName
         };
     }
 
-    private OutputAuthSession IssueSession(
+    private async Task<int> NextSessionVersionAsync(User user, CancellationToken cancellationToken)
+    {
+        user.SessionVersion += 1;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _authRepository.UpdateUserAsync(user, cancellationToken);
+        return user.SessionVersion;
+    }
+
+    private async Task<OutputAuthSession> IssueSessionAsync(
         User user,
         AuthUserStoreInfo store,
         bool rememberMe,
-        bool isPlatformSuperAdmin)
+        bool isPlatformSuperAdmin,
+        CancellationToken cancellationToken)
     {
+        var sessionVersion = await NextSessionVersionAsync(user, cancellationToken);
         var (token, expiresAt) = _jwtTokenService.CreateToken(
             user.IdUser,
             user.UserName,
@@ -415,7 +442,8 @@ public class AuthService : IAuthService
             store.StoreName,
             user.MustChangePassword,
             rememberMe,
-            isPlatformSuperAdmin);
+            isPlatformSuperAdmin,
+            sessionVersion);
 
         return new OutputAuthSession
         {

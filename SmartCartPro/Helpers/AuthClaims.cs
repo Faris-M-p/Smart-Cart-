@@ -15,6 +15,7 @@ public static class AuthClaims
     public const string MustChangePassword = "must_change_password";
     public const string IsPlatformSuperAdmin = "is_platform_super_admin";
     public const string RememberMe = "remember_me";
+    public const string SessionVersion = "session_version";
 
     public static int? GetUserId(ClaimsPrincipal? user)
     {
@@ -39,6 +40,12 @@ public static class AuthClaims
 
     public static bool IsPlatformSuperAdminUser(ClaimsPrincipal? user) =>
         user?.FindFirstValue(IsPlatformSuperAdmin) == "1";
+
+    public static int GetSessionVersion(ClaimsPrincipal? user)
+    {
+        var value = user?.FindFirstValue(SessionVersion);
+        return int.TryParse(value, out var version) ? version : 0;
+    }
 
     /// <summary>True when the original sign-in used Remember me (persistent cookie + long-lived JWT).</summary>
     public static bool WantsPersistentSession(ClaimsPrincipal? user) =>
