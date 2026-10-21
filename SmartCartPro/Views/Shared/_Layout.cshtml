@@ -31,6 +31,9 @@
     var showReports = await Access.ModuleEnabledAsync("REPORTS") && await Access.CanAsync("reports.view");
     var showUsers = await Access.ModuleEnabledAsync("USERS") && await Access.CanAsync("users.manage");
     var showSettings = await Access.ModuleEnabledAsync("SETTINGS") && await Access.CanAsync("settings.manage");
+
+    bool On(params string[] controllers) =>
+        controllers.Any(c => string.Equals(ctrl, c, StringComparison.OrdinalIgnoreCase));
 }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -86,7 +89,12 @@
 
                 @if (showCatalog)
                 {
-                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Catalog</small></li>
+                    <li class="nav-group @(On("Catalog", "Product", "ProductReview") ? "is-open" : "")" data-sc-nav-group="catalog">
+                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Catalog", "Product", "ProductReview") ? "true" : "false")">
+                            <span>Catalog</span>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <ul class="nav flex-column nav-group-items">
                     <li class="nav-item">
                         <a class="@Nav("Catalog", "Categories")" asp-controller="Catalog" asp-action="Categories">
                             <i class="bi bi-folder"></i><span>Categories</span>
@@ -130,11 +138,18 @@
                             </a>
                         </li>
                     }
+                        </ul>
+                    </li>
                 }
 
                 @if (showPurchases || showInventory)
                 {
-                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Purchase &amp; stock</small></li>
+                    <li class="nav-group @(On("Supplier", "Purchase", "Inventory") ? "is-open" : "")" data-sc-nav-group="stock">
+                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Supplier", "Purchase", "Inventory") ? "true" : "false")">
+                            <span>Purchase &amp; stock</span>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <ul class="nav flex-column nav-group-items">
                     @if (showPurchases)
                     {
                         <li class="nav-item">
@@ -184,11 +199,18 @@
                             </li>
                         }
                     }
+                        </ul>
+                    </li>
                 }
 
                 @if (showPos || showCustomers)
                 {
-                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Sales</small></li>
+                    <li class="nav-group @(On("Sales", "OnlineOrder", "Customers") ? "is-open" : "")" data-sc-nav-group="sales">
+                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Sales", "OnlineOrder", "Customers") ? "true" : "false")">
+                            <span>Sales</span>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <ul class="nav flex-column nav-group-items">
                     @if (await Access.CanAsync("pos.sell"))
                     {
                         <li class="nav-item">
@@ -234,51 +256,35 @@
                             </a>
                         </li>
                     }
+                        </ul>
+                    </li>
                 }
 
                 @if (showReports)
                 {
-                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Reports</small></li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "Index")" asp-controller="Reports" asp-action="Index">
-                            <i class="bi bi-graph-up"></i><span>All reports</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "Sales")" asp-controller="Reports" asp-action="Sales">
-                            <i class="bi bi-graph-up-arrow"></i><span>Sales</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "Products")" asp-controller="Reports" asp-action="Products">
-                            <i class="bi bi-bar-chart"></i><span>Products</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "Customers")" asp-controller="Reports" asp-action="Customers">
-                            <i class="bi bi-person-lines-fill"></i><span>Customers</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "Tax")" asp-controller="Reports" asp-action="Tax">
-                            <i class="bi bi-percent"></i><span>Tax</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "Purchases")" asp-controller="Reports" asp-action="Purchases">
-                            <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="@Nav("Reports", "StockValuation")" asp-controller="Reports" asp-action="StockValuation">
-                            <i class="bi bi-boxes"></i><span>Stock value</span>
-                        </a>
+                    <li class="nav-group @(On("Reports") ? "is-open" : "")" data-sc-nav-group="reports">
+                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Reports") ? "true" : "false")">
+                            <span>Reports</span>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <ul class="nav flex-column nav-group-items">
+                            <li class="nav-item">
+                                <a class="@Nav("Reports")" asp-controller="Reports" asp-action="Index">
+                                    <i class="bi bi-graph-up"></i><span>All reports</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 }
 
                 @if (showUsers || showSettings || isPlatform)
                 {
-                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Administration</small></li>
+                    <li class="nav-group @(On("Employee", "Role", "Company", "Store", "Setting", "Audit", "License", "Module") ? "is-open" : "")" data-sc-nav-group="admin">
+                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Employee", "Role", "Company", "Store", "Setting", "Audit", "License", "Module") ? "true" : "false")">
+                            <span>Administration</span>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+                        <ul class="nav flex-column nav-group-items">
                     @if (showUsers)
                     {
                         <li class="nav-item">
@@ -328,6 +334,8 @@
                             </a>
                         </li>
                     }
+                        </ul>
+                    </li>
                 }
             </ul>
         </nav>

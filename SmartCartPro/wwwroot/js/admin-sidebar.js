@@ -26,6 +26,46 @@
 
     toggle.setAttribute("aria-controls", sidebar.id);
 
+    const groupKey = "sidebar-groups";
+
+    function readGroups() {
+      try {
+        return JSON.parse(localStorage.getItem(groupKey) || "{}");
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function writeGroup(id, open) {
+      const saved = readGroups();
+      saved[id] = open;
+      localStorage.setItem(groupKey, JSON.stringify(saved));
+    }
+
+    function setGroup(group, open) {
+      group.classList.toggle("is-open", open);
+      const button = group.querySelector(".nav-group-toggle");
+      if (button) button.setAttribute("aria-expanded", String(open));
+    }
+
+    const savedGroups = readGroups();
+    sidebar.querySelectorAll("[data-sc-nav-group]").forEach(function (group) {
+      const id = group.getAttribute("data-sc-nav-group");
+      const hasActive = !!group.querySelector(".nav-link.active");
+      const remembered = Object.prototype.hasOwnProperty.call(savedGroups, id)
+        ? savedGroups[id] === true
+        : false;
+      setGroup(group, hasActive || remembered);
+
+      const button = group.querySelector(".nav-group-toggle");
+      if (!button) return;
+      button.addEventListener("click", function () {
+        const open = !group.classList.contains("is-open");
+        setGroup(group, open);
+        writeGroup(id, open);
+      });
+    });
+
     sidebar.querySelectorAll(".sidebar-nav .nav-link").forEach(function (link) {
       if (!link.getAttribute("title")) {
         const label = link.querySelector("span");

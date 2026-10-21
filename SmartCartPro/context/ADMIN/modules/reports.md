@@ -9,7 +9,7 @@
 Store-scoped operational reports: sales, products, stock value, tax, purchases and customers. Calendar days follow `locale.timezone` (IANA, default `Asia/Kolkata`) and are converted to UTC for queries. Amounts display `locale.currency` (default INR).
 
 ## Implemented Features
-- `Reports/Index` card hub (Sales, Products, Stock valuation, Tax, Purchases, Customers, plus a link to Inventory/LowStock).
+- `Reports/Index` card hub (Sales, Products, Stock valuation, Tax, Purchases, Customers, plus a link to Inventory/LowStock). The sidebar keeps only **All reports**; each report is opened from this page.
 - Sales by day or month: invoices, gross, discounts, tax, net, average bill, returns, payment-method breakdown. Cancelled invoices are excluded from totals and counted separately.
 - Products: top N (10/25/50/100) by quantity or revenue, optional category, bar chart.
 - Stock valuation: quantity on hand × product cost price (document cost basis, footnoted), category subtotals, include zero/negative filter.

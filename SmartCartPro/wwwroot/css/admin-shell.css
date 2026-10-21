@@ -99,6 +99,63 @@ body.admin-layout {
   text-overflow: ellipsis;
 }
 
+.nav-group {
+  margin-top: 0.35rem;
+}
+
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.nav-group-toggle .bi-chevron-right {
+  font-size: 0.7rem;
+  transition: transform 0.15s ease;
+}
+
+.nav-group.is-open > .nav-group-toggle .bi-chevron-right {
+  transform: rotate(90deg);
+}
+
+.nav-group-items {
+  display: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-group.is-open > .nav-group-items {
+  display: block;
+}
+
+.nav-group-items .nav-link {
+  padding-left: 1.15rem;
+}
+
+@media (min-width: 992px) {
+  .admin-wrapper.sidebar-collapsed .nav-group-toggle {
+    display: none;
+  }
+
+  .admin-wrapper.sidebar-collapsed .nav-group-items {
+    display: block;
+  }
+
+  .admin-wrapper.sidebar-collapsed .nav-group-items .nav-link {
+    padding-left: 0;
+  }
+}
+
 /* Desktop collapsed: icon rail + main content shifts */
 @media (min-width: 992px) {
   .admin-wrapper.sidebar-collapsed .admin-sidebar {
