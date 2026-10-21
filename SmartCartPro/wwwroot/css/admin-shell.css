@@ -276,3 +276,155 @@ body.admin-layout {
 .sc-store-switcher[open] .dropdown-menu {
   display: block;
 }
+
+/* Profile menu in the top bar. Account links are one <li> each inside .sc-profile-account. */
+.admin-header,
+.admin-header .navbar,
+.admin-header .container-fluid,
+.admin-header-end {
+  overflow: visible;
+}
+
+.sc-profile-menu {
+  position: relative;
+}
+
+.sc-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 16rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.2rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  line-height: 1.15;
+}
+
+.sc-profile-btn:hover,
+.sc-profile-btn:focus-visible,
+.sc-profile-btn.show {
+  background: var(--bs-tertiary-bg);
+}
+
+.sc-profile-btn:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.sc-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--sc-avatar-bg, #1d4ed8);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sc-profile-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.sc-profile-name,
+.sc-profile-role,
+.sc-profile-card-name,
+.sc-profile-card-email {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-profile-name,
+.sc-profile-card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sc-profile-role,
+.sc-profile-card-email,
+.sc-profile-card-role {
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+}
+
+.sc-profile-chevron {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+}
+
+.sc-profile-menu .dropdown-menu {
+  right: 0;
+  left: auto;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  z-index: 1080;
+}
+
+.sc-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem 0.65rem;
+}
+
+.sc-profile-card-text {
+  min-width: 0;
+}
+
+.sc-profile-card-role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.sc-profile-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.sc-profile-menu .dropdown-item form,
+.sc-profile-signout-form {
+  margin: 0;
+}
+
+.sc-profile-signout {
+  width: 100%;
+  color: var(--bs-danger);
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+
+.sc-profile-signout:hover,
+.sc-profile-signout:focus {
+  color: var(--bs-danger);
+  background: rgba(220, 53, 69, 0.08);
+}
+
+@media (max-width: 768px) {
+  .sc-profile-btn {
+    padding: 0.15rem;
+    border-radius: 50%;
+  }
+
+  .sc-profile-btn-text,
+  .sc-profile-chevron {
+    display: none;
+  }
+}

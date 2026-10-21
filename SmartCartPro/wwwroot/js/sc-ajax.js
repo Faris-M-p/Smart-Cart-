@@ -119,7 +119,7 @@
 
   function loginUrl() {
     var base = (document.body && document.body.getAttribute('data-sc-login-url')) || '/Auth/Login';
-    return base + '?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search);
+    return base + '?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search) + '&notice=expired';
   }
 
   /* --------------------------------------------------------------- feedback */

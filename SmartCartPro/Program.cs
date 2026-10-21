@@ -79,10 +79,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
 
                 var returnUrl = context.Request.Path + context.Request.QueryString;
-                var loginUrl = "/Auth/Login";
+                var loginUrl = "/Auth/Login?notice=expired";
                 if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl != "/")
                 {
-                    loginUrl += "?returnUrl=" + Uri.EscapeDataString(returnUrl);
+                    loginUrl += "&returnUrl=" + Uri.EscapeDataString(returnUrl);
                 }
 
                 if (ExceptionErrorMapper.WantsJsonResponse(context.Request))

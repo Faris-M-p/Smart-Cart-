@@ -27,11 +27,22 @@ public class AuthController : Controller
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult Login(string? returnUrl = null)
+    public IActionResult Login(string? returnUrl = null, string? notice = null)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
             return Redirect(SafeReturnUrl(returnUrl));
+        }
+
+        if (notice == "signed-out")
+        {
+            ViewData["AuthNotice"] = "You have been signed out.";
+            ViewData["AuthNoticeTone"] = "success";
+        }
+        else if (notice == "expired")
+        {
+            ViewData["AuthNotice"] = "Your session expired. Please sign in again.";
+            ViewData["AuthNoticeTone"] = "warning";
         }
 
         return View(new InLoginView { ReturnUrl = returnUrl });
@@ -177,10 +188,10 @@ public class AuthController : Controller
     /// </summary>
     [HttpGet]
     [Authorize]
-    public IActionResult ChangePassword()
+    public IActionResult ChangePassword(string? returnUrl = null)
     {
         ViewData["MustChange"] = User.FindFirst(AuthClaims.MustChangePassword)?.Value == "1";
-        return View(new InChangePasswordView());
+        return View(new InChangePasswordView { ReturnUrl = LocalReturnUrl(returnUrl) });
     }
 
     /// <summary>
@@ -215,8 +226,8 @@ public class AuthController : Controller
         _authService.SetAuthCookie(result.Token, result.ExpiresAt, rememberMe: false);
 
         return CommonHelpers.SuccessResponse(
-            "Password updated.",
-            new { redirectUrl = Url.Action("Index", "Home") });
+            "Password changed successfully.",
+            new { redirectUrl = LocalReturnUrl(model.ReturnUrl) ?? Url.Action("Index", "Home") });
     }
 
     /// <summary>
@@ -304,23 +315,39 @@ public class AuthController : Controller
     public IActionResult Logout()
     {
         _authService.ClearAuthCookie();
-        return RedirectToAction(nameof(Login));
+        return RedirectToAction(nameof(Login), new { notice = "signed-out" });
     }
 
     /// <summary>
     /// Signs out via GET by clearing the JWT auth cookie.
-    /// Used by the header "Sign out" link, which cannot post an anti-forgery token.
+    /// Kept for older links. The profile menu posts to <see cref="Logout"/>.
     /// </summary>
     [HttpGet]
     [Authorize]
     public IActionResult LogoutGet()
     {
         _authService.ClearAuthCookie();
-        return RedirectToAction(nameof(Login));
+        return RedirectToAction(nameof(Login), new { notice = "signed-out" });
     }
 
     private string SafeReturnUrl(string? returnUrl) =>
-        !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
-            ? returnUrl
-            : Url.Action("Index", "Home") ?? "/";
+        LocalReturnUrl(returnUrl) ?? Url.Action("Index", "Home") ?? "/";
+
+    /// <summary>A local path, or null. The change-password page is not a return target.</summary>
+    private string? LocalReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl))
+        {
+            return null;
+        }
+
+        if (returnUrl.Contains("/Auth/ChangePassword", StringComparison.OrdinalIgnoreCase)
+            || returnUrl.Contains("/Auth/Login", StringComparison.OrdinalIgnoreCase)
+            || returnUrl.Contains("/Auth/Logout", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return returnUrl;
+    }
 }

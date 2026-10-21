@@ -1,0 +1,114 @@
+@using System.Security.Claims
+@{
+    if (User.Identity?.IsAuthenticated != true)
+    {
+        return;
+    }
+
+    string? FirstClaim(params string[] types)
+    {
+        foreach (var type in types)
+        {
+            var value = User.FindFirstValue(type);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    var fullName = FirstClaim(ClaimTypes.Name, "unique_name", "name");
+    var email = FirstClaim(ClaimTypes.Email, "email");
+    var userName = FirstClaim("username");
+    var role = FirstClaim("role", ClaimTypes.Role);
+    var displayName = fullName ?? email ?? userName ?? "Account";
+    var isPlatform = AuthClaims.IsPlatformSuperAdminUser(User);
+
+    var colorKey = (fullName ?? email ?? userName ?? displayName).ToLowerInvariant();
+    var colors = new[]
+    {
+        "#1d4ed8", "#0f766e", "#b45309", "#6d28d9",
+        "#be123c", "#0369a1", "#15803d", "#9a3412"
+    };
+    var hash = 0;
+    foreach (var c in colorKey)
+    {
+        hash = unchecked(hash * 31 + c);
+    }
+
+    var avatarColor = colors[(hash & int.MaxValue) % colors.Length];
+    var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var initials = parts.Length == 0
+        ? "?"
+        : parts.Length == 1
+            ? char.ToUpperInvariant(parts[0][0]).ToString()
+            : string.Concat(char.ToUpperInvariant(parts[0][0]), char.ToUpperInvariant(parts[^1][0]));
+
+    var here = (Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString).ToString();
+}
+
+<div class="dropdown sc-profile-menu">
+    <button type="button"
+            class="sc-profile-btn"
+            id="scProfileButton"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-haspopup="menu"
+            aria-label="Account menu for @displayName">
+        <span class="sc-avatar" style="--sc-avatar-bg: @avatarColor" aria-hidden="true">@initials</span>
+        <span class="sc-profile-btn-text">
+            <span class="sc-profile-name">@displayName</span>
+            @if (!string.IsNullOrEmpty(role))
+            {
+                <span class="sc-profile-role">@role</span>
+            }
+        </span>
+        <i class="bi bi-chevron-down sc-profile-chevron" aria-hidden="true"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="scProfileButton">
+        <li>
+            <div class="sc-profile-card">
+                <span class="sc-avatar" style="--sc-avatar-bg: @avatarColor" aria-hidden="true">@initials</span>
+                <div class="sc-profile-card-text">
+                    <div class="sc-profile-card-name">@displayName</div>
+                    @if (!string.IsNullOrEmpty(email))
+                    {
+                        <div class="sc-profile-card-email">@email</div>
+                    }
+                    @if (!string.IsNullOrEmpty(role) || isPlatform)
+                    {
+                        <div class="sc-profile-card-role">
+                            @if (!string.IsNullOrEmpty(role))
+                            {
+                                <span>@role</span>
+                            }
+                            @if (isPlatform)
+                            {
+                                <span class="badge text-bg-light border">Platform Super Admin</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </li>
+        <li><hr class="dropdown-divider" /></li>
+        @* Account section. Add the next item as one more <li> with an <a class="dropdown-item"> here. *@
+        <li>
+            <a class="dropdown-item" asp-controller="Auth" asp-action="ChangePassword" asp-route-returnUrl="@here">
+                <i class="bi bi-key" aria-hidden="true"></i>
+                <span>Change password</span>
+            </a>
+        </li>
+        <li><hr class="dropdown-divider" /></li>
+        <li>
+            <form class="sc-profile-signout-form" method="post" asp-controller="Auth" asp-action="Logout">
+                <button type="submit" class="dropdown-item sc-profile-signout">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span>Sign out</span>
+                </button>
+            </form>
+        </li>
+    </ul>
+</div>

@@ -13,6 +13,12 @@
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="ReturnUrl" />
 
+        @if (ViewData["AuthNotice"] is string authNotice)
+        {
+            var tone = ViewData["AuthNoticeTone"] as string ?? "info";
+            <div class="alert alert-@tone py-2 px-3 small" role="status">@authNotice</div>
+        }
+
         <div data-sc-form-summary class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
 
         <div class="mb-3">

@@ -98,6 +98,10 @@ public sealed class InChangePasswordView
     [Required(ErrorMessage = "Confirm the new password.")]
     [Compare(nameof(NewPassword), ErrorMessage = "The new password and confirmation do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
+
+    /// <summary>Local path to open after a successful change. Checked with Url.IsLocalUrl.</summary>
+    [Display(Name = "Return address")]
+    public string? ReturnUrl { get; set; }
 }
 
 /// <summary>Password change passed Controller → Service.</summary>
