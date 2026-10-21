@@ -4,8 +4,8 @@
 
 | File | Purpose |
 |------|---------|
-| `001_DefaultRoles.sql` | System roles (SUPER_ADMIN, STORE_MANAGER, …) |
-| `002_DefaultPermissions.sql` | Modules, permissions, SUPER_ADMIN grants |
+| `001_DefaultRoles.sql` | System roles (ADMIN, STORE_MANAGER, …) |
+| `002_DefaultPermissions.sql` | Modules, permissions, ADMIN grants |
 | `003_DefaultSettings.sql` | Company-level default settings |
 | `004_PlatformSuperAdmin.sql` | Platform Super Admin (`Muhdfarismp@gmail.com`) — OTP login; change password in non-dev |
 
@@ -21,7 +21,7 @@ Recommended bootstrap (application or one-time ops script, in a single transacti
 1. `INSERT` into `company`.
 2. `INSERT` into `store` with `isdefault = TRUE` for that company.
 3. Create the first user with a **hashed** password supplied securely (prompt / secret store).
-4. Assign `SUPER_ADMIN` via `user_roles`.
+4. Assign `ADMIN` via `user_roles`.
 5. Grant `user_store_access` for the default store.
 
 `BuildDatabase.bat` applies seed scripts after the schema; it does not create a company or admin user.

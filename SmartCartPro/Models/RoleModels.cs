@@ -57,7 +57,7 @@ public sealed class InputRoleSelect
 {
     public int IdRole { get; set; }
 
-    /// <summary>True when the signed-in actor is the platform super admin (may edit the SUPER_ADMIN role).</summary>
+    /// <summary>True when the signed-in actor is the platform super admin. The ADMIN role stays read-only for this actor too.</summary>
     public bool ActorIsPlatformAdmin { get; set; }
 }
 
@@ -76,7 +76,7 @@ public sealed class OutputRoleSelect
     public int PermissionCount { get; set; }
     public List<int> PermissionIds { get; set; } = new();
 
-    /// <summary>Set by the single-role lookup only: the definition is read-only for the requesting actor.</summary>
+    /// <summary>True for the built-in Admin role: name, code and permissions are read-only for every actor.</summary>
     public bool IsLocked { get; set; }
 }
 

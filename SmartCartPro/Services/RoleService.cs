@@ -7,12 +7,13 @@ namespace SmartCartPro.Services;
 
 /// <summary>
 /// Role management rules: unique code and name, permissions only from the seeded catalog,
-/// system roles are protected, the built-in SUPER_ADMIN definition is platform-only, and a role
+/// system roles are protected, the built-in ADMIN role cannot be changed by anyone, and a role
 /// that employees still hold can be neither deactivated nor deleted.
 /// </summary>
 public class RoleService : IRoleService
 {
-    private const string SuperAdminRoleCode = "SUPER_ADMIN";
+    private const string CompanyAdminRoleCode = "ADMIN";
+    private const string CompanyAdminRoleName = "Admin";
     private const string FieldSummary = "Please correct the highlighted fields.";
 
     private readonly IRoleRepository _repo;
@@ -40,6 +41,11 @@ public class RoleService : IRoleService
             result = await _repo.ListRolesAsync(input, ct);
         }
 
+        foreach (var role in result.Roles)
+        {
+            role.IsLocked = IsCompanyAdminRole(role);
+        }
+
         result.Filter = input;
         return result;
     }
@@ -49,7 +55,7 @@ public class RoleService : IRoleService
         var role = await _repo.GetRoleAsync(input, ct);
         if (role is null) return null;
 
-        role.IsLocked = IsLockedFor(role, input.ActorIsPlatformAdmin);
+        role.IsLocked = IsCompanyAdminRole(role);
         return role;
     }
 
@@ -62,12 +68,20 @@ public class RoleService : IRoleService
         var roleName = input.RoleName.Trim();
         var errors = new Dictionary<string, string[]>();
 
-        if (await _repo.IsRoleCodeTakenAsync(roleCode, ct))
+        if (IsReservedAdminCode(roleCode))
+        {
+            AddError(errors, "RoleCode", "The code ADMIN is reserved for the company Admin role.");
+        }
+        else if (await _repo.IsRoleCodeTakenAsync(roleCode, ct))
         {
             AddError(errors, "RoleCode", "This role code is already in use. Codes of deleted roles cannot be reused.");
         }
 
-        if (await _repo.IsRoleNameTakenAsync(roleName, null, ct))
+        if (IsReservedAdminName(roleName))
+        {
+            AddError(errors, "RoleName", "The name Admin is reserved for the company Admin role.");
+        }
+        else if (await _repo.IsRoleNameTakenAsync(roleName, null, ct))
         {
             AddError(errors, "RoleName", "A role with this name already exists.");
         }
@@ -94,17 +108,21 @@ public class RoleService : IRoleService
                 new InputRoleSelect { IdRole = input.IdRole, ActorIsPlatformAdmin = input.ActorIsPlatformAdmin }, ct)
             ?? throw new ResourceNotFoundException("Role not found.", $"IdRole={input.IdRole}");
 
-        if (IsLockedFor(existing, input.ActorIsPlatformAdmin))
+        if (IsCompanyAdminRole(existing))
         {
             throw new ForbiddenException(
-                "The Super Administrator role can only be changed by the platform administrator.",
+                "The Admin role cannot be changed.",
                 $"Actor {input.ActorUserId} tried to edit {existing.RoleCode}.");
         }
 
         var roleName = input.RoleName.Trim();
         var errors = new Dictionary<string, string[]>();
 
-        if (await _repo.IsRoleNameTakenAsync(roleName, input.IdRole, ct))
+        if (IsReservedAdminName(roleName))
+        {
+            AddError(errors, "RoleName", "The name Admin is reserved for the company Admin role.");
+        }
+        else if (await _repo.IsRoleNameTakenAsync(roleName, input.IdRole, ct))
         {
             AddError(errors, "RoleName", "A role with this name already exists.");
         }
@@ -129,6 +147,13 @@ public class RoleService : IRoleService
     {
         var existing = await _repo.GetRoleAsync(new InputRoleSelect { IdRole = input.IdRole }, ct)
             ?? throw new ResourceNotFoundException("Role not found.", $"IdRole={input.IdRole}");
+
+        if (IsCompanyAdminRole(existing))
+        {
+            throw new ForbiddenException(
+                "The Admin role cannot be changed.",
+                $"Actor {input.ActorUserId} tried to change the status of {existing.RoleCode}.");
+        }
 
         if (existing.IsActive == input.IsActive)
         {
@@ -166,6 +191,13 @@ public class RoleService : IRoleService
         var existing = await _repo.GetRoleAsync(new InputRoleSelect { IdRole = input.IdRole }, ct)
             ?? throw new ResourceNotFoundException("Role not found.", $"IdRole={input.IdRole}");
 
+        if (IsCompanyAdminRole(existing))
+        {
+            throw new ForbiddenException(
+                "The Admin role cannot be changed.",
+                $"Actor {input.ActorUserId} tried to delete {existing.RoleCode}.");
+        }
+
         if (existing.IsSystem)
         {
             throw new ForbiddenException(
@@ -190,11 +222,15 @@ public class RoleService : IRoleService
 
     // ------------------------------------------------------------------ helpers
 
-    /// <summary>The built-in SUPER_ADMIN definition may only be edited by the platform super admin.</summary>
-    private static bool IsLockedFor(OutputRoleSelect role, bool actorIsPlatformAdmin) =>
-        role.IsSystem
-        && string.Equals(role.RoleCode, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase)
-        && !actorIsPlatformAdmin;
+    /// <summary>The built-in company Admin role is read-only for every actor, including the platform super admin.</summary>
+    private static bool IsCompanyAdminRole(OutputRoleSelect role) =>
+        string.Equals(role.RoleCode, CompanyAdminRoleCode, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsReservedAdminCode(string roleCode) =>
+        string.Equals(roleCode.Trim(), CompanyAdminRoleCode, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsReservedAdminName(string roleName) =>
+        string.Equals(roleName.Trim(), CompanyAdminRoleName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Every permission id must exist in the seeded catalog. Returns the distinct ids.</summary>
     private async Task<List<int>> ValidatePermissionsAsync(

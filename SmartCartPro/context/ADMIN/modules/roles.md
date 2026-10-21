@@ -11,7 +11,7 @@ Maintain roles and the permission set each role grants. The company admin define
 ## Implemented Features
 - `Role/Index` list: search, status filter, sorting, paging, employee and permission counts, System badge, empty state.
 - `Role/Create`: code, name, description, active flag and the **permission matrix** (one card per module, a checkbox per permission, module toggle, counter, Select all / Clear all). Ticking an action permission also ticks the module's `*.view` permission (UI convenience only).
-- `Role/Edit`: name, description and permissions. The code never changes. A **locked** role (the built-in `SUPER_ADMIN` seen by a non-platform user) opens read-only.
+- `Role/Edit`: name, description and permissions. The code never changes. The built-in `ADMIN` role opens read-only for every actor, including the platform Super Admin.
 - `Role/SetActive` (POST): activate / deactivate with confirm.
 - `Role/Delete` (POST): soft delete with confirm.
 - In-use guard: a role that employees still hold can be neither deactivated nor deleted; the buttons are disabled with the reason and the server refuses with a 409.
@@ -27,7 +27,7 @@ Every action requires module `USERS` and permission `users.manage` (class-level 
 | POST | `/Role/SetActive` | `SetActive` | `id`, `isActive` |
 | POST | `/Role/Delete` | `Delete` | `id` |
 
-Previously the write actions required the `PlatformSuperAdmin` policy. The module permission replaces it so the company admin can maintain roles; the SUPER_ADMIN definition stays platform-only (see Business Rules).
+Previously the write actions required the `PlatformSuperAdmin` policy. The module permission replaces it so the company admin can maintain other roles. The `ADMIN` role itself cannot be changed by anyone (see Business Rules). The company Admin role can open this screen even when the Users module is off.
 
 ## Filters / Search / Sorting
 - Search (case-insensitive contains): code, name, description.
@@ -42,7 +42,7 @@ Previously the write actions required the `PlatformSuperAdmin` policy. The modul
 ## Database Dependencies
 - Tables: `roles`, `modules`, `permissions`, `role_permissions`, `user_roles`.
 - `uq_roles_rolecode` also covers cancelled rows, so the code of a deleted role stays reserved.
-- Seeded system roles (`SUPER_ADMIN`, `CASHIER`, …) have `is_system = true`.
+- Seeded system roles (`ADMIN`, `CASHIER`, …) have `is_system = true`.
 
 ## API & Data Access
 - `RoleController` → `IRoleService` / `RoleService` → `IRoleRepository` / `RoleRepository` (EF only).
@@ -56,7 +56,7 @@ Previously the write actions required the `PlatformSuperAdmin` policy. The modul
 ## Business Rules
 - Permissions can only come from the active seeded catalog; any other id is refused with a `PermissionIds` field error. This holds for every actor, platform admin included.
 - Role code: letters, digits, underscore, starts with a letter, stored upper-case, unique including deleted roles. Role name is unique among non-deleted roles.
-- System roles cannot be deactivated or deleted. Their name, description and permissions can be edited, except `SUPER_ADMIN`, which only the platform Super Admin may edit (everyone else gets a read-only view and a 403 on POST).
+- System roles cannot be deactivated or deleted. Their name, description and permissions can be edited, except `ADMIN`. That role's name, description, permissions, status and delete are refused for every actor, including the platform Super Admin (read-only view, 403 on POST). Code `ADMIN` and name `Admin` cannot be used on another role.
 - In-use guard counts employees that are not cancelled (inactive employees count). Deleting is a soft cancel and keeps `role_permissions`.
 - Audit (`IAuditService`, entity `Role`): Create, Update, Activate, Deactivate, Delete.
 

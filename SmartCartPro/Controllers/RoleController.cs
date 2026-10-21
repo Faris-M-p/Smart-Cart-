@@ -10,7 +10,7 @@ namespace SmartCartPro.Controllers;
 /// <summary>
 /// Roles and the permission matrix (views in ~/Views/Role/).
 /// ModuleAccess: USERS | Permission: users.manage. Permissions can only come from the seeded catalog;
-/// the built-in SUPER_ADMIN definition is editable by the platform super admin only.
+/// the built-in ADMIN role cannot be renamed, re-permissioned, deactivated or deleted by anyone.
 /// </summary>
 [Authorize]
 [ModuleAccess("USERS")]
@@ -92,7 +92,7 @@ public class RoleController : Controller
 
     /// <summary>
     /// Saves the role name, description and permission set (the role code never changes).
-    /// Administrators submit the edit form; the built-in SUPER_ADMIN role is refused for non-platform users.
+    /// Administrators submit the edit form; the built-in ADMIN role is refused for every actor.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, InRoleUpdateView model, string? returnUrl, CancellationToken ct)

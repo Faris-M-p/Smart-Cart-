@@ -182,8 +182,13 @@
                                         <a class="btn btn-sm btn-outline-primary me-1"
                                            asp-action="Edit"
                                            asp-route-id="@item.IdRole"
-                                           asp-route-returnUrl="@currentListUrl">Edit</a>
-                                        if (item.IsActive)
+                                           asp-route-returnUrl="@currentListUrl">@(item.IsLocked ? "View" : "Edit")</a>
+                                        if (item.IsLocked)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-1" disabled
+                                                    title="The Admin role cannot be changed.">@(item.IsActive ? "Deactivate" : "Activate")</button>
+                                        }
+                                        else if (item.IsActive)
                                         {
                                             if (item.IsSystem)
                                             {
@@ -219,7 +224,7 @@
                                                     data-sc-confirm-class="btn-success">Activate</button>
                                         }
 
-                                        if (!item.IsSystem)
+                                        if (!item.IsSystem && !item.IsLocked)
                                         {
                                             if (item.UserCount > 0)
                                             {

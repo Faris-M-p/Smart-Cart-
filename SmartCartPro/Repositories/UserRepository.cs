@@ -418,6 +418,16 @@ public class UserRepository : IUserRepository
         return new OutputUserPasswordUpdate { IdUser = entity.IdUser };
     }
 
+    public Task<bool> UserHasRoleAsync(int idUser, string roleCode, CancellationToken ct = default)
+    {
+        var code = roleCode.Trim().ToUpperInvariant();
+        return _db.UserRoles.AsNoTracking()
+            .AnyAsync(ur => ur.FkUser == idUser
+                && ur.Role != null
+                && !ur.Role.Cancelled
+                && ur.Role.RoleCode.ToUpper() == code, ct);
+    }
+
     // Used by shared filters and the layout (ICurrentUserAccess). Keep as is.
     public Task<List<OutputPermissionSelect>> GetUserPermissionsAsync(int idUser, CancellationToken ct = default) =>
         _db.UserRoles.AsNoTracking()

@@ -39,7 +39,7 @@ public class User
     [Column("mustchangepassword")]
     public bool MustChangePassword { get; set; } = true;
 
-    /// <summary>SQL <c>is_platform_super_admin</c> — platform Super Admin (OTP login). Not company SUPER_ADMIN.</summary>
+    /// <summary>SQL <c>is_platform_super_admin</c> — software-team Super Admin (OTP login). Not the company Admin role.</summary>
     [Column("is_platform_super_admin")]
     public bool IsPlatformSuperAdmin { get; set; }
 

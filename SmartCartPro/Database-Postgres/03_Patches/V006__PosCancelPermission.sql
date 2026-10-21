@@ -1,6 +1,6 @@
 -- =============================================================================
 -- V006__PosCancelPermission.sql
--- Adds pos.cancel permission (invoice cancel) and grants to SUPER_ADMIN.
+-- Adds pos.cancel permission (invoice cancel) and grants to the company Admin role.
 -- Idempotent.
 -- =============================================================================
 \set ON_ERROR_STOP on
@@ -18,7 +18,7 @@ INSERT INTO role_permissions (fk_role, fk_permission)
 SELECT r.id_role, p.id_permission
 FROM roles r
 CROSS JOIN permissions p
-WHERE r.rolecode = 'SUPER_ADMIN'
+WHERE r.rolecode IN ('ADMIN', 'SUPER_ADMIN')
   AND r.cancelled = FALSE
   AND p.permissioncode = 'pos.cancel'
   AND p.cancelled = FALSE

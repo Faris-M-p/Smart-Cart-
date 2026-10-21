@@ -9,7 +9,7 @@ namespace SmartCartPro.Filters;
 /// <summary>
 /// Blocks access to the decorated action/controller unless at least one of the given modules is enabled
 /// in <c>installation_modules</c> (e.g. <c>[ModuleAccess("CUSTOMERS", "POS")]</c> for a screen both modules use).
-/// Platform super admin always bypasses.
+/// Platform super admin always passes. The company Admin role also passes for Users and Settings.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
 public sealed class ModuleAccessAttribute : TypeFilterAttribute
@@ -28,25 +28,28 @@ public sealed class ModuleAccessAttribute : TypeFilterAttribute
 public sealed class ModuleAccessFilter : IAsyncActionFilter
 {
     private readonly string[] _moduleCodes;
-    private readonly IModuleService _moduleService;
+    private readonly ICurrentUserAccess _access;
 
-    public ModuleAccessFilter(string[] moduleCodes, IModuleService moduleService)
+    public ModuleAccessFilter(string[] moduleCodes, ICurrentUserAccess access)
     {
         _moduleCodes = moduleCodes;
-        _moduleService = moduleService;
+        _access = access;
     }
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        // Platform super admin always has full access.
-        if (AuthClaims.IsPlatformSuperAdminUser(context.HttpContext.User))
+        var ct = context.HttpContext.RequestAborted;
+        var allowed = false;
+        foreach (var code in _moduleCodes)
         {
-            await next();
-            return;
+            if (await _access.ModuleEnabledAsync(code, ct))
+            {
+                allowed = true;
+                break;
+            }
         }
 
-        var enabled = await _moduleService.GetEnabledModuleCodesAsync(context.HttpContext.RequestAborted);
-        if (!_moduleCodes.Any(code => enabled.Contains(code, StringComparer.OrdinalIgnoreCase)))
+        if (!allowed)
         {
             if (ExceptionErrorMapper.WantsJsonResponse(context.HttpContext.Request))
             {

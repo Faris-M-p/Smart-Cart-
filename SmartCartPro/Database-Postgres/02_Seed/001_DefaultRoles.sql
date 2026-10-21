@@ -4,7 +4,7 @@
 INSERT INTO roles (rolecode, rolename, description, issystem, isactive)
 SELECT v.rolecode, v.rolename, v.description, TRUE, TRUE
 FROM (VALUES
-    ('SUPER_ADMIN', 'Super Administrator', 'Full company access'),
+    ('ADMIN', 'Admin', 'Company administrator. Uses every module the software provider has enabled, and manages employees and roles.'),
     ('STORE_MANAGER', 'Store Manager', 'Manage a store'),
     ('CASHIER', 'Cashier', 'POS billing'),
     ('INVENTORY', 'Inventory Clerk', 'Stock and purchasing'),

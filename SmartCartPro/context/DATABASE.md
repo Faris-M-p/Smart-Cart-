@@ -44,10 +44,10 @@ PostgreSQL. Scripts: `SmartCartPro/Database-Postgres/`.
 
 ## Seed
 
-Roles (`SUPER_ADMIN`, `STORE_MANAGER`, `CASHIER`, …), permissions, company settings.  
+Roles (`ADMIN`, `STORE_MANAGER`, `CASHIER`, …), permissions, company settings.  
 No production admin password in seed — bootstrap hashed admin separately.
 
-**Naming:** `SUPER_ADMIN` = company-wide full access. Platform Super Admin (licenses/packages) is **PLANNED** and must use a distinct protected identity — see `ADMIN/modules/super-admin.md`.
+**Naming:** `ADMIN` = company administrator. The software-team Super Admin is `users.is_platform_super_admin`, not a role — see `ADMIN/modules/super-admin.md`.
 
 ## Not in schema yet (Super Admin hold)
 

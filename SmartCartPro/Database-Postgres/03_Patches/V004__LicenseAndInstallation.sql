@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS user_invitations (
     invited_email       TEXT NOT NULL,
     invited_fullname    TEXT NOT NULL,
     invitation_token    TEXT NOT NULL,      -- single-use token for account setup
-    fk_role             INT NOT NULL,       -- assigned role (SUPER_ADMIN for company)
+    fk_role             INT NOT NULL,       -- assigned role (ADMIN for the company administrator)
     fk_store            INT NOT NULL,       -- initial store access
     status              TEXT NOT NULL DEFAULT 'pending',
     expires_at          TIMESTAMP NOT NULL,

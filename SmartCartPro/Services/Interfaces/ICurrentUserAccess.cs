@@ -18,6 +18,6 @@ public interface ICurrentUserAccess
     /// <summary>True when the user holds at least one of the permission codes.</summary>
     Task<bool> CanAnyAsync(IEnumerable<string> permissionCodes, CancellationToken ct = default);
 
-    /// <summary>True when the module (e.g. <c>PRODUCTS</c>) is enabled for this installation.</summary>
+    /// <summary>True when the module (e.g. <c>PRODUCTS</c>) is enabled for this installation. Users and Settings are also true for the company Admin role.</summary>
     Task<bool> ModuleEnabledAsync(string moduleCode, CancellationToken ct = default);
 }

@@ -21,7 +21,7 @@ Online orders, carts, wishlists, reviews, cash sessions, invoice sequences — t
 
 ## Naming watch
 
-Seeded role `SUPER_ADMIN` = **company** full admin, **not** platform Super Admin. Future platform identity must use a distinct flag/role (see `super-admin.md`).
+Seeded role `ADMIN` = **company** administrator, **not** the software-team Super Admin. Platform identity is `users.is_platform_super_admin` (see `super-admin.md`).
 
 ## When promoting a future item
 

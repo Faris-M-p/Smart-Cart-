@@ -14,4 +14,7 @@ public interface IUserService
 
     /// <summary>Used by shared filters and the layout (ICurrentUserAccess). Do not change the signature or behaviour.</summary>
     Task<List<OutputPermissionSelect>> GetUserPermissionsAsync(int idUser, CancellationToken ct = default);
+
+    /// <summary>True when the user holds the role code (for example the company Admin role).</summary>
+    Task<bool> UserHasRoleAsync(int idUser, string roleCode, CancellationToken ct = default);
 }

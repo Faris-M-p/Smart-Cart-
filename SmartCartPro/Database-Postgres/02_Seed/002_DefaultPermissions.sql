@@ -41,12 +41,13 @@ WHERE NOT EXISTS (
     SELECT 1 FROM permissions p WHERE p.permissioncode = v.permissioncode AND p.cancelled = FALSE
 );
 
--- Grant all permissions to SUPER_ADMIN (idempotent)
+-- Grant all permissions to the company Admin role (idempotent).
+-- SUPER_ADMIN is accepted so a database that has not yet run the rename patch still receives grants.
 INSERT INTO role_permissions (fk_role, fk_permission)
 SELECT r.id_role, p.id_permission
 FROM roles r
 CROSS JOIN permissions p
-WHERE r.rolecode = 'SUPER_ADMIN'
+WHERE r.rolecode IN ('ADMIN', 'SUPER_ADMIN')
   AND r.cancelled = FALSE
   AND p.cancelled = FALSE
   AND NOT EXISTS (

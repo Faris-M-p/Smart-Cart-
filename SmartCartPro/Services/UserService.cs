@@ -234,6 +234,9 @@ public class UserService : IUserService
     public Task<List<OutputPermissionSelect>> GetUserPermissionsAsync(int idUser, CancellationToken ct = default) =>
         _repo.GetUserPermissionsAsync(idUser, ct);
 
+    public Task<bool> UserHasRoleAsync(int idUser, string roleCode, CancellationToken ct = default) =>
+        _repo.UserHasRoleAsync(idUser, roleCode, ct);
+
     // ------------------------------------------------------------------ helpers
 
     /// <summary>

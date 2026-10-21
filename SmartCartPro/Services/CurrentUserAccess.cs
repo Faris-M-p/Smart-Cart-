@@ -6,12 +6,22 @@ namespace SmartCartPro.Services;
 /// <summary>Per-request cache of the signed-in user's permission codes and the installation's enabled modules.</summary>
 public sealed class CurrentUserAccess : ICurrentUserAccess
 {
+    /// <summary>Company administrator role. Shop modules still follow the installation; these two do not.</summary>
+    private const string CompanyAdminRoleCode = "ADMIN";
+
+    private static readonly HashSet<string> CompanyAdminModules = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "USERS",
+        "SETTINGS"
+    };
+
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUserService _userService;
     private readonly IModuleService _moduleService;
 
     private HashSet<string>? _permissions;
     private HashSet<string>? _enabledModules;
+    private bool? _isCompanyAdmin;
 
     public CurrentUserAccess(
         IHttpContextAccessor httpContextAccessor,
@@ -70,6 +80,13 @@ public sealed class CurrentUserAccess : ICurrentUserAccess
             return true;
         }
 
+        // Employees, roles, company, stores, settings, and audit stay available to the company Admin
+        // even when the software provider left Users and Settings off the module preset.
+        if (CompanyAdminModules.Contains(moduleCode) && await IsCompanyAdminAsync(ct))
+        {
+            return true;
+        }
+
         if (_enabledModules is null)
         {
             var codes = await _moduleService.GetEnabledModuleCodesAsync(ct);
@@ -97,5 +114,24 @@ public sealed class CurrentUserAccess : ICurrentUserAccess
             rows.Select(r => r.PermissionCode),
             StringComparer.OrdinalIgnoreCase);
         return _permissions;
+    }
+
+    private async Task<bool> IsCompanyAdminAsync(CancellationToken ct)
+    {
+        if (_isCompanyAdmin is not null)
+        {
+            return _isCompanyAdmin.Value;
+        }
+
+        var userId = AuthClaims.GetUserId(_httpContextAccessor.HttpContext?.User);
+        if (userId is null or 0)
+        {
+            _isCompanyAdmin = false;
+            return false;
+        }
+
+        var hasRole = await _userService.UserHasRoleAsync(userId.Value, CompanyAdminRoleCode, ct);
+        _isCompanyAdmin = hasRole;
+        return hasRole;
     }
 }

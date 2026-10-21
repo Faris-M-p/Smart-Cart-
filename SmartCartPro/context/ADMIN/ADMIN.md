@@ -19,7 +19,7 @@ Controllers under `Controllers/` (domain-grouped, not `Controllers/Admin/` prefi
 
 ## Authorization (target)
 
-Roles/permissions seeded in SQL; enforce via claims + permission checks (`RequirePermission` still incomplete). Do not trust client-only permission flags. Platform Super Admin must use a **separate** policy from company role `SUPER_ADMIN`.
+Roles/permissions seeded in SQL; enforce via claims + permission checks (`RequirePermission` still incomplete). Do not trust client-only permission flags. Platform Super Admin must use a **separate** policy from company role `ADMIN`.
 
 ## UI structure
 
