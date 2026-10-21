@@ -2,6 +2,7 @@
 bin/
 obj/
 .tmp-shop-build/
+.tmp-build-check/
 
 # VS files
 .vs/
