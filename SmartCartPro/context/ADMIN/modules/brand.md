@@ -45,6 +45,8 @@ Company-wide brand master: list, create, edit, activate/deactivate, and a JSON l
 ## UI Rules & Conventions
 - Views: `Views/Brand/Brands.cshtml`, `CreateBrand.cshtml`, `EditBrand.cshtml` (explicit `View("~/Views/Brand/…")` paths). The old static placeholder list was replaced.
 - JS: `wwwroot/js/catalog/brand.js` (form submit + list busy state) on top of `wwwroot/js/sc-ajax.js`; activate/deactivate buttons use the declarative `data-sc-post` + `data-sc-confirm` hooks and reload with a toast.
+- Forms use `asp-action` + `method="post"`, so the form tag helper emits the antiforgery token; the views deliberately do **not** add `@Html.AntiForgeryToken()` as well (that would post the token twice). The activate/deactivate buttons on the list send the layout's page-wide token.
+- Sortable column headers show `bi-arrow-up` / `bi-arrow-down` (faint arrow when unsorted). The bundled Metis icon subset has no `bi-sort-up` or `bi-arrow-down-up`, so those would render blank.
 
 ## Business Rules
 - Soft cancel only; the UI never hard-deletes.

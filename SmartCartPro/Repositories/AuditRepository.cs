@@ -8,6 +8,7 @@ namespace SmartCartPro.Repositories;
 
 /// <summary>
 /// Audit log repository — read-only list + write. Entities stay internal.
+/// Write API (WriteLogAsync / InputAuditLogCreate) is source-compatible with existing callers.
 /// </summary>
 public class AuditRepository : IAuditRepository
 {
@@ -17,12 +18,10 @@ public class AuditRepository : IAuditRepository
 
     public async Task<OutputAuditLogList> ListLogsAsync(InputAuditLogList input, CancellationToken ct = default)
     {
-        var q = _db.AuditLogs
-            .Include(a => a.User)
-            .AsQueryable();
+        var q = ApplyCompanyScope(_db.AuditLogs.AsQueryable(), input.FkCompany);
 
         if (!string.IsNullOrWhiteSpace(input.EntityName))
-            q = q.Where(a => a.EntityName == input.EntityName);
+            q = q.Where(a => a.EntityName.ToLower().Contains(input.EntityName.Trim().ToLower()));
 
         if (input.EntityId.HasValue)
             q = q.Where(a => a.EntityId == input.EntityId.Value);
@@ -34,13 +33,18 @@ public class AuditRepository : IAuditRepository
             q = q.Where(a => a.FkStore == input.FkStore.Value);
 
         if (!string.IsNullOrWhiteSpace(input.Action))
-            q = q.Where(a => a.Action == input.Action);
+            q = q.Where(a => a.Action.ToLower().Contains(input.Action.Trim().ToLower()));
 
         if (input.From.HasValue)
             q = q.Where(a => a.CreatedAt >= input.From.Value);
 
         if (input.To.HasValue)
-            q = q.Where(a => a.CreatedAt <= input.To.Value);
+        {
+            var to = input.To.Value.TimeOfDay == TimeSpan.Zero
+                ? input.To.Value.Date.AddDays(1)
+                : input.To.Value;
+            q = q.Where(a => a.CreatedAt < to);
+        }
 
         var total = await q.CountAsync(ct);
 
@@ -48,27 +52,25 @@ public class AuditRepository : IAuditRepository
             .OrderByDescending(a => a.CreatedAt)
             .Skip((input.Page - 1) * input.PageSize)
             .Take(input.PageSize)
-            .Select(a => new OutputAuditLogItem
-            {
-                IdAuditLog  = a.IdAuditLog,
-                FkStore     = a.FkStore,
-                FkUser      = a.FkUser,
-                UserName    = a.User != null ? a.User.UserName : null,
-                EntityName  = a.EntityName,
-                EntityId    = a.EntityId,
-                Action      = a.Action,
-                Details     = a.Details,
-                CreatedAt   = a.CreatedAt
-            })
+            .Select(AuditProjection())
             .ToListAsync(ct);
 
         return new OutputAuditLogList
         {
             TotalCount = total,
-            Page       = input.Page,
-            PageSize   = input.PageSize,
-            Items      = rows
+            Page = input.Page,
+            PageSize = input.PageSize,
+            Items = rows
         };
+    }
+
+    public async Task<OutputAuditLogItem?> GetLogAsync(InputAuditLogSelect input, CancellationToken ct = default)
+    {
+        var q = ApplyCompanyScope(
+            _db.AuditLogs.Where(a => a.IdAuditLog == input.IdAuditLog),
+            input.FkCompany);
+
+        return await q.Select(AuditProjection()).FirstOrDefaultAsync(ct);
     }
 
     public async Task WriteLogAsync(InputAuditLogCreate input, CancellationToken ct = default)
@@ -84,4 +86,31 @@ public class AuditRepository : IAuditRepository
         });
         await _db.SaveChangesAsync(ct);
     }
+
+    private IQueryable<AuditLog> ApplyCompanyScope(IQueryable<AuditLog> q, int? fkCompany)
+    {
+        if (fkCompany is not > 0) return q;
+
+        var companyId = fkCompany.Value;
+        return q.Where(a =>
+            a.FkStore == null
+            || _db.Stores.Any(s => s.IdStore == a.FkStore && s.FkCompany == companyId && !s.Cancelled));
+    }
+
+    private System.Linq.Expressions.Expression<Func<AuditLog, OutputAuditLogItem>> AuditProjection()
+        => a => new OutputAuditLogItem
+        {
+            IdAuditLog = a.IdAuditLog,
+            FkStore    = a.FkStore,
+            StoreName  = a.FkStore == null
+                ? null
+                : _db.Stores.Where(s => s.IdStore == a.FkStore).Select(s => s.StoreName).FirstOrDefault(),
+            FkUser     = a.FkUser,
+            UserName   = a.User != null ? a.User.UserName : null,
+            EntityName = a.EntityName,
+            EntityId   = a.EntityId,
+            Action     = a.Action,
+            Details    = a.Details,
+            CreatedAt  = a.CreatedAt
+        };
 }

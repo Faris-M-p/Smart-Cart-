@@ -1,0 +1,147 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputCashSummary
+@{
+    ViewData["Title"] = "Day close";
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string MethodLabel(string method) => method switch
+    {
+        "cash" => "Cash",
+        "card" => "Card",
+        "upi" => "UPI",
+        "wallet" => "Wallet",
+        "bank" => "Bank",
+        "other" => "Other",
+        _ => method
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2 d-print-none">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item"><a asp-action="Session">Cash session</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Day close #@Model.IdCashSession</li>
+    </ol>
+</nav>
+
+<div id="dayClosePage" class="day-close">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 d-print-none">
+        <div>
+            <h1 class="h3 mb-1">Day close</h1>
+            <p class="text-muted mb-0">@Model.StoreName · @Model.UserName</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Session">Back</a>
+            <button type="button" class="btn btn-primary" id="dayClosePrint">
+                <i class="bi bi-printer me-1"></i>Print
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3 day-close-sheet">
+        <div class="card-body">
+            <div class="d-none d-print-block mb-3">
+                <h1 class="h4 mb-0">Day close</h1>
+                <div>@Model.StoreName</div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <dl class="row small mb-0">
+                        <dt class="col-5 fw-normal text-muted">Session</dt>
+                        <dd class="col-7 mb-1">#@Model.IdCashSession</dd>
+                        <dt class="col-5 fw-normal text-muted">Cashier</dt>
+                        <dd class="col-7 mb-1">@Model.UserName</dd>
+                        <dt class="col-5 fw-normal text-muted">Opened</dt>
+                        <dd class="col-7 mb-1">
+                            <time data-sc-utc="@TimeDisplay.Iso(Model.OpenedAt)" data-sc-format="datetime">@Model.OpenedAt.ToString("dd MMM yyyy HH:mm")</time>
+                        </dd>
+                        <dt class="col-5 fw-normal text-muted">Closed</dt>
+                        <dd class="col-7 mb-0">
+                            @if (Model.ClosedAt is DateTime closed)
+                            {
+                                <time data-sc-utc="@TimeDisplay.Iso(closed)" data-sc-format="datetime">@closed.ToString("dd MMM yyyy HH:mm")</time>
+                            }
+                            else
+                            {
+                                <span>Still open</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row small mb-0">
+                        <dt class="col-5 fw-normal text-muted">Sales</dt>
+                        <dd class="col-7 mb-1">@Model.TotalSales · <span data-sc-money="@Raw(Model.TotalSalesAmount)">@Money(Model.TotalSalesAmount)</span></dd>
+                        <dt class="col-5 fw-normal text-muted">Cancelled</dt>
+                        <dd class="col-7 mb-1">@Model.CancelledSales</dd>
+                        <dt class="col-5 fw-normal text-muted">Returns</dt>
+                        <dd class="col-7 mb-1">@Model.ReturnCount · <span data-sc-money="@Raw(Model.TotalReturns)">@Money(Model.TotalReturns)</span></dd>
+                        <dt class="col-5 fw-normal text-muted">Net sales</dt>
+                        <dd class="col-7 mb-0 fw-semibold"><span data-sc-money="@Raw(Model.NetSales)">@Money(Model.NetSales)</span></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <h2 class="h6 text-uppercase text-muted">Payments</h2>
+            @if (Model.ByMethod.Count == 0)
+            {
+                <p class="text-muted">No payments in this session.</p>
+            }
+            else
+            {
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var row in Model.ByMethod)
+                        {
+                            <tr>
+                                <td>@MethodLabel(row.PaymentMethod)</td>
+                                <td class="text-end">@row.Count</td>
+                                <td class="text-end"><span data-sc-money="@Raw(row.Total)">@Money(row.Total)</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <h2 class="h6 text-uppercase text-muted">Cash drawer</h2>
+            <dl class="row mb-0">
+                <dt class="col-7">Opening float</dt>
+                <dd class="col-5 text-end"><span data-sc-money="@Raw(Model.OpeningFloat)">@Money(Model.OpeningFloat)</span></dd>
+                <dt class="col-7">Cash in</dt>
+                <dd class="col-5 text-end"><span data-sc-money="@Raw(Model.CashIn)">@Money(Model.CashIn)</span></dd>
+                <dt class="col-7">Change given</dt>
+                <dd class="col-5 text-end"><span data-sc-money="@Raw(Model.ChangeGiven)">@Money(Model.ChangeGiven)</span></dd>
+                <dt class="col-7 fw-semibold">Expected cash</dt>
+                <dd class="col-5 text-end fw-semibold"><span data-sc-money="@Raw(Model.ExpectedCash)">@Money(Model.ExpectedCash)</span></dd>
+                <dt class="col-7">Counted</dt>
+                <dd class="col-5 text-end">
+                    @if (Model.ClosingCash is decimal counted)
+                    { <span data-sc-money="@Raw(counted)">@Money(counted)</span> }
+                    else
+                    { <span class="text-muted">Not closed</span> }
+                </dd>
+                <dt class="col-7">Variance (counted − expected)</dt>
+                <dd class="col-5 text-end">
+                    @if (Model.Variance is decimal variance)
+                    { <span data-sc-money="@Raw(variance)">@Money(variance)</span> }
+                    else
+                    { <span class="text-muted">—</span> }
+                </dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/session.js" asp-append-version="true"></script>
+}

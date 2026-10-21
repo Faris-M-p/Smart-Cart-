@@ -10,8 +10,7 @@ namespace SmartCartPro.Controllers;
 
 /// <summary>
 /// Admin controller for product review moderation.
-/// Customer-facing review creation is available as service methods (IProductReviewService)
-/// callable from a future customer portal without an MVC view.
+/// Customer-facing review creation stays on IProductReviewService for a future portal.
 /// </summary>
 [Authorize]
 [ModuleAccess("PRODUCTS")]
@@ -22,36 +21,31 @@ public class ProductReviewController : Controller
 
     public ProductReviewController(IProductReviewService svc) => _svc = svc;
 
-    // ── ADMIN LIST ───────────────────────────────────────────────
-
     /// <summary>
-    /// Moderation list of customer product reviews.
-    /// Used from products admin to filter and act on reviews.
+    /// Moderation list of customer product reviews with status, rating, search and date filters.
+    /// Catalog managers with products.manage open this from Products to approve or hide reviews.
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Index([FromQuery] InputProductReviewList input, CancellationToken ct)
-    {
-        input.Page     = Math.Max(1, input.Page);
-        input.PageSize = input.PageSize is <= 0 or > 200 ? 50 : input.PageSize;
-        var result = await _svc.ListReviewsAsync(input, ct);
-        ViewBag.Filter = input;
-        return View(result);
-    }
+        => View(await _svc.ListReviewsAsync(input, ct));
 
-    /// <summary>JSON list for AJAX.</summary>
+    /// <summary>
+    /// JSON list of reviews for AJAX refresh of the moderation grid.
+    /// Catalog managers with products.manage call this from the reviews screen.
+    /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> ListJson([FromQuery] InputProductReviewList input, CancellationToken ct)
     {
-        input.Page     = Math.Max(1, input.Page);
-        input.PageSize = input.PageSize is <= 0 or > 200 ? 50 : input.PageSize;
-        return Json(await _svc.ListReviewsAsync(input, ct));
+        var result = await _svc.ListReviewsAsync(input, ct);
+        return CommonHelpers.SuccessResponse("Reviews loaded.", result);
     }
 
-    // ── ADMIN HIDE / SHOW ────────────────────────────────────────
-
-    /// <summary>Hide a review (set isapproved = false).</summary>
+    /// <summary>
+    /// Hides a review from the storefront by clearing approval.
+    /// Catalog managers confirm hide from the reviews list.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Hide(int id, CancellationToken ct)
@@ -59,18 +53,17 @@ public class ProductReviewController : Controller
         var input = new InputProductReviewHide
         {
             IdProductReview = id,
-            IsApproved      = false,
-            UpdatedBy       = ActorId
+            IsApproved = false,
+            UpdatedBy = ActorId
         };
-        var result = await _svc.HideReviewAsync(input, ct);
-
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to hide review.", result.ResponseMsg ?? "Unable to hide review.");
-
-        return CommonHelpers.SuccessResponse("Review hidden.", new { id });
+        await _svc.HideReviewAsync(input, ct);
+        return CommonHelpers.SuccessResponse("Review hidden.", new { id, isApproved = false });
     }
 
-    /// <summary>Approve (make visible) a review.</summary>
+    /// <summary>
+    /// Approves a review so it is visible on the product.
+    /// Catalog managers confirm approve from the reviews list.
+    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> Approve(int id, CancellationToken ct)
@@ -78,29 +71,27 @@ public class ProductReviewController : Controller
         var input = new InputProductReviewHide
         {
             IdProductReview = id,
-            IsApproved      = true,
-            UpdatedBy       = ActorId
+            IsApproved = true,
+            UpdatedBy = ActorId
         };
-        var result = await _svc.HideReviewAsync(input, ct);
-
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to approve review.", result.ResponseMsg ?? "Unable to approve review.");
-
-        return CommonHelpers.SuccessResponse("Review approved.", new { id });
+        await _svc.HideReviewAsync(input, ct);
+        return CommonHelpers.SuccessResponse("Review approved.", new { id, isApproved = true });
     }
 
-    /// <summary>JSON hide/show toggle for AJAX.</summary>
-    [HttpPost]
+    /// <summary>
+    /// JSON hide or approve toggle for AJAX callers that post IsApproved.
+    /// Catalog managers with products.manage call this from the reviews screen.
+    /// </summary>
+    [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
     public async Task<IActionResult> HideJson([FromBody] InputProductReviewHide input, CancellationToken ct)
     {
         if (input is null)
             throw new ValidationException("Request body is required.", "Null body on HideJson.");
         input.UpdatedBy = ActorId;
-        var result = await _svc.HideReviewAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to update review.", result.ResponseMsg ?? "Unable to update review.");
-
-        return CommonHelpers.SuccessResponse("Review updated.", new { id = input.IdProductReview });
+        await _svc.HideReviewAsync(input, ct);
+        return CommonHelpers.SuccessResponse(
+            input.IsApproved ? "Review approved." : "Review hidden.",
+            new { id = input.IdProductReview, isApproved = input.IsApproved });
     }
 }

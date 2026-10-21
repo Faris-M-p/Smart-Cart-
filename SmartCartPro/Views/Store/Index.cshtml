@@ -1,43 +1,222 @@
-@model SmartCartPro.Models.OutputStoreList
+@model OutputStoreList
 @{
     ViewData["Title"] = "Stores";
+    var canManage = await Access.CanAsync("settings.manage");
+    var canCreate = Model.CanCreateStore;
+    var f = Model.Filter ?? new InputStoreList();
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.ActiveOnly is not null;
+    var setActiveUrl = Url.Action("SetActive", "Store")!;
+    var addUrl = Url.Action("Create", "Store", new { returnUrl = currentListUrl });
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("All", "", statusValue == ""),
+        new("Active", "true", statusValue == "true"),
+        new("Inactive", "false", statusValue == "false")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var usage = Model.CurrentStoreCount + " of " + Model.MaxStores + " stores";
+    var pageHeader = (
+        Title: "Stores",
+        Subtitle: "Locations for this company · " + usage + " used from the license",
+        ActionText: canCreate ? "Add store" : null,
+        ActionUrl: canCreate ? addUrl : null);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down text-muted opacity-50";
+        return f.SortDesc ? "bi-arrow-down" : "bi-arrow-up";
+    }
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc,
+            ["PageSize"] = f.PageSize
+        }
+    };
 }
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h1 class="h4 mb-0">Stores</h1>
-        <p class="text-muted small mb-0">@Model.CurrentStoreCount / @Model.MaxStores stores</p>
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Stores</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_PageHeader", pageHeader)
+
+<div id="storeListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3" data-sc-list-filter>
+                <div class="col-12 col-lg-5">
+                    <label class="form-label" for="storeSearch">Search</label>
+                    <input id="storeSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name, code or city" autocomplete="off" />
+                </div>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label" for="storeStatus">Status</label>
+                    <select id="storeStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="storePageSize">Page size</label>
+                    <select id="storePageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+                </div>
+            </form>
+
+            @if (hasFilters)
+            {
+                <p class="small text-muted">Showing filtered results.</p>
+            }
+
+            @if (Model.Stores.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-shop display-5 text-muted"></i>
+                    <p class="text-muted mt-3 mb-3">No stores found</p>
+                    @if (canCreate)
+                    {
+                        <a class="btn btn-primary" href="@addUrl">
+                            <i class="bi bi-plus-lg me-1"></i>Add store
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("storecode")">
+                                        Code <i class="bi @SortIcon("storecode")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("storename")">
+                                        Name <i class="bi @SortIcon("storename")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("city")">
+                                        City <i class="bi @SortIcon("city")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isdefault")">
+                                        Default <i class="bi @SortIcon("isdefault")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                @if (canManage)
+                                {
+                                    <th class="text-end">Actions</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Stores)
+                        {
+                            var toggleVerb = item.IsActive ? "Deactivate" : "Activate";
+                            var toggleTitle = toggleVerb + " store";
+                            var toggleClass = item.IsActive ? "btn-warning" : "btn-primary";
+                            var toggleNext = (!item.IsActive).ToString().ToLowerInvariant();
+                            var toggleBody = item.IsActive
+                                ? (item.IsDefault
+                                    ? "\"" + item.StoreName + "\" is the default store. Promote another store to default before deactivating it."
+                                    : "Deactivate \"" + item.StoreName + "\"? Staff will no longer be able to switch into it.")
+                                : "Activate \"" + item.StoreName + "\"? It will count toward the license store limit.";
+                            <tr>
+                                <td class="text-muted">@item.StoreCode</td>
+                                <td class="fw-medium">@item.StoreName</td>
+                                <td class="d-none d-md-table-cell">@(string.IsNullOrWhiteSpace(item.City) ? "—" : item.City)</td>
+                                <td>
+                                    @if (item.IsDefault)
+                                    {
+                                        <span class="badge text-bg-primary">Default</span>
+                                    }
+                                </td>
+                                <td>
+                                    <partial name="_StatusBadge" model="item.IsActive" />
+                                </td>
+                                @if (canManage)
+                                {
+                                    <td class="text-end text-nowrap">
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.IdStore"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-post="@setActiveUrl"
+                                                data-sc-param-id="@item.IdStore"
+                                                data-sc-param-isactive="@toggleNext"
+                                                data-sc-confirm="@toggleBody"
+                                                data-sc-confirm-title="@toggleTitle"
+                                                data-sc-confirm-ok="@toggleVerb"
+                                                data-sc-confirm-class="@toggleClass"
+                                                data-sc-after="reload">@toggleVerb</button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
     </div>
-    @if (Model.CanCreateStore)
-    {
-        <a class="btn btn-primary btn-sm" asp-action="Create">Create store</a>
-    }
 </div>
-@if (TempData["SuccessMessage"] is string ok)
+
+@if (canManage)
 {
-    <div class="alert alert-success">@ok</div>
+    <partial name="_ConfirmModal" />
 }
-<table class="table table-sm align-middle">
-    <thead>
-        <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>City</th>
-            <th>Default</th>
-            <th>Active</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var s in Model.Stores)
-    {
-        <tr>
-            <td>@s.StoreCode</td>
-            <td>@s.StoreName</td>
-            <td>@s.City</td>
-            <td>@(s.IsDefault ? "Yes" : "")</td>
-            <td>@(s.IsActive ? "Yes" : "No")</td>
-            <td><a asp-action="Edit" asp-route-id="@s.IdStore">Edit</a></td>
-        </tr>
-    }
-    </tbody>
-</table>
+
+@section Scripts {
+    <script src="~/js/admin/store.js" asp-append-version="true"></script>
+}

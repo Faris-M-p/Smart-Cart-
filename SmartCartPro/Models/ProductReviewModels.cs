@@ -81,9 +81,17 @@ public sealed class InputProductReviewList
     public int? FkProduct { get; set; }
     public int? FkStore { get; set; }
     public bool? IsApproved { get; set; }
+    /// <summary>pending | approved | empty = all. Prepared by the service from the filter form.</summary>
+    public string? Status { get; set; }
+    public int? Rating { get; set; }
+    public string? Search { get; set; }
+    public DateTime? From { get; set; }
+    public DateTime? To { get; set; }
     public bool IncludeCancelled { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    public string SortBy { get; set; } = "createdat";
+    public bool SortDesc { get; set; } = true;
 }
 
 public sealed class OutputProductReviewListItem
@@ -107,6 +115,7 @@ public sealed class OutputProductReviewList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputProductReviewListItem> Items { get; set; } = new();
+    public InputProductReviewList Filter { get; set; } = new();
 }
 
 #endregion

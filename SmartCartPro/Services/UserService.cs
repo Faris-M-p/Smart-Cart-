@@ -118,7 +118,8 @@ public class UserService : IUserService
 
     public async Task<OutputUserUpdate> UpdateUserAsync(InputUserUpdate input, CancellationToken ct = default)
     {
-        var existing = await _repo.GetUserAsync(new InputUserSelect { IdUser = input.IdUser }, ct)
+        var selectInput = new InputUserSelect { IdUser = input.IdUser, ActorFkCompany = input.ActorFkCompany };
+        var existing = await _repo.GetUserAsync(selectInput, ct)
             ?? throw new ResourceNotFoundException("Employee not found.", $"IdUser={input.IdUser}");
 
         var email = input.Email.Trim().ToLowerInvariant();
@@ -159,7 +160,8 @@ public class UserService : IUserService
 
     public async Task<OutputUserStatusUpdate> UpdateUserStatusAsync(InputUserStatusUpdate input, CancellationToken ct = default)
     {
-        var existing = await _repo.GetUserAsync(new InputUserSelect { IdUser = input.IdUser }, ct)
+        var selectInput = new InputUserSelect { IdUser = input.IdUser, ActorFkCompany = input.ActorFkCompany };
+        var existing = await _repo.GetUserAsync(selectInput, ct)
             ?? throw new ResourceNotFoundException("Employee not found.", $"IdUser={input.IdUser}");
 
         if (!input.IsActive && input.IdUser == input.ActorUserId)
@@ -192,7 +194,8 @@ public class UserService : IUserService
                 $"Actor {input.ActorUserId} tried to reset own password.");
         }
 
-        var existing = await _repo.GetUserAsync(new InputUserSelect { IdUser = input.IdUser }, ct)
+        var selectInput = new InputUserSelect { IdUser = input.IdUser, ActorFkCompany = input.ActorFkCompany };
+        var existing = await _repo.GetUserAsync(selectInput, ct)
             ?? throw new ResourceNotFoundException("Employee not found.", $"IdUser={input.IdUser}");
 
         string plainPassword;

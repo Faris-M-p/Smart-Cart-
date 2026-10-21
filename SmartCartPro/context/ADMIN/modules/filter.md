@@ -3,45 +3,32 @@
 ## Module Overview
 - **Area:** ADMIN (shared)
 - **Module Name:** Filter
-- **Current Status:** `PARTIALLY IMPLEMENTED`
+- **Current Status:** `IMPLEMENTED`
 
 ## Purpose & Responsibilities
 CRM-style common endpoint to fill dropdowns/filters for screens (products, categories, subcategories).
 
 ## Implemented Features
-- `GET /Filter/GetFilterData?mode=&criteria=&search=&fk_Store=`
-- Mode 1 → `FillProduct` list
-- Mode 2 → `FillCategory` list
-- Mode 3 → `FillSubCategory` list (`criteria` = category id or empty = all)
-- EF Core + LINQ repository; typed `FilterDataResponse`
-
-## Filters / Search / Sorting
-- `FilterOptions.Search` optional contains-filter on name
-- Mode 3 criteria filters by `fk_category`
+- `GET /Filter/GetFilterData?mode=&criteria=&search=`
+- Mode 1 → products, 2 → categories, 3 → sub-categories (`criteria` = category id or empty = all)
+- EF Core + LINQ repository; typed `FilterDataResponse` wrapped in `CommonResponseModel`
 
 ## Data
-- **Single file:** `Models/FilterModels.cs`
-  - `FilterOptions` (input)
-  - `FilterDataResponse` (envelope)
-  - `FillProduct`, `FillCategory`, `FillSubCategory` (output rows: `ID_value`, `Name`)
-- Do **not** split these into separate class files
-
-## Database Dependencies
-- `products`, `categories`, `subcategories`
-- Access: `IFilterRepository` / `FilterRepository` via EF
+- **Single file:** `Models/FilterModels.cs` — `FilterOptions`, `FilterDataResponse`, `FillProduct`, `FillCategory`, `FillSubCategory`
 
 ## API & Data Access
-- Controller: `FilterController`
+| Method | Route | Permission | Module |
+|--------|-------|------------|--------|
+| GET | `/Filter/GetFilterData` | `products.view` | `PRODUCTS` |
+
+- Controller: `FilterController` (MVC, not `[ApiController]`)
 - Service: `IFilterService` / `FilterService`
 - Repository: `IFilterRepository` / `FilterRepository`
 
-## UI Rules & Conventions
-- Pages should call this API to populate `<select>` options instead of duplicating fill queries
-
 ## Business Rules
-- Every repo fill method receives `FilterOptions` (extensible)
-- Service validates mode, parses `Criteria` → `CategoryId`, composes `FilterDataResponse`
-- Repository does **not** parse criteria strings or host private parse helpers — only queries using prepared options
+- Service validates mode and parses `Criteria` → `CategoryId`
+- Repository does not parse criteria strings
+- Signed-in users without `products.view` receive 403
 
-## Dependencies & Related Modules
+## Dependencies
 - Catalog modules (`product.md`, `category.md`, `subcategory.md`)

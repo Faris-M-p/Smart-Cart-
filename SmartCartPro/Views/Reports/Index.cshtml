@@ -1,0 +1,43 @@
+@model SmartCartPro.Models.OutputReportIndex
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Reports</span></li>
+        <li class="breadcrumb-item active" aria-current="page">All reports</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Reports</h1>
+        <p class="text-muted mb-0">Sales, stock, tax, purchases and customers (@Model.Currency · @Model.TimeZoneId)</p>
+    </div>
+</div>
+
+<div class="row g-3 sc-report-cards">
+    @foreach (var card in Model.Cards)
+    {
+        var controller = string.IsNullOrWhiteSpace(card.ExternalController) ? "Reports" : card.ExternalController;
+        var action = string.IsNullOrWhiteSpace(card.ExternalAction) ? card.Action : card.ExternalAction;
+        <div class="col-sm-6 col-xl-4">
+            <a class="card border-0 shadow-sm h-100" asp-controller="@controller" asp-action="@action">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="rounded-3 bg-light p-2"><i class="bi @card.Icon fs-4" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 class="h6 mb-1">@card.Title</h2>
+                            <p class="text-muted small mb-0">@card.Description</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
+}

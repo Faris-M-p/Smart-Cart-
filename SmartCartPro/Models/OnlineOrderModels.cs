@@ -19,7 +19,9 @@ public sealed class InputOnlineOrderList
     public DateTime? To { get; set; }
     public string? Search { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; set; } = 25;
+    public string SortBy { get; set; } = "orderdate";
+    public bool SortDesc { get; set; } = true;
 }
 
 public sealed class OutputOnlineOrderListItem
@@ -42,6 +44,7 @@ public sealed class OutputOnlineOrderList
     public int Page { get; set; }
     public int PageSize { get; set; }
     public List<OutputOnlineOrderListItem> Items { get; set; } = new();
+    public InputOnlineOrderList Filter { get; set; } = new();
 }
 
 #endregion
@@ -51,6 +54,7 @@ public sealed class OutputOnlineOrderList
 public sealed class InputOnlineOrderSelect
 {
     public int IdOnlineOrder { get; set; }
+    public int? FkStore { get; set; }
 }
 
 public sealed class OutputOnlineOrderItem
@@ -72,6 +76,7 @@ public sealed class OutputOnlineOrderSelect
     public string StoreName { get; set; } = string.Empty;
     public int FkCustomer { get; set; }
     public string CustomerName { get; set; } = string.Empty;
+    public string? CustomerPhone { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public DateTime OrderDate { get; set; }
     public string Status { get; set; } = string.Empty;
@@ -83,8 +88,14 @@ public sealed class OutputOnlineOrderSelect
     public string? ShippingAddress { get; set; }
     public string? Notes { get; set; }
     public bool Cancelled { get; set; }
+    public DateTime? CancelledOn { get; set; }
     public string? CancelledReason { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    /// <summary>Next statuses the current status may move to. Empty when terminal.</summary>
+    public List<string> AllowedNextStatuses { get; set; } = new();
+    /// <summary>True when stock was already deducted (confirmed and later, until restored on cancel).</summary>
+    public bool StockWasDeducted { get; set; }
     public List<OutputOnlineOrderItem> Items { get; set; } = new();
 }
 
@@ -115,6 +126,7 @@ public sealed class InOnlineOrderStatusView
 public sealed class InputOnlineOrderStatusUpdate
 {
     public int IdOnlineOrder { get; set; }
+    public int? FkStore { get; set; }
     public string NewStatus { get; set; } = string.Empty;
     public string? Reason { get; set; }
     public int UpdatedBy { get; set; }

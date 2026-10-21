@@ -1,0 +1,57 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  color: #111;
+  background: #fff;
+}
+.sheet { margin: 0 auto; }
+.toolbar {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.toolbar a, .toolbar button {
+  font: inherit;
+  padding: 5px 12px;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.toolbar button.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.muted { color: #4b5563; }
+.center { text-align: center; }
+.strong { font-weight: 700; }
+.title { letter-spacing: .08em; font-size: 11px; margin-top: 6px; }
+.cancelled { color: #b91c1c; font-weight: 700; margin: 6px 0; }
+.rule { border-top: 1px dashed #111; margin: 8px 0; }
+.brand { font-weight: 700; font-size: 16px; }
+.meta { margin: 8px 0; font-size: 12px; }
+table.lines { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.lines th, table.lines td { padding: 3px 0; vertical-align: top; }
+table.lines thead th { border-bottom: 1px solid #111; text-align: left; }
+.num { text-align: right; white-space: nowrap; }
+.totals, .pays { margin-top: 8px; }
+.totals div, .pays div { display: flex; justify-content: space-between; padding: 2px 0; }
+.totals .grand { border-top: 1px solid #111; margin-top: 4px; padding-top: 6px; font-weight: 700; }
+.notes { margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.thanks { text-align: center; margin-top: 12px; font-weight: 600; }
+.printed { font-size: 11px; margin-top: 8px; }
+
+body.paper-80 .sheet { width: 72mm; padding: 4mm; font-size: 12px; }
+body.paper-a4 .sheet { max-width: 720px; padding: 24px; font-size: 13px; }
+
+@media print {
+  .toolbar { display: none; }
+  body.paper-80 { width: 80mm; }
+  body.paper-80 .sheet { width: 72mm; padding: 0; }
+}
+
+@page {
+  margin: 4mm;
+}

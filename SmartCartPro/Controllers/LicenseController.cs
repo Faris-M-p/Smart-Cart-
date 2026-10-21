@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -17,15 +16,17 @@ public class LicenseController : Controller
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
     /// <summary>
-    /// Displays the current platform license details and provides default values when no license exists.
-    /// Used by the Platform Super Admin to view and manage license settings.
+    /// Displays the platform license plan, status, dates, remaining days and usage against MaxStores.
+    /// Used by the Platform Super Admin to view and manage the installation license.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         var license = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
-        var view = license is not null
-            ? new InLicenseUpdateView
+        InLicenseUpdateView view;
+        if (license is not null)
+        {
+            view = new InLicenseUpdateView
             {
                 LicenseKey = license.LicenseKey,
                 LicenseType = license.LicenseType,
@@ -33,20 +34,32 @@ public class LicenseController : Controller
                 StartDate = license.StartDate,
                 ExpiryDate = license.ExpiryDate,
                 MaxStores = license.MaxStores,
-                Notes = license.Notes
-            }
-            : new InLicenseUpdateView
+                Notes = license.Notes,
+                ActiveStoreCount = license.ActiveStoreCount,
+                ActiveUserCount = license.ActiveUserCount,
+                DaysRemaining = license.DaysRemaining,
+                IsExpired = license.IsExpired,
+                HasLicense = true
+            };
+        }
+        else
+        {
+            var stores = await _svc.ListStoresAsync(new InputStoreList(), ct);
+            view = new InLicenseUpdateView
             {
                 StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                ExpiryDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
+                ExpiryDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)),
+                ActiveStoreCount = stores.CurrentStoreCount,
+                HasLicense = false
             };
+        }
 
         return View(view);
     }
 
     /// <summary>
-    /// Creates or updates the platform license key, type, dates, store limit, and status.
-    /// Used when the Platform Super Admin saves license settings from the license form.
+    /// Creates or updates the license key, plan, dates, store limit and notes.
+    /// Expiry must be on or after start; MaxStores cannot fall below current active store usage.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -67,74 +80,52 @@ public class LicenseController : Controller
             Notes = model.Notes
         };
         var result = await _svc.UpdateLicenseAsync(input, ct);
-
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to save license.", result.ResponseMsg ?? "Unable to save license.");
-
-        return CommonHelpers.SuccessResponse("License saved.", new { id = result.IdLicense });
+        return CommonHelpers.SuccessResponse(
+            "License saved.",
+            new { id = result.IdLicense, redirectUrl = Url.Action(nameof(Index)) });
     }
 
     /// <summary>
-    /// Suspends the active platform license so non–super-admin access is blocked.
-    /// Used when the Platform Super Admin temporarily disables the installation.
+    /// Suspends the license so LicenseGateFilter returns 403 for every non–super-admin request.
+    /// Platform Super Admin confirms with a written reason from the license page.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Suspend(CancellationToken ct)
+    public async Task<IActionResult> Suspend(InLicenseStatusView model, CancellationToken ct)
     {
-        var license = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
-        if (license is null)
-            throw new ResourceNotFoundException("No license found.");
+        CommonHelpers.ValidateModelState(ModelState);
 
-        var input = new InputLicenseUpdate
+        var input = new InputLicenseStatusUpdate
         {
             ActorUserId = ActorId,
-            CanEditLicense = true,
-            LicenseKey = license.LicenseKey,
-            LicenseType = license.LicenseType,
-            Status = (int)CommonModel.LicenseStatus.Suspended,
-            StartDate = license.StartDate,
-            ExpiryDate = license.ExpiryDate,
-            MaxStores = license.MaxStores,
-            Notes = license.Notes
+            Activate = false,
+            Reason = model.Reason
         };
-
-        var result = await _svc.UpdateLicenseAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to suspend license.", result.ResponseMsg ?? "Unable to suspend license.");
-
-        return CommonHelpers.SuccessResponse("License suspended.", new { id = result.IdLicense });
+        var result = await _svc.SetLicenseStatusAsync(input, ct);
+        return CommonHelpers.SuccessResponse(
+            "License suspended.",
+            new { id = result.IdLicense, redirectUrl = Url.Action(nameof(Index)) });
     }
 
     /// <summary>
-    /// Reactivates a suspended platform license and restores normal store operations.
-    /// Used when the Platform Super Admin re-enables a previously suspended installation.
+    /// Reactivates a suspended license. Expired dates still leave writes blocked until the expiry is extended.
+    /// Platform Super Admin confirms with a written reason from the license page.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Activate(CancellationToken ct)
+    public async Task<IActionResult> Activate(InLicenseStatusView model, CancellationToken ct)
     {
-        var license = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
-        if (license is null)
-            throw new ResourceNotFoundException("No license found.");
+        CommonHelpers.ValidateModelState(ModelState);
 
-        var input = new InputLicenseUpdate
+        var input = new InputLicenseStatusUpdate
         {
             ActorUserId = ActorId,
-            CanEditLicense = true,
-            LicenseKey = license.LicenseKey,
-            LicenseType = license.LicenseType,
-            Status = (int)CommonModel.LicenseStatus.Active,
-            StartDate = license.StartDate,
-            ExpiryDate = license.ExpiryDate,
-            MaxStores = license.MaxStores,
-            Notes = license.Notes
+            Activate = true,
+            Reason = model.Reason
         };
-
-        var result = await _svc.UpdateLicenseAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to activate license.", result.ResponseMsg ?? "Unable to activate license.");
-
-        return CommonHelpers.SuccessResponse("License activated.", new { id = result.IdLicense });
+        var result = await _svc.SetLicenseStatusAsync(input, ct);
+        return CommonHelpers.SuccessResponse(
+            "License activated.",
+            new { id = result.IdLicense, redirectUrl = Url.Action(nameof(Index)) });
     }
 }

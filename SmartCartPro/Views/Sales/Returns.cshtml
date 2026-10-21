@@ -1,16 +1,231 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputSalesReturnList
 @{
-    ViewData["Title"] = "Sales returns";
+    ViewData["Title"] = "Returns";
+    var canSell = await Access.CanAsync("pos.sell");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputSalesReturnList();
+    var fromText = f.From?.ToString("yyyy-MM-dd");
+    var toText = f.To?.ToString("yyyy-MM-dd");
+    var hasFilter = !string.IsNullOrWhiteSpace(f.Search)
+                    || !string.IsNullOrWhiteSpace(f.Status)
+                    || f.From is not null
+                    || f.To is not null;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Returns", new
+        {
+            Search = f.Search,
+            Status = f.Status,
+            From = fromText,
+            To = toText,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Returns",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["Status"] = f.Status,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
 }
-@await Html.PartialAsync("_PageHeader", (Title: "Sales returns", Subtitle: "Return against an original store invoice", ActionText: "New return", ActionUrl: "#"))
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead><tr><th>Return #</th><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
-                <tbody>
-                    <tr><td>RET-301</td><td>INV-1038</td><td>2026-10-13</td><td>₹ 499</td><td><span class="badge text-bg-success">Completed</span></td></tr>
-                </tbody>
-            </table>
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Returns</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Returns</h1>
+        <p class="text-muted mb-0">Returns against original store invoices</p>
+    </div>
+    @if (canSell)
+    {
+        <a class="btn btn-outline-primary" asp-action="Invoices">
+            <i class="bi bi-receipt me-1"></i>Invoices
+        </a>
+    }
+</div>
+
+<div id="returnListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Returns" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="returnSearch">Search</label>
+                    <input id="returnSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Return # or invoice #" autocomplete="off" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <label class="form-label" for="returnStatus">Status</label>
+                    <select id="returnStatus" name="Status" class="form-select" data-sc-auto-submit>
+                        @if (string.IsNullOrEmpty(f.Status))
+                        { <option value="" selected>All statuses</option> }
+                        else
+                        { <option value="">All statuses</option> }
+                        @if (f.Status == "completed")
+                        { <option value="completed" selected>Completed</option> }
+                        else
+                        { <option value="completed">Completed</option> }
+                        @if (f.Status == "cancelled")
+                        { <option value="cancelled" selected>Cancelled</option> }
+                        else
+                        { <option value="cancelled">Cancelled</option> }
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <label class="form-label" for="returnFrom">From</label>
+                    <input id="returnFrom" type="date" name="From" value="@fromText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <label class="form-label" for="returnTo">To</label>
+                    <input id="returnTo" type="date" name="To" value="@toText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <label class="form-label" for="returnPageSize">Page size</label>
+                    <select id="returnPageSize" name="PageSize" class="form-select" data-sc-auto-submit>
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            if (f.PageSize == size)
+                            { <option value="@size" selected>@size</option> }
+                            else
+                            { <option value="@size">@size</option> }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-4 d-flex gap-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                    @if (hasFilter)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Returns">Clear</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-arrow-counterclockwise display-5 text-muted" aria-hidden="true"></i>
+                    @if (hasFilter)
+                    {
+                        <p class="text-muted my-3">No returns match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Returns">Clear filters</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted my-3">No returns yet. Open a completed invoice to process a return.</p>
+                        @if (canSell)
+                        {
+                            <a class="btn btn-primary" asp-action="Invoices">
+                                <i class="bi bi-receipt me-1"></i>Open invoices
+                            </a>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("returnnumber")">
+                                        Return # <i class="bi @SortIcon("returnnumber")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("invoicenumber")">
+                                        Invoice <i class="bi @SortIcon("invoicenumber")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("returndate")">
+                                        Date <i class="bi @SortIcon("returndate")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("cashier")">
+                                        Cashier <i class="bi @SortIcon("cashier")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("totalamount")">
+                                        Amount <i class="bi @SortIcon("totalamount")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("status")">
+                                        Status <i class="bi @SortIcon("status")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr class="@(item.Status == "cancelled" ? "text-muted" : null)">
+                                <td class="fw-medium text-nowrap">
+                                    <a class="text-decoration-none" asp-action="ReturnDetails" asp-route-id="@item.IdSalesReturn">@item.ReturnNumber</a>
+                                </td>
+                                <td class="text-nowrap">
+                                    <a class="text-decoration-none" asp-action="InvoiceDetails" asp-route-id="@item.FkSale">@item.InvoiceNumber</a>
+                                </td>
+                                <td class="text-nowrap">
+                                    <time data-sc-utc="@TimeDisplay.Iso(item.ReturnDate)" data-sc-format="datetime">@item.ReturnDate.ToString("dd MMM yyyy HH:mm")</time>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(item.CashierName) ? "—" : item.CashierName)</td>
+                                <td class="text-end text-nowrap"><span data-sc-money="@Raw(item.TotalAmount)">@Money(item.TotalAmount)</span></td>
+                                <td><partial name="_ReturnStatusBadge" model="item.Status" /></td>
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="ReturnDetails" asp-route-id="@item.IdSalesReturn" title="View">
+                                        <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                <partial name="_Pager" model="pager" />
+            }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/sales/returns.js" asp-append-version="true"></script>
+}

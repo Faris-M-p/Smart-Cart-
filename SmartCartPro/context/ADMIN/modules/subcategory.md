@@ -49,6 +49,8 @@ Company-wide sub-categories, each belonging to exactly one category (`fk_categor
 ## UI Rules & Conventions
 - Views: `Views/SubCategory/SubCategories.cshtml`, `CreateSubCategory.cshtml`, `EditSubCategory.cshtml` (explicit `View("~/Views/SubCategory/…")` paths).
 - JS: `wwwroot/js/catalog/subcategory.js` (form submit + list busy state) on top of `wwwroot/js/sc-ajax.js`; activate/deactivate buttons use the declarative `data-sc-post` + `data-sc-confirm` hooks and reload with a toast.
+- Forms use `asp-action` + `method="post"`, so the form tag helper emits the antiforgery token; the views deliberately do **not** add `@Html.AntiForgeryToken()` as well (that would post the token twice). The activate/deactivate buttons on the list send the layout's page-wide token.
+- Sortable column headers show `bi-arrow-up` / `bi-arrow-down` (faint arrow when unsorted). The bundled Metis icon subset has no `bi-sort-up` or `bi-arrow-down-up`, so those would render blank.
 - The edit form lists active categories plus the current parent even when that parent is inactive (labelled "(inactive)"), so an unchanged record can always be saved.
 - Create form shows a warning with a link to Categories when no active category exists.
 

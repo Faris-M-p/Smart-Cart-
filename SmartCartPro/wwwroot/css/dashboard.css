@@ -1,0 +1,18 @@
+.sc-dash-kpi .card-body {
+  min-height: 6.25rem;
+}
+
+.sc-chart {
+  width: 100%;
+  min-height: 240px;
+}
+
+.sc-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sc-dash-actions .btn {
+  justify-content: flex-start;
+}

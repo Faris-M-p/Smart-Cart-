@@ -1,0 +1,114 @@
+@model SmartCartPro.Models.InRoleUpdateView
+@{
+    ViewData["Title"] = "Edit role";
+    var returnUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Role")!;
+    var permissions = ViewBag.Permissions as List<SmartCartPro.Models.OutputPermissionSelect> ?? new List<SmartCartPro.Models.OutputPermissionSelect>();
+    var selected = new HashSet<int>(Model.PermissionIds);
+    var locked = Model.IsLocked;
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Roles &amp; permissions</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(locked ? "View" : "Edit")</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@(locked ? "Role" : "Edit role")</h1>
+        <div class="text-muted">
+            <span class="fw-medium">@Model.RoleName</span>
+            <code class="ms-1">@Model.RoleCode</code>
+            <span class="ms-2"><partial name="_StatusBadge" model="Model.IsActive" /></span>
+            @if (Model.IsSystem)
+            {
+                <span class="badge text-bg-info ms-1">System role</span>
+            }
+        </div>
+    </div>
+    <div class="small text-muted">
+        <a asp-controller="Employee" asp-action="Index" asp-route-FkRole="@Model.IdRole">
+            @Model.UserCount @(Model.UserCount == 1 ? "employee holds" : "employees hold") this role
+        </a>
+    </div>
+</div>
+
+@if (locked)
+{
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-lock me-1"></i>
+        This built-in role is maintained by the platform administrator. You can review it here but not change it.
+    </div>
+}
+else if (Model.IsSystem)
+{
+    <div class="alert alert-secondary" role="alert">
+        <i class="bi bi-info-circle me-1"></i>
+        System roles cannot be deactivated or deleted, but their name, description and permissions can be adjusted.
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form id="roleForm"
+              asp-action="Edit"
+              asp-route-id="@Model.IdRole"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+            <input type="hidden" asp-for="IdRole" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="RoleName"></label>
+                    @if (locked)
+                    {
+                        <input class="form-control" id="RoleName" value="@Model.RoleName" readonly aria-readonly="true" />
+                    }
+                    else
+                    {
+                        <input class="form-control" asp-for="RoleName" maxlength="100" autocomplete="off" />
+                        <span asp-validation-for="RoleName" class="text-danger"></span>
+                    }
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="roleCodeDisplay">Role Code</label>
+                    <input class="form-control" id="roleCodeDisplay" value="@Model.RoleCode" readonly aria-readonly="true" />
+                    <div class="form-text">The code cannot be changed.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" asp-for="Description"></label>
+                    @if (locked)
+                    {
+                        <textarea class="form-control" id="Description" rows="2" readonly aria-readonly="true">@Model.Description</textarea>
+                    }
+                    else
+                    {
+                        <textarea class="form-control" asp-for="Description" rows="2" maxlength="500"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    }
+                </div>
+            </div>
+
+            <h2 class="h6 text-uppercase text-muted mb-3">Permissions</h2>
+            @await Html.PartialAsync("_PermissionMatrix", (Permissions: permissions, Selected: selected, ReadOnly: locked))
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                @if (!locked)
+                {
+                    <button type="submit" class="btn btn-primary" data-sc-busy-text="Saving…">Save changes</button>
+                }
+                <a class="btn btn-outline-secondary" href="@returnUrl">@(locked ? "Back" : "Cancel")</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/role.js" asp-append-version="true"></script>
+}

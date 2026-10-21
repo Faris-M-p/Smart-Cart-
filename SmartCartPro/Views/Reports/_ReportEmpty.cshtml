@@ -1,0 +1,4 @@
+@model string
+<div class="text-center py-5">
+    <p class="text-muted mb-0">@(string.IsNullOrWhiteSpace(Model) ? "No data for this range" : Model)</p>
+</div>

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using SmartCartPro.CustomModelValidation;
 
 namespace SmartCartPro.Models;
@@ -8,7 +9,10 @@ namespace SmartCartPro.Models;
 /// <summary>Criteria for the role and store pickers used by the employee list filters and forms.</summary>
 public sealed class InputUserOptionList
 {
-    /// <summary>Company whose stores are offered. Null or 0 = every store (platform super admin).</summary>
+    /// <summary>
+    /// Company whose stores are offered. Null or 0 = every store (platform super admin only);
+    /// a negative value means "no company" and offers no store.
+    /// </summary>
     public int? FkCompany { get; set; }
 }
 
@@ -58,6 +62,14 @@ public sealed class InputUserList
     public string SortBy { get; set; } = "fullname";
 
     public bool SortDesc { get; set; }
+
+    /// <summary>
+    /// Company of the signed-in actor (claim). Set by the controller and never bound from the query string.
+    /// Only employees with access to a store of this company are listed. Null or 0 = platform super admin
+    /// (every company); a negative value matches nothing.
+    /// </summary>
+    [BindNever]
+    public int? ActorFkCompany { get; set; }
 }
 
 public sealed class OutputUserList
@@ -76,6 +88,9 @@ public sealed class OutputUserList
 public sealed class InputUserSelect
 {
     public int IdUser { get; set; }
+
+    /// <summary>Company of the signed-in actor (claim). Employees outside it are not found. Null or 0 = platform super admin.</summary>
+    public int? ActorFkCompany { get; set; }
 }
 
 public sealed class OutputUserSelect
@@ -301,6 +316,7 @@ public sealed class OutputUserUpdate
 public sealed class InputUserStatusUpdate
 {
     public int ActorUserId { get; set; }
+    public int? ActorFkCompany { get; set; }
     public int IdUser { get; set; }
     public bool IsActive { get; set; }
 }
@@ -344,6 +360,7 @@ public sealed class InUserPasswordUpdateView : IValidatableObject
 public sealed class InputUserPasswordUpdate
 {
     public int ActorUserId { get; set; }
+    public int? ActorFkCompany { get; set; }
     public int IdUser { get; set; }
     public bool GeneratePassword { get; set; }
 

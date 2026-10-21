@@ -1,0 +1,162 @@
+@using System.Globalization
+@model SmartCartPro.Models.InSaleReturnView
+@{
+    ViewData["Title"] = "Return · " + Model.InvoiceNumber;
+    var remainingTotal = Model.Lines.Sum(l => l.RemainingQty);
+    var fullyReturned = remainingTotal <= 0;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+    string MoneyRaw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item"><a asp-action="Returns">Returns</a></li>
+        <li class="breadcrumb-item"><a asp-action="InvoiceDetails" asp-route-id="@Model.IdSale">@Model.InvoiceNumber</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Return</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Return items</h1>
+        <p class="text-muted mb-0">
+            Invoice <a asp-action="InvoiceDetails" asp-route-id="@Model.IdSale">@Model.InvoiceNumber</a>
+            · @(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in" : Model.CustomerName)
+            · <time data-sc-utc="@TimeDisplay.Iso(Model.SaleDate)" data-sc-format="datetime">@Model.SaleDate.ToString("dd MMM yyyy HH:mm")</time>
+            · Cashier @(string.IsNullOrWhiteSpace(Model.CashierName) ? "—" : Model.CashierName)
+        </p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="InvoiceDetails" asp-route-id="@Model.IdSale">
+        <i class="bi bi-arrow-left me-1"></i>Back to invoice
+    </a>
+</div>
+
+<div id="saleReturnPage">
+    @if (fullyReturned)
+    {
+        <div class="alert alert-info" role="alert">
+            Everything on this invoice has already been returned.
+        </div>
+    }
+
+    <div class="alert alert-warning" role="alert">
+        Stock is put back when you complete the return. Cash is not refunded automatically — handle the refund at the till.
+    </div>
+
+    <form id="saleReturnForm"
+          asp-action="Return"
+          asp-route-id="@Model.IdSale"
+          method="post"
+          data-sc-ajax-form="true"
+          novalidate>
+        @Html.AntiForgeryToken()
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        <input type="hidden" asp-for="IdSale" />
+        <input type="hidden" asp-for="InvoiceNumber" />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent">
+                <h2 class="h6 mb-0">Items</h2>
+            </div>
+            <div class="px-3 pt-2">
+                <span class="text-danger small d-block" asp-validation-for="Lines"></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Sold</th>
+                            <th class="text-end">Returned</th>
+                            <th class="text-end">Remaining</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end" style="width: 11rem;">Return qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Lines.Count; i++)
+                    {
+                        var line = Model.Lines[i];
+                        <tr data-remaining="@Raw(line.RemainingQty)">
+                            <td>
+                                <input type="hidden" asp-for="Lines[i].IdSaleDetail" />
+                                <input type="hidden" asp-for="Lines[i].FkProduct" />
+                                <input type="hidden" asp-for="Lines[i].FkProductVariant" />
+                                <input type="hidden" asp-for="Lines[i].ProductName" />
+                                <input type="hidden" asp-for="Lines[i].VariantName" />
+                                <input type="hidden" asp-for="Lines[i].Sku" />
+                                <input type="hidden" asp-for="Lines[i].OriginalQty" />
+                                <input type="hidden" asp-for="Lines[i].AlreadyReturnedQty" />
+                                <input type="hidden" asp-for="Lines[i].RemainingQty" />
+                                <input type="hidden" asp-for="Lines[i].MaxQty" />
+                                <input type="hidden" asp-for="Lines[i].UnitPrice" />
+                                <div class="fw-medium">@line.ProductName</div>
+                                <div class="small text-muted">
+                                    @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                    {
+                                        <span>@line.VariantName</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(line.VariantName) && !string.IsNullOrWhiteSpace(line.Sku))
+                                    {
+                                        <span> · </span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(line.Sku))
+                                    {
+                                        <span>@line.Sku</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end">@Qty(line.OriginalQty)</td>
+                            <td class="text-end">@Qty(line.AlreadyReturnedQty)</td>
+                            <td class="text-end fw-medium">@Qty(line.RemainingQty)</td>
+                            <td class="text-end text-nowrap"><span data-sc-money="@MoneyRaw(line.UnitPrice)">@Money(line.UnitPrice)</span></td>
+                            <td class="text-end">
+                                @if (line.RemainingQty > 0)
+                                {
+                                    <input asp-for="Lines[i].ReturnQty"
+                                           class="form-control form-control-sm text-end"
+                                           data-return-qty="true"
+                                           min="0" max="@Raw(line.RemainingQty)" step="0.001" inputmode="decimal" />
+                                    <span asp-validation-for="Lines[i].ReturnQty" class="text-danger small d-block text-start"></span>
+                                }
+                                else
+                                {
+                                    <input type="hidden" asp-for="Lines[i].ReturnQty" />
+                                    <span class="badge text-bg-secondary">Fully returned</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Reason"></label>
+                    <textarea asp-for="Reason" class="form-control" rows="3" maxlength="500"
+                              placeholder="Why is this being returned?"></textarea>
+                    <span asp-validation-for="Reason" class="text-danger small"></span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary" id="saleReturnSubmit" disabled
+                            data-sc-busy-text="Saving…">
+                        Complete return
+                    </button>
+                    <a class="btn btn-outline-secondary" asp-action="InvoiceDetails" asp-route-id="@Model.IdSale">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/sales/returns.js" asp-append-version="true"></script>
+}

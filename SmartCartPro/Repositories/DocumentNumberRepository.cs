@@ -13,7 +13,11 @@ public class DocumentNumberRepository : IDocumentNumberRepository
 
     public async Task<string> NextAsync(int storeId, string sequenceType, CancellationToken ct = default)
     {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        // Join the caller's transaction when there is one (sale / return / GRN flows already run inside one and
+        // EF Core refuses a second BeginTransaction on the same context). The row lock from FOR UPDATE is then
+        // held until the caller commits, so a rolled-back document also rolls back its number (no gaps).
+        var ownsTransaction = _db.Database.CurrentTransaction is null;
+        await using var tx = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
 
         var seq = await _db.InvoiceSequences
             .FromSqlRaw(
@@ -42,7 +46,8 @@ public class DocumentNumberRepository : IDocumentNumberRepository
         seq.NextNumber++;
         seq.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+        if (ownsTransaction)
+            await tx!.CommitAsync(ct);
 
         var numericPart = current.ToString().PadLeft(seq.Padding, '0');
         return string.IsNullOrEmpty(seq.Prefix)

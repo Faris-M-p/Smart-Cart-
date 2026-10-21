@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SmartCartPro.Configuration;
-using SmartCartPro.Dapper;
-using SmartCartPro.Dapper.Interfaces;
 using SmartCartPro.Data;
 using SmartCartPro.Entities;
 using SmartCartPro.Filters;
@@ -61,11 +59,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuditRepository, AuditRepository>();
         services.AddScoped<IAuditService, AuditService>();
 
-        // ── Phase 7: Reports ──────────────────────────────────────
+        // ── Phase 7: Reports + dashboard ──────────────────────────
+        services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<IReportService, ReportService>();
-
-        // Optional Dapper (reports / justified queries only)
-        services.AddScoped<IProductReportRepository, ProductReportRepository>();
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         // Common filter / dropdown fills (EF LINQ)
         services.AddScoped<IFilterRepository, FilterRepository>();
@@ -141,6 +139,7 @@ public static class ServiceCollectionExtensions
         // LicenseGateFilter is registered as scoped so it can use ICompanyService.
         // IMemoryCache (AddMemoryCache) must be registered before calling this.
         services.AddScoped<LicenseGateFilter>();
+        services.AddScoped<ActiveUserFilter>();
         return services;
     }
 

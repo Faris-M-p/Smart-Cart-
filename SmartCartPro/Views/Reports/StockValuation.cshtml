@@ -1,0 +1,168 @@
+@model SmartCartPro.Models.OutputReportStockValuation
+@{
+    ViewData["Title"] = "Stock valuation";
+    var f = Model.Filter;
+    var csvUrl = Url.Action("StockValuationCsv", new { f.FkStore, f.FkCategory, f.IncludeZeroNegative });
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a asp-action="Index">Reports</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Stock valuation</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Stock valuation</h1>
+        <p class="text-muted mb-0">@Model.CostBasisNote</p>
+    </div>
+    <div class="sc-report-actions d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-sc-print><i class="bi bi-printer me-1"></i>Print</button>
+        <a class="btn btn-outline-primary" href="@csvUrl"><i class="bi bi-download me-1"></i>CSV</a>
+    </div>
+</div>
+
+<div data-sc-report>
+    <form method="get" asp-action="StockValuation" class="row g-2 align-items-end mb-3 sc-report-filters">
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="valCat">Category</label>
+            <select id="valCat" name="FkCategory" class="form-select" data-sc-auto-submit>
+                @if (f.FkCategory == 0)
+                {
+                    <option value="0" selected>All categories</option>
+                }
+                else
+                {
+                    <option value="0">All categories</option>
+                }
+                @foreach (var cat in Model.Categories)
+                {
+                    if (cat.IdCategory == f.FkCategory)
+                    {
+                        <option value="@cat.IdCategory" selected>@cat.CategoryName</option>
+                    }
+                    else
+                    {
+                        <option value="@cat.IdCategory">@cat.CategoryName</option>
+                    }
+                }
+            </select>
+        </div>
+        @if (Model.ShowStorePicker)
+        {
+            <div class="col-6 col-md-3">
+                <label class="form-label" for="valStore">Store</label>
+                <select id="valStore" name="FkStore" class="form-select" data-sc-auto-submit>
+                    @if (f.FkStore == 0)
+                    {
+                        <option value="0" selected>All stores</option>
+                    }
+                    else
+                    {
+                        <option value="0">All stores</option>
+                    }
+                    @foreach (var store in Model.Stores)
+                    {
+                        if (store.IdStore == f.FkStore)
+                        {
+                            <option value="@store.IdStore" selected>@store.StoreName</option>
+                        }
+                        else
+                        {
+                            <option value="@store.IdStore">@store.StoreName</option>
+                        }
+                    }
+                </select>
+            </div>
+        }
+        <div class="col-12 col-md-4">
+            <div class="form-check mt-4">
+                <input type="hidden" name="IncludeZeroNegative" value="false" />
+                <input class="form-check-input" type="checkbox" name="IncludeZeroNegative" value="true" id="valZero" checked="@f.IncludeZeroNegative" />
+                <label class="form-check-label" for="valZero">Include zero and negative stock</label>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+        </div>
+    </form>
+
+    <partial name="_ReportKpis" model="Model.Kpis" />
+
+    @if (Model.CategoryTotals.Count > 0)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h2 class="h6 mb-0">Category subtotals</h2>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead><tr><th>Category</th><th class="text-end">On hand</th><th class="text-end">Value</th></tr></thead>
+                        <tbody>
+                        @foreach (var group in Model.CategoryTotals)
+                        {
+                            <tr>
+                                <td>@group.CategoryName</td>
+                                <td class="text-end">@group.QuantityOnHand.ToString("0.###")</td>
+                                <td class="text-end">@Model.Currency @group.StockValue.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @if (Model.Rows.Count == 0)
+            {
+                <partial name="_ReportEmpty" model='"No stock to value"' />
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Code</th>
+                                <th>Category</th>
+                                <th>Store</th>
+                                <th class="text-end">On hand</th>
+                                <th class="text-end">Unit cost</th>
+                                <th class="text-end">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td class="fw-medium">@row.ProductName</td>
+                                <td>@(string.IsNullOrWhiteSpace(row.ProductCode) ? "—" : row.ProductCode)</td>
+                                <td>@row.CategoryName</td>
+                                <td>@(string.IsNullOrWhiteSpace(row.StoreName) ? "—" : row.StoreName)</td>
+                                <td class="text-end">@row.QuantityOnHand.ToString("0.###")</td>
+                                <td class="text-end">@Model.Currency @row.UnitCost.ToString("N2")</td>
+                                <td class="text-end">@Model.Currency @row.StockValue.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            <p class="small text-muted mt-3 mb-0">@Model.CostBasisNote</p>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
+}
+@section Scripts {
+    <script src="~/js/sc-charts.js" asp-append-version="true"></script>
+    <script src="~/js/reports/reports.js" asp-append-version="true"></script>
+}

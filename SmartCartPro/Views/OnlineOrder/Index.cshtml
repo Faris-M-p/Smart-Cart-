@@ -1,0 +1,205 @@
+@using System.Globalization
+@model OutputOnlineOrderList
+@{
+    ViewData["Title"] = "Online orders";
+    var f = Model.Filter ?? new InputOnlineOrderList();
+    var fromText = f.From?.ToString("yyyy-MM-dd");
+    var toText = f.To?.ToString("yyyy-MM-dd");
+    var hasFilter = !string.IsNullOrWhiteSpace(f.Search)
+                    || !string.IsNullOrWhiteSpace(f.Status)
+                    || f.From is not null
+                    || f.To is not null;
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("All statuses", "", string.IsNullOrEmpty(f.Status)),
+        new("Pending", "pending", f.Status == "pending"),
+        new("Confirmed", "confirmed", f.Status == "confirmed"),
+        new("Packed", "packed", f.Status == "packed"),
+        new("Shipped", "shipped", f.Status == "shipped"),
+        new("Delivered", "delivered", f.Status == "delivered"),
+        new("Cancelled", "cancelled", f.Status == "cancelled")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var pageHeader = (
+        Title: "Online orders",
+        Subtitle: "Storefront orders for this store — confirm, pack, ship and deliver",
+        ActionText: (string?)null,
+        ActionUrl: (string?)null);
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            Status = f.Status,
+            From = fromText,
+            To = toText,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["Status"] = f.Status,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Online orders</li>
+    </ol>
+</nav>
+
+<partial name="_PageHeader" model="pageHeader" />
+
+<div id="onlineOrderListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="orderSearch">Search</label>
+                    <input id="orderSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Order number or customer" autocomplete="off" />
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label" for="orderStatus">Status</label>
+                    <select id="orderStatus" name="Status" class="form-select" asp-items="statusItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="orderFrom">From</label>
+                    <input id="orderFrom" type="date" name="From" value="@fromText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="orderTo">To</label>
+                    <input id="orderTo" type="date" name="To" value="@toText" class="form-control" />
+                </div>
+                <div class="col-lg-1 col-md-4 col-6">
+                    <label class="form-label" for="orderPageSize">Page size</label>
+                    <select id="orderPageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-lg-2 col-md-4 col-6 d-flex gap-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                    @if (hasFilter)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-bag display-5 text-muted" aria-hidden="true"></i>
+                    @if (hasFilter)
+                    {
+                        <p class="text-muted my-3">No online orders match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear filters</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted my-3">No online orders yet.</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("ordernumber")">
+                                        Order # <i class="bi @SortIcon("ordernumber")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("orderdate")">
+                                        Date <i class="bi @SortIcon("orderdate")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("customername")">
+                                        Customer <i class="bi @SortIcon("customername")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("totalamount")">
+                                        Total <i class="bi @SortIcon("totalamount")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("status")">
+                                        Status <i class="bi @SortIcon("status")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr class="@(item.Cancelled ? "text-muted" : null)">
+                                <td class="fw-medium text-nowrap">
+                                    <a class="text-decoration-none" asp-action="Details" asp-route-id="@item.IdOnlineOrder">@item.OrderNumber</a>
+                                </td>
+                                <td class="text-nowrap">
+                                    <time data-sc-utc="@TimeDisplay.Iso(item.OrderDate)" data-sc-format="datetime">@item.OrderDate.ToString("dd MMM yyyy HH:mm")</time>
+                                </td>
+                                <td>@item.CustomerName</td>
+                                <td class="text-end text-nowrap"><span data-sc-money="@Raw(item.TotalAmount)">@Money(item.TotalAmount)</span></td>
+                                <td><partial name="_OnlineOrderStatusBadge" model="item.Status" /></td>
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@item.IdOnlineOrder" title="View">
+                                        <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/orders/online-order.js" asp-append-version="true"></script>
+}

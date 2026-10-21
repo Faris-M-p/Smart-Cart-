@@ -1,0 +1,131 @@
+@model SmartCartPro.Models.OutputReportPurchases
+@{
+    ViewData["Title"] = "Purchase report";
+    var f = Model.Filter;
+    var invariant = System.Globalization.CultureInfo.InvariantCulture;
+    var fromText = f.DateFrom?.ToString("yyyy-MM-dd", invariant);
+    var toText = f.DateTo?.ToString("yyyy-MM-dd", invariant);
+    var chartJson = System.Text.Json.JsonSerializer.Serialize(Model.Chart);
+    var csvUrl = Url.Action("PurchasesCsv", new { f.DateFrom, f.DateTo, f.FkStore, f.ExcludeCancelled });
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a asp-action="Index">Reports</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Purchases</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Purchase report</h1>
+        <p class="text-muted mb-0">Ordered versus received by supplier. Calendar dates use @Model.TimeZoneId.</p>
+    </div>
+    <div class="sc-report-actions d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-sc-print><i class="bi bi-printer me-1"></i>Print</button>
+        <a class="btn btn-outline-primary" href="@csvUrl"><i class="bi bi-download me-1"></i>CSV</a>
+    </div>
+</div>
+
+<div data-sc-report>
+    <form method="get" asp-action="Purchases" class="row g-2 align-items-end mb-3 sc-report-filters">
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="poFrom">From</label>
+            <input id="poFrom" type="date" name="DateFrom" value="@fromText" class="form-control" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="poTo">To</label>
+            <input id="poTo" type="date" name="DateTo" value="@toText" class="form-control" />
+        </div>
+        @if (Model.ShowStorePicker)
+        {
+            <div class="col-6 col-md-3 col-lg-3">
+                <label class="form-label" for="poStore">Store</label>
+                <select id="poStore" name="FkStore" class="form-select" data-sc-auto-submit>
+                    @if (f.FkStore == 0)
+                    {
+                        <option value="0" selected>All stores</option>
+                    }
+                    else
+                    {
+                        <option value="0">All stores</option>
+                    }
+                    @foreach (var store in Model.Stores)
+                    {
+                        if (store.IdStore == f.FkStore)
+                        {
+                            <option value="@store.IdStore" selected>@store.StoreName</option>
+                        }
+                        else
+                        {
+                            <option value="@store.IdStore">@store.StoreName</option>
+                        }
+                    }
+                </select>
+            </div>
+        }
+        <div class="col-12 col-md-4 col-lg-3">
+            <div class="form-check mt-4">
+                <input type="hidden" name="ExcludeCancelled" value="false" />
+                <input class="form-check-input" type="checkbox" name="ExcludeCancelled" value="true" id="poExclude" checked="@f.ExcludeCancelled" />
+                <label class="form-check-label" for="poExclude">Exclude cancelled</label>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+        </div>
+    </form>
+
+    <partial name="_ReportKpis" model="Model.Kpis" />
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div data-sc-chart="bars" data-sc-chart-title="Ordered amount" data-sc-chart-json="@chartJson"></div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @if (Model.Rows.Count == 0)
+            {
+                <partial name="_ReportEmpty" model='"No purchases in this range"' />
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Supplier</th>
+                                <th class="text-end">Orders</th>
+                                <th class="text-end">Ordered qty</th>
+                                <th class="text-end">Received qty</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td class="fw-medium">@row.SupplierName</td>
+                                <td class="text-end">@row.PurchaseCount</td>
+                                <td class="text-end">@row.OrderedQty.ToString("0.###")</td>
+                                <td class="text-end">@row.ReceivedQty.ToString("0.###")</td>
+                                <td class="text-end">@Model.Currency @row.OrderedAmount.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
+}
+@section Scripts {
+    <script src="~/js/sc-charts.js" asp-append-version="true"></script>
+    <script src="~/js/reports/reports.js" asp-append-version="true"></script>
+}

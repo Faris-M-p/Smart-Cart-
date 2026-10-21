@@ -1,42 +1,64 @@
-# Product Reviews — Phase 7
+# Admin Module — Product Reviews
 
-## Status
-IMPLEMENTED (Phase 7) — admin moderation only; customer-facing submission is service-only (no MVC view yet).
+## Module Name & Area
+- **Area:** ADMIN
+- **Module Name:** Product reviews
+- **Current Status:** `IMPLEMENTED` — admin moderation; customer-facing submit/delete remain service-only (no MVC view)
 
-## Table
-`product_reviews` (with Phase 7 patch column `fk_onlineorderitem`)
+## Purpose & Responsibilities
+Moderate customer product reviews. New reviews start unapproved. Approve makes them visible; Hide sets `isapproved = false` (row stays).
 
-## Business Rules
-1. **Purchase required**: Customer must have a `fk_onlineorderitem` belonging to one of their orders.
-2. **One per order item**: Unique constraint `(fk_customer, fk_onlineorderitem)` (partial, where `fk_onlineorderitem IS NOT NULL`).
-3. **Edit/delete window**: Only within 7 days of the order's `orderdate`.
-4. **Admin hide**: Sets `isapproved = false` (review remains in DB, hidden from public).
-5. New reviews are `isapproved = false` by default (pending moderation).
+## Implemented Features
+- Index filters: status (pending/approved), rating 1–5, search, date range, sort, pager
+- Approve / Hide via AJAX (`data-sc-post` + antiforgery)
+- Star display with Bootstrap Icons (`bi-star` / `bi-star-fill`)
+- Created timestamps via `TimeDisplay.Iso` + `data-sc-utc`
+- JSON list/hide endpoints return `CommonResponseModel`
 
-## SQL Patch
-`Database-Postgres/03_Patches/V007__Phase7OnlineOrders.sql`
-Adds `fk_onlineorderitem INT NULL` + FK + unique partial index.
+## Filters / Search / Sorting
+- `Status` (`pending` / `approved` / all), `Rating`, `Search`, `From`, `To`, `SortBy`, `SortDesc`, `Page`, `PageSize`
+- Search: product name, customer name, title, review text
+- Sort: `createdat` (default desc), `rating`, `productname`, `customername`, `isapproved`
 
-## Files
-| Layer | File |
-|---|---|
-| Entity | `Entities/ProductReview.cs` |
-| Models | `Models/ProductReviewModels.cs` |
-| Repository interface | `Repositories/Interfaces/IProductReviewRepository.cs` |
-| Repository impl | `Repositories/ProductReviewRepository.cs` |
-| Service interface | `Services/Interfaces/IProductReviewService.cs` |
-| Service impl | `Services/ProductReviewService.cs` |
-| Admin controller | `Controllers/ProductReviewController.cs` |
+## Data
+- Create/delete models unchanged for the future portal (`InProductReviewCreateView`, `InputProductReviewCreate`, `InputProductReviewDelete`, …)
+- `InputProductReviewList` / `OutputProductReviewList` / `OutputProductReviewListItem`
+- `InputProductReviewHide` / `OutputProductReviewHide`
+- Entity `ProductReview` stays in the repository
 
-## Admin Endpoints
+## Database Dependencies
+- `product_reviews` (optional `fk_onlineorderitem` from V007)
+- Purchase-required and one-review-per-order-item rules stay in `CreateReviewAsync`
+
+## API & Data Access
 | Method | Route | Permission | Description |
 |---|---|---|---|
-| GET | `/ProductReview` | products.manage | Paginated list with filters |
-| GET | `/ProductReview/ListJson` | products.manage | JSON list |
-| POST | `/ProductReview/Hide/{id}` | products.manage | Set isapproved = false |
+| GET | `/ProductReview` | products.manage | Paged moderation list |
+| GET | `/ProductReview/ListJson` | products.manage | AJAX envelope list |
 | POST | `/ProductReview/Approve/{id}` | products.manage | Set isapproved = true |
-| POST | `/ProductReview/HideJson` | products.manage | JSON hide/approve toggle |
+| POST | `/ProductReview/Hide/{id}` | products.manage | Set isapproved = false |
+| POST | `/ProductReview/HideJson` | products.manage | JSON toggle (`IsApproved`) |
 
-## Customer Service Methods (no view — callable from future portal)
-- `IProductReviewService.CreateReviewAsync` — submit review
-- `IProductReviewService.DeleteReviewAsync` — soft-cancel within 7-day window
+Controller: `[ModuleAccess("PRODUCTS")]`. Mutating POSTs have `[ValidateAntiForgeryToken]`.
+
+Customer service methods (no admin view):
+- `CreateReviewAsync` — submit (pending)
+- `DeleteReviewAsync` — soft-cancel within 7 days of order date
+
+## UI Rules & Conventions
+- Category-style list; `wwwroot/js/reviews/reviews.js`
+- Stars: `bi-star-fill text-warning` for filled, `bi-star text-muted` for empty
+- Dates: `<time data-sc-utc="…" data-sc-format="datetime">`
+
+## Business Rules
+1. Purchase required (order item owned by the customer)
+2. One review per `(fk_customer, fk_onlineorderitem)`
+3. Customer delete only within 7 days of `orderdate`
+4. Admin hide = `isapproved = false` (not a hard delete)
+5. New reviews `isapproved = false`
+
+## Dependencies & Related Modules
+- `product.md`, `customers.md`, `online-orders.md`
+
+## Notes
+- Pending and hidden both use `isapproved = false`; the list Status filter cannot tell them apart.

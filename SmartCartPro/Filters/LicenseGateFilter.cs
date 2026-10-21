@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Caching.Memory;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
+using SmartCartPro.Services;
 using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Filters;
@@ -19,7 +20,6 @@ namespace SmartCartPro.Filters;
 /// </summary>
 public sealed class LicenseGateFilter : IAsyncActionFilter
 {
-    private const string CacheKey = "smartcart:license:status";
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
 
     private readonly ICompanyService _companySvc;
@@ -96,7 +96,7 @@ public sealed class LicenseGateFilter : IAsyncActionFilter
 
     private async Task<OutputLicenseSelect?> GetLicenseAsync(CancellationToken ct)
     {
-        if (_cache.TryGetValue<OutputLicenseSelect>(CacheKey, out var cached))
+        if (_cache.TryGetValue<OutputLicenseSelect>(CompanyService.LicenseStatusCacheKey, out var cached))
         {
             return cached;
         }
@@ -104,7 +104,7 @@ public sealed class LicenseGateFilter : IAsyncActionFilter
         var lic = await _companySvc.GetLicenseAsync(new InputLicenseSelect(), ct);
         if (lic is not null)
         {
-            _cache.Set(CacheKey, lic, CacheTtl);
+            _cache.Set(CompanyService.LicenseStatusCacheKey, lic, CacheTtl);
         }
 
         return lic;

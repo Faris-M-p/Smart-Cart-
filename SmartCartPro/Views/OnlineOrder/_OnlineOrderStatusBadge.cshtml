@@ -1,0 +1,15 @@
+@model string
+@{
+    var status = (Model ?? string.Empty).ToLowerInvariant();
+    var (css, label) = status switch
+    {
+        "pending" => ("text-bg-warning", "Pending"),
+        "confirmed" => ("text-bg-primary", "Confirmed"),
+        "packed" => ("text-bg-info", "Packed"),
+        "shipped" => ("text-bg-primary", "Shipped"),
+        "delivered" => ("text-bg-success", "Delivered"),
+        "cancelled" => ("text-bg-danger", "Cancelled"),
+        _ => ("text-bg-light border", string.IsNullOrWhiteSpace(Model) ? "—" : Model)
+    };
+}
+<span class="badge @css" data-sc-status-badge>@label</span>

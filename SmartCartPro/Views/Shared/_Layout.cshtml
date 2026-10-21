@@ -3,12 +3,34 @@
     ViewData["MetisMode"] = "admin";
     var title = ViewData["Title"] as string ?? "SmartCart Pro";
     var isPlatform = AuthClaims.IsPlatformSuperAdminUser(User);
-    var storeName = isPlatform ? "Platform" : (AuthClaims.GetStoreName(User) ?? "Store");
-    var fkStore = AuthClaims.GetFkStore(User);
-    string Nav(string ctrl, string act = "Index") =>
-        string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), ctrl, StringComparison.OrdinalIgnoreCase)
-        && string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), act, StringComparison.OrdinalIgnoreCase)
-            ? "nav-link active" : "nav-link";
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var act = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string Nav(string controller, string? action = null)
+    {
+        var match = string.Equals(ctrl, controller, StringComparison.OrdinalIgnoreCase)
+                    && (action is null || string.Equals(act, action, StringComparison.OrdinalIgnoreCase));
+        return match ? "nav-link active" : "nav-link";
+    }
+
+    string NavAny(string controller, params string[] actions)
+    {
+        var match = string.Equals(ctrl, controller, StringComparison.OrdinalIgnoreCase)
+                    && actions.Any(a => string.Equals(act, a, StringComparison.OrdinalIgnoreCase));
+        return match ? "nav-link active" : "nav-link";
+    }
+
+    var showCatalog = await Access.ModuleEnabledAsync("PRODUCTS") && await Access.CanAsync("products.view");
+    var showPurchases = await Access.ModuleEnabledAsync("PURCHASES")
+                        && await Access.CanAnyAsync(new[] { "purchases.view", "purchases.manage" });
+    var showInventory = await Access.ModuleEnabledAsync("INVENTORY")
+                        && await Access.CanAnyAsync(new[] { "inventory.view", "inventory.adjust" });
+    var showPos = await Access.ModuleEnabledAsync("POS")
+                  && await Access.CanAnyAsync(new[] { "pos.sell", "pos.return", "pos.cancel" });
+    var showCustomers = await Access.ModuleEnabledAsync("CUSTOMERS") && await Access.CanAsync("customers.view");
+    var showReports = await Access.ModuleEnabledAsync("REPORTS") && await Access.CanAsync("reports.view");
+    var showUsers = await Access.ModuleEnabledAsync("USERS") && await Access.CanAsync("users.manage");
+    var showSettings = await Access.ModuleEnabledAsync("SETTINGS") && await Access.CanAsync("settings.manage");
 }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -23,7 +45,6 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body data-page="dashboard" class="admin-layout" data-sc-login-url="@Url.Action("Login", "Auth")">
-@* Page-wide antiforgery token: SmartCartAjax reads it for any AJAX POST, even on pages without a form. *@
 @Html.AntiForgeryToken()
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="admin-app">
@@ -40,15 +61,13 @@
                     <i class="bi bi-list"></i>
                 </button>
             </div>
-            <div class="search-container d-none d-lg-block">
-                <div class="position-relative">
-                    <input type="search" class="form-control" placeholder="Search products, invoices, customers…" aria-label="Search" />
-                    <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
-                </div>
-            </div>
-            <div class="admin-header-end navbar-nav flex-row align-items-center">
-                <span class="badge text-bg-light border me-2 d-none d-lg-inline" title="@(isPlatform ? "platform" : $"fk_store={fkStore}")">@(isPlatform ? "Super Admin" : $"Store: {storeName}")</span>
-                <a class="btn btn-outline-secondary btn-sm me-2 d-none d-md-inline-flex" asp-controller="Auth" asp-action="ChangePassword">Password</a>
+            <div class="admin-header-end navbar-nav flex-row align-items-center gap-2">
+                @await Component.InvokeAsync("StoreSwitcher")
+                @if (isPlatform)
+                {
+                    <span class="badge text-bg-light border d-none d-lg-inline" title="platform">Super Admin</span>
+                }
+                <a class="btn btn-outline-secondary btn-sm d-none d-md-inline-flex" asp-controller="Auth" asp-action="ChangePassword">Password</a>
                 <a class="btn btn-outline-secondary btn-sm" asp-controller="Auth" asp-action="LogoutGet">Sign out</a>
             </div>
         </div>
@@ -65,115 +84,251 @@
                     </a>
                 </li>
 
-                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Catalog</small></li>
-                <li class="nav-item">
-                    <a class="@Nav("Catalog","Categories")" asp-controller="Catalog" asp-action="Categories">
-                        <i class="bi bi-folder"></i><span>Categories</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Catalog","Brands")" asp-controller="Catalog" asp-action="Brands">
-                        <i class="bi bi-tags"></i><span>Brands</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Catalog","Products")" asp-controller="Catalog" asp-action="Products">
-                        <i class="bi bi-box"></i><span>Products</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Catalog","Variants")" asp-controller="Catalog" asp-action="Variants">
-                        <i class="bi bi-upc"></i><span>SKU / Variants</span>
-                    </a>
-                </li>
+                @if (showCatalog)
+                {
+                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Catalog</small></li>
+                    <li class="nav-item">
+                        <a class="@Nav("Catalog", "Categories")" asp-controller="Catalog" asp-action="Categories">
+                            <i class="bi bi-folder"></i><span>Categories</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Catalog", "SubCategories")" asp-controller="Catalog" asp-action="SubCategories">
+                            <i class="bi bi-diagram-3"></i><span>Sub-categories</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Catalog", "Brands")" asp-controller="Catalog" asp-action="Brands">
+                            <i class="bi bi-bookmark"></i><span>Brands</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Catalog", "Units")" asp-controller="Catalog" asp-action="Units">
+                            <i class="bi bi-rulers"></i><span>Units</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Catalog", "Taxes")" asp-controller="Catalog" asp-action="Taxes">
+                            <i class="bi bi-percent"></i><span>Taxes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@NavAny("Product", "Index", "Create", "Edit", "Details")" asp-controller="Product" asp-action="Index">
+                            <i class="bi bi-box"></i><span>Products</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@NavAny("Product", "Variants", "CreateVariant", "EditVariant")" asp-controller="Product" asp-action="Variants">
+                            <i class="bi bi-upc-scan"></i><span>SKU / Variants</span>
+                        </a>
+                    </li>
+                    @if (await Access.CanAsync("products.manage"))
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("ProductReview")" asp-controller="ProductReview" asp-action="Index">
+                                <i class="bi bi-star"></i><span>Reviews</span>
+                            </a>
+                        </li>
+                    }
+                }
 
-                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Purchase &amp; stock</small></li>
-                <li class="nav-item">
-                    <a class="@Nav("Inventory","Suppliers")" asp-controller="Inventory" asp-action="Suppliers">
-                        <i class="bi bi-truck"></i><span>Suppliers</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Inventory","Purchases")" asp-controller="Inventory" asp-action="Purchases">
-                        <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Inventory","Stock")" asp-controller="Inventory" asp-action="Stock">
-                        <i class="bi bi-stack"></i><span>Inventory</span>
-                    </a>
-                </li>
+                @if (showPurchases || showInventory)
+                {
+                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Purchase &amp; stock</small></li>
+                    @if (showPurchases)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Supplier")" asp-controller="Supplier" asp-action="Index">
+                                <i class="bi bi-truck"></i><span>Suppliers</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Purchase")" asp-controller="Purchase" asp-action="Index">
+                                <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showInventory)
+                    {
+                        <li class="nav-item">
+                            <a class="@NavAny("Inventory", "Stock", "Index")" asp-controller="Inventory" asp-action="Stock">
+                                <i class="bi bi-boxes"></i><span>Stock</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Inventory", "LowStock")" asp-controller="Inventory" asp-action="LowStock">
+                                <i class="bi bi-exclamation-triangle"></i><span>Low stock</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Inventory", "History")" asp-controller="Inventory" asp-action="History">
+                                <i class="bi bi-clock-history"></i><span>Stock history</span>
+                            </a>
+                        </li>
+                        @if (await Access.CanAsync("inventory.adjust"))
+                        {
+                            <li class="nav-item">
+                                <a class="@Nav("Inventory", "Opening")" asp-controller="Inventory" asp-action="Opening">
+                                    <i class="bi bi-box-arrow-in-down"></i><span>Opening stock</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="@Nav("Inventory", "Adjust")" asp-controller="Inventory" asp-action="Adjust">
+                                    <i class="bi bi-sliders"></i><span>Adjust stock</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="@Nav("Inventory", "Transfer")" asp-controller="Inventory" asp-action="Transfer">
+                                    <i class="bi bi-arrow-left-right"></i><span>Transfer</span>
+                                </a>
+                            </li>
+                        }
+                    }
+                }
 
-                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Sales</small></li>
-                <li class="nav-item">
-                    <a class="@Nav("Sales","Pos")" asp-controller="Sales" asp-action="Pos">
-                        <i class="bi bi-cash-register"></i><span>POS Billing</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Sales","Invoices")" asp-controller="Sales" asp-action="Invoices">
-                        <i class="bi bi-receipt"></i><span>Sales invoices</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Sales","Returns")" asp-controller="Sales" asp-action="Returns">
-                        <i class="bi bi-arrow-return-left"></i><span>Sales returns</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Sales","OnlineOrders")" asp-controller="Sales" asp-action="OnlineOrders">
-                        <i class="bi bi-bag-check"></i><span>Online orders</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Customers")" asp-controller="Customers" asp-action="Index">
-                        <i class="bi bi-people"></i><span>Customers</span>
-                    </a>
-                </li>
+                @if (showPos || showCustomers)
+                {
+                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Sales</small></li>
+                    @if (await Access.CanAsync("pos.sell"))
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Sales", "Pos")" asp-controller="Sales" asp-action="Pos">
+                                <i class="bi bi-calculator"></i><span>POS Billing</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Sales", "Session")" asp-controller="Sales" asp-action="Session">
+                                <i class="bi bi-wallet2"></i><span>Cash session</span>
+                            </a>
+                        </li>
+                    }
+                    @if (await Access.CanAnyAsync(new[] { "pos.sell", "reports.view" }))
+                    {
+                        <li class="nav-item">
+                            <a class="@NavAny("Sales", "Invoices", "InvoiceDetails", "InvoicePrint", "CancelSale")" asp-controller="Sales" asp-action="Invoices">
+                                <i class="bi bi-receipt"></i><span>Invoices</span>
+                            </a>
+                        </li>
+                    }
+                    @if (await Access.CanAsync("pos.return"))
+                    {
+                        <li class="nav-item">
+                            <a class="@NavAny("Sales", "Returns", "Return", "ReturnDetails")" asp-controller="Sales" asp-action="Returns">
+                                <i class="bi bi-arrow-counterclockwise"></i><span>Returns</span>
+                            </a>
+                        </li>
+                    }
+                    @if (await Access.CanAsync("pos.sell"))
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("OnlineOrder")" asp-controller="OnlineOrder" asp-action="Index">
+                                <i class="bi bi-bag-check"></i><span>Online orders</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showCustomers)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Customers")" asp-controller="Customers" asp-action="Index">
+                                <i class="bi bi-people"></i><span>Customers</span>
+                            </a>
+                        </li>
+                    }
+                }
 
-                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Reports</small></li>
-                <li class="nav-item">
-                    <a class="@Nav("Reports","Sales")" asp-controller="Reports" asp-action="Sales">
-                        <i class="bi bi-graph-up"></i><span>Sales report</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Reports","Products")" asp-controller="Reports" asp-action="Products">
-                        <i class="bi bi-bar-chart"></i><span>Product report</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Reports","Customers")" asp-controller="Reports" asp-action="Customers">
-                        <i class="bi bi-person-lines-fill"></i><span>Customer report</span>
-                    </a>
-                </li>
+                @if (showReports)
+                {
+                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Reports</small></li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "Index")" asp-controller="Reports" asp-action="Index">
+                            <i class="bi bi-graph-up"></i><span>All reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "Sales")" asp-controller="Reports" asp-action="Sales">
+                            <i class="bi bi-graph-up-arrow"></i><span>Sales</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "Products")" asp-controller="Reports" asp-action="Products">
+                            <i class="bi bi-bar-chart"></i><span>Products</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "Customers")" asp-controller="Reports" asp-action="Customers">
+                            <i class="bi bi-person-lines-fill"></i><span>Customers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "Tax")" asp-controller="Reports" asp-action="Tax">
+                            <i class="bi bi-percent"></i><span>Tax</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "Purchases")" asp-controller="Reports" asp-action="Purchases">
+                            <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="@Nav("Reports", "StockValuation")" asp-controller="Reports" asp-action="StockValuation">
+                            <i class="bi bi-boxes"></i><span>Stock value</span>
+                        </a>
+                    </li>
+                }
 
-                <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Administration</small></li>
-                <li class="nav-item">
-                    <a class="@Nav("Admin","Employees")" asp-controller="Admin" asp-action="Employees">
-                        <i class="bi bi-person-badge"></i><span>Employees</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Admin","Roles")" asp-controller="Admin" asp-action="Roles">
-                        <i class="bi bi-shield-lock"></i><span>Roles &amp; permissions</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Company","Index")" asp-controller="Company" asp-action="Index">
-                        <i class="bi bi-building"></i><span>Company</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Store","Index")" asp-controller="Store" asp-action="Index">
-                        <i class="bi bi-shop"></i><span>Stores</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="@Nav("Admin","Settings")" asp-controller="Admin" asp-action="Settings">
-                        <i class="bi bi-gear"></i><span>Settings</span>
-                    </a>
-                </li>
+                @if (showUsers || showSettings || isPlatform)
+                {
+                    <li class="nav-item mt-2"><small class="text-muted px-3 text-uppercase fw-bold">Administration</small></li>
+                    @if (showUsers)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Employee")" asp-controller="Employee" asp-action="Index">
+                                <i class="bi bi-person-badge"></i><span>Employees</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Role")" asp-controller="Role" asp-action="Index">
+                                <i class="bi bi-shield-lock"></i><span>Roles</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showSettings)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Company")" asp-controller="Company" asp-action="Index">
+                                <i class="bi bi-building"></i><span>Company</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Store")" asp-controller="Store" asp-action="Index">
+                                <i class="bi bi-shop"></i><span>Stores</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Setting")" asp-controller="Setting" asp-action="Index">
+                                <i class="bi bi-gear"></i><span>Settings</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Audit")" asp-controller="Audit" asp-action="Index">
+                                <i class="bi bi-journal-text"></i><span>Audit log</span>
+                            </a>
+                        </li>
+                    }
+                    @if (isPlatform)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("License")" asp-controller="License" asp-action="Index">
+                                <i class="bi bi-award"></i><span>License</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@Nav("Module")" asp-controller="Module" asp-action="Index">
+                                <i class="bi bi-grid"></i><span>Modules</span>
+                            </a>
+                        </li>
+                    }
+                }
             </ul>
         </nav>
     </div>

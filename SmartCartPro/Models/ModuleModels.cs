@@ -10,8 +10,10 @@ public sealed class OutputModuleSelect
     public int IdModule { get; set; }
     public string ModuleCode { get; set; } = string.Empty;
     public string ModuleName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public bool IsEnabled { get; set; }
+    public bool IsCore { get; set; }
 }
 
 public sealed class InputModuleList { }

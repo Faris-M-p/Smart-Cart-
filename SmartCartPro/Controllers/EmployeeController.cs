@@ -22,7 +22,19 @@ public class EmployeeController : Controller
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
-    private int? ActorCompanyId => AuthClaims.GetFkCompany(User);
+    /// <summary>
+    /// Company claim of the signed-in user, used to keep every employee screen inside that company.
+    /// Null = platform super admin (every company); -1 = a user without a company, who matches nothing.
+    /// </summary>
+    private int? ActorCompanyId
+    {
+        get
+        {
+            var company = AuthClaims.GetFkCompany(User);
+            if (company is > 0) return company;
+            return AuthClaims.IsPlatformSuperAdminUser(User) ? null : -1;
+        }
+    }
 
     /// <summary>
     /// Lists employees with search, role, store and status filters, sorting and paging.
@@ -31,6 +43,8 @@ public class EmployeeController : Controller
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] InputUserList input, CancellationToken ct)
     {
+        // The company always comes from the signed-in user's claims, never from the query string.
+        input.ActorFkCompany = ActorCompanyId;
         var model = await _userSvc.ListUsersAsync(input, ct);
         await LoadOptionsAsync(ct);
         ViewBag.CurrentUserId = ActorId;
@@ -101,7 +115,7 @@ public class EmployeeController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
-        var selectInput = new InputUserSelect { IdUser = id };
+        var selectInput = new InputUserSelect { IdUser = id, ActorFkCompany = ActorCompanyId };
         var item = await _userSvc.GetUserAsync(selectInput, ct);
         if (item is null) return NotFound();
 
@@ -153,6 +167,7 @@ public class EmployeeController : Controller
         var input = new InputUserStatusUpdate
         {
             ActorUserId = ActorId,
+            ActorFkCompany = ActorCompanyId,
             IdUser = id,
             IsActive = isActive
         };
@@ -177,6 +192,7 @@ public class EmployeeController : Controller
         var input = new InputUserPasswordUpdate
         {
             ActorUserId = ActorId,
+            ActorFkCompany = ActorCompanyId,
             IdUser = model.IdUser,
             GeneratePassword = model.GeneratePassword,
             NewPassword = model.NewPassword

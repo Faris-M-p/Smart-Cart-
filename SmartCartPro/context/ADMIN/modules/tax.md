@@ -45,6 +45,8 @@ Company-wide tax profiles (code, name, rate %, tax-inclusive flag) that can be a
 ## UI Rules & Conventions
 - Views: `Views/Tax/Taxes.cshtml`, `CreateTax.cshtml`, `EditTax.cshtml` (explicit `View("~/Views/Tax/…")` paths).
 - JS: `wwwroot/js/catalog/tax.js` (form submit + list busy state) on top of `wwwroot/js/sc-ajax.js`; activate/deactivate buttons use the declarative `data-sc-post` + `data-sc-confirm` hooks and reload with a toast.
+- Forms use `asp-action` + `method="post"`, so the form tag helper emits the antiforgery token; the views deliberately do **not** add `@Html.AntiForgeryToken()` as well (that would post the token twice). The activate/deactivate buttons on the list send the layout's page-wide token.
+- Sortable column headers show `bi-arrow-up` / `bi-arrow-down` (faint arrow when unsorted). The bundled Metis icon subset has no `bi-sort-up` or `bi-arrow-down-up`, so those would render blank.
 - The rate input is a `type="number"` field (`min 0`, `max 100`, `step 0.0001`) inside a `%` input group; the create form starts empty so a rate is never saved by accident.
 
 ## Business Rules

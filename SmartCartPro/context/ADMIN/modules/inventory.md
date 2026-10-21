@@ -3,86 +3,101 @@
 ## Module Overview
 - **Area:** ADMIN
 - **Module Name:** Inventory
-- **Current Status:** `IMPLEMENTED` (server + server-rendered UI with AJAX saves; opening stock, adjustment, transfer, history, low stock). See *Notes* for the known gaps.
+- **Current Status:** `IMPLEMENTED` (server + AJAX UI). Open items are listed under *Notes*.
 
 ## Purpose & Responsibilities
-Store-scoped on-hand stock per product / variant and the immutable ledger behind it (`stock_movements`).
-Staff of a store see what is on the shelves, record opening stock, correct it with adjustments, move stock to another store of the company, trace every change and see what must be re-ordered.
-`StockRepository.ApplyMovementAsync` is also the **single write gateway** used by purchasing, POS, online orders and returns.
+Store-scoped stock: on-hand balance per store / product / variant, the append-only movement ledger, opening stock, adjustments, store-to-store transfers, movement history and low-stock replenishment hints.
+The signed-in user's store (claim `fk_store`) is always the store being worked on; there is no store switcher.
+Purchasing, POS, online orders and returns change stock only through `IStockRepository.ApplyMovementAsync`.
 
 ## Implemented Features
-| Route | Action → View | Permission | What it does |
-|-------|---------------|------------|--------------|
-| `GET /Inventory` | `Index` → redirect to `Stock` | `inventory.view` | Keeps old links working |
-| `GET /Inventory/Stock` | `Stock` → `Stock.cshtml` | `inventory.view` | Balance list: search, category, All / Low / Out chips with counts, sortable columns, paging, row actions (Adjust, Transfer, History) |
-| `GET /Inventory/LowStock` | `LowStock` → `LowStock.cshtml` | `inventory.view` | Rows at or below the reorder level with shortage and suggested order quantity |
-| `GET /Inventory/History` | `History` → `History.cshtml` | `inventory.view` | Movement ledger: product, type, date range, paging, signed quantities, local times |
-| `GET/POST /Inventory/Opening` | `Opening` → `Opening.cshtml` | `inventory.adjust` | First stock entry of one SKU at the store |
-| `GET/POST /Inventory/Adjust` | `Adjust` → `Adjust.cshtml` | `inventory.adjust` | Add or remove stock with a reason, live "now → after" preview |
-| `GET/POST /Inventory/Transfer` | `Transfer` → `Transfer.cshtml` | `inventory.adjust` | Document-style transfer (many lines) to another store; POST is a JSON body |
-| `GET /Inventory/ProductPicker?term=` | `ProductPicker` (JSON) | `inventory.view` | Typeahead source: one row per sellable SKU with on-hand at the store |
+- `Inventory/Stock` — on-hand per SKU (product, or one variant of a product) for the signed-in store: search (name, code, SKU, barcode, variant), category filter, status chips **All / Low stock / Out of stock** with counts, sortable columns, page size, paging, empty states, row actions **Adjust / Transfer / History**.
+- `Inventory/LowStock` — SKUs at or below their reorder level with shortage and a suggested order quantity.
+- `Inventory/History` — movement ledger filtered by product, movement type and date range, paging, times shown in the browser's local time.
+- `Inventory/Opening` — first stock entry for a SKU; refused when opening stock already exists for that SKU at the store.
+- `Inventory/Adjust` — add or remove stock with a required reason and a live "on hand now → after" preview.
+- `Inventory/Transfer` — document-style, several lines, to another active store of the same company; all lines move in ONE database transaction.
+- `Inventory/ProductPicker` — JSON typeahead source (`GET ?term=`): one row per sellable SKU with the on-hand quantity at the signed-in store.
+- `Inventory` (bare address) redirects to `Inventory/Stock`.
+- Platform Super Admin (no store) sees the friendly "Sign in as a store user to use this screen" panel (`NoStore.cshtml`) instead of every screen; mutating POSTs answer 403.
+- Opening / Adjust / Transfer buttons and tabs are hidden without `inventory.adjust`.
 
-- Rows, buttons and tabs for `inventory.adjust` are hidden from users without it (`Access.CanAsync`).
-- Platform users without a store (Platform Super Admin) get the friendly *"Sign in as a store user to use this screen"* panel (`NoStore.cshtml`) on every screen; mutating POSTs answer 403.
-- Successful saves flash a toast and return to the list the user came from (`returnUrl`, local URLs only) or to `Stock` / `History`.
+### Routes and permissions
+Module access: `[ModuleAccess("INVENTORY")]`.
+
+| Route | Verb | Permission | Result |
+|-------|------|------------|--------|
+| `/Inventory` | GET | `inventory.view` | redirect to Stock |
+| `/Inventory/Stock` | GET | `inventory.view` | `Stock.cshtml` |
+| `/Inventory/LowStock` | GET | `inventory.view` | `LowStock.cshtml` |
+| `/Inventory/History` | GET | `inventory.view` | `History.cshtml` |
+| `/Inventory/ProductPicker` | GET | `inventory.view` | JSON `{ data: [SKU rows] }` |
+| `/Inventory/Opening` | GET / POST | `inventory.adjust` | `Opening.cshtml` / JSON |
+| `/Inventory/Adjust` | GET / POST | `inventory.adjust` | `Adjust.cshtml` / JSON |
+| `/Inventory/Transfer` | GET / POST (JSON body) | `inventory.adjust` | `Transfer.cshtml` / JSON |
+
+`inventory.manage` (not in the seeded catalog) is no longer used.
 
 ## Filters / Search / Sorting
-- **Stock:** `Search` (name, code, SKU, barcode, variant name / SKU / barcode, case-insensitive, `%`/`_` escaped), `FkCategory`, `StockStatus` (`""` all · `low` · `out`), `SortBy` (`productname` · `productcode` · `quantityonhand` · `reorderlevel`), `SortDesc`, `Page`, `PageSize` (10/25/50/100, server clamps 1–200).
-- **Low stock:** `Search`, `FkCategory`, `SortBy` (`productname` · `quantityonhand` · `reorderlevel` · `shortage`), `SortDesc`, `Page`, `PageSize`.
-- **History:** `FkProduct`, `MovementType`, `From`, `To` (the user's local calendar days, inclusive), `TzOffsetMinutes` (browser `getTimezoneOffset()`), `Page`, `PageSize`.
-- Store is **never** a filter: it always comes from the signed-in user's claims.
+- **Stock:** `Search`, `FkCategory`, `StockStatus` (`low` | `out`), `SortBy` (`productname` | `productcode` | `quantityonhand` | `reorderlevel`), `SortDesc`, `Page`, `PageSize` (UI offers 10–100, server clamps 1–200).
+- **LowStock:** `Search`, `FkCategory`, `SortBy` (`productname` | `quantityonhand` | `reorderlevel` | `shortage`), `SortDesc`, `Page`, `PageSize`.
+- **History:** `FkProduct` (all variants), `MovementType`, `From`, `To` (local calendar days, `yyyy-MM-dd`, whole days; a reversed range is swapped), `TzOffsetMinutes` (browser `getTimezoneOffset()`), `Page`, `PageSize`.
+- Search is case-insensitive (`ILIKE`, wildcards in the term are escaped).
 
 ## Data
-- Entities (repository only): `Inventory` → `inventory`, `StockMovement` → `stock_movements`. Read-only lookups: `products`, `product_variants`, `categories`, `units`, `stores`, `users`, `settings`.
-- Models: `Models/InventoryModels.cs`, one region per operation.
-  - Movement: `InputStockMovement` / `OutputStockMovement` (shared gateway).
-  - Balances: `InputInventorySelect` / `OutputInventorySelect`, `InputInventoryList` / `OutputInventoryList`.
-  - Opening: `InOpeningStockView` → `InputStockOpening`. Adjust: `InStockAdjustView` → `InputStockAdjust`.
-  - Transfer: `InStockTransferCreateView` (+ `InStockTransferLineView`) → `InputStockTransferCreate` (+ `InputStockTransferLine`) → `OutputStockTransferCreate`. Legacy single-line `InputStockTransfer` / `OutputStockTransfer` kept for existing callers.
-  - History: `InputStockMovementList` / `OutputStockMovementList` / `OutputStockMovementItem`. Low stock: `InputLowStockList` / `OutputLowStockList`.
-  - Picker and lookups: `InputStockProductSearch` / `OutputStockProductSearch(Item)`, `OutputStockLookupItem`.
+- Entities (repository only): `Inventory` → `inventory`, `StockMovement` → `stock_movements`; read-only joins to `Product`, `ProductVariant`, `Category`, `Unit`, `Store`, `User`, `Setting`.
+- Models: `Models/InventoryModels.cs`, one region per operation:
+  - Opening: `InOpeningStockView` → `InputStockOpening`.
+  - Adjust: `InStockAdjustView` (`ReasonOptions`) → `InputStockAdjust`.
+  - Transfer: `InStockTransferCreateView` + `InStockTransferLineView` → `InputStockTransferCreate` + `InputStockTransferLine` → `OutputStockTransferCreate`.
+  - Lists: `InputInventoryList` / `OutputInventoryList`, `InputLowStockList` / `OutputLowStockList`, `InputStockMovementList` / `OutputStockMovementList` (+ `OutputStockMovementItem`).
+  - Single SKU: `InputInventorySelect` / `OutputInventorySelect` (computed `AvailableQuantity`, `StockStatus`).
+  - Picker / lookups: `InputStockProductSearch` / `OutputStockProductSearch` (+ item), `OutputStockLookupItem` (categories, destination stores).
+  - Kept for other modules: `InputStockMovement` / `OutputStockMovement` (central write path), `InputStockTransfer` / `OutputStockTransfer` (single-line transfer).
+- No `*Dto` classes; `DataAnnotations` only on `In…View` models.
 
 ## Database Dependencies
-- `inventory`: one row per store + product + variant (unique), `quantityonhand`, `quantityreserved`, `reorderlevel`; CHECK `ck_inventory_qty` keeps `quantityonhand >= 0`.
-- `stock_movements`: append-only ledger; CHECK on `movementtype` (`purchase`, `sale`, `adjustment`, `transfer_in`, `transfer_out`, `return_in`, `return_out`, `opening`); `quantity` is stored positive except `adjustment` (signed).
-- `settings`: key `pos.allow_negative_stock` (store scope wins over company scope).
-- No schema change was made by this module.
+- `inventory` — unique per store / product / variant; CHECK `ck_inventory_qty` (`quantityonhand >= 0`).
+- `stock_movements` — CHECK on `movementtype`: `purchase | sale | adjustment | transfer_in | transfer_out | return_in | return_out | opening`.
+- Setting `pos.allow_negative_stock` (store scope wins over company scope; missing = false).
+- No schema change was made for this module.
 
 ## API & Data Access
-- Controller: `InventoryController` (`[Authorize]`, `[ModuleAccess("INVENTORY")]`) → `IStockService` / `StockService` → `IStockRepository` / `StockRepository` (EF Core + LINQ, no Dapper).
-- Permissions: `inventory.view`, `inventory.adjust` (both in the seeded catalog; the old non-catalog `inventory.manage` is gone).
-- AJAX contract: every POST has `[ValidateAntiForgeryToken]`, `CommonHelpers.ValidateModelState`, an explicit `var input = new Input…` mapping and returns `CommonHelpers.SuccessResponse(message, data)` with `redirectUrl`; failures are typed exceptions (`ValidationException`, `ConflictException` 409, `UpdateFailedException` 422, `ForbiddenException` 403).
-- Existing public members of `IStockRepository` / `IStockService` are unchanged (purchase, sale, online-order and report code call them); new members were only added.
+- `InventoryController` → `IStockService` / `StockService` → `IStockRepository` / `StockRepository` (EF LINQ only).
+- `ApplyMovementAsync` (signature unchanged): validates type, quantity and variant; joins the caller's open transaction (`Database.CurrentTransaction`) or opens and commits its own; changes the balance with ONE guarded `UPDATE … WHERE quantityonhand + delta >= 0`, so two concurrent sales cannot both pass the stock check; writes the movement row.
+- `CreateTransferAsync` — every line is a `transfer_out` (source) + `transfer_in` (destination, `referenceid` = the out movement, `referencetype` = `transfer`) inside one transaction; any failing line rolls back the whole transfer (audit item SC-SRV-004).
+- `TransferAsync` (single line, used by older callers) delegates to `CreateTransferAsync`.
+- Service adds: reorder-level suggestions, category lookups, UTC bounds for the history date filter, duplicate-SKU merge on transfers (max 100 lines), opening-stock-once rule.
+- Failures are typed exceptions through `AppExceptionHandler`: 403 no store, 404 SKU not found, 409 opening already recorded, 422 insufficient stock / invalid transfer.
 
 ## UI Rules & Conventions
-- Views: `Views/Inventory/` — `Stock`, `LowStock`, `History`, `Opening`, `Adjust`, `Transfer`, plus module partials `_InventoryTabs` (section pills shown on every screen) and `NoStore`.
-- JS (`wwwroot/js/inventory/`, on top of `sc-ajax.js`): `inventory-common.js` (`ScInventory`: product picker, quantity format, local times, busy state of filter forms), `stock-form.js` (Opening + Adjust), `transfer.js` (line document), `history.js` (product filter, timezone offset).
-- Product pickers use `SmartCartAjax.typeahead` against `Inventory/ProductPicker`; picking a SKU sets the hidden product / variant ids, typing over it clears them.
-- All dynamic text is written with `.text()` / Razor encoding; nothing from the user is rendered as HTML.
-- Movement times are stored in UTC and rendered as `<time data-sc-local-time datetime="…Z">`, localised by JS (the UTC text is the no-JS fallback).
-- Follow `ADMIN.md` → *Front-end conventions*.
+- Views in `Views/Inventory/`: `Stock`, `LowStock`, `History`, `Opening`, `Adjust`, `Transfer`, plus module partials `_InventoryTabs` (section pills) and `NoStore`.
+- JS in `wwwroot/js/inventory/` on top of `sc-ajax.js`: `inventory-common.js` (`window.ScInventory`: product picker, quantity format, local times, busy state on list filters), `stock-form.js` (Opening / Adjust), `transfer.js`, `history.js`.
+- Product pickers use `SmartCartAjax.typeahead` against `Inventory/ProductPicker`; a chosen row fills hidden `FkProduct` / `FkProductVariant`, typing over it clears them. The server re-reads the SKU and the on-hand quantity — nothing sent by the browser is trusted.
+- Opening and Adjust are AJAX forms (`submitForm`): field errors under the inputs, success toast and redirect to the list the user came from (`returnUrl`, local URLs only) or to Stock.
+- Transfer posts a JSON document with the antiforgery header (`postJson`), asks for confirmation first and redirects to History.
+- History timestamps are rendered as `<time data-sc-local-time datetime="…Z">` and localised in the browser; the From / To days are the user's local days (offset sent as `TzOffsetMinutes`).
+- All dynamic text is written with `.text()` / Razor encoding; no `Html.Raw` on data.
 
 ## Business Rules
-- **Store scope:** the store is read from the user's claims; any store id sent by the browser is ignored.
-- **Stock status:** `out` = on hand ≤ 0; `low` = above 0 and ≤ reorder level; otherwise `ok`.
-- **Effective reorder level:** the store row's own level when above 0, otherwise the product's level.
-- **Suggested order** (Low stock): `ceil(2 × reorder level − on hand)`, never below 0; blank when no reorder level is set.
-- **Opening stock:** allowed once per SKU and store; a second attempt is refused with 409 and points to Adjust.
-- **Adjustment:** reasons Damaged, Expired, Lost or stolen, Found stock, Count correction, Other; written as one signed `adjustment` movement with notes `"Reason: free text"`; removing more than is on hand is refused.
-- **Transfer:** destination must be another active store of the same company; all lines (merged by SKU, max 100) are moved as `transfer_out` + `transfer_in` pairs inside ONE database transaction — if any line is short, nothing moves (audit SC-SRV-004). The `transfer_in` row carries the `transfer_out` movement id as `referenceid`.
-- **Concurrency:** the balance changes with one guarded `UPDATE … WHERE quantityonhand + delta >= 0`, so two simultaneous sales cannot both pass the stock check.
-- **Transactions:** `ApplyMovementAsync` joins the caller's transaction when one is open (sale / purchase / online-order flows) and owns one otherwise.
-- **Negative stock (SC-SRV-006):** only `sale` may go below zero, and only when `pos.allow_negative_stock` is `true`. See *Notes* — the table CHECK still blocks it until a SQL patch is applied.
-- Movements are never edited or deleted (no hard deletes, no cascade).
+- The store comes from the signed-in user's claims; a store id sent by the browser is ignored.
+- Quantities have at most 3 decimals; stored balance is never below zero (DB CHECK).
+- **Opening stock** is the first entry for a SKU at a store, once; later corrections are adjustments (409 otherwise).
+- **Adjust:** direction `add` or `remove`, reason required (Damaged, Expired, Lost or stolen, Found stock, Count correction, Other); the movement note is `Reason: free text`; removing more than is on hand is refused.
+- **Transfer:** destination must be an active store of the same company and different from the source; each line is checked against the source's on-hand quantity.
+- Movement quantity is stored positive for every type except `adjustment` (signed); outbound types are `sale`, `transfer_out`, `return_out`.
+- **Reorder level:** the store row's own level when above zero, otherwise the product's level. Status: *out* = on hand ≤ 0, *low* = above 0 and ≤ level, otherwise *ok*.
+- **Suggested order** = `ceil(2 × reorder level − on hand)`; blank when no reorder level is set.
+- **Negative stock:** only a `sale` may go below zero, and only when `pos.allow_negative_stock` is true (see Notes).
+- Movements are append-only; no hard deletes.
 
 ## Dependencies & Related Modules
-- `product.md`, `variant.md` (SKUs, reorder level, unit), `purchase.md` (receipts → `purchase`), `pos.md` (sales → `sale`), `returns.md` (`return_in` / `return_out`), `online-orders.md` (confirm / cancel), `stores.md`, `settings.md` (`pos.allow_negative_stock`), `roles.md` (permission catalog), `reports.md` (stock valuation and low-stock report reuse `IStockRepository`).
+- `product.md`, `variant.md`, `category.md`, `unit.md`, `stores.md`, `settings.md`, `roles.md`
+- Callers of `ApplyMovementAsync`: `purchase.md`, `pos.md`, `online-orders.md`, `returns.md`; low-stock report in `reports.md`.
 
 ## Notes
-- **Negative stock needs a SQL patch:** CHECK `ck_inventory_qty` (`quantityonhand >= 0`) must be relaxed or replaced before `pos.allow_negative_stock = true` has any effect. Until then a sale that would go negative fails with a friendly "Insufficient stock" message and the whole sale rolls back.
-- No screen edits the per-store `reorderlevel`; stores inherit the product's level.
-- The very first movement of a never-stocked SKU racing another first movement for the same SKU can hit the unique index (rare, not retried).
-- One store per user (from claims): there is no store switcher on these screens.
-- Forms rely on server validation plus light JS checks (jQuery validation is not wired on these pages).
-- Sidebar: only the `Inventory` entry (→ `Stock`) exists; Low stock, History, Opening, Adjust and Transfer are reached through the in-page section pills.
-- Written without a local build or run; the first build is the compile check.
+- **Negative stock needs a SQL patch.** The service honours `pos.allow_negative_stock`, but table CHECK `ck_inventory_qty` still rejects a negative balance. Until the CHECK is relaxed the sale fails with a friendly "Insufficient stock … ask your administrator to apply the stock patch" message instead of a server error.
+- The per-store reorder level (`inventory.reorderlevel`) has no editing screen; rows inherit the product's level.
+- The first movement ever recorded for a SKU creates its `inventory` row; two such first movements at the very same moment could collide on the unique index (rare, not retried).
+- The sidebar shows one **Inventory** entry (Stock); the other screens are reached through the section pills at the top of every Inventory page.
+- Stock valuation and the all-stores low-stock report stay in the Reports module.

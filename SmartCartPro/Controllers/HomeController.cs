@@ -6,23 +6,59 @@ using Microsoft.Extensions.Options;
 using SmartCartPro.Configuration;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
+using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
 public class HomeController : Controller
 {
     private readonly EnvironmentSettings _environmentSettings;
+    private readonly IDashboardService _dashboard;
+    private readonly ICurrentUserAccess _access;
 
-    public HomeController(IOptions<EnvironmentSettings> environmentSettings)
+    public HomeController(
+        IOptions<EnvironmentSettings> environmentSettings,
+        IDashboardService dashboard,
+        ICurrentUserAccess access)
     {
         _environmentSettings = environmentSettings.Value;
+        _dashboard = dashboard;
+        _access = access;
     }
 
     /// <summary>
-    /// Default home page after sign-in or when visiting the site root.
-    /// Rendered for authenticated and anonymous users per routing.
+    /// Signed-in home: store KPIs when allowed, a welcome page, or the platform licence overview.
+    /// Every authenticated user can open this; dashboard.view is not required.
     /// </summary>
-    public IActionResult Index() => View();
+    public async Task<IActionResult> Index(CancellationToken ct)
+    {
+        var input = new InputDashboardSelect
+        {
+            ActorUserId = AuthClaims.GetUserId(User) ?? 0,
+            ActorFkStore = AuthClaims.GetFkStore(User) ?? 0,
+            IsPlatformSuperAdmin = AuthClaims.IsPlatformSuperAdminUser(User),
+            StoreName = AuthClaims.GetStoreName(User),
+            HasDashboardView = await _access.CanAsync("dashboard.view", ct),
+            CanPosSell = await _access.CanAsync("pos.sell", ct),
+            CanProductsView = await _access.CanAsync("products.view", ct),
+            CanPurchasesManage = await _access.CanAsync("purchases.manage", ct),
+            CanInventoryView = await _access.CanAsync("inventory.view", ct),
+            CanCustomersView = await _access.CanAsync("customers.view", ct),
+            CanReportsView = await _access.CanAsync("reports.view", ct),
+            CanSettingsManage = await _access.CanAsync("settings.manage", ct),
+            CanUsersManage = await _access.CanAsync("users.manage", ct),
+            ModulePos = await _access.ModuleEnabledAsync("POS", ct),
+            ModuleProducts = await _access.ModuleEnabledAsync("PRODUCTS", ct),
+            ModulePurchases = await _access.ModuleEnabledAsync("PURCHASES", ct),
+            ModuleInventory = await _access.ModuleEnabledAsync("INVENTORY", ct),
+            ModuleCustomers = await _access.ModuleEnabledAsync("CUSTOMERS", ct),
+            ModuleReports = await _access.ModuleEnabledAsync("REPORTS", ct),
+            ModuleSettings = await _access.ModuleEnabledAsync("SETTINGS", ct),
+            ModuleUsers = await _access.ModuleEnabledAsync("USERS", ct)
+        };
+        var model = await _dashboard.GetHomeAsync(input, ct);
+        return View(model);
+    }
 
     /// <summary>
     /// Renders a user-safe error page for unhandled exceptions.

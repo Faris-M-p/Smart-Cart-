@@ -13,13 +13,8 @@ namespace SmartCartPro.Controllers;
 public class ProductController : Controller
 {
     private readonly IProductService _svc;
-    private readonly ICurrentUserAccess _access;
 
-    public ProductController(IProductService svc, ICurrentUserAccess access)
-    {
-        _svc = svc;
-        _access = access;
-    }
+    public ProductController(IProductService svc) => _svc = svc;
 
     // ═══════════════════════════════════════════════════════════════
     // PRODUCT LIST  (views live in ~/Views/Product/)
@@ -52,7 +47,7 @@ public class ProductController : Controller
         var input = new InputProductDetail
         {
             IdProduct = id,
-            FkStore = await StockStoreIdAsync(ct)
+            FkStore = AuthClaims.GetFkStore(User) ?? 0
         };
         var detail = await _svc.GetProductDetailAsync(input, ct);
         if (detail is null)
@@ -348,8 +343,7 @@ public class ProductController : Controller
         {
             Term = term,
             Take = take,
-            ExpandVariants = expandVariants,
-            IncludeCost = await CanSeeCostAsync(ct)
+            ExpandVariants = expandVariants
         };
         var items = await _svc.SearchProductsAsync(input, ct);
 
@@ -366,11 +360,7 @@ public class ProductController : Controller
         if (string.IsNullOrWhiteSpace(barcode))
             return BadRequest();
 
-        var input = new InputProductBarcode
-        {
-            Barcode = barcode,
-            IncludeCost = await CanSeeCostAsync(ct)
-        };
+        var input = new InputProductBarcode { Barcode = barcode };
         var item = await _svc.FindByBarcodeAsync(input, ct);
         if (item is null)
             return NotFound();
@@ -385,25 +375,6 @@ public class ProductController : Controller
     {
         ViewBag.Lookup = await _svc.GetProductLookupAsync(lookupInput, ct);
         ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
-    }
-
-    /// <summary>Cost prices are only returned to staff who manage products or work with purchases.</summary>
-    private Task<bool> CanSeeCostAsync(CancellationToken ct)
-        => _access.CanAnyAsync(new[] { "products.manage", "purchases.view", "purchases.manage" }, ct);
-
-    /// <summary>
-    /// Store whose stock the detail page may summarise; 0 when the user has no store
-    /// (platform admin), the INVENTORY module is off, or inventory.view is missing.
-    /// </summary>
-    private async Task<int> StockStoreIdAsync(CancellationToken ct)
-    {
-        var store = AuthClaims.GetFkStore(User) ?? 0;
-        if (store <= 0)
-            return 0;
-        if (!await _access.ModuleEnabledAsync("INVENTORY", ct))
-            return 0;
-
-        return await _access.CanAsync("inventory.view", ct) ? store : 0;
     }
 
     private string? SafeReturnUrl(string? returnUrl)

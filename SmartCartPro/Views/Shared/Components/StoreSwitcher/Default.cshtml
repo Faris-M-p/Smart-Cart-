@@ -1,0 +1,45 @@
+@model OutputStoreAccessibleList
+@{
+    var current = Model.Stores.FirstOrDefault(s => s.IdStore == Model.CurrentFkStore)
+                  ?? Model.Stores.First();
+    var switchUrl = Url.Action("SetCurrentStore", "Store")!;
+    var canSwitch = Model.Stores.Count > 1;
+}
+@if (!canSwitch)
+{
+    <span class="badge text-bg-light border d-none d-lg-inline" title="Current store">@current.StoreName</span>
+}
+else
+{
+    <details class="sc-store-switcher">
+        <summary class="btn btn-sm btn-outline-secondary" title="Switch store">
+            <i class="bi bi-shop me-1"></i>@current.StoreName
+            <i class="bi bi-chevron-down ms-1 small"></i>
+        </summary>
+        <ul class="dropdown-menu shadow-sm mt-1 py-1">
+            @foreach (var store in Model.Stores)
+            {
+                var isCurrent = store.IdStore == Model.CurrentFkStore;
+                <li>
+                    @if (isCurrent)
+                    {
+                        <button type="button" class="dropdown-item d-flex align-items-center gap-2 active" disabled>
+                            <span class="flex-grow-1 text-truncate">@store.StoreName</span>
+                            <i class="bi bi-check2"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="dropdown-item d-flex align-items-center gap-2"
+                                data-sc-post="@switchUrl"
+                                data-sc-param-storeid="@store.IdStore"
+                                data-sc-after="reload">
+                            <span class="flex-grow-1 text-truncate">@store.StoreName</span>
+                        </button>
+                    }
+                </li>
+            }
+        </ul>
+    </details>
+}

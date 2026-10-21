@@ -55,8 +55,8 @@
     string SortIcon(string sortBy)
     {
         if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
-            return "bi-arrow-down-up text-muted";
-        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+            return "bi-arrow-down text-muted opacity-50"; // bi-sort-up / bi-arrow-down-up are not in the bundled Metis icon subset
+        return f.SortDesc ? "bi-arrow-down" : "bi-arrow-up";
     }
 
     string Truncate(string? text, int max = 80)

@@ -1,51 +1,73 @@
-# Online Orders — Phase 7
+# Admin Module — Online Orders
 
-## Status
-IMPLEMENTED (Phase 7)
+## Module Name & Area
+- **Area:** ADMIN
+- **Module Name:** Online orders (POS)
+- **Current Status:** `IMPLEMENTED`
 
-## Tables
-- `online_orders` — order header (store-scoped via `fk_store`)
-- `online_order_items` — line items (FK → online_orders, products, product_variants)
+## Purpose & Responsibilities
+Fulfill storefront orders for the signed-in store: list, inspect, and advance status. Confirm deducts stock; cancel restores it. Both run in one transaction with `IStockRepository.ApplyMovementAsync`.
+
+## Implemented Features
+- Index filters (status, dates, search order number / customer) + sort + pager
+- StoreRequired when `fk_store` is 0 (platform Super Admin)
+- Details document view with **allowed next statuses from the output model** (not hard-coded in the view)
+- Confirm copy explains stock deduction; cancel copy explains restore when stock was already deducted
+- JSON list/detail/status endpoints return `CommonResponseModel`
 
 ## Status Flow
 ```
 pending → confirmed → packed → shipped → delivered
-                                       → cancelled  (from any non-terminal state)
+                                       → cancelled  (from any non-terminal)
 ```
+`OutputOnlineOrderSelect.AllowedNextStatuses` is the source of truth for buttons. `StockWasDeducted` drives the cancel stock message.
 
 ## Stock Integration
-- **Confirm** (`pending → confirmed`): deducts stock via `IStockRepository.ApplyMovementAsync("sale")`
-  - Reference type: `online_order`, reference ID: order ID
-  - Rolls back entire transition if any item fails stock check
-- **Cancel** (from `confirmed`, `packed`, `shipped`, or `delivered`): restores stock via movement type `return_in`
-  - Rolls back were stock was previously deducted
+- **Confirm** (`pending → confirmed`): `ApplyMovementAsync("sale")`, reference `online_order` / order id. Any line failure rolls back the whole transition.
+- **Cancel** from confirmed/packed/shipped/delivered: `ApplyMovementAsync("return_in")` in the same transaction.
 
-## Module Access Decision
-Module code: **`POS`**
-Rationale: No dedicated `ORDERS` module exists in seed data. Online order fulfillment is the same business domain as POS (order → stock → delivery). Update to a dedicated `ORDERS` module when added to seed.
+## Filters / Search / Sorting
+- `Status`, `From`, `To`, `Search`, `SortBy`, `SortDesc`, `Page`, `PageSize`
+- Sort: `orderdate` (default desc), `ordernumber`, `status`, `totalamount`, `customername`
 
-## Files
-| Layer | File |
-|---|---|
-| Entity | `Entities/Order.cs` + `Entities/OnlineOrderItem.cs` |
-| Models | `Models/OnlineOrderModels.cs` |
-| Repository interface | `Repositories/Interfaces/IOrderRepository.cs` → `IOnlineOrderRepository` |
-| Repository impl | `Repositories/OrderRepository.cs` → `OnlineOrderRepository` |
-| Service interface | `Services/Interfaces/IOrderService.cs` → `IOnlineOrderService` |
-| Service impl | `Services/OrderService.cs` → `OnlineOrderService` |
-| Controller | `Controllers/OnlineOrderController.cs` |
+## Data
+- `InputOnlineOrderList` / `OutputOnlineOrderList` / `OutputOnlineOrderListItem`
+- `InputOnlineOrderSelect` / `OutputOnlineOrderSelect` / `OutputOnlineOrderItem`
+- `InOnlineOrderStatusView` / `InputOnlineOrderStatusUpdate` / `OutputOnlineOrderStatusUpdate`
+- Entities `Order`, `OnlineOrderItem` stay in the repository
 
-## Endpoints
+## Database Dependencies
+- `online_orders` (store-scoped), `online_order_items`, `customers`, `products`, `product_variants`, stock movements
+
+## API & Data Access
 | Method | Route | Permission | Description |
 |---|---|---|---|
-| GET | `/OnlineOrder` | pos.sell | Paginated list (filter: status, store, date, search) |
-| GET | `/OnlineOrder/ListJson` | pos.sell | JSON list |
-| GET | `/OnlineOrder/Details/{id}` | pos.sell | Single order with items |
-| GET | `/OnlineOrder/DetailsJson/{id}` | pos.sell | JSON detail |
-| GET | `/OnlineOrder/UpdateStatus/{id}` | pos.sell | Status change form |
-| POST | `/OnlineOrder/UpdateStatus/{id}` | pos.sell | Submit status change |
-| POST | `/OnlineOrder/UpdateStatusJson` | pos.sell | JSON status update |
+| GET | `/OnlineOrder` | pos.sell | Paged list (store-scoped) |
+| GET | `/OnlineOrder/ListJson` | pos.sell | AJAX envelope list |
+| GET | `/OnlineOrder/Details/{id}` | pos.sell | Document view |
+| GET | `/OnlineOrder/DetailsJson/{id}` | pos.sell | AJAX envelope detail |
+| GET | `/OnlineOrder/UpdateStatus/{id}` | pos.sell | Redirects to Details |
+| POST | `/OnlineOrder/UpdateStatus/{id}` | pos.sell (+ **pos.cancel** when NewStatus=cancelled) | Status change |
+| POST | `/OnlineOrder/UpdateStatusJson` | pos.sell (+ pos.cancel for cancel) | JSON status change |
 
-## Dead Scaffold Removal
-Old entity-leaking `IOrderRepository` / `OrderRepository` / `IOrderService` / `OrderService`
-files have been fully rewritten — entities no longer cross the repository boundary.
+Controller: `[ModuleAccess("POS")]`. Cancel is not a separate route; the action checks `pos.cancel` before applying `cancelled`.
+
+## UI Rules & Conventions
+- Purchase-style list + document details
+- Status buttons: `data-sc-post` with confirm text that explains stock
+- Partials: `_OnlineOrderStatusBadge`, `StoreRequired`
+- JS: `wwwroot/js/orders/online-order.js`
+- Do **not** link to `Views/Sales/OnlineOrders.cshtml` (removed by Agent A)
+
+## Business Rules
+- Store-scoped; Super Admin sees StoreRequired
+- Allowed next statuses come from the output model
+- Soft cancel (`cancelled` + reason); no hard delete
+- Stock confirm/cancel in one DB transaction
+
+## Dependencies & Related Modules
+- `pos.md`, `customers.md`, `inventory.md`
+
+## Notes
+- File names remain `OrderService` / `OrderRepository` / `IOrderService.cs` / `IOrderRepository.cs` while types are `IOnlineOrderService` / `IOnlineOrderRepository`.
+- No print view in this pass.

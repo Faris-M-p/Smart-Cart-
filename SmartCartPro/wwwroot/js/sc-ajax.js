@@ -12,7 +12,8 @@
  *   Requests   : post(url, data, opts) · postJson(url, obj, opts) · getJson(url, params, opts)
  *                opts: { $form, onSuccess(res), onError(res, xhr), silent }
  *   Widgets    : typeahead(input, {...}) · fillSelect($select, items, {...})
- *   Utilities  : debounce · escapeHtml · fmt.money/number/date/dateTime
+ *   Utilities  : debounce · escapeHtml · fmt.money/number/date/dateTime/time · parseServerDate · localizeTimes(root)
+ *                (timestamps are UTC; [data-sc-utc] elements are localised on load — see localizeTimes)
  *
  * Declarative (no page JS needed)
  *   <button data-sc-post="/url" data-sc-param-id="5" data-sc-param-isactive="false"
@@ -48,8 +49,33 @@
     };
   }
 
+  /**
+   * Parses a value coming from the server. Timestamps are stored and serialised in UTC (often without a "Z"), so a
+   * missing offset means UTC; a bare calendar date (yyyy-MM-dd) is kept as that local calendar day (no shifting).
+   */
+  function parseServerDate(v) {
+    if (!v) return null;
+    if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+    var s = String(v).trim();
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  var DATE_OPTS = {
+    datetime: { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' },
+    date: { day: '2-digit', month: 'short', year: 'numeric' },
+    time: { hour: '2-digit', minute: '2-digit' }
+  };
+
   var fmt = (function () {
     function num(n) { var v = Number(n); return isFinite(v) ? v : 0; }
+    function show(v, kind) {
+      var d = parseServerDate(v);
+      return d ? d.toLocaleString(undefined, DATE_OPTS[kind]) : '';
+    }
     var money = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return {
       money: function (n) { return money.format(num(n)); },
@@ -58,18 +84,28 @@
           maximumFractionDigits: maxDecimals == null ? 3 : maxDecimals
         }).format(num(n));
       },
-      date: function (v) {
-        if (!v) return '';
-        var d = new Date(v);
-        return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
-      },
-      dateTime: function (v) {
-        if (!v) return '';
-        var d = new Date(v);
-        return isNaN(d.getTime()) ? '' : d.toLocaleString();
-      }
+      date: function (v) { return show(v, 'date'); },
+      dateTime: function (v) { return show(v, 'datetime'); },
+      time: function (v) { return show(v, 'time'); }
     };
   })();
+
+  /**
+   * Server-rendered timestamps are shown in the user's own time zone:
+   *   <time data-sc-utc="2026-10-19T14:05:00Z" data-sc-format="datetime|date|time">19 Oct 2026 14:05</time>
+   * (build the attribute with TimeDisplay.Iso(value); the element text is the no-JS fallback).
+   */
+  function localizeTimes(root) {
+    var $root = $(root || document);
+    $root.find('[data-sc-utc]').addBack('[data-sc-utc]').each(function () {
+      var $el = $(this);
+      var d = parseServerDate($el.attr('data-sc-utc'));
+      if (!d) return;
+      var kind = $el.attr('data-sc-format');
+      $el.text(d.toLocaleString(undefined, DATE_OPTS[kind] || DATE_OPTS.datetime));
+      $el.attr('title', d.toLocaleString());
+    });
+  }
 
   function getAntiForgeryToken($form) {
     var $token = ($form && $form.length)
@@ -600,6 +636,7 @@
   });
 
   $(showPendingFlash);
+  $(function () { localizeTimes(document); });
 
   window.SmartCartAjax = {
     toast: toast,
@@ -617,6 +654,8 @@
     debounce: debounce,
     escapeHtml: escapeHtml,
     fmt: fmt,
+    parseServerDate: parseServerDate,
+    localizeTimes: localizeTimes,
     getAntiForgeryToken: getAntiForgeryToken,
     clearFieldErrors: clearFieldErrors,
     applyValidationErrors: applyValidationErrors

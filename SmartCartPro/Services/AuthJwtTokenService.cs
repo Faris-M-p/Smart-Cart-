@@ -51,6 +51,7 @@ public class AuthJwtTokenService
             new(AuthClaims.StoreName, storeName),
             new(AuthClaims.MustChangePassword, mustChangePassword ? "1" : "0"),
             new(AuthClaims.IsPlatformSuperAdmin, isPlatformSuperAdmin ? "1" : "0"),
+            new(AuthClaims.RememberMe, rememberMe ? "1" : "0"),
             new("username", userName)
         };
 

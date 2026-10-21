@@ -226,9 +226,11 @@ public class SettingService : ISettingService
                 continue;
             }
 
+            // Company scope: a key without a saved value shows (and keeps) its built-in default,
+            // so posting that default back is not a change. Store scope compares with the saved override only.
             var changed = isStore && normalized is null
                 ? storedRow is not null
-                : !string.Equals(stored, normalized, StringComparison.Ordinal);
+                : !string.Equals(isStore ? stored : stored ?? def.DefaultValue, normalized, StringComparison.Ordinal);
             if (!changed) continue;
 
             items.Add(new InputSettingUpsertItem

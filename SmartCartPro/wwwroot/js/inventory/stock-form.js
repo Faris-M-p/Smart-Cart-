@@ -122,9 +122,13 @@
 
     $form.on('input change', 'input[name="Quantity"], input[name="Direction"]', function () {
       clearError('Quantity');
+      $qty.removeClass('is-invalid');
       updatePreview();
     });
-    $form.on('change', '[name="Reason"]', function () { clearError('Reason'); });
+    $form.on('change', '[name="Reason"]', function () {
+      clearError('Reason');
+      $(this).removeClass('is-invalid');
+    });
 
     $form.on('submit', function (e) {
       e.preventDefault();

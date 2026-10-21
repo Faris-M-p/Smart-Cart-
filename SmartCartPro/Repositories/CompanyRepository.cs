@@ -52,10 +52,22 @@ public class CompanyRepository : ICompanyRepository
 
     public async Task<OutputCompanyCreate> CreateCompanyAsync(InputCompanyCreate input, CancellationToken ct = default)
     {
+        var code = input.CompanyCode.Trim().ToUpperInvariant();
+        var duplicate = await _db.Companies.AnyAsync(c => c.CompanyCode == code && !c.Cancelled, ct);
+        if (duplicate)
+        {
+            return new OutputCompanyCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A company with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
         var entity = new Company
         {
             CompanyName = input.CompanyName.Trim(),
-            CompanyCode = input.CompanyCode.Trim().ToUpperInvariant(),
+            CompanyCode = code,
             LegalName = input.LegalName?.Trim(),
             TaxNumber = input.TaxNumber?.Trim(),
             RegistrationNo = input.RegistrationNo?.Trim(),
@@ -194,10 +206,45 @@ public class CompanyRepository : ICompanyRepository
 
     public async Task<OutputStoreList> ListStoresAsync(InputStoreList input, CancellationToken ct = default)
     {
-        var stores = await _db.Stores.AsNoTracking()
-            .Where(s => !s.Cancelled)
-            .OrderByDescending(s => s.IsDefault)
-            .ThenBy(s => s.StoreName)
+        var page = Math.Max(1, input.Page);
+        var pageSize = Math.Clamp(input.PageSize <= 0 ? 25 : input.PageSize, 1, 100);
+        var sortBy = string.IsNullOrWhiteSpace(input.SortBy) ? "storename" : input.SortBy;
+
+        var q = _db.Stores.AsNoTracking().Where(s => !s.Cancelled);
+        if (input.ActiveOnly == true) q = q.Where(s => s.IsActive);
+        else if (input.ActiveOnly == false) q = q.Where(s => !s.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim();
+            q = q.Where(s => s.StoreName.Contains(term)
+                || s.StoreCode.Contains(term)
+                || (s.City != null && s.City.Contains(term)));
+        }
+
+        q = sortBy.ToLowerInvariant() switch
+        {
+            "storecode" or "code" => input.SortDesc
+                ? q.OrderByDescending(s => s.StoreCode).ThenBy(s => s.StoreName)
+                : q.OrderBy(s => s.StoreCode).ThenBy(s => s.StoreName),
+            "city" => input.SortDesc
+                ? q.OrderByDescending(s => s.City).ThenBy(s => s.StoreName)
+                : q.OrderBy(s => s.City).ThenBy(s => s.StoreName),
+            "isactive" or "status" => input.SortDesc
+                ? q.OrderByDescending(s => s.IsActive).ThenBy(s => s.StoreName)
+                : q.OrderBy(s => s.IsActive).ThenBy(s => s.StoreName),
+            "isdefault" or "default" => input.SortDesc
+                ? q.OrderByDescending(s => s.IsDefault).ThenBy(s => s.StoreName)
+                : q.OrderBy(s => s.IsDefault).ThenBy(s => s.StoreName),
+            _ => input.SortDesc
+                ? q.OrderByDescending(s => s.StoreName)
+                : q.OrderByDescending(s => s.IsDefault).ThenBy(s => s.StoreName)
+        };
+
+        var total = await q.CountAsync(ct);
+        var stores = await q
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(s => new OutputStoreSelect
             {
                 IdStore = s.IdStore,
@@ -221,26 +268,101 @@ public class CompanyRepository : ICompanyRepository
             .Select(l => (int?)l.MaxStores)
             .FirstOrDefaultAsync(ct) ?? 1;
 
-        var count = stores.Count(s => s.IsActive);
+        var count = await GetActiveStoreCountAsync(ct);
 
         return new OutputStoreList
         {
             CurrentStoreCount = count,
             MaxStores = max,
             CanCreateStore = input.CanCreate && count < max,
-            Stores = stores
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize,
+            Stores = stores,
+            Filter = new InputStoreList
+            {
+                Search = input.Search,
+                ActiveOnly = input.ActiveOnly,
+                Page = page,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortDesc = input.SortDesc
+            }
         };
+    }
+
+    public async Task<OutputStoreAccessibleList> ListAccessibleStoresAsync(
+        InputStoreAccessibleList input,
+        CancellationToken ct = default)
+    {
+        var stores = await (
+            from a in _db.UserStoreAccess.AsNoTracking()
+            join s in _db.Stores.AsNoTracking() on a.FkStore equals s.IdStore
+            where a.FkUser == input.IdUser
+                  && !a.Cancelled
+                  && !s.Cancelled
+                  && s.IsActive
+            orderby s.IsDefault descending, s.StoreName
+            select new OutputStoreSelect
+            {
+                IdStore = s.IdStore,
+                StoreCode = s.StoreCode,
+                StoreName = s.StoreName,
+                Email = s.Email,
+                Phone = s.Phone,
+                AddressLine1 = s.AddressLine1,
+                AddressLine2 = s.AddressLine2,
+                City = s.City,
+                State = s.State,
+                PostalCode = s.PostalCode,
+                Country = s.Country,
+                IsDefault = s.IsDefault,
+                IsActive = s.IsActive
+            }).ToListAsync(ct);
+
+        return new OutputStoreAccessibleList { Stores = stores };
     }
 
     public Task<int> GetActiveStoreCountAsync(CancellationToken ct = default) =>
         _db.Stores.CountAsync(s => s.IsActive && !s.Cancelled, ct);
 
+    public Task<int> GetActiveUserCountAsync(CancellationToken ct = default) =>
+        _db.Users.CountAsync(u => u.IsActive && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+
     public async Task<OutputStoreCreate> CreateStoreAsync(InputStoreCreate input, CancellationToken ct = default)
     {
+        var code = input.StoreCode.Trim().ToUpperInvariant();
+        var duplicate = await _db.Stores.AnyAsync(
+            s => s.FkCompany == input.FkCompany && s.StoreCode == code && !s.Cancelled, ct);
+        if (duplicate)
+        {
+            return new OutputStoreCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A store with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        if (input.IsDefault)
+        {
+            var currentDefaults = await _db.Stores
+                .Where(s => s.FkCompany == input.FkCompany && s.IsDefault && !s.Cancelled)
+                .ToListAsync(ct);
+            foreach (var row in currentDefaults)
+            {
+                row.IsDefault = false;
+                row.UpdatedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync(ct);
+        }
+
         var entity = new Store
         {
             FkCompany = input.FkCompany,
-            StoreCode = input.StoreCode.Trim().ToUpperInvariant(),
+            StoreCode = code,
             StoreName = input.StoreName.Trim(),
             Email = input.Email?.Trim(),
             Phone = input.Phone?.Trim(),
@@ -257,6 +379,7 @@ public class CompanyRepository : ICompanyRepository
 
         _db.Stores.Add(entity);
         await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
 
         return new OutputStoreCreate
         {
@@ -294,7 +417,59 @@ public class CompanyRepository : ICompanyRepository
             };
         }
 
-        store.StoreCode = input.StoreCode.Trim().ToUpperInvariant();
+        var code = input.StoreCode.Trim().ToUpperInvariant();
+        var duplicate = await _db.Stores.AnyAsync(
+            s => s.FkCompany == store.FkCompany
+                 && s.StoreCode == code
+                 && s.IdStore != store.IdStore
+                 && !s.Cancelled, ct);
+        if (duplicate)
+        {
+            return new OutputStoreUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A store with this code already exists.",
+                StatusCode = 409
+            };
+        }
+
+        if (!input.IsActive && store.IsDefault)
+        {
+            return new OutputStoreUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "Promote another store to default before deactivating the current default.",
+                StatusCode = 409
+            };
+        }
+
+        if (!input.IsDefault && store.IsDefault)
+        {
+            return new OutputStoreUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "Promote another store to default before removing the default flag from this store.",
+                StatusCode = 409
+            };
+        }
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        if (input.IsDefault && !store.IsDefault)
+        {
+            var others = await _db.Stores
+                .Where(s => s.FkCompany == store.FkCompany && s.IdStore != store.IdStore && s.IsDefault && !s.Cancelled)
+                .ToListAsync(ct);
+            foreach (var row in others)
+            {
+                row.IsDefault = false;
+                row.UpdatedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync(ct);
+            store.IsDefault = true;
+        }
+
+        store.StoreCode = code;
         store.StoreName = input.StoreName.Trim();
         store.Email = input.Email?.Trim();
         store.Phone = input.Phone?.Trim();
@@ -305,13 +480,9 @@ public class CompanyRepository : ICompanyRepository
         store.PostalCode = input.PostalCode?.Trim();
         store.Country = input.Country?.Trim();
         store.IsActive = input.IsActive;
-        if (input.IsDefault)
-        {
-            store.IsDefault = true;
-        }
-
         store.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
 
         return new OutputStoreUpdate
         {
@@ -330,6 +501,47 @@ public class CompanyRepository : ICompanyRepository
             PostalCode = store.PostalCode,
             Country = store.Country,
             IsDefault = store.IsDefault,
+            IsActive = store.IsActive
+        };
+    }
+
+    public async Task<OutputStoreStatusUpdate> UpdateStoreStatusAsync(
+        InputStoreStatusUpdate input,
+        CancellationToken ct = default)
+    {
+        var store = await _db.Stores.FirstOrDefaultAsync(
+            s => s.IdStore == input.IdStore && !s.Cancelled, ct);
+
+        if (store is null)
+        {
+            return new OutputStoreStatusUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "Store not found.",
+                StatusCode = 404
+            };
+        }
+
+        if (!input.IsActive && store.IsDefault)
+        {
+            return new OutputStoreStatusUpdate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "Promote another store to default before deactivating the current default.",
+                StatusCode = 409
+            };
+        }
+
+        store.IsActive = input.IsActive;
+        store.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return new OutputStoreStatusUpdate
+        {
+            ResponseCode = 0,
+            ResponseMsg = "Updated",
+            StatusCode = 200,
+            IdStore = store.IdStore,
             IsActive = store.IsActive
         };
     }

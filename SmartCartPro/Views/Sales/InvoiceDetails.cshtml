@@ -1,0 +1,253 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputSaleSelect
+@{
+    ViewData["Title"] = Model.InvoiceNumber;
+    var canCancel = await Access.CanAsync("pos.cancel") && Model.CanCancel;
+    var canReturn = await Access.CanAsync("pos.return") && Model.CanReturn;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+    string MethodLabel(string method) => method switch
+    {
+        "cash" => "Cash",
+        "card" => "Card",
+        "upi" => "UPI",
+        "wallet" => "Wallet",
+        "bank" => "Bank",
+        "other" => "Other",
+        _ => method
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item"><a asp-action="Invoices">Invoices</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.InvoiceNumber</li>
+    </ol>
+</nav>
+
+<div id="invoiceDetailsPage"
+     data-cancel-url="@Url.Action("CancelSale", new { id = Model.IdSale })"
+     data-sale-id="@Model.IdSale">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="h3 mb-0">@Model.InvoiceNumber</h1>
+                <partial name="_InvoiceStatusBadge" model="Model.Status" />
+            </div>
+            <p class="text-muted mb-0">
+                @(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in" : Model.CustomerName)
+                · <time data-sc-utc="@TimeDisplay.Iso(Model.SaleDate)" data-sc-format="datetime">@Model.SaleDate.ToString("dd MMM yyyy HH:mm")</time>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Invoices">
+                <i class="bi bi-arrow-left me-1"></i>Back to list
+            </a>
+            <a class="btn btn-outline-secondary" asp-action="InvoicePrint" asp-route-id="@Model.IdSale" target="_blank" rel="noopener">
+                <i class="bi bi-printer me-1"></i>Print
+            </a>
+            @if (canReturn)
+            {
+                <a class="btn btn-outline-primary" asp-action="Return" asp-route-id="@Model.IdSale">
+                    <i class="bi bi-arrow-return-left me-1"></i>Return
+                </a>
+            }
+            @if (canCancel)
+            {
+                <button type="button" class="btn btn-outline-danger" id="invoiceCancelOpen">
+                    <i class="bi bi-x-circle me-1"></i>Cancel sale
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (Model.Cancelled)
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Cancelled</strong>
+            @if (Model.CancelledOn is not null)
+            {
+                <span> on <time data-sc-utc="@TimeDisplay.Iso(Model.CancelledOn)" data-sc-format="datetime">@Model.CancelledOn.Value.ToString("dd MMM yyyy HH:mm")</time></span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CancelledReason))
+            {
+                <div class="mt-1">Reason: @Model.CancelledReason</div>
+            }
+        </div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Customer</h2>
+                    <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in" : Model.CustomerName)</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerPhone))
+                    {
+                        <div class="small text-muted">@Model.CustomerPhone</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                    {
+                        <div class="small text-muted text-break">@Model.CustomerEmail</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Store</h2>
+                    <div class="fw-semibold">@Model.StoreName</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.StorePhone))
+                    {
+                        <div class="small text-muted">@Model.StorePhone</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.StoreAddress))
+                    {
+                        <div class="small text-muted">@Model.StoreAddress</div>
+                    }
+                    <div class="small text-muted mt-2">
+                        Cashier @(string.IsNullOrWhiteSpace(Model.CashierName) ? "—" : Model.CashierName)
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Totals</h2>
+                    <dl class="row small mb-0">
+                        <dt class="col-6 fw-normal text-muted">Subtotal</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.SubTotal)">@Money(Model.SubTotal)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Discount</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Tax</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Total</dt>
+                        <dd class="col-6 text-end mb-1 fw-semibold"><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Paid</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.PaidAmount)">@Money(Model.PaidAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Change</dt>
+                        <dd class="col-6 text-end mb-0"><span data-sc-money="@Raw(Model.ChangeGiven)">@Money(Model.ChangeGiven)</span></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h2 class="h6 text-muted text-uppercase mb-3">Lines</h2>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Qty</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Discount</th>
+                            <th class="text-end">Tax</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr>
+                            <td>
+                                @line.ProductName
+                                @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                {
+                                    <span class="text-muted"> · @line.VariantName</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.Sku))
+                                {
+                                    <div class="small text-muted">@line.Sku</div>
+                                }
+                            </td>
+                            <td class="text-end">@Qty(line.Quantity)</td>
+                            <td class="text-end"><span data-sc-money="@Raw(line.UnitPrice)">@Money(line.UnitPrice)</span></td>
+                            <td class="text-end"><span data-sc-money="@Raw(line.DiscountAmount)">@Money(line.DiscountAmount)</span></td>
+                            <td class="text-end"><span data-sc-money="@Raw(line.TaxAmount)">@Money(line.TaxAmount)</span></td>
+                            <td class="text-end"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h2 class="h6 text-muted text-uppercase mb-3">Payments</h2>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Paid at</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var pay in Model.Payments)
+                    {
+                        <tr>
+                            <td>@MethodLabel(pay.PaymentMethod)</td>
+                            <td>@(string.IsNullOrWhiteSpace(pay.ReferenceNo) ? "—" : pay.ReferenceNo)</td>
+                            <td>
+                                <time data-sc-utc="@TimeDisplay.Iso(pay.PaidAt)" data-sc-format="datetime">@pay.PaidAt.ToString("dd MMM yyyy HH:mm")</time>
+                            </td>
+                            <td class="text-end"><span data-sc-money="@Raw(pay.Amount)">@Money(pay.Amount)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h2 class="h6 text-muted text-uppercase mb-2">Notes</h2>
+                <div class="text-break" style="white-space: pre-wrap;">@Model.Notes</div>
+            </div>
+        </div>
+    }
+
+    @if (canCancel)
+    {
+        <div id="invoiceCancelModal" class="sc-modal d-none" hidden>
+            <div class="sc-modal-dialog">
+                <form id="invoiceCancelForm" class="sc-modal-content" novalidate>
+                    <h2 class="h5 mb-2">Cancel this sale</h2>
+                    <p class="text-muted small">Stock is put back. This cannot be undone. Sales with returns cannot be cancelled.</p>
+                    <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                    <div class="mb-3">
+                        <label class="form-label" for="cancelReason">Reason</label>
+                        <textarea id="cancelReason" name="Reason" class="form-control" rows="3" minlength="3" maxlength="500" required></textarea>
+                        <span class="text-danger small" data-valmsg-for="Reason"></span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger" data-sc-busy-text="Cancelling…">Cancel sale</button>
+                        <button type="button" class="btn btn-outline-secondary" id="invoiceCancelClose">Keep sale</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pos.css" asp-append-version="true" />
+}
+@section Scripts {
+    <script src="~/js/sales/invoices.js" asp-append-version="true"></script>
+}

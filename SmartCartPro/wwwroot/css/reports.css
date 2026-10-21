@@ -1,0 +1,44 @@
+.sc-report-kpi .card-body {
+  min-height: 5.5rem;
+}
+
+.sc-chart {
+  width: 100%;
+  min-height: 240px;
+}
+
+.sc-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sc-report-cards a.card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.sc-report-cards a.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+}
+
+@media print {
+  .sc-report-filters,
+  .sc-report-actions,
+  .breadcrumb,
+  .navbar,
+  .sidebar,
+  .app-sidebar,
+  footer {
+    display: none !important;
+  }
+
+  .sc-chart svg {
+    max-height: 280px;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+}

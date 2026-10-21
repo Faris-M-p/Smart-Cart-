@@ -1,0 +1,265 @@
+@model OutputProductReviewList
+@{
+    ViewData["Title"] = "Product reviews";
+    var f = Model.Filter ?? new InputProductReviewList();
+    var fromText = f.From?.ToString("yyyy-MM-dd");
+    var toText = f.To?.ToString("yyyy-MM-dd");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search)
+                     || !string.IsNullOrWhiteSpace(f.Status)
+                     || f.Rating.HasValue
+                     || f.From is not null
+                     || f.To is not null;
+    var approveUrl = Url.Action("Approve", "ProductReview")!;
+    var hideUrl = Url.Action("Hide", "ProductReview")!;
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("All statuses", "", string.IsNullOrEmpty(f.Status)),
+        new("Pending", "pending", f.Status == "pending"),
+        new("Approved", "approved", f.Status == "approved")
+    };
+    var ratingItems = new List<SelectListItem> { new("All ratings", "", !f.Rating.HasValue) };
+    for (var star = 5; star >= 1; star--)
+        ratingItems.Add(new SelectListItem(star + (star == 1 ? " star" : " stars"), star.ToString(), f.Rating == star));
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var pageHeader = (
+        Title: "Product reviews",
+        Subtitle: "Moderate customer ratings before they appear on products",
+        ActionText: (string?)null,
+        ActionUrl: (string?)null);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            Status = f.Status,
+            Rating = f.Rating,
+            From = fromText,
+            To = toText,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    string Truncate(string? text, int max = 80)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "—";
+        return text.Length > max ? text[..max] + "…" : text;
+    }
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["Status"] = f.Status,
+            ["Rating"] = f.Rating,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Catalog</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Reviews</li>
+    </ol>
+</nav>
+
+<partial name="_PageHeader" model="pageHeader" />
+
+<div id="reviewListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="reviewSearch">Search</label>
+                    <input id="reviewSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Product, customer, title or text" autocomplete="off" />
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="reviewStatus">Status</label>
+                    <select id="reviewStatus" name="Status" class="form-select" asp-items="statusItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="reviewRating">Rating</label>
+                    <select id="reviewRating" name="Rating" class="form-select" asp-items="ratingItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="reviewFrom">From</label>
+                    <input id="reviewFrom" type="date" name="From" value="@fromText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="reviewTo">To</label>
+                    <input id="reviewTo" type="date" name="To" value="@toText" class="form-control" />
+                </div>
+                <div class="col-lg-1 col-md-3 col-6">
+                    <label class="form-label" for="reviewPageSize">Page size</label>
+                    <select id="reviewPageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary">Apply</button>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-star display-5 text-muted" aria-hidden="true"></i>
+                    @if (hasFilters)
+                    {
+                        <p class="text-muted my-3">No reviews match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear filters</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted my-3">No product reviews yet.</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("createdat")">
+                                        Date <i class="bi @SortIcon("createdat")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("productname")">
+                                        Product <i class="bi @SortIcon("productname")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("customername")">
+                                        Customer <i class="bi @SortIcon("customername")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("rating")">
+                                        Rating <i class="bi @SortIcon("rating")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-lg-table-cell">Review</th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isapproved")">
+                                        Status <i class="bi @SortIcon("isapproved")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="text-nowrap">
+                                    <time data-sc-utc="@TimeDisplay.Iso(item.CreatedAt)" data-sc-format="datetime">@item.CreatedAt.ToString("dd MMM yyyy HH:mm")</time>
+                                </td>
+                                <td class="fw-medium">@item.ProductName</td>
+                                <td>@item.CustomerName</td>
+                                <td class="text-nowrap" aria-label="@item.Rating of 5 stars">
+                                    @for (var star = 1; star <= 5; star++)
+                                    {
+                                        if (star <= item.Rating)
+                                        {
+                                            <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-star text-muted" aria-hidden="true"></i>
+                                        }
+                                    }
+                                </td>
+                                <td class="d-none d-lg-table-cell">
+                                    @if (!string.IsNullOrWhiteSpace(item.Title))
+                                    {
+                                        <div class="fw-medium">@item.Title</div>
+                                    }
+                                    <div class="small text-muted">@Truncate(item.ReviewText)</div>
+                                </td>
+                                <td>
+                                    @if (item.IsApproved)
+                                    {
+                                        <span class="badge text-bg-success">Approved</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-warning">Pending</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (!item.IsApproved)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-success me-1"
+                                                data-sc-post="@approveUrl"
+                                                data-sc-param-id="@item.IdProductReview"
+                                                data-sc-confirm="Approve this review from @item.CustomerName? It will be visible on @item.ProductName."
+                                                data-sc-confirm-title="Approve review"
+                                                data-sc-confirm-ok="Approve"
+                                                data-sc-confirm-class="btn-success"
+                                                data-sc-after="reload">Approve</button>
+                                    }
+                                    @if (item.IsApproved)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-post="@hideUrl"
+                                                data-sc-param-id="@item.IdProductReview"
+                                                data-sc-confirm="Hide this review from @item.CustomerName? It will stay on file but will not appear on @item.ProductName."
+                                                data-sc-confirm-title="Hide review"
+                                                data-sc-confirm-ok="Hide"
+                                                data-sc-confirm-class="btn-warning"
+                                                data-sc-after="reload">Hide</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/reviews/reviews.js" asp-append-version="true"></script>
+}

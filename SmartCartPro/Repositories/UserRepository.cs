@@ -8,7 +8,8 @@ namespace SmartCartPro.Repositories;
 
 /// <summary>
 /// Employees (users), their single role and their store access. EF/LINQ only.
-/// Platform super admin accounts are excluded from every read and write here.
+/// Platform super admin accounts are excluded from every read and write here, and a company actor only
+/// reaches employees that have access to a store of that company.
 /// </summary>
 public class UserRepository : IUserRepository
 {
@@ -16,14 +17,35 @@ public class UserRepository : IUserRepository
 
     public UserRepository(SmartCartDbContext db) => _db = db;
 
+    /// <summary>True when the actor is limited to one company (anything except null or 0 = platform super admin).</summary>
+    private static bool IsCompanyScoped(int? actorFkCompany) =>
+        actorFkCompany.HasValue && actorFkCompany.Value != 0;
+
+    /// <summary>
+    /// Employees the actor may manage: not cancelled, never a platform super admin and, for a company actor,
+    /// only people with an active access row on a store of that company.
+    /// </summary>
+    private IQueryable<User> ScopedUsers(int? actorFkCompany, bool track)
+    {
+        var query = track ? _db.Users.AsQueryable() : _db.Users.AsNoTracking();
+        query = query.Where(u => !u.Cancelled && !u.IsPlatformSuperAdmin);
+
+        if (IsCompanyScoped(actorFkCompany))
+        {
+            var companyId = actorFkCompany!.Value;
+            query = query.Where(u => u.StoreAccess.Any(a => !a.Cancelled && a.Store!.FkCompany == companyId));
+        }
+
+        return query;
+    }
+
     public async Task<OutputUserList> ListUsersAsync(InputUserList input, CancellationToken ct = default)
     {
         var page = Math.Max(1, input.Page);
         var pageSize = input.PageSize <= 0 ? 25 : Math.Min(input.PageSize, 100);
         var sortBy = (input.SortBy ?? string.Empty).Trim().ToLowerInvariant();
 
-        var query = _db.Users.AsNoTracking()
-            .Where(u => !u.Cancelled && !u.IsPlatformSuperAdmin);
+        var query = ScopedUsers(input.ActorFkCompany, track: false);
 
         if (input.ActiveOnly == true)
         {
@@ -102,7 +124,7 @@ public class UserRepository : IUserRepository
             })
             .ToListAsync(ct);
 
-        var accessByUser = await LoadStoreAccessAsync(rows.Select(r => r.IdUser).ToList(), ct);
+        var accessByUser = await LoadStoreAccessAsync(rows.Select(r => r.IdUser).ToList(), input.ActorFkCompany, ct);
 
         return new OutputUserList
         {
@@ -129,8 +151,8 @@ public class UserRepository : IUserRepository
 
     public async Task<OutputUserSelect?> GetUserAsync(InputUserSelect input, CancellationToken ct = default)
     {
-        var u = await _db.Users.AsNoTracking()
-            .Where(x => x.IdUser == input.IdUser && !x.Cancelled && !x.IsPlatformSuperAdmin)
+        var u = await ScopedUsers(input.ActorFkCompany, track: false)
+            .Where(x => x.IdUser == input.IdUser)
             .Select(x => new
             {
                 x.IdUser,
@@ -152,7 +174,7 @@ public class UserRepository : IUserRepository
 
         if (u is null) return null;
 
-        var accessByUser = await LoadStoreAccessAsync(new List<int> { u.IdUser }, ct);
+        var accessByUser = await LoadStoreAccessAsync(new List<int> { u.IdUser }, input.ActorFkCompany, ct);
 
         return new OutputUserSelect
         {
@@ -186,9 +208,9 @@ public class UserRepository : IUserRepository
             .ToListAsync(ct);
 
         var storeQuery = _db.Stores.AsNoTracking().Where(s => !s.Cancelled);
-        if (input.FkCompany.HasValue && input.FkCompany.Value > 0)
+        if (IsCompanyScoped(input.FkCompany))
         {
-            var companyId = input.FkCompany.Value;
+            var companyId = input.FkCompany!.Value;
             storeQuery = storeQuery.Where(s => s.FkCompany == companyId);
         }
 
@@ -259,8 +281,8 @@ public class UserRepository : IUserRepository
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        var entity = await _db.Users.FirstOrDefaultAsync(
-            u => u.IdUser == input.IdUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+        var entity = await ScopedUsers(input.ActorFkCompany, track: true)
+            .FirstOrDefaultAsync(u => u.IdUser == input.IdUser, ct);
         if (entity is null) return null;
 
         var now = DateTime.UtcNow;
@@ -284,16 +306,34 @@ public class UserRepository : IUserRepository
             _db.UserRoles.Add(new UserRole { FkUser = entity.IdUser, FkRole = input.FkRole, CreatedAt = now });
         }
 
-        // Store access (soft cancel). Pass 1 cancels/revives/adds rows and clears stale default flags,
-        // pass 2 sets the single default, so the "one default per user" index is never violated.
-        var wanted = input.StoreIds.Distinct().ToList();
-        var defaultStoreId = input.DefaultStoreId.HasValue && wanted.Contains(input.DefaultStoreId.Value)
-            ? input.DefaultStoreId.Value
-            : (wanted.Count > 0 ? wanted[0] : 0);
+        // Store access (soft cancel). Only the stores of the actor's company are managed here: rows for stores of
+        // another company (an employee shared across companies) are left exactly as they are.
+        // Pass 1 cancels/revives/adds rows and clears stale default flags, pass 2 sets the single default,
+        // so the "one default per user" index is never violated.
+        HashSet<int>? managedStoreIds = null;
+        if (IsCompanyScoped(input.ActorFkCompany))
+        {
+            var companyId = input.ActorFkCompany!.Value;
+            var companyStoreIds = await _db.Stores.AsNoTracking()
+                .Where(s => s.FkCompany == companyId)
+                .Select(s => s.IdStore)
+                .ToListAsync(ct);
+            managedStoreIds = new HashSet<int>(companyStoreIds);
+        }
 
+        bool IsManaged(int storeId) => managedStoreIds is null || managedStoreIds.Contains(storeId);
+
+        var wanted = input.StoreIds.Distinct().Where(IsManaged).ToList();
         var access = await _db.UserStoreAccess.Where(a => a.FkUser == entity.IdUser).ToListAsync(ct);
 
-        foreach (var row in access)
+        // A default held on another company's store cannot be moved from here (one default per employee).
+        var defaultStoreId = access.Any(a => !a.Cancelled && a.IsDefault && !IsManaged(a.FkStore))
+            ? 0
+            : (input.DefaultStoreId.HasValue && wanted.Contains(input.DefaultStoreId.Value)
+                ? input.DefaultStoreId.Value
+                : (wanted.Count > 0 ? wanted[0] : 0));
+
+        foreach (var row in access.Where(a => IsManaged(a.FkStore)))
         {
             var keep = wanted.Contains(row.FkStore);
             var wasCancelled = row.Cancelled;
@@ -353,8 +393,8 @@ public class UserRepository : IUserRepository
 
     public async Task<OutputUserStatusUpdate?> UpdateUserStatusAsync(InputUserStatusUpdate input, CancellationToken ct = default)
     {
-        var entity = await _db.Users.FirstOrDefaultAsync(
-            u => u.IdUser == input.IdUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+        var entity = await ScopedUsers(input.ActorFkCompany, track: true)
+            .FirstOrDefaultAsync(u => u.IdUser == input.IdUser, ct);
         if (entity is null) return null;
 
         entity.IsActive = input.IsActive;
@@ -366,8 +406,8 @@ public class UserRepository : IUserRepository
 
     public async Task<OutputUserPasswordUpdate?> UpdateUserPasswordAsync(InputUserPasswordUpdate input, CancellationToken ct = default)
     {
-        var entity = await _db.Users.FirstOrDefaultAsync(
-            u => u.IdUser == input.IdUser && !u.Cancelled && !u.IsPlatformSuperAdmin, ct);
+        var entity = await ScopedUsers(input.ActorFkCompany, track: true)
+            .FirstOrDefaultAsync(u => u.IdUser == input.IdUser, ct);
         if (entity is null) return null;
 
         entity.PasswordHash = input.PasswordHash;
@@ -398,17 +438,27 @@ public class UserRepository : IUserRepository
             .Distinct()
             .ToListAsync(ct);
 
-    /// <summary>Active (not cancelled) store access per user, default store first.</summary>
+    /// <summary>
+    /// Active (not cancelled) store access per user, default store first.
+    /// A company actor only sees the stores of that company.
+    /// </summary>
     private async Task<Dictionary<int, List<OutputUserStoreAccess>>> LoadStoreAccessAsync(
-        List<int> userIds, CancellationToken ct)
+        List<int> userIds, int? actorFkCompany, CancellationToken ct)
     {
         var result = new Dictionary<int, List<OutputUserStoreAccess>>();
         if (userIds.Count == 0) return result;
 
+        var storeQuery = _db.Stores.AsNoTracking().Where(s => !s.Cancelled);
+        if (IsCompanyScoped(actorFkCompany))
+        {
+            var companyId = actorFkCompany!.Value;
+            storeQuery = storeQuery.Where(s => s.FkCompany == companyId);
+        }
+
         var rows = await (
             from a in _db.UserStoreAccess.AsNoTracking()
-            join s in _db.Stores.AsNoTracking() on a.FkStore equals s.IdStore
-            where userIds.Contains(a.FkUser) && !a.Cancelled && !s.Cancelled
+            join s in storeQuery on a.FkStore equals s.IdStore
+            where userIds.Contains(a.FkUser) && !a.Cancelled
             orderby a.IsDefault descending, s.StoreName
             select new { a.FkUser, s.IdStore, s.StoreName, a.IsDefault, s.IsActive })
             .ToListAsync(ct);

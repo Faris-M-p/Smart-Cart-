@@ -1,0 +1,199 @@
+@model OutputAuditLogList
+@{
+    ViewData["Title"] = "Audit log";
+    var f = Model.Filter ?? new InputAuditLogList();
+    var fromText = f.From?.ToString("yyyy-MM-dd");
+    var toText = f.To?.ToString("yyyy-MM-dd");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.EntityName)
+                     || f.EntityId.HasValue
+                     || f.FkUser.HasValue
+                     || f.FkStore.HasValue
+                     || !string.IsNullOrWhiteSpace(f.Action)
+                     || f.From is not null
+                     || f.To is not null;
+    var detailsUrl = Url.Action("Details", "Audit")!;
+
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var pageHeader = (
+        Title: "Audit log",
+        Subtitle: "Read-only trail of admin changes for this company",
+        ActionText: (string?)null,
+        ActionUrl: (string?)null);
+
+    string Truncate(string? text, int max = 60)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "—";
+        return text.Length > max ? text[..max] + "…" : text;
+    }
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["EntityName"] = f.EntityName,
+            ["EntityId"] = f.EntityId,
+            ["FkUser"] = f.FkUser,
+            ["FkStore"] = f.FkStore,
+            ["Action"] = f.Action,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["PageSize"] = f.PageSize
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Audit log</li>
+    </ol>
+</nav>
+
+<partial name="_PageHeader" model="pageHeader" />
+
+<div id="auditListPage" data-details-url="@detailsUrl">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label" for="auditEntity">Entity</label>
+                    <input id="auditEntity" type="search" name="EntityName" value="@f.EntityName"
+                           class="form-control" placeholder="Role, User…" autocomplete="off" />
+                </div>
+                <div class="col-lg-1 col-md-2 col-6">
+                    <label class="form-label" for="auditEntityId">ID</label>
+                    <input id="auditEntityId" type="number" name="EntityId" value="@f.EntityId"
+                           class="form-control" min="1" />
+                </div>
+                <div class="col-lg-2 col-md-3">
+                    <label class="form-label" for="auditAction">Action</label>
+                    <input id="auditAction" type="search" name="Action" value="@f.Action"
+                           class="form-control" placeholder="Create, Update…" autocomplete="off" />
+                </div>
+                <div class="col-lg-1 col-md-3 col-6">
+                    <label class="form-label" for="auditUser">User ID</label>
+                    <input id="auditUser" type="number" name="FkUser" value="@f.FkUser"
+                           class="form-control" min="1" />
+                </div>
+                <div class="col-lg-1 col-md-3 col-6">
+                    <label class="form-label" for="auditStore">Store ID</label>
+                    <input id="auditStore" type="number" name="FkStore" value="@f.FkStore"
+                           class="form-control" min="1" />
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="auditFrom">From</label>
+                    <input id="auditFrom" type="date" name="From" value="@fromText" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="form-label" for="auditTo">To</label>
+                    <input id="auditTo" type="date" name="To" value="@toText" class="form-control" />
+                </div>
+                <div class="col-lg-1 col-md-3 col-6">
+                    <label class="form-label" for="auditPageSize">Page size</label>
+                    <select id="auditPageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary">Apply</button>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index">Reset to last 7 days</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-journal-text display-5 text-muted" aria-hidden="true"></i>
+                    @if (hasFilters)
+                    {
+                        <p class="text-muted my-3">No audit entries match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Reset to last 7 days</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted my-3">No audit entries in this period.</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>User</th>
+                                <th>Store</th>
+                                <th>Entity</th>
+                                <th>Action</th>
+                                <th class="d-none d-lg-table-cell">Details</th>
+                                <th class="text-end"> </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="text-nowrap">
+                                    <time data-sc-utc="@TimeDisplay.Iso(item.CreatedAt)" data-sc-format="datetime">@item.CreatedAt.ToString("dd MMM yyyy HH:mm")</time>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(item.UserName) ? "—" : item.UserName)</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.StoreName) ? "—" : item.StoreName)</td>
+                                <td>
+                                    <span class="fw-medium">@item.EntityName</span>
+                                    @if (item.EntityId.HasValue)
+                                    {
+                                        <span class="text-muted">#@item.EntityId</span>
+                                    }
+                                </td>
+                                <td>@item.Action</td>
+                                <td class="d-none d-lg-table-cell text-muted small">@Truncate(item.Details)</td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-sc-audit-details
+                                            data-id="@item.IdAuditLog">View JSON</button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="auditDetailsModal" tabindex="-1" aria-labelledby="auditDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="auditDetailsTitle">Audit details</h2>
+                <button type="button" class="btn-close" data-audit-close aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row small mb-3" data-audit-meta></dl>
+                <pre class="bg-light border rounded p-3 mb-0 small" data-audit-json style="white-space: pre-wrap;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-audit-close>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade d-none" data-audit-backdrop></div>
+
+@section Scripts {
+    <script src="~/js/audit/audit.js" asp-append-version="true"></script>
+}

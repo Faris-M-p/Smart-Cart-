@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartCartPro.Exceptions;
+using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -15,25 +15,29 @@ public class CompanyController : Controller
     public CompanyController(ICompanyService svc) => _svc = svc;
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
-    private bool CanBootstrap => AuthClaims.IsPlatformSuperAdminUser(User);
+    private bool IsPlatformAdmin => AuthClaims.IsPlatformSuperAdminUser(User);
 
     /// <summary>
-    /// Shows the company profile form with current tenant details.
-    /// Used by authorized admins and platform super admins during bootstrap.
+    /// Shows the company profile form and a read-only license summary for platform administrators.
+    /// Company admins edit their own company; the platform Super Admin creates one when none exists.
     /// </summary>
     [HttpGet]
+    [RequirePermission("settings.manage")]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var output = await _svc.GetCompanyAsync(new InputCompanySelect { CanCreate = CanBootstrap }, ct);
+        var output = await _svc.GetCompanyAsync(new InputCompanySelect { CanCreate = IsPlatformAdmin }, ct);
+        ViewBag.IsPlatformAdmin = IsPlatformAdmin;
+        ViewBag.License = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
         return View(output.ToView());
     }
 
     /// <summary>
-    /// Creates or updates the company profile from the form submission.
-    /// Platform super admins bootstrap; others update existing company data.
+    /// Creates or updates the company legal name, tax and registration numbers, contact and address.
+    /// Platform Super Admin bootstraps the first company; company admins save changes to the existing row.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission("settings.manage")]
     public async Task<IActionResult> Save(InCompanyUpdateView model, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
@@ -43,7 +47,7 @@ public class CompanyController : Controller
             var input = new InputCompanyCreate
             {
                 ActorUserId = ActorId,
-                CanCreate = CanBootstrap,
+                CanCreate = IsPlatformAdmin,
                 CompanyName = model.CompanyName,
                 CompanyCode = model.CompanyCode,
                 LegalName = model.LegalName,
@@ -64,41 +68,37 @@ public class CompanyController : Controller
                 IsActive = model.IsActive
             };
             var created = await _svc.CreateCompanyAsync(input, ct);
-            if (!created.Ok)
-                throw new UpdateFailedException("Unable to save company.", created.ResponseMsg ?? "Unable to save company.");
-
-            return CommonHelpers.SuccessResponse("Company profile saved.", new { id = created.IdCompany });
+            return CommonHelpers.SuccessResponse(
+                "Company profile saved.",
+                new { id = created.IdCompany, redirectUrl = Url.Action(nameof(Index)) });
         }
-        else
+
+        var updateInput = new InputCompanyUpdate
         {
-            var input = new InputCompanyUpdate
-            {
-                ActorUserId = ActorId,
-                IdCompany = model.IdCompany,
-                CompanyName = model.CompanyName,
-                CompanyCode = model.CompanyCode,
-                LegalName = model.LegalName,
-                TaxNumber = model.TaxNumber,
-                RegistrationNo = model.RegistrationNo,
-                Email = model.Email,
-                Phone = model.Phone,
-                Website = model.Website,
-                AddressLine1 = model.AddressLine1,
-                AddressLine2 = model.AddressLine2,
-                City = model.City,
-                State = model.State,
-                PostalCode = model.PostalCode,
-                Country = model.Country,
-                CurrencyCode = model.CurrencyCode,
-                TimeZone = model.TimeZone,
-                Locale = model.Locale,
-                IsActive = model.IsActive
-            };
-            var updated = await _svc.UpdateCompanyAsync(input, ct);
-            if (!updated.Ok)
-                throw new UpdateFailedException("Unable to save company.", updated.ResponseMsg ?? "Unable to save company.");
-
-            return CommonHelpers.SuccessResponse("Company profile saved.", new { id = updated.IdCompany });
-        }
+            ActorUserId = ActorId,
+            IdCompany = model.IdCompany,
+            CompanyName = model.CompanyName,
+            CompanyCode = model.CompanyCode,
+            LegalName = model.LegalName,
+            TaxNumber = model.TaxNumber,
+            RegistrationNo = model.RegistrationNo,
+            Email = model.Email,
+            Phone = model.Phone,
+            Website = model.Website,
+            AddressLine1 = model.AddressLine1,
+            AddressLine2 = model.AddressLine2,
+            City = model.City,
+            State = model.State,
+            PostalCode = model.PostalCode,
+            Country = model.Country,
+            CurrencyCode = model.CurrencyCode,
+            TimeZone = model.TimeZone,
+            Locale = model.Locale,
+            IsActive = model.IsActive
+        };
+        var updated = await _svc.UpdateCompanyAsync(updateInput, ct);
+        return CommonHelpers.SuccessResponse(
+            "Company profile saved.",
+            new { id = updated.IdCompany, redirectUrl = Url.Action(nameof(Index)) });
     }
 }

@@ -1,84 +1,330 @@
+@using SmartCartPro.Helpers
+@model SmartCartPro.Models.OutputDashboardSelect
 @{
     ViewData["Title"] = "Dashboard";
+    var kpis = Model.Kpis;
+    var currency = Model.Currency;
+    var trend7Json = System.Text.Json.JsonSerializer.Serialize(
+        Model.Trend7.Select(p => new { label = p.Label, value = p.NetSales }));
+    var trend30Json = System.Text.Json.JsonSerializer.Serialize(
+        Model.Trend30.Select(p => new { label = p.Label, value = p.NetSales }));
+    var payJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Payments.Select(p => new { label = p.PaymentMethod, value = p.Amount }));
+    var prodJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.TopProducts.Select(p => new { label = p.ProductName, value = p.Revenue }));
+    var invoiceTemplate = Url.Action("InvoiceDetails", "Sales", new { id = 0 });
+    var change = kpis?.TodayChangePercent ?? 0;
+    var changeClass = change > 0 ? "text-bg-success-subtle text-success" : (change < 0 ? "text-bg-danger-subtle text-danger" : "text-bg-secondary-subtle text-secondary");
+    var changeText = (change > 0 ? "+" : "") + change.ToString("0.0") + "% vs yesterday";
 }
+
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
         <h1 class="h3 mb-1">Dashboard</h1>
-        <p class="text-muted mb-0">Today’s store overview (sample numbers until data is connected).</p>
+        @if (Model.Mode == "platform")
+        {
+            <p class="text-muted mb-0">Installation licence and store capacity.</p>
+        }
+        else if (Model.Mode == "store")
+        {
+            <p class="text-muted mb-0">
+                Today’s overview@(string.IsNullOrWhiteSpace(Model.StoreName) ? "" : " · " + Model.StoreName)
+                <span class="ms-1">(@currency · @Model.TimeZoneId)</span>
+            </p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">Welcome. Use a quick action below to get started.</p>
+        }
     </div>
-    <a class="btn btn-primary" asp-controller="Sales" asp-action="Pos"><i class="bi bi-cash-register me-1"></i>Open POS</a>
+    @if (Model.CanRefresh)
+    {
+        <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">
+                Updated
+                <time data-generated data-sc-utc="@TimeDisplay.Iso(Model.GeneratedAt)" data-sc-format="datetime">
+                    @Model.GeneratedAt.ToString("dd MMM yyyy HH:mm")
+                </time>
+            </span>
+            <button type="button" class="btn btn-outline-secondary" data-sc-refresh>
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+        </div>
+    }
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Today’s sales</div>
-                <div class="fs-3 fw-semibold">₹ 48,250</div>
-                <span class="badge text-bg-success-subtle text-success">+12% vs yesterday</span>
+@if (Model.Mode == "platform" && Model.Platform is { } platform)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small">Plan</div>
+                    <div class="fs-4 fw-semibold text-capitalize">@platform.LicenseType</div>
+                    <span class="small text-muted">@platform.StatusLabel</span>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">POS invoices</div>
-                <div class="fs-3 fw-semibold">86</div>
-                <span class="text-muted small">This store</span>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small">Expiry</div>
+                    <div class="fs-4 fw-semibold">@(platform.ExpiryDate == default ? "—" : platform.ExpiryDate.ToString("dd MMM yyyy"))</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Online orders</div>
-                <div class="fs-3 fw-semibold">14</div>
-                <span class="badge text-bg-warning-subtle text-warning">3 pending</span>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small">Stores</div>
+                    <div class="fs-4 fw-semibold">@platform.StoresUsed / @platform.MaxStores</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Low stock items</div>
-                <div class="fs-3 fw-semibold">9</div>
-                <a class="small" asp-controller="Inventory" asp-action="Stock">View inventory</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3">
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pt-3">
-                <h2 class="h6 mb-0">Recent sales</h2>
-            </div>
-            <div class="card-body pt-0">
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead>
-                        <tbody>
-                            <tr><td>INV-1042</td><td>Walk-in</td><td>₹ 1,250</td><td><span class="badge text-bg-success">Paid</span></td></tr>
-                            <tr><td>INV-1041</td><td>Ravi Kumar</td><td>₹ 3,480</td><td><span class="badge text-bg-success">Paid</span></td></tr>
-                            <tr><td>INV-1040</td><td>Walk-in</td><td>₹ 620</td><td><span class="badge text-bg-success">Paid</span></td></tr>
-                        </tbody>
-                    </table>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small">Enabled modules</div>
+                    <div class="fs-4 fw-semibold">@platform.ModuleCount</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-5">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pt-3">
-                <h2 class="h6 mb-0">Quick actions</h2>
+}
+
+@if (Model.Mode == "store" && kpis is not null)
+{
+    <div id="dashboardPage"
+         data-sc-dashboard
+         data-auto-refresh="true"
+         data-currency="@currency"
+         data-snapshot-url="@Url.Action("Snapshot", "Dashboard")"
+         data-invoice-details="@invoiceTemplate">
+        <div class="row g-3 mb-4 sc-dash-kpi">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Sales today</div>
+                        <div class="fs-4 fw-semibold" data-kpi="salesToday">@currency @kpis.SalesToday.ToString("N2")</div>
+                        <span class="badge @changeClass" data-kpi="todayChange">@changeText</span>
+                    </div>
+                </div>
             </div>
-            <div class="card-body pt-0 d-grid gap-2">
-                <a class="btn btn-outline-primary text-start" asp-controller="Catalog" asp-action="Products"><i class="bi bi-box me-2"></i>Manage products</a>
-                <a class="btn btn-outline-primary text-start" asp-controller="Inventory" asp-action="Purchases"><i class="bi bi-truck me-2"></i>New purchase</a>
-                <a class="btn btn-outline-primary text-start" asp-controller="Sales" asp-action="OnlineOrders"><i class="bi bi-bag me-2"></i>Online orders</a>
-                <a class="btn btn-outline-primary text-start" asp-controller="Admin" asp-action="Stores"><i class="bi bi-shop me-2"></i>Company &amp; stores</a>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Sales this month</div>
+                        <div class="fs-4 fw-semibold" data-kpi="salesMonth">@currency @kpis.SalesMonth.ToString("N2")</div>
+                        <span class="small text-muted" data-kpi="invoicesToday">@kpis.InvoiceCountToday invoices today</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Low stock</div>
+                        <div class="fs-4 fw-semibold" data-kpi="lowStock">@kpis.LowStockCount</div>
+                        <a class="small" asp-controller="Inventory" asp-action="LowStock">View low stock</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Pending POs</div>
+                        <div class="fs-4 fw-semibold" data-kpi="pendingPo">@kpis.PendingPurchaseOrders</div>
+                        <span class="small text-muted">Posted or partially received</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Pending online orders</div>
+                        <div class="fs-4 fw-semibold" data-kpi="pendingOrders">@kpis.PendingOnlineOrders</div>
+                        <a class="small" asp-controller="OnlineOrder" asp-action="Index">View orders</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Open cash session</div>
+                        <div class="fs-4 fw-semibold" data-kpi="openCash">@kpis.OpenCashSessions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <h2 class="h6 mb-0" data-trend-title>7-day sales</h2>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Trend range">
+                            <button type="button" class="btn btn-outline-secondary active" data-trend="7">7 days</button>
+                            <button type="button" class="btn btn-outline-secondary" data-trend="30">30 days</button>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div data-chart="trend"
+                             data-sc-chart="line"
+                             data-sc-chart-title="7-day sales"
+                             data-sc-chart-json="@trend7Json"
+                             data-trend-7="@trend7Json"
+                             data-trend-30="@trend30Json"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h2 class="h6 mb-0">Payments this month</h2>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div data-chart="payments" data-sc-chart="donut" data-sc-chart-title="Payments this month" data-sc-chart-json="@payJson"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h2 class="h6 mb-0">Top products this month</h2>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div data-chart="products" data-sc-chart="bars" data-sc-chart-title="Top products" data-sc-chart-json="@prodJson"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between">
+                        <h2 class="h6 mb-0">Low stock</h2>
+                        <a class="small" asp-controller="Inventory" asp-action="LowStock">All low stock</a>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Product</th><th class="text-end">On hand</th><th class="text-end">Reorder</th></tr></thead>
+                                <tbody data-table="lowstock">
+                                @if (Model.LowStock.Count == 0)
+                                {
+                                    <tr><td colspan="3" class="text-muted text-center py-4">No low-stock items</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var row in Model.LowStock)
+                                    {
+                                        <tr>
+                                            <td>@row.ProductName</td>
+                                            <td class="text-end">@row.QuantityOnHand.ToString("0.###")</td>
+                                            <td class="text-end">@row.ReorderLevel.ToString("0.###")</td>
+                                        </tr>
+                                    }
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h2 class="h6 mb-0">Recent invoices</h2>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Invoice</th><th>Customer</th><th class="text-end">Amount</th><th>When</th></tr></thead>
+                                <tbody data-table="recent">
+                                @if (Model.RecentInvoices.Count == 0)
+                                {
+                                    <tr><td colspan="4" class="text-muted text-center py-4">No invoices yet</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var row in Model.RecentInvoices)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <a asp-controller="Sales" asp-action="InvoiceDetails" asp-route-id="@row.IdSale">@row.InvoiceNumber</a>
+                                            </td>
+                                            <td>@row.CustomerName</td>
+                                            <td class="text-end">@currency @row.TotalAmount.ToString("N2")</td>
+                                            <td>
+                                                <time data-sc-utc="@TimeDisplay.Iso(row.SaleDate)" data-sc-format="datetime">
+                                                    @row.SaleDate.ToString("dd MMM yyyy HH:mm")
+                                                </time>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h2 class="h6 mb-0">Quick actions</h2>
+                    </div>
+                    <div class="card-body pt-0 d-grid gap-2 sc-dash-actions">
+                        @foreach (var action in Model.QuickActions)
+                        {
+                            <a class="btn btn-outline-primary text-start" asp-controller="@action.Controller" asp-action="@action.Action">
+                                <i class="bi @action.Icon me-2"></i>@action.Title
+                            </a>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h2 class="h6 mb-0">Quick actions</h2>
+                </div>
+                <div class="card-body pt-0 d-grid gap-2 sc-dash-actions">
+                    @if (Model.QuickActions.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No actions are available for your role yet.</p>
+                    }
+                    else
+                    {
+                        foreach (var action in Model.QuickActions)
+                        {
+                            <a class="btn btn-outline-primary text-start" asp-controller="@action.Controller" asp-action="@action.Action">
+                                <i class="bi @action.Icon me-2"></i>@action.Title
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+@section Scripts {
+    @if (Model.CanRefresh)
+    {
+        <script src="~/js/sc-charts.js" asp-append-version="true"></script>
+        <script src="~/js/dashboard/dashboard.js" asp-append-version="true"></script>
+    }
+}

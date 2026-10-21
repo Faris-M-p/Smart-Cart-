@@ -1,0 +1,258 @@
+@model SmartCartPro.Models.OutputRoleList
+@{
+    ViewData["Title"] = "Roles & permissions";
+    var canManage = await Access.CanAsync("users.manage");
+    var f = Model.Filter ?? new SmartCartPro.Models.InputRoleList();
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.ActiveOnly.HasValue;
+    var addUrl = Url.Action("Create", "Role", new { returnUrl = currentListUrl })!;
+    var setActiveUrl = Url.Action("SetActive", "Role")!;
+    var deleteUrl = Url.Action("Delete", "Role")!;
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("Active", "true", statusValue == "true"),
+        new("Inactive", "false", statusValue == "false")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Roles &amp; permissions</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_PageHeader", (Title: "Roles & permissions", Subtitle: "Define what each kind of employee can see and do", ActionText: canManage ? "Add role" : null, ActionUrl: addUrl))
+
+<div id="roleListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3" data-sc-list-filter>
+                <div class="col-12 col-lg-6">
+                    <label class="form-label" for="roleSearch">Search</label>
+                    <input id="roleSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Role name, code or description" autocomplete="off" />
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="roleStatus">Status</label>
+                    <select id="roleStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit>
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="rolePageSize">Rows</label>
+                    <select id="rolePageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-12 col-lg-2 d-flex gap-1">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                </div>
+            </form>
+
+            @if (hasFilters)
+            {
+                <div class="mb-3">
+                    <a class="btn btn-sm btn-link px-0" asp-action="Index"><i class="bi bi-x-circle me-1"></i>Clear filters</a>
+                </div>
+            }
+
+            @if (Model.Roles.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-shield-lock display-5 text-muted"></i>
+                    <p class="text-muted my-3">@(hasFilters ? "No roles match your filters." : "No roles yet.")</p>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary me-2" asp-action="Index">Clear filters</a>
+                    }
+                    @if (canManage)
+                    {
+                        <a class="btn btn-primary" href="@addUrl"><i class="bi bi-plus-lg me-1"></i>Add role</a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("rolename")">
+                                        Role <i class="bi @SortIcon("rolename")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("rolecode")">
+                                        Code <i class="bi @SortIcon("rolecode")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-center">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("usercount")">
+                                        Employees <i class="bi @SortIcon("usercount")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-center d-none d-md-table-cell">Permissions</th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Roles)
+                        {
+                            var inUseText = item.UserCount == 1
+                                ? "1 employee still holds this role."
+                                : item.UserCount + " employees still hold this role.";
+                            var deactivateText = "Deactivate the role " + item.RoleName + "? It will no longer be offered when adding employees.";
+                            var activateText = "Activate the role " + item.RoleName + "? It will be offered again when adding employees.";
+                            var deleteText = "Delete the role " + item.RoleName + "? Its code stays reserved and it cannot be restored from this screen.";
+                            <tr data-role-id="@item.IdRole">
+                                <td>
+                                    <div class="fw-medium">
+                                        @item.RoleName
+                                        @if (item.IsSystem)
+                                        {
+                                            <span class="badge text-bg-info ms-1">System</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                    {
+                                        <div class="text-muted small text-truncate" style="max-width: 28rem;" title="@item.Description">@item.Description</div>
+                                    }
+                                </td>
+                                <td class="d-none d-md-table-cell"><code>@item.RoleCode</code></td>
+                                <td class="text-center">
+                                    <a asp-controller="Employee" asp-action="Index" asp-route-FkRole="@item.IdRole">@item.UserCount</a>
+                                </td>
+                                <td class="text-center d-none d-md-table-cell">
+                                    <span class="badge text-bg-light border">@item.PermissionCount</span>
+                                </td>
+                                <td><partial name="_StatusBadge" model="item.IsActive" /></td>
+                                <td class="text-end text-nowrap">
+                                    @if (canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.IdRole"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        if (item.IsActive)
+                                        {
+                                            if (item.IsSystem)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" disabled
+                                                        title="System roles cannot be deactivated.">Deactivate</button>
+                                            }
+                                            else if (item.UserCount > 0)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" disabled
+                                                        title="@inUseText">Deactivate</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                        data-sc-post="@setActiveUrl"
+                                                        data-sc-param-id="@item.IdRole"
+                                                        data-sc-param-isactive="false"
+                                                        data-sc-confirm="@deactivateText"
+                                                        data-sc-confirm-title="Deactivate role"
+                                                        data-sc-confirm-ok="Deactivate"
+                                                        data-sc-confirm-class="btn-warning">Deactivate</button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                                    data-sc-post="@setActiveUrl"
+                                                    data-sc-param-id="@item.IdRole"
+                                                    data-sc-param-isactive="true"
+                                                    data-sc-confirm="@activateText"
+                                                    data-sc-confirm-title="Activate role"
+                                                    data-sc-confirm-ok="Activate"
+                                                    data-sc-confirm-class="btn-success">Activate</button>
+                                        }
+
+                                        if (!item.IsSystem)
+                                        {
+                                            if (item.UserCount > 0)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger" disabled
+                                                        title="@inUseText">Delete</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                        data-sc-post="@deleteUrl"
+                                                        data-sc-param-id="@item.IdRole"
+                                                        data-sc-confirm="@deleteText"
+                                                        data-sc-confirm-title="Delete role"
+                                                        data-sc-confirm-ok="Delete"
+                                                        data-sc-confirm-class="btn-danger">Delete</button>
+                                            }
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
+        </div>
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/admin/role.js" asp-append-version="true"></script>
+}

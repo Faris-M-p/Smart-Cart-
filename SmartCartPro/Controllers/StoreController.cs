@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartCartPro.Exceptions;
+using SmartCartPro.Filters;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -23,32 +24,38 @@ public class StoreController : Controller
     private bool CanCreateStore => AuthClaims.IsPlatformSuperAdminUser(User);
 
     /// <summary>
-    /// Lists stores for the current company with create affordances when allowed.
-    /// Used by authenticated users managing multi-store operations.
+    /// Lists stores for the installation with a Default badge and license usage (x of y).
+    /// Company admins with settings.manage open this from Administration; Super Admin can create stores.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    [RequirePermission("settings.manage")]
+    public async Task<IActionResult> Index([FromQuery] InputStoreList input, CancellationToken ct)
     {
-        var model = await _svc.ListStoresAsync(new InputStoreList { CanCreate = CanCreateStore }, ct);
+        input.CanCreate = CanCreateStore;
+        var model = await _svc.ListStoresAsync(input, ct);
         return View(model);
     }
 
     /// <summary>
-    /// Renders the new-store creation form.
-    /// Platform super admins only.
+    /// Renders the new-store form (code, name, contact, address, default and active flags).
+    /// Platform Super Admin only; MaxStores from the license is enforced on save.
     /// </summary>
     [HttpGet]
     [Authorize(Policy = "PlatformSuperAdmin")]
-    public IActionResult Create() => View(new InStoreCreateView { IsActive = true });
+    public IActionResult Create(string? returnUrl)
+    {
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
+        return View(new InStoreCreateView { IsActive = true });
+    }
 
     /// <summary>
-    /// Persists a new store from submitted details.
-    /// Platform super admins only.
+    /// Persists a new store. The first store is always the default; later stores honour MaxStores.
+    /// Platform Super Admin only after reviewing the create form.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
-    public async Task<IActionResult> Create(InStoreCreateView model, CancellationToken ct)
+    public async Task<IActionResult> Create(InStoreCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
 
@@ -70,18 +77,19 @@ public class StoreController : Controller
             IsActive = model.IsActive
         };
         var result = await _svc.CreateStoreAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to create store.", result.ResponseMsg ?? "Unable to create store.");
-
-        return CommonHelpers.SuccessResponse("Store created.", new { id = result.IdStore });
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Index))!;
+        return CommonHelpers.SuccessResponse(
+            "Store created.",
+            new { id = result.IdStore, redirectUrl = listUrl });
     }
 
     /// <summary>
-    /// Loads a store into the edit form by identifier.
-    /// Used by authenticated users with store access.
+    /// Loads one store into the edit form for code, name, address and default flag.
+    /// Company admins with settings.manage open it from the store list.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    [RequirePermission("settings.manage")]
+    public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
         var store = await _svc.GetStoreAsync(new InputStoreSelect { IdStore = id }, ct);
         if (store is null)
@@ -89,16 +97,18 @@ public class StoreController : Controller
             return NotFound();
         }
 
+        ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
         return View(store.ToUpdateView());
     }
 
     /// <summary>
-    /// Updates store details from the edit form.
-    /// Used by authenticated users with store access.
+    /// Updates store details. Deactivating or un-flagging the current default without promoting another is rejected.
+    /// Company admins with settings.manage save from the edit form.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, InStoreUpdateView model, CancellationToken ct)
+    [RequirePermission("settings.manage")]
+    public async Task<IActionResult> Edit(int id, InStoreUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdStore = id;
         CommonHelpers.ValidateModelState(ModelState);
@@ -121,36 +131,76 @@ public class StoreController : Controller
             IsActive = model.IsActive
         };
         var result = await _svc.UpdateStoreAsync(input, ct);
-        if (!result.Ok)
-            throw new UpdateFailedException("Unable to update store.", result.ResponseMsg ?? "Unable to update store.");
-
-        return CommonHelpers.SuccessResponse("Store updated.", new { id = result.IdStore });
+        var listUrl = SafeReturnUrl(returnUrl) ?? Url.Action(nameof(Index))!;
+        return CommonHelpers.SuccessResponse(
+            "Store updated.",
+            new { id = result.IdStore, redirectUrl = listUrl });
     }
 
     /// <summary>
-    /// Switches the current user's active store context and re-issues the auth cookie.
-    /// Validates that the user has access to the requested store via user_store_access.
+    /// Activates or deactivates a store from the list. The current default cannot be deactivated.
+    /// Company admins confirm the change on the store list; there is no hard delete.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SetCurrentStore(int storeId, string? returnUrl, CancellationToken ct)
+    [RequirePermission("settings.manage")]
+    public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken ct)
     {
-        var rememberMe = Request.Cookies.ContainsKey(AuthClaims.TokenCookieName);
+        var input = new InputStoreStatusUpdate
+        {
+            ActorUserId = ActorId,
+            IdStore = id,
+            IsActive = isActive
+        };
+        var result = await _svc.SetStoreActiveAsync(input, ct);
+        return CommonHelpers.SuccessResponse(
+            result.IsActive ? "Store activated." : "Store deactivated.",
+            new { id = result.IdStore, isActive = result.IsActive });
+    }
 
+    /// <summary>
+    /// Switches the signed-in user's current store and re-issues the JWT cookie.
+    /// Requires an active user_store_access row for the target store; used by the header store switcher.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetCurrentStore(int storeId, CancellationToken ct)
+    {
+        if (AuthClaims.IsPlatformSuperAdminUser(User))
+        {
+            throw new ForbiddenException(
+                "Platform administrators are not tied to a store.",
+                $"Actor {ActorId} is a platform Super Admin.");
+        }
+
+        var accessInput = new InputStoreAccessibleList { IdUser = ActorId };
+        var accessible = await _svc.ListAccessibleStoresAsync(accessInput, ct);
+        if (!accessible.Stores.Any(s => s.IdStore == storeId))
+        {
+            throw new ForbiddenException(
+                "You do not have access to that store.",
+                $"User {ActorId} has no user_store_access row for store {storeId}.");
+        }
+
+        var rememberMe = AuthClaims.WantsPersistentSession(User);
         var result = await _authSvc.SwitchStoreAsync(ActorId, storeId, rememberMe, ct);
         if (!result.Success)
-            throw new UpdateFailedException(
-                "Could not switch store.",
-                result.ErrorMessage ?? "Could not switch store.");
+        {
+            throw new ForbiddenException(
+                result.ErrorMessage ?? "You do not have access to that store.",
+                result.ErrorMessage ?? $"SwitchStoreAsync failed for user {ActorId}, store {storeId}.");
+        }
 
         _authSvc.SetAuthCookie(result.Token!, result.ExpiresAt, rememberMe);
-
-        var redirectUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
-            ? returnUrl
-            : Url.Action("Index", "Home")!;
-
         return CommonHelpers.SuccessResponse(
-            "Store switched successfully.",
-            new { storeId, storeName = result.StoreName, redirectUrl });
+            "Store switched.",
+            new { storeId, storeName = result.StoreName });
+    }
+
+    private string? SafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl)) return null;
+        if (!Url.IsLocalUrl(returnUrl)) return null;
+        return returnUrl;
     }
 }

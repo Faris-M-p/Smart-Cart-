@@ -1,0 +1,230 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputCashSessionList
+@{
+    ViewData["Title"] = "Cash session";
+    var f = Model.Filter ?? new SmartCartPro.Models.InputCashSessionList();
+    var open = Model.OpenSession;
+    var fromText = f.From?.ToString("yyyy-MM-dd");
+    var toText = f.To?.ToString("yyyy-MM-dd");
+    var hasFilter = !string.IsNullOrWhiteSpace(f.Status) || f.From is not null || f.To is not null;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    var pager = new SmartCartPro.Models.PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Session",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Status"] = f.Status,
+            ["From"] = fromText,
+            ["To"] = toText,
+            ["PageSize"] = f.PageSize
+        }
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Cash session</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Cash session</h1>
+        <p class="text-muted mb-0">Open and close the till · one open session per store</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Pos">
+        <i class="bi bi-cart3 me-1"></i>Back to POS
+    </a>
+</div>
+
+<div id="sessionPage" class="row g-3">
+    <div class="col-lg-4">
+        @if (open is null)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Open session</h2>
+                    <form id="openSessionForm" method="post" asp-action="OpenSession" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                        <div class="mb-3">
+                            <label class="form-label" for="openingFloat">Opening float</label>
+                            <input id="openingFloat" name="OpeningFloat" type="number" min="0" step="0.01" value="0" class="form-control" />
+                            <span class="text-danger small" data-valmsg-for="OpeningFloat"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="openNotes">Notes</label>
+                            <textarea id="openNotes" name="Notes" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" data-sc-busy-text="Opening…">
+                            <i class="bi bi-unlock me-1"></i>Open session
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h2 class="h5 mb-0">Open session</h2>
+                        <span class="badge text-bg-success">Open</span>
+                    </div>
+                    <dl class="row small mb-3">
+                        <dt class="col-5 fw-normal text-muted">Cashier</dt>
+                        <dd class="col-7 mb-1">@open.UserName</dd>
+                        <dt class="col-5 fw-normal text-muted">Opened</dt>
+                        <dd class="col-7 mb-1">
+                            <time data-sc-utc="@TimeDisplay.Iso(open.OpenedAt)" data-sc-format="datetime">@open.OpenedAt.ToString("dd MMM yyyy HH:mm")</time>
+                        </dd>
+                        <dt class="col-5 fw-normal text-muted">Opening float</dt>
+                        <dd class="col-7 mb-0"><span data-sc-money="@Raw(open.OpeningFloat)">@Money(open.OpeningFloat)</span></dd>
+                    </dl>
+                    <form id="closeSessionForm" method="post" asp-action="CloseSession" novalidate>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="IdCashSession" value="@open.IdCashSession" />
+                        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                        <div class="mb-3">
+                            <label class="form-label" for="closingCash">Counted cash</label>
+                            <input id="closingCash" name="ClosingCash" type="number" min="0" step="0.01" class="form-control" required />
+                            <span class="text-danger small" data-valmsg-for="ClosingCash"></span>
+                            <div class="form-text">Variance is counted cash minus expected cash (opening + cash in − change).</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="closeNotes">Notes</label>
+                            <textarea id="closeNotes" name="Notes" class="form-control" rows="2" maxlength="500">@open.Notes</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-outline-danger w-100" data-sc-busy-text="Closing…">
+                            <i class="bi bi-lock me-1"></i>Close session
+                        </button>
+                    </form>
+                    <a class="btn btn-outline-secondary w-100 mt-2" asp-action="DayClose" asp-route-id="@open.IdCashSession">
+                        <i class="bi bi-clipboard-data me-1"></i>Live summary
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="get" asp-action="Session" class="row g-2 align-items-end mb-3">
+                    <div class="col-md-3 col-6">
+                        <label class="form-label" for="sessionStatus">Status</label>
+                        <select id="sessionStatus" name="Status" class="form-select" data-sc-auto-submit>
+                            @if (string.IsNullOrEmpty(f.Status))
+                            { <option value="" selected>All</option> }
+                            else
+                            { <option value="">All</option> }
+                            @if (f.Status == "open")
+                            { <option value="open" selected>Open</option> }
+                            else
+                            { <option value="open">Open</option> }
+                            @if (f.Status == "closed")
+                            { <option value="closed" selected>Closed</option> }
+                            else
+                            { <option value="closed">Closed</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label" for="sessionFrom">From</label>
+                        <input id="sessionFrom" type="date" name="From" value="@fromText" class="form-control" />
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label" for="sessionTo">To</label>
+                        <input id="sessionTo" type="date" name="To" value="@toText" class="form-control" />
+                    </div>
+                    <div class="col-md-3 col-6 d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary flex-grow-1">Apply</button>
+                        @if (hasFilter)
+                        {
+                            <a class="btn btn-outline-secondary" asp-action="Session">Clear</a>
+                        }
+                    </div>
+                </form>
+
+                @if (Model.Items.Count == 0)
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-clock-history display-5 text-muted" aria-hidden="true"></i>
+                        <p class="text-muted my-3">No cash sessions yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Opened</th>
+                                    <th>Cashier</th>
+                                    <th class="text-end">Opening</th>
+                                    <th class="text-end d-none d-md-table-cell">Expected</th>
+                                    <th class="text-end">Counted</th>
+                                    <th class="text-end d-none d-lg-table-cell">Variance</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">
+                                        <time data-sc-utc="@TimeDisplay.Iso(item.OpenedAt)" data-sc-format="datetime">@item.OpenedAt.ToString("dd MMM yyyy HH:mm")</time>
+                                    </td>
+                                    <td>@item.UserName</td>
+                                    <td class="text-end"><span data-sc-money="@Raw(item.OpeningFloat)">@Money(item.OpeningFloat)</span></td>
+                                    <td class="text-end d-none d-md-table-cell">
+                                        @if (item.ExpectedCash is decimal expected)
+                                        { <span data-sc-money="@Raw(expected)">@Money(expected)</span> }
+                                        else
+                                        { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (item.ClosingCash is decimal counted)
+                                        { <span data-sc-money="@Raw(counted)">@Money(counted)</span> }
+                                        else
+                                        { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td class="text-end d-none d-lg-table-cell">
+                                        @if (item.Variance is decimal variance)
+                                        { <span data-sc-money="@Raw(variance)">@Money(variance)</span> }
+                                        else
+                                        { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td>
+                                        @if (item.Status == "open")
+                                        { <span class="badge text-bg-success">Open</span> }
+                                        else
+                                        { <span class="badge text-bg-secondary">Closed</span> }
+                                    </td>
+                                    <td class="text-end">
+                                        <a class="btn btn-sm btn-outline-primary" asp-action="DayClose" asp-route-id="@item.IdCashSession" title="Day close">
+                                            <i class="bi bi-clipboard-data" aria-hidden="true"></i><span class="visually-hidden">Day close</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                    <partial name="_Pager" model="pager" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/session.js" asp-append-version="true"></script>
+}

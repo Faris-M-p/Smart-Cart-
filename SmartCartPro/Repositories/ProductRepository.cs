@@ -586,8 +586,12 @@ public class ProductRepository : IProductRepository
                 (p.Barcode != null && p.Barcode.ToLower().Contains(term)));
         }
 
+        // Exact barcode / SKU / code hits sort first so a scanner entry is never cut off by the row limit.
         var products = await productQuery
-            .OrderBy(p => p.ProductName).ThenBy(p => p.IdProduct)
+            .OrderBy(p => (p.Barcode != null && p.Barcode.ToLower() == term)
+                          || (p.Sku != null && p.Sku.ToLower() == term)
+                          || p.ProductCode.ToLower() == term ? 0 : 1)
+            .ThenBy(p => p.ProductName).ThenBy(p => p.IdProduct)
             .Take(take)
             .Select(SearchItemFromProduct())
             .ToListAsync(ct);
@@ -610,20 +614,17 @@ public class ProductRepository : IProductRepository
             }
 
             variants = await variantQuery
-                .OrderBy(v => v.Product!.ProductName).ThenBy(v => v.VariantName).ThenBy(v => v.IdProductVariant)
+                .OrderBy(v => (v.Barcode != null && v.Barcode.ToLower() == term)
+                              || (v.SkuCode != null && v.SkuCode.ToLower() == term)
+                              || v.Product!.ProductCode.ToLower() == term ? 0 : 1)
+                .ThenBy(v => v.Product!.ProductName).ThenBy(v => v.VariantName).ThenBy(v => v.IdProductVariant)
                 .Take(take)
                 .Select(SearchItemFromVariant())
                 .ToListAsync(ct);
         }
 
-        // Exact barcode / SKU / code hits first (a scanner typing into the box), then alphabetical.
-        return products
-            .Concat(variants)
-            .OrderBy(x => IsExactHit(x, term) ? 0 : 1)
-            .ThenBy(x => x.ProductName, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(x => x.VariantName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-            .Take(take)
-            .ToList();
+        // Up to `take` product rows followed by up to `take` variant rows; the service ranks and trims them.
+        return products.Concat(variants).ToList();
     }
 
     public async Task<OutputProductSearchItem?> FindByBarcodeAsync(InputProductBarcode input, CancellationToken ct = default)
@@ -755,12 +756,6 @@ public class ProductRepository : IProductRepository
             TaxInclusive = _db.Taxes.Where(t => t.IdTax == v.Product!.FkTax).Select(t => (bool?)t.IsInclusive).FirstOrDefault() ?? false,
             IsActive = v.IsActive && v.Product!.IsActive
         };
-
-    private static bool IsExactHit(OutputProductSearchItem item, string term)
-        => term.Length > 0 && (
-            string.Equals(item.Barcode, term, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(item.Sku, term, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(item.ProductCode, term, StringComparison.OrdinalIgnoreCase));
 
     // ─── constraint helpers ───────────────────────────────────────
 

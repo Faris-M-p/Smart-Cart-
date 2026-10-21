@@ -297,7 +297,7 @@ public sealed class OutputProductSelect
 public sealed class InputProductDetail
 {
     public int IdProduct { get; set; }
-    /// <summary>Store whose stock is summarised on the page; 0 skips the stock summary.</summary>
+    /// <summary>Store of the signed-in user (0 for the platform admin); stock is only summarised when the user may see it.</summary>
     public int FkStore { get; set; }
 }
 
@@ -465,14 +465,11 @@ public sealed class InputProductSearch
     public int Take { get; set; } = 20;
     /// <summary>true = products that have active variants are returned as one row per variant; false = product rows only.</summary>
     public bool ExpandVariants { get; set; } = true;
-    /// <summary>When false the service blanks <see cref="OutputProductSearchItem.CostPrice"/>.</summary>
-    public bool IncludeCost { get; set; }
 }
 
 public sealed class InputProductBarcode
 {
     public string Barcode { get; set; } = string.Empty;
-    public bool IncludeCost { get; set; }
 }
 
 /// <summary>

@@ -1,88 +1,199 @@
-@model SmartCartPro.Models.InCompanyUpdateView
+@model InCompanyUpdateView
 @{
-    ViewData["Title"] = "Company profile";
+    ViewData["Title"] = "Company";
+    var isPlatform = ViewBag.IsPlatformAdmin as bool? ?? false;
+    var license = ViewBag.License as OutputLicenseSelect;
 }
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">Company profile</h1>
-</div>
-@if (TempData["SuccessMessage"] is string ok)
-{
-    <div class="alert alert-success">@ok</div>
-}
-<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Company</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_PageHeader", (Title: "Company", Subtitle: "Legal name, tax details and contact address for this installation", ActionText: (string?)null, ActionUrl: (string?)null))
+
 @if (Model.RequiresBootstrap && !Model.CanEdit)
 {
-    <p class="text-muted">Company is not set up yet. Ask a Super Admin to create it.</p>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-building display-5 text-muted"></i>
+            <h2 class="h5 mt-3">Company is not set up yet</h2>
+            <p class="text-muted mb-0">Ask a platform administrator to create the company profile.</p>
+        </div>
+    </div>
 }
 else
 {
-    <form asp-action="Save" method="post">
-        @Html.AntiForgeryToken()
-        <input type="hidden" asp-for="IdCompany" />
-        <input type="hidden" asp-for="RequiresBootstrap" />
-        <input type="hidden" asp-for="CanEdit" />
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" asp-for="CompanyName"></label>
-                <input class="form-control" asp-for="CompanyName" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="CompanyCode"></label>
-                <input class="form-control" asp-for="CompanyCode" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="LegalName"></label>
-                <input class="form-control" asp-for="LegalName" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="TaxNumber"></label>
-                <input class="form-control" asp-for="TaxNumber" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="Email"></label>
-                <input class="form-control" asp-for="Email" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="Phone"></label>
-                <input class="form-control" asp-for="Phone" />
-            </div>
-            <div class="col-md-12">
-                <label class="form-label" asp-for="Website"></label>
-                <input class="form-control" asp-for="Website" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="AddressLine1"></label>
-                <input class="form-control" asp-for="AddressLine1" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" asp-for="AddressLine2"></label>
-                <input class="form-control" asp-for="AddressLine2" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" asp-for="City"></label>
-                <input class="form-control" asp-for="City" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" asp-for="State"></label>
-                <input class="form-control" asp-for="State" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" asp-for="PostalCode"></label>
-                <input class="form-control" asp-for="PostalCode" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" asp-for="Country"></label>
-                <input class="form-control" asp-for="Country" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" asp-for="CurrencyCode"></label>
-                <input class="form-control" asp-for="CurrencyCode" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" asp-for="TimeZone"></label>
-                <input class="form-control" asp-for="TimeZone" />
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                    <form id="companyForm"
+                          asp-action="Save"
+                          method="post"
+                          data-sc-ajax-form="true"
+                          novalidate>
+                        <input type="hidden" asp-for="IdCompany" />
+                        <input type="hidden" asp-for="RequiresBootstrap" />
+                        <input type="hidden" asp-for="CanEdit" />
+                        <input type="hidden" asp-for="IsActive" />
+
+                        <h2 class="h6 mb-3">Identity</h2>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label" asp-for="CompanyName"></label>
+                                <input class="form-control" asp-for="CompanyName" autocomplete="organization" />
+                                <span asp-validation-for="CompanyName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="CompanyCode"></label>
+                                <input class="form-control" asp-for="CompanyCode" autocomplete="off" />
+                                <span asp-validation-for="CompanyCode" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label" asp-for="LegalName"></label>
+                                <input class="form-control" asp-for="LegalName" />
+                                <span asp-validation-for="LegalName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" asp-for="TaxNumber"></label>
+                                <input class="form-control" asp-for="TaxNumber" />
+                                <span asp-validation-for="TaxNumber" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" asp-for="RegistrationNo"></label>
+                                <input class="form-control" asp-for="RegistrationNo" />
+                                <span asp-validation-for="RegistrationNo" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <h2 class="h6 mt-4 mb-3">Contact</h2>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" asp-for="Email"></label>
+                                <input class="form-control" asp-for="Email" autocomplete="email" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" asp-for="Phone"></label>
+                                <input class="form-control" asp-for="Phone" autocomplete="tel" />
+                                <span asp-validation-for="Phone" class="text-danger"></span>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" asp-for="Website"></label>
+                                <input class="form-control" asp-for="Website" />
+                                <span asp-validation-for="Website" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <h2 class="h6 mt-4 mb-3">Address</h2>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" asp-for="AddressLine1"></label>
+                                <input class="form-control" asp-for="AddressLine1" autocomplete="address-line1" />
+                                <span asp-validation-for="AddressLine1" class="text-danger"></span>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" asp-for="AddressLine2"></label>
+                                <input class="form-control" asp-for="AddressLine2" autocomplete="address-line2" />
+                                <span asp-validation-for="AddressLine2" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="City"></label>
+                                <input class="form-control" asp-for="City" autocomplete="address-level2" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="State"></label>
+                                <input class="form-control" asp-for="State" autocomplete="address-level1" />
+                                <span asp-validation-for="State" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="PostalCode"></label>
+                                <input class="form-control" asp-for="PostalCode" autocomplete="postal-code" />
+                                <span asp-validation-for="PostalCode" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="Country"></label>
+                                <input class="form-control" asp-for="Country" autocomplete="country-name" />
+                                <span asp-validation-for="Country" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="CurrencyCode"></label>
+                                <input class="form-control" asp-for="CurrencyCode" maxlength="3" />
+                                <span asp-validation-for="CurrencyCode" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="TimeZone"></label>
+                                <input class="form-control" asp-for="TimeZone" />
+                                <span asp-validation-for="TimeZone" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" asp-for="Locale"></label>
+                                <input class="form-control" asp-for="Locale" />
+                                <span asp-validation-for="Locale" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-4">Save</button>
-    </form>
+        <div class="col-lg-4">
+            @if (isPlatform)
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h2 class="h6 mb-0">License</h2>
+                    </div>
+                    <div class="card-body">
+                        @if (license is null)
+                        {
+                            <p class="text-muted mb-3">No license is recorded for this installation.</p>
+                        }
+                        else
+                        {
+                            var badgeClass = license.Status == (int)CommonModel.LicenseStatus.Suspended
+                                ? "text-bg-warning"
+                                : license.IsExpired
+                                    ? "text-bg-danger"
+                                    : license.Status == (int)CommonModel.LicenseStatus.Trial
+                                        ? "text-bg-info"
+                                        : "text-bg-success";
+                            var badgeText = license.Status == (int)CommonModel.LicenseStatus.Suspended
+                                ? "Suspended"
+                                : license.IsExpired
+                                    ? "Expired"
+                                    : license.StatusLabel;
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <div class="text-muted small">Plan</div>
+                                    <div class="fw-semibold text-capitalize">@license.LicenseType</div>
+                                </div>
+                                <span class="badge @badgeClass">@badgeText</span>
+                            </div>
+                            <div class="text-muted small">Expires</div>
+                            <div class="mb-2">@license.ExpiryDate.ToString("dd MMM yyyy") · @license.DaysRemaining days left</div>
+                            <div class="text-muted small">Stores</div>
+                            <div class="mb-3">@license.ActiveStoreCount of @license.MaxStores</div>
+                        }
+                        <a class="btn btn-outline-primary btn-sm" asp-controller="License" asp-action="Index">
+                            Open license
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/company.js" asp-append-version="true"></script>
 }

@@ -7,28 +7,33 @@ using SmartCartPro.Services.Interfaces;
 namespace SmartCartPro.Filters;
 
 /// <summary>
-/// Verifies that the signed-in user has the specified permission code via their assigned role.
-/// Platform super admin always passes. Uses <see cref="IUserService"/> for DB lookup.
+/// Verifies that the signed-in user holds a permission code via their assigned role.
+/// Several codes mean "any of" (e.g. <c>[RequirePermission("customers.view", "pos.sell")]</c> for a lookup that both the
+/// customer screens and the POS screen use). Two separate attributes on one action mean "all of".
+/// Platform super admin always passes. Uses <see cref="IUserService"/> for the DB lookup.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public sealed class RequirePermissionAttribute : TypeFilterAttribute
 {
-    public RequirePermissionAttribute(string permissionCode)
+    public RequirePermissionAttribute(params string[] permissionCodes)
         : base(typeof(RequirePermissionFilter))
     {
-        Arguments = new object[] { permissionCode };
+        if (permissionCodes is null || permissionCodes.Length == 0)
+            throw new ArgumentException("At least one permission code is required.", nameof(permissionCodes));
+
+        Arguments = new object[] { permissionCodes };
     }
 }
 
 /// <summary>Inner filter — resolved by DI so it gets scoped services.</summary>
 public sealed class RequirePermissionFilter : IAsyncActionFilter
 {
-    private readonly string _permissionCode;
+    private readonly string[] _permissionCodes;
     private readonly IUserService _userService;
 
-    public RequirePermissionFilter(string permissionCode, IUserService userService)
+    public RequirePermissionFilter(string[] permissionCodes, IUserService userService)
     {
-        _permissionCode = permissionCode;
+        _permissionCodes = permissionCodes;
         _userService = userService;
     }
 
@@ -52,7 +57,7 @@ public sealed class RequirePermissionFilter : IAsyncActionFilter
             userId.Value, context.HttpContext.RequestAborted);
 
         var hasPermission = permissions.Any(p =>
-            string.Equals(p.PermissionCode, _permissionCode, StringComparison.OrdinalIgnoreCase));
+            _permissionCodes.Any(code => string.Equals(p.PermissionCode, code, StringComparison.OrdinalIgnoreCase)));
 
         if (!hasPermission)
         {

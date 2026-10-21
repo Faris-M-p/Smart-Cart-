@@ -1,0 +1,176 @@
+@model InLicenseUpdateView
+@{
+    ViewData["Title"] = "License";
+    var isSuspended = Model.HasLicense && Model.Status == (int)CommonModel.LicenseStatus.Suspended;
+    var badgeClass = !Model.HasLicense
+        ? "text-bg-secondary"
+        : isSuspended
+            ? "text-bg-warning"
+            : Model.IsExpired
+                ? "text-bg-danger"
+                : Model.Status == (int)CommonModel.LicenseStatus.Trial
+                    ? "text-bg-info"
+                    : "text-bg-success";
+    var badgeText = !Model.HasLicense
+        ? "None"
+        : isSuspended ? "Suspended" : Model.IsExpired ? "Expired" : ((CommonModel.LicenseStatus)Model.Status).ToString();
+
+    var planItems = new List<SelectListItem>
+    {
+        new("Standard", "standard", string.Equals(Model.LicenseType, "standard", StringComparison.OrdinalIgnoreCase)),
+        new("Premium", "premium", string.Equals(Model.LicenseType, "premium", StringComparison.OrdinalIgnoreCase)),
+        new("Enterprise", "enterprise", string.Equals(Model.LicenseType, "enterprise", StringComparison.OrdinalIgnoreCase))
+    };
+    var statusItems = Enum.GetValues<CommonModel.LicenseStatus>()
+        .Select(s => new SelectListItem(s.ToString(), ((int)s).ToString(), Model.Status == (int)s))
+        .ToList();
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">License</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_PageHeader", (Title: "License", Subtitle: "Installation plan, dates and store limit. Platform Super Admin only.", ActionText: (string?)null, ActionUrl: (string?)null))
+
+<div class="row g-3" id="licensePage"
+     data-suspend-url="@Url.Action("Suspend")"
+     data-activate-url="@Url.Action("Activate")">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <div class="text-muted small">Plan</div>
+                        <div class="h5 mb-0 text-capitalize">@(Model.HasLicense ? Model.LicenseType : "—")</div>
+                    </div>
+                    <span class="badge @badgeClass">@badgeText</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="text-muted small">Start</div>
+                        <div>@Model.StartDate.ToString("dd MMM yyyy")</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Expiry</div>
+                        <div>@Model.ExpiryDate.ToString("dd MMM yyyy")</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Days left</div>
+                        <div>@(Model.HasLicense ? Model.DaysRemaining.ToString() : "—")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Stores</div>
+                        <div>@Model.ActiveStoreCount of @Model.MaxStores used</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Active users</div>
+                        <div>@Model.ActiveUserCount (no user cap on this license)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                <form id="licenseForm"
+                      asp-action="Save"
+                      method="post"
+                      data-sc-ajax-form="true"
+                      novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label" asp-for="LicenseKey"></label>
+                            <input class="form-control" asp-for="LicenseKey" autocomplete="off" />
+                            <span asp-validation-for="LicenseKey" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" asp-for="LicenseType"></label>
+                            <select class="form-select" asp-for="LicenseType" asp-items="planItems"></select>
+                            <span asp-validation-for="LicenseType" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" asp-for="Status"></label>
+                            <select class="form-select" asp-for="Status" asp-items="statusItems"></select>
+                            <span asp-validation-for="Status" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" asp-for="StartDate"></label>
+                            <input class="form-control" asp-for="StartDate" type="date" />
+                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" asp-for="ExpiryDate"></label>
+                            <input class="form-control" asp-for="ExpiryDate" type="date" />
+                            <span asp-validation-for="ExpiryDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" asp-for="MaxStores"></label>
+                            <input class="form-control" asp-for="MaxStores" />
+                            <span asp-validation-for="MaxStores" class="text-danger"></span>
+                            <div class="form-text">Must be at least @Model.ActiveStoreCount (current active stores).</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" asp-for="Notes"></label>
+                            <textarea class="form-control" asp-for="Notes" rows="3"></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white">
+                <h2 class="h6 mb-0">How the license gate works</h2>
+            </div>
+            <div class="card-body small">
+                <ul class="mb-0 ps-3">
+                    <li class="mb-2"><strong>Platform Super Admin</strong> always bypasses the gate.</li>
+                    <li class="mb-2"><strong>Suspended</strong> — every signed-in request is blocked (403) until you activate again.</li>
+                    <li class="mb-2"><strong>Expired</strong> — browsing (GET) stays allowed; saving and other writes are blocked.</li>
+                    <li class="mb-2"><strong>No license</strong> — same as expired: reads only.</li>
+                    <li>Anonymous pages (sign-in, password reset, errors) stay reachable so you can fix this.</li>
+                </ul>
+            </div>
+        </div>
+
+        @if (Model.HasLicense)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h2 class="h6 mb-0">@(isSuspended ? "Activate" : "Suspend")</h2>
+                </div>
+                <div class="card-body">
+                    <label class="form-label" for="licenseReason">Reason</label>
+                    <textarea id="licenseReason" class="form-control" rows="3" maxlength="500"
+                              placeholder="Required. Stored on the license notes."></textarea>
+                    <div class="mt-3 d-grid">
+                        @if (isSuspended)
+                        {
+                            <button type="button" class="btn btn-success" id="licenseActivateBtn">Activate license</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-warning" id="licenseSuspendBtn">Suspend license</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/license.js" asp-append-version="true"></script>
+}

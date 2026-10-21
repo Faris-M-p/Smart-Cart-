@@ -8,5 +8,8 @@ public interface ICustomerService
     Task<OutputCustomerList> ListCustomersAsync(InputCustomerList input, CancellationToken ct = default);
     Task<OutputCustomerCreate> CreateCustomerAsync(InputCustomerCreate input, CancellationToken ct = default);
     Task<OutputCustomerUpdate> UpdateCustomerAsync(InputCustomerUpdate input, CancellationToken ct = default);
+    Task<OutputCustomerSetActive> SetCustomerActiveAsync(InputCustomerSetActive input, CancellationToken ct = default);
+    Task<IReadOnlyList<OutputCustomerSearchItem>> SearchCustomersAsync(InputCustomerSearch input, CancellationToken ct = default);
+    Task<OutputCustomerCreate> QuickCreateCustomerAsync(InputCustomerQuickCreate input, CancellationToken ct = default);
     Task<OutputCustomerSelect?> FindByPhoneAsync(string phone, CancellationToken ct = default);
 }

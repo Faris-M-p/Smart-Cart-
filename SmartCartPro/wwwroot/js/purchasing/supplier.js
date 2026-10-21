@@ -19,9 +19,12 @@
     var $page = $('#supplierListPage');
     if (!$page.length) return;
 
-    // Visual feedback while the filter form reloads the page.
+    // Visual feedback while the filter form reloads the page; reset when the page comes back from the back/forward cache.
     $page.find('form[method="get"]').on('submit', function () {
       $page.addClass('opacity-50').attr('aria-busy', 'true');
+    });
+    $(window).on('pageshow', function () {
+      $page.removeClass('opacity-50').removeAttr('aria-busy');
     });
   }
 

@@ -1,0 +1,216 @@
+@using System.Globalization
+@model OutputOnlineOrderSelect
+@{
+    ViewData["Title"] = Model.OrderNumber;
+    var updateUrl = Url.Action("UpdateStatus", new { id = Model.IdOnlineOrder })!;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+
+    string StatusLabel(string status) => status.ToLowerInvariant() switch
+    {
+        "confirmed" => "Confirm order",
+        "packed" => "Mark packed",
+        "shipped" => "Mark shipped",
+        "delivered" => "Mark delivered",
+        "cancelled" => "Cancel order",
+        _ => status
+    };
+
+    string StatusClass(string status) => status.ToLowerInvariant() switch
+    {
+        "confirmed" => "btn-primary",
+        "packed" => "btn-info",
+        "shipped" => "btn-primary",
+        "delivered" => "btn-success",
+        "cancelled" => "btn-outline-danger",
+        _ => "btn-outline-secondary"
+    };
+
+    string ConfirmBody(string status)
+    {
+        if (string.Equals(status, "confirmed", StringComparison.OrdinalIgnoreCase))
+            return "Confirm order " + Model.OrderNumber + "? Stock will be deducted for every line. If a line is short, the whole change is rolled back.";
+        if (string.Equals(status, "cancelled", StringComparison.OrdinalIgnoreCase))
+            return Model.StockWasDeducted
+                ? "Cancel order " + Model.OrderNumber + "? Stock previously deducted on confirm will be restored."
+                : "Cancel order " + Model.OrderNumber + "? This pending order has not deducted stock.";
+        return "Move order " + Model.OrderNumber + " to " + status + "?";
+    }
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Online orders</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.OrderNumber</li>
+    </ol>
+</nav>
+
+<div id="onlineOrderDetailsPage">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="h3 mb-0">@Model.OrderNumber</h1>
+                <partial name="_OnlineOrderStatusBadge" model="Model.Status" />
+            </div>
+            <p class="text-muted mb-0">
+                @Model.CustomerName ·
+                <time data-sc-utc="@TimeDisplay.Iso(Model.OrderDate)" data-sc-format="datetime">@Model.OrderDate.ToString("dd MMM yyyy HH:mm")</time>
+                · @Model.StoreName
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Index">
+                <i class="bi bi-arrow-left me-1"></i>Back to list
+            </a>
+            @foreach (var next in Model.AllowedNextStatuses)
+            {
+                var label = StatusLabel(next);
+                var css = StatusClass(next);
+                var body = ConfirmBody(next);
+                var okClass = string.Equals(next, "cancelled", StringComparison.OrdinalIgnoreCase) ? "btn-danger" : "btn-primary";
+                <button type="button"
+                        class="btn @css"
+                        data-sc-post="@updateUrl"
+                        data-sc-param-id="@Model.IdOnlineOrder"
+                        data-sc-param-newstatus="@next"
+                        data-sc-confirm="@body"
+                        data-sc-confirm-title="@label"
+                        data-sc-confirm-ok="@label"
+                        data-sc-confirm-class="@okClass"
+                        data-sc-after="reload">@label</button>
+            }
+        </div>
+    </div>
+
+    @if (Model.Cancelled)
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Cancelled</strong>
+            @if (Model.CancelledOn is not null)
+            {
+                <span> on <time data-sc-utc="@TimeDisplay.Iso(Model.CancelledOn)" data-sc-format="datetime">@Model.CancelledOn.Value.ToString("dd MMM yyyy HH:mm")</time></span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CancelledReason))
+            {
+                <div class="mt-1">Reason: @Model.CancelledReason</div>
+            }
+        </div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Customer</h2>
+                    <div class="fw-semibold">@Model.CustomerName</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerPhone))
+                    {
+                        <div class="text-muted small">@Model.CustomerPhone</div>
+                    }
+                    <dl class="row small mb-0 mt-2">
+                        <dt class="col-5 fw-normal text-muted">Ship to</dt>
+                        <dd class="col-7 mb-0">@(string.IsNullOrWhiteSpace(Model.ShippingAddress) ? "—" : Model.ShippingAddress)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Order</h2>
+                    <dl class="row small mb-0">
+                        <dt class="col-5 fw-normal text-muted">Store</dt>
+                        <dd class="col-7 mb-1">@Model.StoreName</dd>
+                        <dt class="col-5 fw-normal text-muted">Created</dt>
+                        <dd class="col-7 mb-1">
+                            <time data-sc-utc="@TimeDisplay.Iso(Model.CreatedAt)" data-sc-format="datetime">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</time>
+                        </dd>
+                        @if (Model.UpdatedAt is not null)
+                        {
+                            <dt class="col-5 fw-normal text-muted">Updated</dt>
+                            <dd class="col-7 mb-1">
+                                <time data-sc-utc="@TimeDisplay.Iso(Model.UpdatedAt)" data-sc-format="datetime">@Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm")</time>
+                            </dd>
+                        }
+                        <dt class="col-5 fw-normal text-muted">Notes</dt>
+                        <dd class="col-7 mb-0 text-break">@(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Totals</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-6 fw-normal text-muted">Subtotal</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.Subtotal)">@Money(Model.Subtotal)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Discount</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Tax</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted">Shipping</dt>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.ShippingAmount)">@Money(Model.ShippingAmount)</span></dd>
+                        <dt class="col-6 border-top pt-2">Total</dt>
+                        <dd class="col-6 text-end border-top pt-2 mb-0 fw-semibold fs-5"><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent">
+            <h2 class="h6 mb-0">Items <span class="text-muted fw-normal">(@Model.Items.Count)</span></h2>
+        </div>
+        @if (Model.Items.Count == 0)
+        {
+            <div class="card-body text-muted">This order has no lines.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 2.5rem;">#</th>
+                            <th>Product</th>
+                            <th class="text-end">Qty</th>
+                            <th class="text-end">Unit price</th>
+                            <th class="text-end">Line total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @{ var n = 0; }
+                    @foreach (var line in Model.Items)
+                    {
+                        n++;
+                        <tr>
+                            <td class="text-muted">@n</td>
+                            <td>
+                                <div class="fw-medium">@line.ProductName</div>
+                                @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                {
+                                    <div class="small text-muted">@line.VariantName</div>
+                                }
+                            </td>
+                            <td class="text-end">@Qty(line.Quantity)</td>
+                            <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.UnitPrice)">@Money(line.UnitPrice)</span></td>
+                            <td class="text-end text-nowrap fw-medium"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/orders/online-order.js" asp-append-version="true"></script>
+}

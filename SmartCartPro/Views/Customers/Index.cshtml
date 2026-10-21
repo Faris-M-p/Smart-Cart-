@@ -1,17 +1,217 @@
+@model OutputCustomerList
 @{
     ViewData["Title"] = "Customers";
+    var canManage = await Access.CanAsync("customers.manage");
+    var canInvoices = await Access.CanAnyAsync(new[] { "pos.sell", "reports.view" });
+    var f = Model.Filter ?? new InputCustomerList();
+    var currentListUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusValue = f.ActiveOnly is null ? "" : (f.ActiveOnly.Value ? "true" : "false");
+    var hasFilters = !string.IsNullOrWhiteSpace(f.Search) || f.ActiveOnly is not null;
+    var setActiveUrl = Url.Action("SetActive", "Customers")!;
+    var addUrl = Url.Action("Create", "Customers", new { returnUrl = currentListUrl });
+
+    var statusItems = new List<SelectListItem>
+    {
+        new("All", "", statusValue == ""),
+        new("Active", "true", statusValue == "true"),
+        new("Inactive", "false", statusValue == "false")
+    };
+    var pageSizeItems = new[] { 10, 25, 50, 100 }
+        .Select(size => new SelectListItem(size.ToString(), size.ToString(), f.PageSize == size))
+        .ToList();
+
+    var pageHeader = (
+        Title: "Customers",
+        Subtitle: "Shared customer master for POS, invoices and online orders",
+        ActionText: canManage ? "Add customer" : null,
+        ActionUrl: canManage ? addUrl : null);
+
+    string SortUrl(string sortBy)
+    {
+        var desc = string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase) && !f.SortDesc;
+        return Url.Action("Index", new
+        {
+            Search = f.Search,
+            ActiveOnly = f.ActiveOnly,
+            Page = 1,
+            PageSize = f.PageSize,
+            SortBy = sortBy,
+            SortDesc = desc
+        })!;
+    }
+
+    string SortIcon(string sortBy)
+    {
+        if (!string.Equals(f.SortBy, sortBy, StringComparison.OrdinalIgnoreCase))
+            return "bi-arrow-down-up text-muted";
+        return f.SortDesc ? "bi-sort-down" : "bi-sort-up";
+    }
+
+    var pager = new PagerViewModel
+    {
+        TotalCount = Model.TotalCount,
+        Page = Model.Page,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        RouteValues = new Dictionary<string, object?>
+        {
+            ["Search"] = f.Search,
+            ["ActiveOnly"] = f.ActiveOnly,
+            ["PageSize"] = f.PageSize,
+            ["SortBy"] = f.SortBy,
+            ["SortDesc"] = f.SortDesc
+        }
+    };
 }
-@await Html.PartialAsync("_PageHeader", (Title: "Customers", Subtitle: "Shared customer master for POS and online", ActionText: "Add customer", ActionUrl: "#"))
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead><tr><th>Code</th><th>Name</th><th>Phone</th><th>Email</th><th>Status</th></tr></thead>
-                <tbody>
-                    <tr><td>CUS-100</td><td>Ravi Kumar</td><td>98989 11122</td><td>ravi@example.com</td><td><span class="badge text-bg-success">Active</span></td></tr>
-                    <tr><td>CUS-101</td><td>Anita S.</td><td>98989 33344</td><td>anita@example.com</td><td><span class="badge text-bg-success">Active</span></td></tr>
-                </tbody>
-            </table>
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Customers</li>
+    </ol>
+</nav>
+
+<partial name="_PageHeader" model="pageHeader" />
+
+<div id="customerListPage">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label" for="customerSearch">Search</label>
+                    <input id="customerSearch" type="search" name="Search" value="@f.Search"
+                           class="form-control" placeholder="Name, code, phone or email" autocomplete="off" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="customerStatus">Status</label>
+                    <select id="customerStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="customerPageSize">Page size</label>
+                    <select id="customerPageSize" name="PageSize" class="form-select" asp-items="pageSizeItems" data-sc-auto-submit></select>
+                </div>
+                <div class="col-md-2">
+                    <input type="hidden" name="SortBy" value="@f.SortBy" />
+                    <input type="hidden" name="SortDesc" value="@f.SortDesc.ToString().ToLowerInvariant()" />
+                    <input type="hidden" name="Page" value="1" />
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+                </div>
+            </form>
+
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center py-5">
+                    @if (hasFilters)
+                    {
+                        <p class="text-muted mb-3">No customers match your filters.</p>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Clear filters</a>
+                    }
+                    else if (canManage)
+                    {
+                        <p class="text-muted mb-3">No customers yet.</p>
+                        <a class="btn btn-primary" href="@addUrl"><i class="bi bi-plus-lg me-1"></i>Add customer</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No customers yet.</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("customercode")">
+                                        Code <i class="bi @SortIcon("customercode")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("fullname")">
+                                        Name <i class="bi @SortIcon("fullname")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("phone")">
+                                        Phone <i class="bi @SortIcon("phone")"></i>
+                                    </a>
+                                </th>
+                                <th class="d-none d-md-table-cell">
+                                    <a class="text-decoration-none text-body" href="@SortUrl("email")">
+                                        Email <i class="bi @SortIcon("email")"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
+                                        Status <i class="bi @SortIcon("isactive")"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var toggleVerb = item.IsActive ? "Deactivate" : "Activate";
+                            var toggleTitle = toggleVerb + " customer";
+                            var toggleClass = item.IsActive ? "btn-warning" : "btn-primary";
+                            var toggleNext = (!item.IsActive).ToString().ToLowerInvariant();
+                            var toggleBody = item.IsActive
+                                ? "Deactivate \"" + item.FullName + "\"? They will stay on existing invoices but will not appear in POS search."
+                                : "Activate \"" + item.FullName + "\"? They will appear in POS search again.";
+                            <tr>
+                                <td class="text-nowrap">@(string.IsNullOrWhiteSpace(item.CustomerCode) ? "—" : item.CustomerCode)</td>
+                                <td class="fw-medium">@item.FullName</td>
+                                <td class="text-nowrap">@(string.IsNullOrWhiteSpace(item.Phone) ? "—" : item.Phone)</td>
+                                <td class="d-none d-md-table-cell text-break">@(string.IsNullOrWhiteSpace(item.Email) ? "—" : item.Email)</td>
+                                <td>
+                                    <partial name="_StatusBadge" model="item.IsActive" />
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (canInvoices)
+                                    {
+                                        <a class="btn btn-sm btn-outline-secondary me-1"
+                                           asp-controller="Sales"
+                                           asp-action="Invoices"
+                                           asp-route-customerId="@item.IdCustomer">Invoices</a>
+                                    }
+                                    @if (canManage)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary me-1"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.IdCustomer"
+                                           asp-route-returnUrl="@currentListUrl">Edit</a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-sc-post="@setActiveUrl"
+                                                data-sc-param-id="@item.IdCustomer"
+                                                data-sc-param-isactive="@toggleNext"
+                                                data-sc-confirm="@toggleBody"
+                                                data-sc-confirm-title="@toggleTitle"
+                                                data-sc-confirm-ok="@toggleVerb"
+                                                data-sc-confirm-class="@toggleClass"
+                                                data-sc-after="reload">@toggleVerb</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <partial name="_Pager" model="pager" />
+            }
         </div>
     </div>
 </div>
+
+@if (canManage)
+{
+    <partial name="_ConfirmModal" />
+}
+
+@section Scripts {
+    <script src="~/js/customers/customers.js" asp-append-version="true"></script>
+}

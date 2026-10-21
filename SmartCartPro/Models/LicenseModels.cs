@@ -44,6 +44,21 @@ public sealed class InLicenseUpdateView
     [StringLengthValidation(0, 1000, ErrorMessage = "The Notes cannot exceed 1000 characters.")]
     [NoScriptTags(ErrorMessage = "The Notes cannot contain script tags.")]
     public string? Notes { get; set; }
+
+    [Display(Name = "Active stores")]
+    public int ActiveStoreCount { get; set; }
+
+    [Display(Name = "Active users")]
+    public int ActiveUserCount { get; set; }
+
+    [Display(Name = "Days remaining")]
+    public int DaysRemaining { get; set; }
+
+    [Display(Name = "Expired")]
+    public bool IsExpired { get; set; }
+
+    [Display(Name = "Has license")]
+    public bool HasLicense { get; set; }
 }
 
 public sealed class InputLicenseUpdate
@@ -97,6 +112,8 @@ public sealed class OutputLicenseSelect
     public DateOnly ExpiryDate { get; set; }
     public int MaxStores { get; set; }
     public string? Notes { get; set; }
+    public int ActiveStoreCount { get; set; }
+    public int ActiveUserCount { get; set; }
 
     public string StatusLabel => Enum.IsDefined(typeof(CommonModel.LicenseStatus), Status)
         ? ((CommonModel.LicenseStatus)Status).ToString()
@@ -105,6 +122,36 @@ public sealed class OutputLicenseSelect
     public bool IsExpired => ExpiryDate < DateOnly.FromDateTime(DateTime.UtcNow);
     public bool IsNearExpiry => !IsExpired && (ExpiryDate.ToDateTime(TimeOnly.MinValue) - DateTime.UtcNow).TotalDays <= 30;
     public int DaysRemaining => Math.Max(0, (int)(ExpiryDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) - DateTime.UtcNow).TotalDays);
+}
+
+#endregion
+
+#region License Status
+
+public sealed class InLicenseStatusView
+{
+    [Display(Name = "Reason")]
+    [Required(ErrorMessage = "The Reason field is required.")]
+    [StringLengthValidation(3, 500, ErrorMessage = "The Reason must be between 3 and 500 characters.")]
+    [NoScriptTags(ErrorMessage = "The Reason cannot contain script tags.")]
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed class InputLicenseStatusUpdate
+{
+    public int ActorUserId { get; set; }
+    public bool Activate { get; set; }
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed class OutputLicenseStatusUpdate
+{
+    public int ResponseCode { get; set; }
+    public string ResponseMsg { get; set; } = string.Empty;
+    public int StatusCode { get; set; }
+    public int IdLicense { get; set; }
+    public int Status { get; set; }
+    public bool Ok => ResponseCode == 0;
 }
 
 #endregion

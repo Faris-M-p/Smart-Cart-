@@ -1,0 +1,153 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputSaleSelect
+@{
+    Layout = null;
+    var paper = ViewBag.Paper as string ?? "80mm";
+    var autoPrint = ViewBag.AutoPrint as bool? ?? false;
+    var isA4 = paper == "a4";
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+    string MethodLabel(string method) => method switch
+    {
+        "cash" => "Cash",
+        "card" => "Card",
+        "upi" => "UPI",
+        "wallet" => "Wallet",
+        "bank" => "Bank",
+        "other" => "Other",
+        _ => method
+    };
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.InvoiceNumber · Invoice</title>
+    <link rel="stylesheet" href="~/css/pos-print.css" asp-append-version="true" />
+    @if (isA4)
+    {
+        <style>@@page { size: A4; margin: 12mm; }</style>
+    }
+    else
+    {
+        <style>@@page { size: 80mm auto; margin: 4mm; }</style>
+    }
+</head>
+<body class="@(isA4 ? "paper-a4" : "paper-80")" data-autoprint="@(autoPrint ? "1" : "0")">
+    <div class="sheet">
+        <div class="toolbar">
+            <a href="@Url.Action("InvoicePrint", new { id = Model.IdSale, paper = "80mm", autoprint = autoPrint ? 1 : 0 })">80 mm</a>
+            <a href="@Url.Action("InvoicePrint", new { id = Model.IdSale, paper = "a4", autoprint = autoPrint ? 1 : 0 })">A4</a>
+            <button type="button" class="primary" data-print>Print</button>
+            <button type="button" data-close>Close</button>
+        </div>
+
+        <header class="doc">
+            <div class="brand">@(string.IsNullOrWhiteSpace(Model.CompanyName) ? Model.StoreName : Model.CompanyName)</div>
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyLegalName) && Model.CompanyLegalName != Model.CompanyName)
+            {
+                <div class="muted">@Model.CompanyLegalName</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.StoreName) && Model.StoreName != Model.CompanyName)
+            {
+                <div>@Model.StoreName</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.StoreAddress))
+            {
+                <div class="muted">@Model.StoreAddress</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.StorePhone))
+            {
+                <div class="muted">@Model.StorePhone</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyTaxNumber))
+            {
+                <div class="muted">Tax @Model.CompanyTaxNumber</div>
+            }
+        </header>
+
+        <div class="rule"></div>
+        <div class="center title">TAX INVOICE</div>
+        <div class="center strong">@Model.InvoiceNumber</div>
+        <div class="center muted">
+            <time data-sc-utc="@TimeDisplay.Iso(Model.SaleDate)" data-sc-format="datetime">@Model.SaleDate.ToString("dd MMM yyyy HH:mm")</time>
+        </div>
+        @if (Model.Cancelled)
+        {
+            <div class="center cancelled">CANCELLED</div>
+        }
+
+        <div class="meta">
+            <div>Customer: @(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in" : Model.CustomerName)</div>
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerPhone))
+            {
+                <div>@Model.CustomerPhone</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CashierName))
+            {
+                <div>Cashier: @Model.CashierName</div>
+            }
+        </div>
+
+        <table class="lines">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Amt</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var line in Model.Lines)
+            {
+                <tr>
+                    <td>
+                        @line.ProductName
+                        @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                        {
+                            <span> @line.VariantName</span>
+                        }
+                    </td>
+                    <td class="num">@Qty(line.Quantity)</td>
+                    <td class="num"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div><span>Subtotal</span><span data-sc-money="@Raw(Model.SubTotal)">@Money(Model.SubTotal)</span></div>
+            <div><span>Discount</span><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></div>
+            <div><span>Tax</span><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></div>
+            <div class="grand"><span>Total</span><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></div>
+        </div>
+
+        <div class="pays">
+            @foreach (var pay in Model.Payments)
+            {
+                <div>
+                    <span>@MethodLabel(pay.PaymentMethod)</span>
+                    <span data-sc-money="@Raw(pay.Amount)">@Money(pay.Amount)</span>
+                </div>
+            }
+            @if (Model.ChangeGiven > 0)
+            {
+                <div><span>Change</span><span data-sc-money="@Raw(Model.ChangeGiven)">@Money(Model.ChangeGiven)</span></div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <div class="notes">@Model.Notes</div>
+        }
+
+        <footer class="thanks">Thank you</footer>
+        <div class="muted center printed">Printed <span data-printed-at></span></div>
+    </div>
+
+    <script src="~/js/sales/invoice-print.js" asp-append-version="true"></script>
+</body>
+</html>

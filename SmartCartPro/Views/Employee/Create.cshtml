@@ -1,0 +1,161 @@
+@model SmartCartPro.Models.InUserCreateView
+@{
+    ViewData["Title"] = "Add employee";
+    var returnUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Employee")!;
+    var roles = ViewBag.Roles as List<SmartCartPro.Models.OutputUserRoleSelect> ?? new List<SmartCartPro.Models.OutputUserRoleSelect>();
+    var stores = (ViewBag.Stores as List<SmartCartPro.Models.OutputUserStoreSelect> ?? new List<SmartCartPro.Models.OutputUserStoreSelect>())
+        .Where(s => s.IsActive)
+        .ToList();
+    var selectedStores = new HashSet<int>(Model.StoreIds);
+    var roleItems = roles
+        .Where(r => r.IsActive)
+        .Select(r => new SelectListItem(r.RoleName, r.IdRole.ToString()))
+        .ToList();
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Employees</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-3">Add employee</h1>
+
+<div id="employeeCreatePage">
+    @if (roleItems.Count == 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            There are no active roles to assign. <a asp-controller="Role" asp-action="Create">Create a role</a> first.
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm" id="employeeFormCard">
+        <div class="card-body">
+            <form id="employeeForm"
+                  asp-action="Create"
+                  method="post"
+                  data-sc-ajax-form="true"
+                  novalidate>
+                <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <h2 class="h6 text-uppercase text-muted mb-3">Profile</h2>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="FullName"></label>
+                        <input class="form-control" asp-for="FullName" maxlength="200" autocomplete="off" />
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="UserName"></label>
+                        <input class="form-control" asp-for="UserName" maxlength="50" autocomplete="off"
+                               autocapitalize="none" spellcheck="false" />
+                        <span asp-validation-for="UserName" class="text-danger"></span>
+                        <div class="form-text">Used to sign in. Letters, numbers, dots, dashes and underscores; it cannot be changed later.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Email"></label>
+                        <input class="form-control" asp-for="Email" type="email" maxlength="200" autocomplete="off" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                        <div class="form-text">Also accepted as a sign-in name and used for verification codes.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="Phone"></label>
+                        <input class="form-control" asp-for="Phone" type="tel" maxlength="15" autocomplete="off" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="EmployeeCode"></label>
+                        <input class="form-control" asp-for="EmployeeCode" maxlength="50" autocomplete="off" />
+                        <span asp-validation-for="EmployeeCode" class="text-danger"></span>
+                        <div class="form-text">Optional staff number.</div>
+                    </div>
+                </div>
+
+                <h2 class="h6 text-uppercase text-muted mb-3">Access</h2>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="FkRole"></label>
+                        <select class="form-select" asp-for="FkRole" asp-items="roleItems">
+                            <option value="">Select a role…</option>
+                        </select>
+                        <span asp-validation-for="FkRole" class="text-danger"></span>
+                        <div class="form-text">The role decides what the employee can do. <a asp-controller="Role" asp-action="Index">Manage roles</a></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label d-block">Store access</label>
+                        @await Html.PartialAsync("_StorePicker", (Stores: stores, Selected: selectedStores, DefaultStoreId: Model.DefaultStoreId))
+                    </div>
+                </div>
+
+                <h2 class="h6 text-uppercase text-muted mb-3">Sign-in</h2>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" asp-for="GeneratePassword" role="switch" data-sc-password-mode />
+                            <label class="form-check-label" asp-for="GeneratePassword"></label>
+                        </div>
+                        <div class="form-text">A strong random password is created and shown once after saving. Share it securely with the employee.</div>
+                    </div>
+                    <div class="col-md-6 @(Model.GeneratePassword ? "d-none" : "")" data-sc-manual-password>
+                        <label class="form-label" asp-for="InitialPassword"></label>
+                        <div class="input-group">
+                            <input class="form-control" asp-for="InitialPassword" type="password" maxlength="64" autocomplete="new-password" />
+                            <button type="button" class="btn btn-outline-secondary" data-sc-toggle-password="#InitialPassword"
+                                    aria-label="Show password" title="Show or hide the password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="InitialPassword" class="text-danger"></span>
+                        <div class="form-text">8 to 64 characters with an uppercase letter, a lowercase letter, a digit and a special character.</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" asp-for="MustChangePassword" data-sc-must-change />
+                            <label class="form-check-label" asp-for="MustChangePassword"></label>
+                        </div>
+                        <div class="form-text">Always applied when a temporary password is generated.</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary" data-sc-busy-text="Creating…">Create employee</button>
+                    <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm d-none" id="employeeCreatedPanel" role="status" aria-live="polite">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-check-circle-fill text-success fs-3 me-2" aria-hidden="true"></i>
+                <div>
+                    <h2 class="h5 mb-0">Employee created</h2>
+                    <div class="text-muted small" data-sc-created-user></div>
+                </div>
+            </div>
+            <div class="alert alert-warning" role="alert">
+                Copy this temporary password now. It is shown only once and cannot be retrieved later.
+                The employee must change it at the first sign-in.
+            </div>
+            <div class="input-group mb-3" style="max-width: 28rem;">
+                <input type="text" class="form-control font-monospace" readonly data-sc-temp-password aria-label="Temporary password" />
+                <button type="button" class="btn btn-outline-primary" data-sc-copy-password>
+                    <i class="bi bi-clipboard me-1"></i>Copy
+                </button>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" href="@returnUrl">Back to employees</a>
+                <a class="btn btn-outline-secondary" asp-action="Create" asp-route-returnUrl="@returnUrl">Add another employee</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/employee.js" asp-append-version="true"></script>
+}

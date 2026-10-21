@@ -25,7 +25,7 @@ Roles/permissions seeded in SQL; enforce via claims + permission checks (`Requir
 
 - Sidebar groups: Dashboard; Catalog; Purchase & stock; Sales; Reports; Administration
 - Sidebar chrome (`_Layout` + `wwwroot/css/admin-shell.css` + `wwwroot/js/admin-sidebar.js`): desktop expand/collapse (icon rail, persisted), overlay drawer below 992px, independent sidebar scroll
-- List pages: Metis cards/tables; many still use sample rows until services bind real data
+- Menu items are gated with `Access.CanAsync` / `ModuleEnabledAsync` and point at real module routes (Employee/Role/Setting, Product/Index, Supplier, Purchase, Inventory/Stock, OnlineOrder, Audit, License, Module). The header host a `StoreSwitcher` view component (no-op until the Company/Stores work fills it). There is no header search.
 - Auth pages: `_AuthLayout`
 
 ## Front-end conventions (every admin screen)
@@ -64,6 +64,13 @@ Declarative: `<button data-sc-post="@Url.Action(…)" data-sc-param-id="@x.Id" d
 Seeded in `Database-Postgres/02_Seed/002_DefaultPermissions.sql` (+ `V006` for `pos.cancel`): `dashboard.view`, `products.view`, `products.manage`, `inventory.view`, `inventory.adjust`, `purchases.view`, `purchases.manage`, `pos.sell`, `pos.return`, `pos.cancel`, `customers.view`, `customers.manage`, `reports.view`, `settings.manage`, `users.manage`. Modules: `DASHBOARD`, `PRODUCTS`, `INVENTORY`, `PURCHASES`, `POS`, `CUSTOMERS`, `REPORTS`, `SETTINGS`, `USERS`.
 Controllers must only reference codes from this catalog. Previously unseeded codes were replaced: `purchasing.view/manage` → `purchases.view/manage`, `inventory.manage` → `inventory.adjust`, `pos.view`/`pos.manage` → `pos.sell` (POS, invoices, sessions) and `customers.view`/`customers.manage` (customers).
 
+### Cross-cutting helpers (use them, do not re-implement)
+- **Any-of authorization:** `[RequirePermission("customers.view", "pos.sell")]` passes when the user holds *any* listed code; `[ModuleAccess("CUSTOMERS", "POS")]` passes when *any* listed module is enabled. Two separate `[RequirePermission]` attributes on one action mean *all of*. Platform Super Admin bypasses both.
+- **Timestamps are stored in UTC.** Render a timestamp that has a time of day as `<time data-sc-utc="@TimeDisplay.Iso(x.CreatedAt)" data-sc-format="datetime">@x.CreatedAt.ToString("dd MMM yyyy HH:mm")</time>` (`format` = `datetime` | `date` | `time`); `sc-ajax.js` converts it to the browser's time zone on load (call `SmartCartAjax.localizeTimes(container)` after injecting rows with JS). `SmartCartAjax.fmt.date/dateTime/time` already treat server strings as UTC. Pure calendar dates (purchase date, filters) are shown as-is. Server-side "today" boundaries use the company setting `locale.timezone`.
+- **Transactions:** `IStockRepository.ApplyMovementAsync` and `IDocumentNumberRepository.NextAsync` join the caller's open transaction (they only start their own when none is open), so a repository that owns a transaction can call them. Never call `BeginTransactionAsync` inside a method that may itself run inside a transaction.
+- **Icons:** the complete Bootstrap Icons 1.13.1 glyph set is available (`wwwroot/css/bootstrap-icons-glyphs.css`, linked from `_MetisAssets`), so any `bi-*` name from <https://icons.getbootstrap.com> renders.
+- **Charts:** the Metis chart bundle is an ES module without a global; use plain HTML/SVG/CSS charts (see `wwwroot/js/sc-charts.js` once the dashboard module ships it).
+
 ### Razor pitfalls (build breaks otherwise)
 - Never put C# expressions inside the attribute area of tag-helper elements (`<option … @(c ? "selected" : null)>` → RZ1031). Use `selected="@flag"` boolean attributes or if/else blocks.
 - `@model` type must match what the action passes; use `@using` for enums/helpers.
@@ -81,6 +88,8 @@ Documented under `modules/`:
 - [`category.md`](modules/category.md) — Categories
 - [`subcategory.md`](modules/subcategory.md) — Subcategories (via filter + catalog)
 - [`brand.md`](modules/brand.md) — Brands
+- [`unit.md`](modules/unit.md) — Units of measure
+- [`tax.md`](modules/tax.md) — Tax profiles
 - [`product.md`](modules/product.md) — Products
 - [`variant.md`](modules/variant.md) — SKU / variants
 - [`supplier.md`](modules/supplier.md) — Suppliers
@@ -88,15 +97,17 @@ Documented under `modules/`:
 - [`inventory.md`](modules/inventory.md) — Stock
 - [`pos.md`](modules/pos.md) — POS billing
 - [`invoices.md`](modules/invoices.md) — Sales invoices
-- [`returns.md`](modules/returns.md) — Sales returns
+- [`returns.md`](modules/returns.md) — Sales returns (list, create against invoice, details)
 - [`online-orders.md`](modules/online-orders.md) — Online orders (Phase 7: full status flow + stock)
 - [`customers.md`](modules/customers.md) — Customers
 - [`reviews.md`](modules/reviews.md) — Product reviews (Phase 7: admin moderation)
 - [`cart-wishlist.md`](modules/cart-wishlist.md) — Cart & wishlist (Phase 7: repo+service+JSON controller)
-- [`reports.md`](modules/reports.md) — Reports (Phase 7: SalesByDate, StockValuation, LowStock, TaxSummary, TopSelling)
+- [`reports.md`](modules/reports.md) — Reports (sales, products, tax, purchases, customers, stock valuation + CSV)
 - [`employee.md`](modules/employee.md) — Employees
 - [`roles.md`](modules/roles.md) — Roles & permissions
 - [`stores.md`](modules/stores.md) — Company & stores
+- [`license.md`](modules/license.md) — Installation license (platform Super Admin)
+- [`modules.md`](modules/modules.md) — Enabled modules / presets (platform Super Admin)
 - [`settings.md`](modules/settings.md) — Settings (Phase 7: known keys via SettingController)
 - [`audit.md`](modules/audit.md) — Audit log viewer (Phase 7)
 

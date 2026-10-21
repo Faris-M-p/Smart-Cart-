@@ -170,9 +170,10 @@ public class PurchaseController : Controller
     [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Edit(int id, [FromBody] InPurchaseUpdateView model, CancellationToken ct)
     {
-        model.IdPurchase = id;
+        // The id comes from the route; validate first so an unreadable JSON body (null model) is reported, not dereferenced.
         ModelState.Remove(nameof(InPurchaseUpdateView.IdPurchase));
         CommonHelpers.ValidateModelState(ModelState);
+        model.IdPurchase = id;
 
         var input = new InputPurchaseUpdate
         {
@@ -230,9 +231,10 @@ public class PurchaseController : Controller
     [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Receive(int id, [FromBody] InGoodsReceiptView model, CancellationToken ct)
     {
-        model.IdPurchase = id;
+        // The id comes from the route; validate first so an unreadable JSON body (null model) is reported, not dereferenced.
         ModelState.Remove(nameof(InGoodsReceiptView.IdPurchase));
         CommonHelpers.ValidateModelState(ModelState);
+        model.IdPurchase = id;
 
         var input = new InputGoodsReceipt
         {

@@ -1,47 +1,65 @@
-@model SmartCartPro.Models.InStoreUpdateView
+@model InStoreUpdateView
 <div class="row g-3">
     <div class="col-md-4">
         <label class="form-label" asp-for="StoreCode"></label>
-        <input class="form-control" asp-for="StoreCode" />
+        <input class="form-control" asp-for="StoreCode" autocomplete="off" />
+        <span asp-validation-for="StoreCode" class="text-danger"></span>
     </div>
     <div class="col-md-8">
         <label class="form-label" asp-for="StoreName"></label>
-        <input class="form-control" asp-for="StoreName" />
+        <input class="form-control" asp-for="StoreName" autocomplete="off" />
+        <span asp-validation-for="StoreName" class="text-danger"></span>
     </div>
     <div class="col-md-6">
         <label class="form-label" asp-for="Email"></label>
-        <input class="form-control" asp-for="Email" />
+        <input class="form-control" asp-for="Email" autocomplete="email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
     </div>
     <div class="col-md-6">
         <label class="form-label" asp-for="Phone"></label>
-        <input class="form-control" asp-for="Phone" />
+        <input class="form-control" asp-for="Phone" autocomplete="tel" />
+        <span asp-validation-for="Phone" class="text-danger"></span>
     </div>
-    <div class="col-md-12">
+    <div class="col-12">
         <label class="form-label" asp-for="AddressLine1"></label>
-        <input class="form-control" asp-for="AddressLine1" />
+        <input class="form-control" asp-for="AddressLine1" autocomplete="address-line1" />
+        <span asp-validation-for="AddressLine1" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label class="form-label" asp-for="AddressLine2"></label>
+        <input class="form-control" asp-for="AddressLine2" autocomplete="address-line2" />
+        <span asp-validation-for="AddressLine2" class="text-danger"></span>
     </div>
     <div class="col-md-4">
         <label class="form-label" asp-for="City"></label>
         <input class="form-control" asp-for="City" />
+        <span asp-validation-for="City" class="text-danger"></span>
     </div>
     <div class="col-md-4">
         <label class="form-label" asp-for="State"></label>
         <input class="form-control" asp-for="State" />
+        <span asp-validation-for="State" class="text-danger"></span>
     </div>
     <div class="col-md-4">
         <label class="form-label" asp-for="PostalCode"></label>
         <input class="form-control" asp-for="PostalCode" />
+        <span asp-validation-for="PostalCode" class="text-danger"></span>
     </div>
     <div class="col-md-6">
         <label class="form-label" asp-for="Country"></label>
         <input class="form-control" asp-for="Country" />
+        <span asp-validation-for="Country" class="text-danger"></span>
     </div>
-    <div class="col-md-3 form-check mt-4">
-        <input class="form-check-input" asp-for="IsDefault" />
-        <label class="form-check-label" asp-for="IsDefault"></label>
+    <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input class="form-check-input" asp-for="IsDefault" />
+            <label class="form-check-label" asp-for="IsDefault"></label>
+        </div>
     </div>
-    <div class="col-md-3 form-check mt-4">
-        <input class="form-check-input" asp-for="IsActive" />
-        <label class="form-check-label" asp-for="IsActive"></label>
+    <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input class="form-check-input" asp-for="IsActive" />
+            <label class="form-check-label" asp-for="IsActive"></label>
+        </div>
     </div>
 </div>

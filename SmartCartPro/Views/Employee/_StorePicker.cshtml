@@ -1,0 +1,48 @@
+@model (List<SmartCartPro.Models.OutputUserStoreSelect> Stores, HashSet<int> Selected, int? DefaultStoreId)
+@{
+    var (stores, selected, defaultStoreId) = Model;
+}
+@if (stores.Count == 0)
+{
+    <div class="alert alert-warning mb-0" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        No stores are available yet. Create a store first, then come back to manage employees.
+    </div>
+}
+else
+{
+    <div class="border rounded" data-sc-store-picker>
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light small text-muted">
+            <span>Store</span>
+            <span>Default</span>
+        </div>
+        @foreach (var store in stores)
+        {
+            var isChecked = selected.Contains(store.IdStore);
+            var canPick = store.IsActive || isChecked;
+            var isDefault = isChecked && defaultStoreId == store.IdStore;
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" data-sc-store-row>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" name="StoreIds" value="@store.IdStore"
+                           id="store-@store.IdStore" checked="@isChecked" disabled="@(!canPick)" data-sc-store-check />
+                    <label class="form-check-label" for="store-@store.IdStore">
+                        @store.StoreName
+                        <span class="text-muted small ms-1">@store.StoreCode</span>
+                        @if (!store.IsActive)
+                        {
+                            <span class="badge text-bg-secondary ms-1">Inactive</span>
+                        }
+                    </label>
+                </div>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="radio" name="DefaultStoreId" value="@store.IdStore"
+                           id="default-@store.IdStore" checked="@isDefault" disabled="@(!isChecked)" data-sc-store-default />
+                    <label class="form-check-label small text-muted" for="default-@store.IdStore">Default</label>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="form-text">The employee can sign in to the ticked stores. The default store opens first after sign-in.</div>
+}
+<span class="text-danger small d-block" data-valmsg-for="StoreIds"></span>
+<span class="text-danger small d-block" data-valmsg-for="DefaultStoreId"></span>

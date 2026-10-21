@@ -10,9 +10,12 @@ public interface ICompanyRepository
 
     Task<OutputStoreSelect?> GetStoreAsync(InputStoreSelect input, CancellationToken ct = default);
     Task<OutputStoreList> ListStoresAsync(InputStoreList input, CancellationToken ct = default);
+    Task<OutputStoreAccessibleList> ListAccessibleStoresAsync(InputStoreAccessibleList input, CancellationToken ct = default);
     Task<int> GetActiveStoreCountAsync(CancellationToken ct = default);
+    Task<int> GetActiveUserCountAsync(CancellationToken ct = default);
     Task<OutputStoreCreate> CreateStoreAsync(InputStoreCreate input, CancellationToken ct = default);
     Task<OutputStoreUpdate> UpdateStoreAsync(InputStoreUpdate input, CancellationToken ct = default);
+    Task<OutputStoreStatusUpdate> UpdateStoreStatusAsync(InputStoreStatusUpdate input, CancellationToken ct = default);
 
     Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default);
     Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default);

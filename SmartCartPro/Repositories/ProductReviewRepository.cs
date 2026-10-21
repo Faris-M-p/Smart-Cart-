@@ -82,10 +82,7 @@ public class ProductReviewRepository : IProductReviewRepository
     public async Task<OutputProductReviewList> ListReviewsAsync(
         InputProductReviewList input, CancellationToken ct = default)
     {
-        var q = _db.ProductReviews
-            .Include(r => r.Product)
-            .Include(r => r.Customer)
-            .AsQueryable();
+        var q = _db.ProductReviews.AsQueryable();
 
         if (!input.IncludeCancelled)
             q = q.Where(r => !r.Cancelled);
@@ -99,10 +96,52 @@ public class ProductReviewRepository : IProductReviewRepository
         if (input.IsApproved.HasValue)
             q = q.Where(r => r.IsApproved == input.IsApproved.Value);
 
+        if (input.Rating is >= 1 and <= 5)
+            q = q.Where(r => r.Rating == input.Rating.Value);
+
+        if (input.From.HasValue)
+            q = q.Where(r => r.CreatedAt >= input.From.Value);
+
+        if (input.To.HasValue)
+        {
+            var to = input.To.Value.TimeOfDay == TimeSpan.Zero
+                ? input.To.Value.Date.AddDays(1)
+                : input.To.Value;
+            q = q.Where(r => r.CreatedAt < to);
+        }
+
+        if (!string.IsNullOrWhiteSpace(input.Search))
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(r =>
+                (r.Title != null && r.Title.ToLower().Contains(term))
+                || (r.ReviewText != null && r.ReviewText.ToLower().Contains(term))
+                || (r.Product != null && r.Product.ProductName.ToLower().Contains(term))
+                || (r.Customer != null && r.Customer.FullName.ToLower().Contains(term)));
+        }
+
+        q = (input.SortBy ?? string.Empty).ToLowerInvariant() switch
+        {
+            "rating" => input.SortDesc
+                ? q.OrderByDescending(r => r.Rating).ThenByDescending(r => r.CreatedAt)
+                : q.OrderBy(r => r.Rating).ThenByDescending(r => r.CreatedAt),
+            "productname" => input.SortDesc
+                ? q.OrderByDescending(r => r.Product != null ? r.Product.ProductName : string.Empty)
+                : q.OrderBy(r => r.Product != null ? r.Product.ProductName : string.Empty),
+            "customername" => input.SortDesc
+                ? q.OrderByDescending(r => r.Customer != null ? r.Customer.FullName : string.Empty)
+                : q.OrderBy(r => r.Customer != null ? r.Customer.FullName : string.Empty),
+            "isapproved" => input.SortDesc
+                ? q.OrderByDescending(r => r.IsApproved).ThenByDescending(r => r.CreatedAt)
+                : q.OrderBy(r => r.IsApproved).ThenByDescending(r => r.CreatedAt),
+            _ => input.SortDesc
+                ? q.OrderByDescending(r => r.CreatedAt)
+                : q.OrderBy(r => r.CreatedAt)
+        };
+
         var total = await q.CountAsync(ct);
 
         var rows = await q
-            .OrderByDescending(r => r.CreatedAt)
             .Skip((input.Page - 1) * input.PageSize)
             .Take(input.PageSize)
             .Select(r => new OutputProductReviewListItem

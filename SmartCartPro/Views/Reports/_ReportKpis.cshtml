@@ -1,0 +1,21 @@
+@model List<SmartCartPro.Models.OutputReportKpi>
+@if (Model is { Count: > 0 })
+{
+    <div class="row g-3 mb-3 sc-report-kpi">
+        @foreach (var kpi in Model)
+        {
+            <div class="col-6 col-md-4 col-xl">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">@kpi.Label</div>
+                        <div class="fs-5 fw-semibold">@kpi.Value</div>
+                        @if (!string.IsNullOrWhiteSpace(kpi.Hint))
+                        {
+                            <div class="small text-muted">@kpi.Hint</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

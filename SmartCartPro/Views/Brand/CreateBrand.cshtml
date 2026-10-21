@@ -21,7 +21,7 @@
               method="post"
               data-sc-ajax-form="true"
               novalidate>
-            @Html.AntiForgeryToken()
+            @* Antiforgery token: emitted once by the form tag helper (asp-action + method=post); an extra @Html.AntiForgeryToken() would post it twice. *@
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <div class="row g-3">
                 <div class="col-md-8">

@@ -1,0 +1,83 @@
+.pos-shell .pos-results {
+  min-height: 12rem;
+  max-height: min(62vh, 36rem);
+  overflow-y: auto;
+}
+
+.pos-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: transparent;
+  padding: 0.75rem 1rem;
+}
+
+.pos-result:hover,
+.pos-result:focus {
+  background: var(--bs-tertiary-bg);
+}
+
+.pos-bill {
+  position: sticky;
+  top: 0.75rem;
+}
+
+.pos-cart-wrap {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.pos-totals dd {
+  margin-bottom: 0.25rem;
+}
+
+.pos-pay-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto auto;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.sc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.sc-modal-dialog {
+  width: min(28rem, 100%);
+}
+
+.sc-modal-content {
+  background: var(--bs-body-bg);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 1rem 2.5rem rgba(15, 23, 42, 0.2);
+}
+
+@media (max-width: 991.98px) {
+  .pos-bill {
+    position: static;
+  }
+}
+
+@media print {
+  .d-print-none,
+  .navbar,
+  .sidebar,
+  .breadcrumb,
+  .btn {
+    display: none !important;
+  }
+
+  .day-close-sheet {
+    box-shadow: none !important;
+  }
+}

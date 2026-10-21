@@ -1,0 +1,163 @@
+@using System.Globalization
+@model SmartCartPro.Models.OutputSalesReturnSelect
+@{
+    ViewData["Title"] = Model.ReturnNumber;
+
+    string Money(decimal value) => value.ToString("N2");
+    string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    string Qty(decimal value) => value.ToString("0.###");
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Sales</span></li>
+        <li class="breadcrumb-item"><a asp-action="Returns">Returns</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.ReturnNumber</li>
+    </ol>
+</nav>
+
+<div id="returnDetailsPage">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="h3 mb-0">@Model.ReturnNumber</h1>
+                <partial name="_ReturnStatusBadge" model="Model.Status" />
+            </div>
+            <p class="text-muted mb-0">
+                Invoice
+                <a asp-action="InvoiceDetails" asp-route-id="@Model.FkSale">@Model.InvoiceNumber</a>
+                · <time data-sc-utc="@TimeDisplay.Iso(Model.ReturnDate)" data-sc-format="datetime">@Model.ReturnDate.ToString("dd MMM yyyy HH:mm")</time>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Returns">
+                <i class="bi bi-arrow-left me-1"></i>Back to list
+            </a>
+            <a class="btn btn-outline-secondary" asp-action="InvoiceDetails" asp-route-id="@Model.FkSale">
+                <i class="bi bi-receipt me-1"></i>Original invoice
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Cancelled)
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Cancelled</strong>
+            @if (Model.CancelledOn is not null)
+            {
+                <span> on <time data-sc-utc="@TimeDisplay.Iso(Model.CancelledOn)" data-sc-format="datetime">@Model.CancelledOn.Value.ToString("dd MMM yyyy HH:mm")</time></span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CancelledReason))
+            {
+                <div class="mt-1">Reason: @Model.CancelledReason</div>
+            }
+        </div>
+    }
+
+    <div class="alert alert-light border" role="status">
+        Cash was not refunded automatically. Staff handle the refund at the till.
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Return</h2>
+                    <dl class="row small mb-0">
+                        <dt class="col-5 fw-normal text-muted">Return #</dt>
+                        <dd class="col-7 mb-1">@Model.ReturnNumber</dd>
+                        <dt class="col-5 fw-normal text-muted">Invoice</dt>
+                        <dd class="col-7 mb-1">
+                            <a asp-action="InvoiceDetails" asp-route-id="@Model.FkSale">@Model.InvoiceNumber</a>
+                        </dd>
+                        <dt class="col-5 fw-normal text-muted">Date</dt>
+                        <dd class="col-7 mb-1">
+                            <time data-sc-utc="@TimeDisplay.Iso(Model.ReturnDate)" data-sc-format="datetime">@Model.ReturnDate.ToString("dd MMM yyyy HH:mm")</time>
+                        </dd>
+                        <dt class="col-5 fw-normal text-muted">Cashier</dt>
+                        <dd class="col-7 mb-0">@(string.IsNullOrWhiteSpace(Model.CashierName) ? "—" : Model.CashierName)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Customer</h2>
+                    <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in" : Model.CustomerName)</div>
+                    <div class="small text-muted mt-2">Store @Model.StoreName</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-muted text-uppercase mb-3">Totals</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-6 fw-normal text-muted">Amount</dt>
+                        <dd class="col-6 text-end mb-0 fw-semibold fs-5"><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent">
+            <h2 class="h6 mb-0">Items <span class="text-muted fw-normal">(@Model.Lines.Count)</span></h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Line total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var line in Model.Lines)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-medium">@line.ProductName</div>
+                            <div class="small text-muted">
+                                @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                {
+                                    <span>@line.VariantName</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.VariantName) && !string.IsNullOrWhiteSpace(line.Sku))
+                                {
+                                    <span> · </span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(line.Sku))
+                                {
+                                    <span>@line.Sku</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="text-end">@Qty(line.Quantity)</td>
+                        <td class="text-end"><span data-sc-money="@Raw(line.UnitPrice)">@Money(line.UnitPrice)</span></td>
+                        <td class="text-end fw-medium"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Reason))
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 text-muted text-uppercase mb-2">Reason</h2>
+                <div class="text-break" style="white-space: pre-wrap;">@Model.Reason</div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/sales/returns.js" asp-append-version="true"></script>
+}

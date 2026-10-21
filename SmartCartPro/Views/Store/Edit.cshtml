@@ -1,13 +1,42 @@
-@model SmartCartPro.Models.InStoreUpdateView
+@model InStoreUpdateView
 @{
     ViewData["Title"] = "Edit store";
+    var returnUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Store");
 }
-<h1 class="h4 mb-3">Edit store</h1>
-<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-<form asp-action="Edit" asp-route-id="@Model.IdStore" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="IdStore" />
-    <partial name="_StoreUpdateForm" />
-    <button type="submit" class="btn btn-primary mt-3">Save</button>
-    <a class="btn btn-outline-secondary mt-3" asp-action="Index">Cancel</a>
-</form>
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Stores</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-3">Edit store</h1>
+@if (Model.IsDefault)
+{
+    <p class="text-muted">This is the default store. Promote another store to default before deactivating this one.</p>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        <form id="storeForm"
+              asp-action="Edit"
+              asp-route-id="@Model.IdStore"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            <input type="hidden" asp-for="IdStore" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <partial name="_StoreUpdateForm" />
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/store.js" asp-append-version="true"></script>
+}

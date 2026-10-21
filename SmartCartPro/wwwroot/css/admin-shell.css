@@ -193,3 +193,29 @@ body.admin-layout {
     --bs-btn-padding-y: 0.375rem;
   }
 }
+
+.sc-store-switcher {
+  position: relative;
+}
+
+.sc-store-switcher > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.sc-store-switcher > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sc-store-switcher .dropdown-menu {
+  display: none;
+  position: absolute;
+  min-width: 14rem;
+  right: 0;
+  left: auto;
+  z-index: 1080;
+}
+
+.sc-store-switcher[open] .dropdown-menu {
+  display: block;
+}

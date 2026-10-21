@@ -1,0 +1,247 @@
+@model SmartCartPro.Models.InUserUpdateView
+@{
+    ViewData["Title"] = "Edit employee";
+    var returnUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Employee")!;
+    var roles = ViewBag.Roles as List<SmartCartPro.Models.OutputUserRoleSelect> ?? new List<SmartCartPro.Models.OutputUserRoleSelect>();
+    var allStores = ViewBag.Stores as List<SmartCartPro.Models.OutputUserStoreSelect> ?? new List<SmartCartPro.Models.OutputUserStoreSelect>();
+    var currentUserId = ViewBag.CurrentUserId as int? ?? 0;
+    var isSelf = Model.IdUser == currentUserId;
+    var selectedStores = new HashSet<int>(Model.StoreIds);
+    var stores = allStores
+        .Where(s => s.IsActive || selectedStores.Contains(s.IdStore))
+        .ToList();
+    var roleItems = roles
+        .Where(r => r.IsActive || r.IdRole == Model.FkRole)
+        .Select(r => new SelectListItem(r.IsActive ? r.RoleName : r.RoleName + " (inactive)", r.IdRole.ToString(), r.IdRole == Model.FkRole))
+        .ToList();
+    var setActiveUrl = Url.Action("SetActive", "Employee")!;
+    var deactivateText = "Deactivate " + Model.FullName + "? They will no longer be able to sign in.";
+    var activateText = "Activate " + Model.FullName + "? They will be able to sign in again.";
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Employees</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Edit employee</h1>
+        <div class="text-muted">
+            <span class="fw-medium">@Model.FullName</span>
+            <span class="ms-1">&middot; @Model.UserName</span>
+            <span class="ms-2"><partial name="_StatusBadge" model="Model.IsActive" /></span>
+        </div>
+    </div>
+    <div>
+        @if (isSelf)
+        {
+            <span class="badge text-bg-info">This is your account</span>
+        }
+        else if (Model.IsActive)
+        {
+            <button type="button" class="btn btn-outline-secondary"
+                    data-sc-post="@setActiveUrl"
+                    data-sc-param-id="@Model.IdUser"
+                    data-sc-param-isactive="false"
+                    data-sc-confirm="@deactivateText"
+                    data-sc-confirm-title="Deactivate employee"
+                    data-sc-confirm-ok="Deactivate"
+                    data-sc-confirm-class="btn-warning">Deactivate</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-success"
+                    data-sc-post="@setActiveUrl"
+                    data-sc-param-id="@Model.IdUser"
+                    data-sc-param-isactive="true"
+                    data-sc-confirm="@activateText"
+                    data-sc-confirm-title="Activate employee"
+                    data-sc-confirm-ok="Activate"
+                    data-sc-confirm-class="btn-success">Activate</button>
+        }
+    </div>
+</div>
+
+<div class="row g-3" id="employeeEditPage">
+    <div class="col-xl-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form id="employeeEditForm"
+                      asp-action="Edit"
+                      asp-route-id="@Model.IdUser"
+                      method="post"
+                      data-sc-ajax-form="true"
+                      novalidate>
+                    <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                    <input type="hidden" asp-for="IdUser" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                    <h2 class="h6 text-uppercase text-muted mb-3">Profile</h2>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="FullName"></label>
+                            <input class="form-control" asp-for="FullName" maxlength="200" autocomplete="off" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="employeeUserName">Username</label>
+                            <input class="form-control" id="employeeUserName" value="@Model.UserName" readonly aria-readonly="true" />
+                            <div class="form-text">The username cannot be changed.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="Email"></label>
+                            <input class="form-control" asp-for="Email" type="email" maxlength="200" autocomplete="off" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" asp-for="Phone"></label>
+                            <input class="form-control" asp-for="Phone" type="tel" maxlength="15" autocomplete="off" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" asp-for="EmployeeCode"></label>
+                            <input class="form-control" asp-for="EmployeeCode" maxlength="50" autocomplete="off" />
+                            <span asp-validation-for="EmployeeCode" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <h2 class="h6 text-uppercase text-muted mb-3">Access</h2>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="employeeRoleSelect">Role</label>
+                            @if (isSelf)
+                            {
+                                <input type="hidden" name="FkRole" value="@Model.FkRole" />
+                                <select class="form-select" id="employeeRoleSelect" asp-items="roleItems" disabled aria-describedby="employeeRoleHelp"></select>
+                                <div class="form-text" id="employeeRoleHelp">You cannot change your own role.</div>
+                            }
+                            else
+                            {
+                                <select class="form-select" id="employeeRoleSelect" asp-for="FkRole" asp-items="roleItems">
+                                    <option value="">Select a role…</option>
+                                </select>
+                                <span asp-validation-for="FkRole" class="text-danger"></span>
+                                <div class="form-text">The role decides what the employee can do. <a asp-controller="Role" asp-action="Index">Manage roles</a></div>
+                            }
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label d-block">Store access</label>
+                            @await Html.PartialAsync("_StorePicker", (Stores: stores, Selected: selectedStores, DefaultStoreId: Model.DefaultStoreId))
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary" data-sc-busy-text="Saving…">Save changes</button>
+                        <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h2 class="h6 text-uppercase text-muted mb-3">Account</h2>
+                <dl class="row mb-0 small">
+                    <dt class="col-5">Username</dt>
+                    <dd class="col-7 text-break">@Model.UserName</dd>
+                    <dt class="col-5">Status</dt>
+                    <dd class="col-7"><partial name="_StatusBadge" model="Model.IsActive" /></dd>
+                    <dt class="col-5">Last sign-in</dt>
+                    <dd class="col-7">
+                        @if (Model.LastLoginAt.HasValue)
+                        {
+                            <time data-sc-utc="@Model.LastLoginAt.Value.ToString("yyyy-MM-ddTHH:mm:ss")Z">@Model.LastLoginAt.Value.ToString("dd MMM yyyy HH:mm") UTC</time>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Never</span>
+                        }
+                    </dd>
+                    <dt class="col-5">Password</dt>
+                    <dd class="col-7">
+                        @if (Model.MustChangePassword)
+                        {
+                            <span class="badge text-bg-warning">Change required</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No change pending</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 text-uppercase text-muted mb-3">Reset password</h2>
+                @if (isSelf)
+                {
+                    <p class="text-muted small mb-0">
+                        You cannot reset your own password here. Use
+                        <a asp-controller="Auth" asp-action="ChangePassword">Change password</a> instead.
+                    </p>
+                }
+                else
+                {
+                    <p class="text-muted small">
+                        Sets a temporary password. The employee must choose a new one at the next sign-in.
+                    </p>
+                    <form id="resetPasswordForm"
+                          asp-action="ResetPassword"
+                          asp-route-id="@Model.IdUser"
+                          method="post"
+                          data-sc-ajax-form="true"
+                          novalidate>
+                        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+                        <input type="hidden" name="IdUser" value="@Model.IdUser" />
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="resetGeneratePassword"
+                                   name="GeneratePassword" value="true" checked data-sc-password-mode />
+                            <input type="hidden" name="GeneratePassword" value="false" />
+                            <label class="form-check-label" for="resetGeneratePassword">Generate a temporary password</label>
+                        </div>
+                        <div class="mb-3 d-none" data-sc-manual-password>
+                            <label class="form-label" for="resetNewPassword">New password</label>
+                            <div class="input-group">
+                                <input class="form-control" type="password" id="resetNewPassword" name="NewPassword"
+                                       maxlength="64" autocomplete="new-password" />
+                                <button type="button" class="btn btn-outline-secondary" data-sc-toggle-password="#resetNewPassword"
+                                        aria-label="Show password" title="Show or hide the password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span class="text-danger small d-block" data-valmsg-for="NewPassword"></span>
+                            <div class="form-text">8 to 64 characters with an uppercase letter, a lowercase letter, a digit and a special character.</div>
+                        </div>
+                        <button type="submit" class="btn btn-outline-danger" data-sc-busy-text="Resetting…">Reset password</button>
+                    </form>
+                    <div class="d-none mt-3" id="resetPasswordResult" role="status" aria-live="polite">
+                        <div class="alert alert-warning mb-2">
+                            Copy this temporary password now. It is shown only once; the employee must change it at the next sign-in.
+                        </div>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" readonly data-sc-temp-password aria-label="Temporary password" />
+                            <button type="button" class="btn btn-outline-primary" data-sc-copy-password>
+                                <i class="bi bi-clipboard me-1"></i>Copy
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/employee.js" asp-append-version="true"></script>
+}

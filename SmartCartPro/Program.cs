@@ -26,6 +26,7 @@ builder.Services.AddControllersWithViews(options =>
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
     options.Filters.AddService<LicenseGateFilter>();
+    options.Filters.AddService<ActiveUserFilter>();
 });
 
 builder.Services.AddMemoryCache();

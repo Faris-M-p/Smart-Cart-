@@ -1,13 +1,37 @@
-@model SmartCartPro.Models.InStoreCreateView
+@model InStoreCreateView
 @{
-    ViewData["Title"] = "Create store";
+    ViewData["Title"] = "Add store";
+    var returnUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Store");
 }
-<h1 class="h4 mb-3">Create store</h1>
-<p class="text-muted small">Super Admin only.</p>
-<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-<form asp-action="Create" method="post">
-    @Html.AntiForgeryToken()
-    <partial name="_StoreCreateForm" />
-    <button type="submit" class="btn btn-primary mt-3">Create</button>
-    <a class="btn btn-outline-secondary mt-3" asp-action="Index">Cancel</a>
-</form>
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Stores</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add</li>
+    </ol>
+</nav>
+<h1 class="h3 mb-3">Add store</h1>
+<p class="text-muted">Platform administrator only. The license MaxStores limit is checked when you save.</p>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+        <form id="storeForm"
+              asp-action="Create"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <partial name="_StoreCreateForm" />
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" href="@returnUrl">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin/store.js" asp-append-version="true"></script>
+}

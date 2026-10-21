@@ -17,9 +17,17 @@ public class ProductService : IProductService
     private static readonly string[] ProductSorts = { "productname", "productcode", "category", "sellingprice", "isactive" };
     private static readonly string[] VariantSorts = { "variantname", "skucode", "additionalprice", "isactive", "product" };
 
-    private readonly IProductRepository _repo;
+    /// <summary>Cost price is only revealed to callers holding one of these permissions.</summary>
+    private static readonly string[] CostViewerPermissions = { "products.manage", "purchases.view", "purchases.manage" };
 
-    public ProductService(IProductRepository repo) => _repo = repo;
+    private readonly IProductRepository _repo;
+    private readonly ICurrentUserAccess _access;
+
+    public ProductService(IProductRepository repo, ICurrentUserAccess access)
+    {
+        _repo = repo;
+        _access = access;
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // PRODUCT
@@ -51,7 +59,10 @@ public class ProductService : IProductService
             VariantTotal = variants.TotalCount
         };
 
-        if (input.FkStore > 0)
+        // Stock is store-scoped: only shown to a store user whose role may see inventory.
+        if (input.FkStore > 0
+            && await _access.ModuleEnabledAsync("INVENTORY", ct)
+            && await _access.CanAsync("inventory.view", ct))
         {
             var stockInput = new InputProductStockList { FkStore = input.FkStore, FkProduct = input.IdProduct };
             var stock = await _repo.ListProductStockAsync(stockInput, ct);
@@ -274,8 +285,18 @@ public class ProductService : IProductService
         input.Term = Truncate(Clean(input.Term), MaxTermLength);
         input.Take = Math.Clamp(input.Take, 1, 50);
 
-        var items = await _repo.SearchProductsAsync(input, ct);
-        if (!input.IncludeCost)
+        var found = await _repo.SearchProductsAsync(input, ct);
+
+        // Exact barcode / SKU / code hits first (a scanner typing into the box), then alphabetical.
+        var term = input.Term ?? string.Empty;
+        var items = found
+            .OrderBy(x => IsExactHit(x, term) ? 0 : 1)
+            .ThenBy(x => x.ProductName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.VariantName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Take(input.Take)
+            .ToList();
+
+        if (!await CanSeeCostAsync(ct))
         {
             foreach (var item in items)
                 item.CostPrice = null;
@@ -291,11 +312,20 @@ public class ProductService : IProductService
             return null;
 
         var item = await _repo.FindByBarcodeAsync(input, ct);
-        if (item is not null && !input.IncludeCost)
+        if (item is not null && !await CanSeeCostAsync(ct))
             item.CostPrice = null;
 
         return item;
     }
+
+    private Task<bool> CanSeeCostAsync(CancellationToken ct)
+        => _access.CanAnyAsync(CostViewerPermissions, ct);
+
+    private static bool IsExactHit(OutputProductSearchItem item, string term)
+        => term.Length > 0 && (
+            string.Equals(item.Barcode, term, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(item.Sku, term, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(item.ProductCode, term, StringComparison.OrdinalIgnoreCase));
 
     // ─── validation helpers ───────────────────────────────────────
 

@@ -41,11 +41,11 @@ public class OnlineOrderRepository : IOnlineOrderRepository
 
     public async Task<OutputOnlineOrderSelect?> GetOrderAsync(InputOnlineOrderSelect input, CancellationToken ct = default)
     {
-        return await _db.Orders
-            .Include(o => o.Store)
-            .Include(o => o.Items)
-                .ThenInclude(i => i.Product)
-            .Where(o => o.IdOnlineOrder == input.IdOnlineOrder)
+        var q = _db.Orders.Where(o => o.IdOnlineOrder == input.IdOnlineOrder);
+        if (input.FkStore is > 0)
+            q = q.Where(o => o.FkStore == input.FkStore.Value);
+
+        var order = await q
             .Select(o => new OutputOnlineOrderSelect
             {
                 IdOnlineOrder  = o.IdOnlineOrder,
@@ -56,6 +56,10 @@ public class OnlineOrderRepository : IOnlineOrderRepository
                                     .Where(c => c.IdCustomer == o.FkCustomer)
                                     .Select(c => c.FullName)
                                     .FirstOrDefault() ?? string.Empty,
+                CustomerPhone  = _db.Customers
+                                    .Where(c => c.IdCustomer == o.FkCustomer)
+                                    .Select(c => c.Phone)
+                                    .FirstOrDefault(),
                 OrderNumber    = o.OrderNumber,
                 OrderDate      = o.OrderDate,
                 Status         = o.Status,
@@ -67,13 +71,21 @@ public class OnlineOrderRepository : IOnlineOrderRepository
                 ShippingAddress = o.ShippingAddress,
                 Notes          = o.Notes,
                 Cancelled      = o.Cancelled,
+                CancelledOn    = o.CancelledOn,
                 CancelledReason = o.CancelledReason,
                 CreatedAt      = o.CreatedAt,
+                UpdatedAt      = o.UpdatedAt,
                 Items = o.Items.Select(i => new OutputOnlineOrderItem
                 {
                     IdOnlineOrderItem = i.IdOnlineOrderItem,
                     FkProduct         = i.FkProduct,
                     ProductName       = i.Product != null ? i.Product.ProductName : string.Empty,
+                    VariantName       = i.FkProductVariant == null
+                        ? null
+                        : _db.ProductVariants
+                            .Where(v => v.IdProductVariant == i.FkProductVariant)
+                            .Select(v => v.VariantName)
+                            .FirstOrDefault(),
                     FkProductVariant  = i.FkProductVariant,
                     Quantity          = i.Quantity,
                     UnitPrice         = i.UnitPrice,
@@ -81,13 +93,17 @@ public class OnlineOrderRepository : IOnlineOrderRepository
                 }).ToList()
             })
             .FirstOrDefaultAsync(ct);
+
+        if (order is null) return null;
+
+        order.AllowedNextStatuses = NextStatuses(order.Status);
+        order.StockWasDeducted = StockDeductedStatuses.Contains(order.Status);
+        return order;
     }
 
     public async Task<OutputOnlineOrderList> ListOrdersAsync(InputOnlineOrderList input, CancellationToken ct = default)
     {
-        var q = _db.Orders
-            .Include(o => o.Store)
-            .AsQueryable();
+        var q = _db.Orders.AsQueryable();
 
         if (input.FkStore.HasValue)
             q = q.Where(o => o.FkStore == input.FkStore.Value);
@@ -99,15 +115,43 @@ public class OnlineOrderRepository : IOnlineOrderRepository
             q = q.Where(o => o.OrderDate >= input.From.Value);
 
         if (input.To.HasValue)
-            q = q.Where(o => o.OrderDate <= input.To.Value);
+        {
+            var to = input.To.Value.TimeOfDay == TimeSpan.Zero
+                ? input.To.Value.Date.AddDays(1)
+                : input.To.Value;
+            q = q.Where(o => o.OrderDate < to);
+        }
 
         if (!string.IsNullOrWhiteSpace(input.Search))
-            q = q.Where(o => o.OrderNumber.Contains(input.Search));
+        {
+            var term = input.Search.Trim().ToLower();
+            q = q.Where(o =>
+                o.OrderNumber.ToLower().Contains(term)
+                || _db.Customers.Any(c => c.IdCustomer == o.FkCustomer && c.FullName.ToLower().Contains(term)));
+        }
+
+        q = (input.SortBy ?? string.Empty).ToLowerInvariant() switch
+        {
+            "ordernumber" => input.SortDesc
+                ? q.OrderByDescending(o => o.OrderNumber)
+                : q.OrderBy(o => o.OrderNumber),
+            "status" => input.SortDesc
+                ? q.OrderByDescending(o => o.Status).ThenByDescending(o => o.OrderDate)
+                : q.OrderBy(o => o.Status).ThenByDescending(o => o.OrderDate),
+            "totalamount" => input.SortDesc
+                ? q.OrderByDescending(o => o.TotalAmount)
+                : q.OrderBy(o => o.TotalAmount),
+            "customername" => input.SortDesc
+                ? q.OrderByDescending(o => _db.Customers.Where(c => c.IdCustomer == o.FkCustomer).Select(c => c.FullName).FirstOrDefault())
+                : q.OrderBy(o => _db.Customers.Where(c => c.IdCustomer == o.FkCustomer).Select(c => c.FullName).FirstOrDefault()),
+            _ => input.SortDesc
+                ? q.OrderByDescending(o => o.OrderDate)
+                : q.OrderBy(o => o.OrderDate)
+        };
 
         var total = await q.CountAsync(ct);
 
         var rows = await q
-            .OrderByDescending(o => o.OrderDate)
             .Skip((input.Page - 1) * input.PageSize)
             .Take(input.PageSize)
             .Select(o => new OutputOnlineOrderListItem
@@ -140,9 +184,11 @@ public class OnlineOrderRepository : IOnlineOrderRepository
     public async Task<OutputOnlineOrderStatusUpdate> UpdateStatusAsync(
         InputOnlineOrderStatusUpdate input, CancellationToken ct = default)
     {
-        var order = await _db.Orders
-            .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.IdOnlineOrder == input.IdOnlineOrder, ct);
+        var q = _db.Orders.Include(o => o.Items).Where(o => o.IdOnlineOrder == input.IdOnlineOrder);
+        if (input.FkStore is > 0)
+            q = q.Where(o => o.FkStore == input.FkStore.Value);
+
+        var order = await q.FirstOrDefaultAsync(ct);
 
         if (order is null)
             return new OutputOnlineOrderStatusUpdate
@@ -249,4 +295,7 @@ public class OnlineOrderRepository : IOnlineOrderRepository
             throw;
         }
     }
+
+    private static List<string> NextStatuses(string status) =>
+        AllowedTransitions.TryGetValue(status, out var next) ? next.ToList() : new List<string>();
 }

@@ -1,0 +1,190 @@
+@model SmartCartPro.Models.OutputSettingSelect
+@{
+    ViewData["Title"] = "Settings";
+    var isStore = string.Equals(Model.Scope, "store", StringComparison.OrdinalIgnoreCase);
+    var hasStore = ViewBag.HasStore as bool? ?? false;
+    var storeName = ViewBag.StoreName as string;
+    var storeLabel = hasStore && !string.IsNullOrWhiteSpace(storeName) ? "Store: " + storeName : "This store";
+    var companyUrl = Url.Action("Index", "Setting", new { scope = "company" })!;
+    var storeUrl = Url.Action("Index", "Setting", new { scope = "store" })!;
+    var groups = Model.Groups.Where(g => g.Items.Count > 0).ToList();
+
+    string FieldName(string key) => "Values[" + key + "]";
+    string FieldId(string key) => "setting-" + key.Replace('.', '-').Replace('_', '-');
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Administration</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Settings</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_PageHeader", (Title: "Settings", Subtitle: "Company defaults and per-store overrides for billing and localisation", ActionText: (string?)null, ActionUrl: (string?)null))
+
+<div id="settingsPage">
+    <ul class="nav nav-pills mb-3" aria-label="Settings scope">
+        <li class="nav-item">
+            <a class="nav-link @(isStore ? null : "active")" href="@companyUrl" aria-current="@(isStore ? null : "page")">
+                <i class="bi bi-building me-1"></i>Company defaults
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(isStore ? "active" : null)" href="@storeUrl" aria-current="@(isStore ? "page" : null)">
+                <i class="bi bi-shop me-1"></i>@storeLabel
+            </a>
+        </li>
+    </ul>
+
+    @if (isStore && !hasStore)
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-shop display-5 text-muted"></i>
+                <h2 class="h5 mt-3">Sign in as a store user to edit store settings</h2>
+                <p class="text-muted mb-3">
+                    Store overrides belong to a single store, and the platform administrator account is not tied to a store.
+                </p>
+                <a class="btn btn-primary" href="@companyUrl">Back to company defaults</a>
+            </div>
+        </div>
+    }
+    else if (groups.Count == 0)
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-sliders display-5 text-muted"></i>
+                <p class="text-muted mt-3 mb-0">No settings are available for this scope.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">
+            @if (isStore)
+            {
+                <span>These values apply only to <strong>@(string.IsNullOrWhiteSpace(storeName) ? "your store" : storeName)</strong>.
+                    Choose &ldquo;Use company setting&rdquo; (or leave a field empty) to follow the company default.</span>
+            }
+            else
+            {
+                <span>Company defaults apply to every store unless a store sets its own value for a setting that allows it.</span>
+            }
+        </p>
+
+        <form id="settingsForm"
+              asp-action="Save"
+              method="post"
+              data-sc-ajax-form="true"
+              novalidate>
+            <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
+            <input type="hidden" name="Scope" value="@(isStore ? "store" : "company")" />
+
+            @foreach (var group in groups)
+            {
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <h2 class="h6 mb-1"><i class="bi @group.Icon me-2"></i>@group.Title</h2>
+                        <div class="small text-muted">@group.Description</div>
+                    </div>
+                    <div class="card-body py-0">
+                        @for (var i = 0; i < group.Items.Count; i++)
+                        {
+                            var item = group.Items[i];
+                            var fieldName = FieldName(item.SettingKey);
+                            var fieldId = FieldId(item.SettingKey);
+                            var helpId = fieldId + "-help";
+                            var sourceLabel = item.EffectiveSource == "store"
+                                ? "Store override"
+                                : item.EffectiveSource == "company" ? "Company value" : "Built-in default";
+                            var sourceClass = item.EffectiveSource == "store"
+                                ? "text-bg-primary"
+                                : item.EffectiveSource == "company" ? "text-bg-success" : "text-bg-secondary";
+                            var rowClass = i == 0 ? "row g-3 py-3" : "row g-3 py-3 border-top";
+                            <div class="@rowClass" data-sc-setting="@item.SettingKey">
+                                <div class="col-lg-5">
+                                    <label class="form-label fw-semibold mb-1" for="@fieldId">@item.Label</label>
+                                    <div class="text-muted small">@item.Description</div>
+                                    <code class="small text-muted">@item.SettingKey</code>
+                                </div>
+                                <div class="col-lg-7">
+                                    @if (item.Input == "bool" || item.Input == "select")
+                                    {
+                                        var choices = new List<SelectListItem>();
+                                        if (isStore)
+                                        {
+                                            choices.Add(new SelectListItem("Use company setting (" + item.CompanyDisplay + ")", "", string.IsNullOrEmpty(item.FormValue)));
+                                        }
+                                        else if (!item.Required)
+                                        {
+                                            choices.Add(new SelectListItem("None", "", string.IsNullOrEmpty(item.FormValue)));
+                                        }
+
+                                        foreach (var option in item.Options)
+                                        {
+                                            choices.Add(new SelectListItem(option.Label, option.Value, string.Equals(option.Value, item.FormValue, StringComparison.OrdinalIgnoreCase)));
+                                        }
+
+                                        <select id="@fieldId" name="@fieldName" class="form-select" asp-items="choices" aria-describedby="@helpId"></select>
+                                    }
+                                    else
+                                    {
+                                        var listId = fieldId + "-list";
+                                        var placeholder = isStore ? "Company value: " + item.CompanyDisplay : (item.Placeholder ?? string.Empty);
+                                        <input type="text" id="@fieldId" name="@fieldName" value="@item.FormValue" class="form-control"
+                                               maxlength="@item.MaxLength" placeholder="@placeholder" autocomplete="off"
+                                               list="@(item.Options.Count > 0 ? listId : null)" aria-describedby="@helpId" />
+                                        if (item.Options.Count > 0)
+                                        {
+                                            <datalist id="@listId">
+                                                @foreach (var option in item.Options)
+                                                {
+                                                    <option value="@option.Value">@option.Label</option>
+                                                }
+                                            </datalist>
+                                        }
+                                    }
+                                    <span class="text-danger small d-block" data-valmsg-for="@fieldName"></span>
+                                    <div class="form-text" id="@helpId">
+                                        @if (isStore)
+                                        {
+                                            <span>Company value: <strong>@item.CompanyDisplay</strong>.</span>
+                                            <span class="ms-1">In force at this store: <strong>@item.EffectiveDisplay</strong></span>
+                                            <span class="badge @sourceClass ms-1">@sourceLabel</span>
+                                        }
+                                        else
+                                        {
+                                            <span>In force: <strong>@item.EffectiveDisplay</strong></span>
+                                            <span class="badge @sourceClass ms-1">@sourceLabel</span>
+                                            if (item.AllowStoreOverride && item.StoreOverrideCount > 0)
+                                            {
+                                                <span class="badge text-bg-warning ms-1">@(item.StoreOverrideCount == 1 ? "1 store overrides this" : item.StoreOverrideCount + " stores override this")</span>
+                                            }
+                                            <span class="d-block mt-1">Built-in default: @item.DefaultDisplay</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button type="submit" class="btn btn-primary" data-sc-busy-text="Saving…">Save settings</button>
+                <a class="btn btn-outline-secondary" href="@(isStore ? storeUrl : companyUrl)">Discard changes</a>
+                <span class="text-warning small d-none" data-sc-dirty-note role="status">
+                    <i class="bi bi-pencil-square me-1"></i>Unsaved changes
+                </span>
+                @if (!isStore)
+                {
+                    <span class="text-muted small">Stores that override a setting keep their own value until it is cleared on the store tab.</span>
+                }
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/admin/setting.js" asp-append-version="true"></script>
+}

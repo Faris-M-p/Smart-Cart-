@@ -14,6 +14,7 @@ public static class AuthClaims
     public const string StoreName = "store_name";
     public const string MustChangePassword = "must_change_password";
     public const string IsPlatformSuperAdmin = "is_platform_super_admin";
+    public const string RememberMe = "remember_me";
 
     public static int? GetUserId(ClaimsPrincipal? user)
     {
@@ -38,4 +39,8 @@ public static class AuthClaims
 
     public static bool IsPlatformSuperAdminUser(ClaimsPrincipal? user) =>
         user?.FindFirstValue(IsPlatformSuperAdmin) == "1";
+
+    /// <summary>True when the original sign-in used Remember me (persistent cookie + long-lived JWT).</summary>
+    public static bool WantsPersistentSession(ClaimsPrincipal? user) =>
+        user?.FindFirstValue(RememberMe) == "1";
 }

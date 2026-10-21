@@ -19,6 +19,8 @@
     var taxText = p.FkTax.HasValue && !string.IsNullOrEmpty(p.TaxName)
         ? p.TaxName + " (" + p.TaxRate.ToString("0.####") + "%, " + (p.TaxInclusive ? "inclusive" : "exclusive") + ")"
         : "—";
+    // Margin is shown before tax, so a tax-inclusive selling price is first reduced to its net amount.
+    var netSelling = p.TaxInclusive && p.TaxRate > 0 ? p.SellingPrice / (1m + p.TaxRate / 100m) : p.SellingPrice;
     var categoryText = string.IsNullOrEmpty(p.CategoryName)
         ? "—"
         : (string.IsNullOrEmpty(p.SubCategoryName) ? p.CategoryName : p.CategoryName + " › " + p.SubCategoryName);
@@ -141,10 +143,10 @@
                     {
                         <dt class="col-6">Cost price</dt>
                         <dd class="col-6 text-end">@Money(p.CostPrice)</dd>
-                        if (p.SellingPrice > 0)
+                        if (netSelling > 0)
                         {
-                            <dt class="col-6">Margin</dt>
-                            <dd class="col-6 text-end">@(((p.SellingPrice - p.CostPrice) / p.SellingPrice * 100m).ToString("0.#"))%</dd>
+                            <dt class="col-6">Margin <span class="small text-muted">(before tax)</span></dt>
+                            <dd class="col-6 text-end">@(((netSelling - p.CostPrice) / netSelling * 100m).ToString("0.#"))%</dd>
                         }
                     }
                     <dt class="col-6">Reorder level</dt>

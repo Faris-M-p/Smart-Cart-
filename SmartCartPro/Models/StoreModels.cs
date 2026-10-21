@@ -273,6 +273,12 @@ public sealed class OutputStoreSelect
 public sealed class InputStoreList
 {
     public bool CanCreate { get; set; }
+    public string? Search { get; set; }
+    public bool? ActiveOnly { get; set; }
+    public string SortBy { get; set; } = "storename";
+    public bool SortDesc { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
 }
 
 public sealed class OutputStoreList
@@ -280,6 +286,46 @@ public sealed class OutputStoreList
     public int CurrentStoreCount { get; set; }
     public int MaxStores { get; set; }
     public bool CanCreateStore { get; set; }
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public List<OutputStoreSelect> Stores { get; set; } = new();
+    public InputStoreList Filter { get; set; } = new();
+}
+
+#endregion
+
+#region Store Status
+
+public sealed class InputStoreStatusUpdate
+{
+    public int ActorUserId { get; set; }
+    public int IdStore { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed class OutputStoreStatusUpdate
+{
+    public int ResponseCode { get; set; }
+    public string ResponseMsg { get; set; } = string.Empty;
+    public int StatusCode { get; set; }
+    public int IdStore { get; set; }
+    public bool IsActive { get; set; }
+    public bool Ok => ResponseCode == 0;
+}
+
+#endregion
+
+#region Store Accessible List
+
+public sealed class InputStoreAccessibleList
+{
+    public int IdUser { get; set; }
+}
+
+public sealed class OutputStoreAccessibleList
+{
+    public int CurrentFkStore { get; set; }
     public List<OutputStoreSelect> Stores { get; set; } = new();
 }
 
