@@ -40,15 +40,15 @@
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label" asp-for="FkCategory"></label>
-                    <select class="form-select" asp-for="FkCategory" asp-items="categoryItems"></select>
-                    <span asp-validation-for="FkCategory" class="text-danger"></span>
-                </div>
-                <div class="col-md-6">
                     <label class="form-label" asp-for="SubCategoryName"></label>
                     <input class="form-control" asp-for="SubCategoryName" autocomplete="off" />
                     <span asp-validation-for="SubCategoryName" class="text-danger"></span>
                     <div class="form-text">Must be unique within the selected category (2–200 characters).</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="FkCategory"></label>
+                    <select class="form-select" asp-for="FkCategory" asp-items="categoryItems"></select>
+                    <span asp-validation-for="FkCategory" class="text-danger"></span>
                 </div>
                 <div class="col-12">
                     <label class="form-label" asp-for="Description"></label>

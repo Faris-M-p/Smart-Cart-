@@ -53,28 +53,48 @@
 
             <h2 class="h6 text-uppercase text-muted mb-3">Identification</h2>
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label class="form-label" asp-for="ProductCode"></label><span class="text-danger ms-1" aria-hidden="true">*</span>
-                    <input class="form-control" asp-for="ProductCode" maxlength="50" autocomplete="off" />
-                    <span asp-validation-for="ProductCode" class="text-danger"></span>
-                    <div class="form-text">Unique internal code (max 50 characters).</div>
-                </div>
                 <div class="col-md-8">
                     <label class="form-label" asp-for="ProductName"></label><span class="text-danger ms-1" aria-hidden="true">*</span>
-                    <input class="form-control" asp-for="ProductName" maxlength="300" autocomplete="off" />
+                    <input class="form-control" asp-for="ProductName" maxlength="300" autocomplete="off" data-auto-source="ProductName" />
                     <span asp-validation-for="ProductName" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="ProductCode"></label><span class="text-danger ms-1" aria-hidden="true">*</span>
+                    <div class="input-group">
+                        <input class="form-control" asp-for="ProductCode" maxlength="50" autocomplete="off"
+                               data-auto-target="ProductCode" data-auto-source="ProductCode" data-auto-from="ProductName"
+                               data-auto-max="50" data-auto-state="persisted" data-auto-generated="false" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="ProductCode" title="Suggest a code" aria-label="Suggest a product code">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="ProductCode" class="text-danger"></span>
+                    <div class="form-text">Existing code. Suggest replaces it only when you use the button. It must stay unique.</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" asp-for="Sku"></label>
-                    <input class="form-control" asp-for="Sku" maxlength="50" autocomplete="off" data-no-enter-submit />
+                    <div class="input-group">
+                        <input class="form-control" asp-for="Sku" maxlength="50" autocomplete="off" data-no-enter-submit
+                               data-auto-target="Sku" data-auto-from="ProductCode" data-auto-suffix="-001"
+                               data-auto-max="50" data-auto-state="persisted" data-auto-generated="false" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="Sku" title="Suggest a SKU" aria-label="Suggest a SKU">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <span asp-validation-for="Sku" class="text-danger"></span>
-                    <div class="form-text">Optional. Must be unique across products and variants.</div>
+                    <div class="form-text">Optional. The current SKU stays until you suggest another. Saving checks that it is not already used.</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" asp-for="Barcode"></label>
-                    <input class="form-control" asp-for="Barcode" maxlength="50" autocomplete="off" data-no-enter-submit />
+                    <div class="input-group">
+                        <input class="form-control" asp-for="Barcode" maxlength="50" autocomplete="off" data-no-enter-submit
+                               data-auto-target="Barcode" data-auto-max="50" data-auto-state="persisted" data-auto-generated="false" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-barcode="Barcode" title="Suggest an internal barcode" aria-label="Suggest an internal barcode">
+                            <i class="bi bi-upc-scan" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <span asp-validation-for="Barcode" class="text-danger"></span>
-                    <div class="form-text">Optional. Scan or type it; must be unique across products and variants.</div>
+                    <div class="form-text">Click the button for a new internal barcode, or type your own. It is not a manufacturer or GS1 barcode.</div>
                 </div>
                 <div class="col-12">
                     <label class="form-label" asp-for="Description"></label>

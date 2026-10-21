@@ -51,21 +51,34 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label" asp-for="VariantName"></label><span class="text-danger ms-1" aria-hidden="true">*</span>
-                    <input class="form-control" asp-for="VariantName" maxlength="200" autocomplete="off" />
+                    <input class="form-control" asp-for="VariantName" maxlength="200" autocomplete="off" data-auto-source="VariantName" />
                     <span asp-validation-for="VariantName" class="text-danger"></span>
                     <div class="form-text">For example "Large / Blue" or "500 g pack". Must be unique for this product.</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" asp-for="SkuCode"></label>
-                    <input class="form-control" asp-for="SkuCode" maxlength="50" autocomplete="off" data-no-enter-submit />
+                    <div class="input-group">
+                        <input class="form-control" asp-for="SkuCode" maxlength="50" autocomplete="off" data-no-enter-submit
+                               data-auto-target="SkuCode" data-auto-from="VariantName"
+                               data-auto-prefix="@product?.ProductCode" data-auto-max="50" data-auto-state="auto" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="SkuCode" title="Suggest a SKU" aria-label="Suggest a variant SKU">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <span asp-validation-for="SkuCode" class="text-danger"></span>
-                    <div class="form-text">Optional and unique.</div>
+                    <div class="form-text">Optional suggestion from the product code and variant name, such as GB-SHOE-BLACK-SIZE-8. Saving checks that it is not already used.</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" asp-for="Barcode"></label>
-                    <input class="form-control" asp-for="Barcode" maxlength="50" autocomplete="off" data-no-enter-submit />
+                    <div class="input-group">
+                        <input class="form-control" asp-for="Barcode" maxlength="50" autocomplete="off" data-no-enter-submit
+                               data-auto-target="Barcode" data-auto-max="50" data-auto-state="blank" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-barcode="Barcode" title="Suggest an internal barcode" aria-label="Suggest an internal barcode">
+                            <i class="bi bi-upc-scan" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <span asp-validation-for="Barcode" class="text-danger"></span>
-                    <div class="form-text">Optional and unique.</div>
+                    <div class="form-text">Optional. Generate suggests an internal barcode starting with 200. It is not a manufacturer or GS1 barcode.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" asp-for="AdditionalPrice"></label>

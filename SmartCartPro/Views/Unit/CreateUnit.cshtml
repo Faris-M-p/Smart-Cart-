@@ -24,16 +24,23 @@
             @* Antiforgery token: emitted once by the form tag helper (asp-action + method=post); an extra @Html.AntiForgeryToken() would post it twice. *@
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label" asp-for="UnitCode"></label>
-                    <input class="form-control" asp-for="UnitCode" maxlength="20" placeholder="e.g. KG" autocomplete="off" />
-                    <span asp-validation-for="UnitCode" class="text-danger"></span>
-                    <div class="form-text">Short symbol, unique (up to 20 characters).</div>
-                </div>
                 <div class="col-md-8">
                     <label class="form-label" asp-for="UnitName"></label>
-                    <input class="form-control" asp-for="UnitName" maxlength="100" placeholder="e.g. Kilogram" autocomplete="off" />
+                    <input class="form-control" asp-for="UnitName" maxlength="100" placeholder="e.g. Kilogram" autocomplete="off" data-auto-source="UnitName" />
                     <span asp-validation-for="UnitName" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="UnitCode"></label>
+                    <div class="input-group">
+                        <input class="form-control" asp-for="UnitCode" maxlength="20" placeholder="e.g. KG" autocomplete="off"
+                               data-auto-target="UnitCode" data-auto-from="UnitName"
+                               data-auto-max="20" data-auto-state="auto" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="UnitCode" title="Suggest a code" aria-label="Suggest a unit code">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="UnitCode" class="text-danger"></span>
+                    <div class="form-text">Suggested from the name. You can edit this short unique symbol.</div>
                 </div>
                 <div class="col-12">
                     <div class="form-check">

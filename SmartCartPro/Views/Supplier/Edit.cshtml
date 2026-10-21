@@ -28,17 +28,24 @@
 
             <h2 class="h6 text-uppercase text-muted mb-3">Supplier</h2>
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label" asp-for="SupplierCode"></label>
-                    <input class="form-control" asp-for="SupplierCode" autocomplete="off" />
-                    <span asp-validation-for="SupplierCode" class="text-danger"></span>
-                    <div class="form-text">Optional short code (max 20 characters).</div>
-                </div>
                 <div class="col-md-8">
                     <label class="form-label" asp-for="SupplierName"></label>
-                    <input class="form-control" asp-for="SupplierName" autocomplete="off" />
+                    <input class="form-control" asp-for="SupplierName" autocomplete="off" data-auto-source="SupplierName" />
                     <span asp-validation-for="SupplierName" class="text-danger"></span>
                     <div class="form-text">Must be unique, even if a supplier with the same name was removed earlier.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="SupplierCode"></label>
+                    <div class="input-group">
+                        <input class="form-control" asp-for="SupplierCode" maxlength="20" autocomplete="off"
+                               data-auto-target="SupplierCode" data-auto-from="SupplierName"
+                               data-auto-max="20" data-auto-state="persisted" data-auto-generated="false" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="SupplierCode" title="Suggest a code" aria-label="Suggest a supplier code">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="SupplierCode" class="text-danger"></span>
+                    <div class="form-text">Optional. The current code stays until you suggest another.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" asp-for="ContactPerson"></label>

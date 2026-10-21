@@ -1,14 +1,14 @@
 @model InStoreCreateView
 <div class="row g-3">
-    <div class="col-md-4">
-        <label class="form-label" asp-for="StoreCode"></label>
-        <input class="form-control" asp-for="StoreCode" autocomplete="off" />
-        <span asp-validation-for="StoreCode" class="text-danger"></span>
-    </div>
     <div class="col-md-8">
         <label class="form-label" asp-for="StoreName"></label>
         <input class="form-control" asp-for="StoreName" autocomplete="off" />
         <span asp-validation-for="StoreName" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" asp-for="StoreCode"></label>
+        <input class="form-control" asp-for="StoreCode" autocomplete="off" />
+        <span asp-validation-for="StoreCode" class="text-danger"></span>
     </div>
     <div class="col-md-6">
         <label class="form-label" asp-for="Email"></label>

@@ -24,16 +24,23 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label" asp-for="CategoryCode"></label>
-                    <input class="form-control" asp-for="CategoryCode" autocomplete="off" />
-                    <span asp-validation-for="CategoryCode" class="text-danger"></span>
-                    <div class="form-text">Optional short code (max 20 characters).</div>
-                </div>
                 <div class="col-md-8">
                     <label class="form-label" asp-for="CategoryName"></label>
-                    <input class="form-control" asp-for="CategoryName" autocomplete="off" />
+                    <input class="form-control" asp-for="CategoryName" autocomplete="off" data-auto-source="CategoryName" />
                     <span asp-validation-for="CategoryName" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="CategoryCode"></label>
+                    <div class="input-group">
+                        <input class="form-control" asp-for="CategoryCode" maxlength="20" autocomplete="off"
+                               data-auto-target="CategoryCode" data-auto-from="CategoryName"
+                               data-auto-max="20" data-auto-state="auto" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="CategoryCode" title="Suggest a code" aria-label="Suggest a category code">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="CategoryCode" class="text-danger"></span>
+                    <div class="form-text">Optional. Suggested from the name. You can edit this.</div>
                 </div>
                 <div class="col-12">
                     <label class="form-label" asp-for="Description"></label>

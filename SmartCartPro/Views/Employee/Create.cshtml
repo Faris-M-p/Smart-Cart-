@@ -45,7 +45,7 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <label class="form-label" asp-for="FullName"></label>
-                        <input class="form-control" asp-for="FullName" maxlength="200" autocomplete="off" />
+                        <input class="form-control" asp-for="FullName" maxlength="200" autocomplete="off" data-auto-source="FullName" />
                         <span asp-validation-for="FullName" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
@@ -68,9 +68,16 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label" asp-for="EmployeeCode"></label>
-                        <input class="form-control" asp-for="EmployeeCode" maxlength="50" autocomplete="off" />
+                        <div class="input-group">
+                            <input class="form-control" asp-for="EmployeeCode" maxlength="50" autocomplete="off"
+                                   data-auto-target="EmployeeCode" data-auto-from="FullName"
+                                   data-auto-max="50" data-auto-state="auto" />
+                            <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="EmployeeCode" title="Suggest a code" aria-label="Suggest an employee code">
+                                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                            </button>
+                        </div>
                         <span asp-validation-for="EmployeeCode" class="text-danger"></span>
-                        <div class="form-text">Optional staff number.</div>
+                        <div class="form-text">Optional. Suggested from the name. You can edit this.</div>
                     </div>
                 </div>
 

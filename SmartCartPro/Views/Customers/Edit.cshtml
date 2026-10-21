@@ -25,16 +25,23 @@
             <input type="hidden" asp-for="IdCustomer" />
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label" asp-for="CustomerCode"></label>
-                    <input class="form-control" asp-for="CustomerCode" autocomplete="off" />
-                    <span asp-validation-for="CustomerCode" class="text-danger"></span>
-                    <div class="form-text">Leave blank to keep the current unique code.</div>
-                </div>
                 <div class="col-md-8">
                     <label class="form-label" asp-for="FullName"></label>
-                    <input class="form-control" asp-for="FullName" autocomplete="off" />
+                    <input class="form-control" asp-for="FullName" autocomplete="off" data-auto-source="FullName" />
                     <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" asp-for="CustomerCode"></label>
+                    <div class="input-group">
+                        <input class="form-control" asp-for="CustomerCode" maxlength="20" autocomplete="off"
+                               data-auto-target="CustomerCode" data-auto-from="FullName"
+                               data-auto-max="20" data-auto-state="persisted" data-auto-generated="false" />
+                        <button type="button" class="btn btn-outline-secondary" data-auto-regenerate="CustomerCode" title="Suggest a code" aria-label="Suggest a customer code">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="CustomerCode" class="text-danger"></span>
+                    <div class="form-text">Leave blank to keep the current unique code. The button suggests one from the name.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" asp-for="Phone"></label>
