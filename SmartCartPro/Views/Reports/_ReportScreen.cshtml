@@ -1,0 +1,370 @@
+@model SmartCartPro.Models.OutputReportScreen
+@{
+    var f = Model.Filter;
+    string DateValue(DateTime? value) => value.HasValue ? value.Value.ToString("yyyy-MM-dd") : "";
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a asp-action="Index">Reports</a></li>
+        <li class="breadcrumb-item">@Model.Section</li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">@Model.Title</h1>
+        <p class="text-muted mb-0">@Model.Description</p>
+    </div>
+    <div class="sc-report-actions d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-action="@(Model.Action + "Print")" asp-all-route-data="Model.Route" target="_blank">
+            <i class="bi bi-printer me-1"></i>Print / PDF
+        </a>
+        <a class="btn btn-outline-primary" asp-action="@(Model.Action + "Export")" asp-all-route-data="Model.Route">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Notice))
+{
+    <div class="alert alert-info">@Model.Notice</div>
+}
+
+<form method="get" asp-action="@Model.Action" class="row g-2 align-items-end mb-3 sc-report-filters">
+    @if (Model.ShowDates)
+    {
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var pick in Model.QuickPicks)
+                {
+                    var route = new Dictionary<string, string>(Model.Route)
+                    {
+                        ["dateFrom"] = pick.From,
+                        ["dateTo"] = pick.To,
+                        ["page"] = "1"
+                    };
+                    <a class="btn btn-sm btn-outline-secondary" asp-action="@Model.Action" asp-all-route-data="route">@pick.Label</a>
+                }
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repFrom">From</label>
+            <input id="repFrom" type="date" name="dateFrom" class="form-control" value="@DateValue(f.DateFrom)" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repTo">To</label>
+            <input id="repTo" type="date" name="dateTo" class="form-control" value="@DateValue(f.DateTo)" />
+        </div>
+    }
+    @if (Model.ShowStore)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repStore">Store</label>
+            <select id="repStore" name="fkStore" class="form-select">
+                @if (Model.Stores.Count > 1)
+                {
+                    <option value="0" selected="@(f.FkStore == 0)">All stores</option>
+                }
+                @foreach (var store in Model.Stores)
+                {
+                    <option value="@store.IdStore" selected="@(store.IdStore == f.FkStore)">@store.StoreName</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowCashier)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repCashier">Cashier</label>
+            <select id="repCashier" name="fkUser" class="form-select">
+                <option value="0">All cashiers</option>
+                @foreach (var row in Model.Cashiers)
+                {
+                    <option value="@row.Id" selected="@(f.FkUser == row.Id)">@row.Name</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowCustomer)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repCustomer">Customer</label>
+            <select id="repCustomer" name="fkCustomer" class="form-select">
+                <option value="0">All customers</option>
+                @foreach (var row in Model.Customers)
+                {
+                    <option value="@row.Id" selected="@(f.FkCustomer == row.Id)">@row.Name</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowSupplier)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repSupplier">Supplier</label>
+            <select id="repSupplier" name="fkSupplier" class="form-select">
+                <option value="0">All suppliers</option>
+                @foreach (var row in Model.Suppliers)
+                {
+                    <option value="@row.Id" selected="@(f.FkSupplier == row.Id)">@row.Name</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowPayment)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repPay">Payment</label>
+            <select id="repPay" name="paymentMode" class="form-select">
+                <option value="">All modes</option>
+                @foreach (var mode in new[] { "cash", "card", "upi", "wallet", "bank", "other" })
+                {
+                    <option value="@mode" selected="@(f.PaymentMode == mode)">@mode</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowStatus)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repStatus">Status</label>
+            <select id="repStatus" name="status" class="form-select">
+                @foreach (var option in Model.StatusOptions)
+                {
+                    <option value="@option.Value" selected="@(f.Status == option.Value)">@option.Label</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowCategory)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repCat">Category</label>
+            <select id="repCat" name="fkCategory" class="form-select">
+                <option value="0">All categories</option>
+                @foreach (var row in Model.Categories)
+                {
+                    <option value="@row.Id" selected="@(f.FkCategory == row.Id)">@row.Name</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowSubCategory)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repSub">Sub-category</label>
+            <select id="repSub" name="fkSubCategory" class="form-select">
+                <option value="0">All sub-categories</option>
+                @foreach (var row in Model.SubCategories)
+                {
+                    <option value="@row.Id" selected="@(f.FkSubCategory == row.Id)">@row.Name</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowBrand)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repBrand">Brand</label>
+            <select id="repBrand" name="fkBrand" class="form-select">
+                <option value="0">All brands</option>
+                @foreach (var row in Model.Brands)
+                {
+                    <option value="@row.Id" selected="@(f.FkBrand == row.Id)">@row.Name</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowLevel)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repLevel">Level</label>
+            <select id="repLevel" name="level" class="form-select">
+                @foreach (var option in Model.LevelOptions)
+                {
+                    <option value="@option.Value" selected="@(f.Level == option.Value)">@option.Label</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowGroup)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repGroup">View</label>
+            <select id="repGroup" name="groupBy" class="form-select">
+                @foreach (var option in Model.GroupOptions)
+                {
+                    <option value="@option.Value" selected="@(f.GroupBy == option.Value)">@option.Label</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowMovement)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repMove">Movement</label>
+            <select id="repMove" name="movementType" class="form-select">
+                @foreach (var option in Model.MovementOptions)
+                {
+                    <option value="@option.Value" selected="@(f.MovementType == option.Value)">@option.Label</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowDays)
+    {
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="repDays">Days</label>
+            <select id="repDays" name="days" class="form-select">
+                @foreach (var option in Model.DayOptions)
+                {
+                    <option value="@option.Value" selected="@(f.Days?.ToString() == option.Value)">@option.Label</option>
+                }
+                <option value="45" selected="@(f.Days == 45)">Custom 45</option>
+            </select>
+        </div>
+    }
+    @if (Model.ShowSearch)
+    {
+        <div class="col-12 col-md-3">
+            <label class="form-label" for="repSearch">@Model.SearchLabel</label>
+            <input id="repSearch" name="search" class="form-control" value="@f.Search" maxlength="80" />
+        </div>
+    }
+    @if (Model.ShowZero)
+    {
+        <div class="col-6 col-md-2">
+            <div class="form-check mt-4">
+                <input type="hidden" name="showZero" value="false" />
+                <input class="form-check-input" type="checkbox" name="showZero" value="true" id="repZero" checked="@f.ShowZero" />
+                <label class="form-check-label" for="repZero">Show zero stock</label>
+            </div>
+        </div>
+    }
+    @if (Model.ShowNegative)
+    {
+        <div class="col-6 col-md-2">
+            <div class="form-check mt-4">
+                <input type="hidden" name="onlyNegative" value="false" />
+                <input class="form-check-input" type="checkbox" name="onlyNegative" value="true" id="repNeg" checked="@f.OnlyNegative" />
+                <label class="form-check-label" for="repNeg">Only negative</label>
+            </div>
+        </div>
+    }
+    @if (Model.ShowInStock)
+    {
+        <div class="col-6 col-md-2">
+            <div class="form-check mt-4">
+                <input type="hidden" name="onlyInStock" value="false" />
+                <input class="form-check-input" type="checkbox" name="onlyInStock" value="true" id="repInStock" checked="@f.OnlyInStock" />
+                <label class="form-check-label" for="repInStock">Only items in stock</label>
+            </div>
+        </div>
+    }
+    <div class="col-6 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Apply</button>
+        <a class="btn btn-outline-secondary" asp-action="@Model.Action">Reset</a>
+    </div>
+</form>
+
+<div id="sc-report-loading" class="alert alert-light d-none">Loading report…</div>
+
+<partial name="_ReportKpis" model="Model.Kpis" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        @if (Model.Rows.Count == 0)
+        {
+            <partial name="_ReportEmpty" model="@("No rows for these filters")" />
+        }
+        else
+        {
+            <div class="table-responsive sc-report-scroll">
+                <table class="table align-middle mb-0 sc-report-table">
+                    <thead>
+                        <tr>
+                            @foreach (var column in Model.Columns)
+                            {
+                                <th class="@(column.Align == "end" ? "text-end" : "")">
+                                    @if (!string.IsNullOrWhiteSpace(column.SortKey))
+                                    {
+                                        var next = Model.SortBy == column.SortKey && Model.SortDir == "asc" ? "desc" : "asc";
+                                        var sortRoute = new Dictionary<string, string>(Model.Route)
+                                        {
+                                            ["sortBy"] = column.SortKey,
+                                            ["sortDir"] = next,
+                                            ["page"] = "1"
+                                        };
+                                        <a asp-action="@Model.Action" asp-all-route-data="sortRoute">@column.Name</a>
+                                    }
+                                    else
+                                    {
+                                        @column.Name
+                                    }
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr class="@(row.Length > 0 && row[0].Muted ? "sc-row-muted" : "")">
+                                @for (var i = 0; i < row.Length; i++)
+                                {
+                                    var align = i < Model.Columns.Count && Model.Columns[i].Align == "end" ? "text-end" : "";
+                                    var warn = row[i].Warn ? "sc-diff" : "";
+                                    <td class="@align @warn">
+                                        @if (!string.IsNullOrWhiteSpace(row[i].Href))
+                                        {
+                                            <a href="@row[i].Href">@row[i].Text</a>
+                                        }
+                                        else
+                                        {
+                                            @row[i].Text
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                    @if (Model.Totals is { Length: > 0 })
+                    {
+                        <tfoot>
+                            <tr>
+                                @for (var i = 0; i < Model.Totals.Length; i++)
+                                {
+                                    var align = i < Model.Columns.Count && Model.Columns[i].Align == "end" ? "text-end" : "";
+                                    <th class="@align">@Model.Totals[i].Text</th>
+                                }
+                            </tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="text-muted small">@Model.TotalCount rows · page @Model.Page of @Model.PageCount</span>
+                <div class="btn-group">
+                    @if (Model.Page > 1)
+                    {
+                        var prev = new Dictionary<string, string>(Model.Route) { ["page"] = (Model.Page - 1).ToString() };
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="@Model.Action" asp-all-route-data="prev">Previous</a>
+                    }
+                    @if (Model.Page < Model.PageCount)
+                    {
+                        var next = new Dictionary<string, string>(Model.Route) { ["page"] = (Model.Page + 1).ToString() };
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="@Model.Action" asp-all-route-data="next">Next</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
+<script src="~/js/reports/reports-screen.js" asp-append-version="true"></script>

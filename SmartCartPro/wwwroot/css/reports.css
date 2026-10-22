@@ -22,6 +22,26 @@
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
 }
 
+.sc-report-scroll {
+  max-height: 70vh;
+}
+
+.sc-report-table thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.sc-row-muted {
+  color: #6c757d;
+}
+
+.sc-diff {
+  color: #b45309;
+  font-weight: 600;
+}
+
 @media print {
   .sc-report-filters,
   .sc-report-actions,

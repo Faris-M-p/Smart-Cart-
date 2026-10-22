@@ -61,14 +61,17 @@ public sealed class InputReportIndex
     public int ActorUserId { get; set; }
     public int ActorFkStore { get; set; }
     public bool IsPlatformSuperAdmin { get; set; }
+    public bool CanSeeProfit { get; set; }
 }
 
 public sealed class OutputReportIndexCard
 {
+    public string Section { get; set; } = "Reports";
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Action { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
+    public bool RequiresProfit { get; set; }
     public string? ExternalController { get; set; }
     public string? ExternalAction { get; set; }
 }
@@ -254,6 +257,7 @@ public sealed class InputReportStockValuation
     public int FkStore { get; set; }
     public int? FkCategory { get; set; }
     public bool IncludeZeroNegative { get; set; }
+    public bool CanSeeProfit { get; set; } = true;
     public List<int>? StoreIds { get; set; }
 }
 
@@ -281,6 +285,7 @@ public sealed class OutputReportStockValuation
     public InReportStockValuationView Filter { get; set; } = new();
     public string Currency { get; set; } = "INR";
     public bool ShowStorePicker { get; set; }
+    public bool ShowCost { get; set; } = true;
     public List<OutputReportStoreOption> Stores { get; set; } = new();
     public List<OutputReportCategoryOption> Categories { get; set; } = new();
     public List<OutputReportKpi> Kpis { get; set; } = new();
@@ -459,6 +464,286 @@ public sealed class OutputReportCustomers
     public List<OutputReportKpi> Kpis { get; set; } = new();
     public List<OutputReportCustomerRow> Rows { get; set; } = new();
     public List<OutputReportChartPoint> Chart { get; set; } = new();
+}
+
+#endregion
+
+#region Shared report screen
+
+public class InReportQueryView
+{
+    [Display(Name = "From date")]
+    public DateTime? DateFrom { get; set; }
+
+    [Display(Name = "To date")]
+    public DateTime? DateTo { get; set; }
+
+    [Display(Name = "Store")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Store is invalid.")]
+    public int FkStore { get; set; }
+
+    [Display(Name = "Page")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Page is invalid.")]
+    public int Page { get; set; } = 1;
+
+    [Display(Name = "Page size")]
+    [GreaterThanOrEqualToZero(ErrorMessage = "Something went wrong/Page size is invalid.")]
+    public int PageSize { get; set; } = 25;
+
+    [Display(Name = "Sort by")]
+    [StringLengthValidation(0, 40, ErrorMessage = "Something went wrong/Sort is invalid.")]
+    [NoScriptTags]
+    public string? SortBy { get; set; }
+
+    [Display(Name = "Sort direction")]
+    [StringLengthValidation(0, 4, ErrorMessage = "Something went wrong/Sort direction is invalid.")]
+    [NoScriptTags]
+    public string? SortDir { get; set; }
+
+    [Display(Name = "Category")]
+    [GreaterThanOrEqualToZero]
+    public int? FkCategory { get; set; }
+
+    [Display(Name = "Sub-category")]
+    [GreaterThanOrEqualToZero]
+    public int? FkSubCategory { get; set; }
+
+    [Display(Name = "Brand")]
+    [GreaterThanOrEqualToZero]
+    public int? FkBrand { get; set; }
+
+    [Display(Name = "Supplier")]
+    [GreaterThanOrEqualToZero]
+    public int? FkSupplier { get; set; }
+
+    [Display(Name = "Customer")]
+    [GreaterThanOrEqualToZero]
+    public int? FkCustomer { get; set; }
+
+    [Display(Name = "Cashier")]
+    [GreaterThanOrEqualToZero]
+    public int? FkUser { get; set; }
+
+    [Display(Name = "Item")]
+    [GreaterThanOrEqualToZero]
+    public int? FkProduct { get; set; }
+
+    [Display(Name = "Variant")]
+    [GreaterThanOrEqualToZero]
+    public int? FkProductVariant { get; set; }
+
+    [Display(Name = "Search")]
+    [StringLengthValidation(0, 80)]
+    [NoScriptTags]
+    public string? Search { get; set; }
+
+    [Display(Name = "Payment mode")]
+    [StringLengthValidation(0, 20)]
+    [NoScriptTags]
+    public string? PaymentMode { get; set; }
+
+    [Display(Name = "Status")]
+    [StringLengthValidation(0, 30)]
+    [NoScriptTags]
+    public string? Status { get; set; }
+
+    [Display(Name = "Level")]
+    [StringLengthValidation(0, 20)]
+    [NoScriptTags]
+    public string? Level { get; set; }
+
+    [Display(Name = "Group")]
+    [StringLengthValidation(0, 20)]
+    [NoScriptTags]
+    public string? GroupBy { get; set; }
+
+    [Display(Name = "Movement type")]
+    [StringLengthValidation(0, 30)]
+    [NoScriptTags]
+    public string? MovementType { get; set; }
+
+    [Display(Name = "Days")]
+    [GreaterThanOrEqualToZero]
+    public int? Days { get; set; }
+
+    [Display(Name = "Show zero stock")]
+    public bool ShowZero { get; set; }
+
+    [Display(Name = "Only negative stock")]
+    public bool OnlyNegative { get; set; }
+
+    [Display(Name = "Only items in stock")]
+    public bool OnlyInStock { get; set; } = true;
+}
+
+public sealed class InSalesBillWiseView : InReportQueryView { }
+public sealed class InItemSalesView : InReportQueryView { }
+public sealed class InCategorySalesView : InReportQueryView { }
+public sealed class InSalesReturnReportView : InReportQueryView { }
+public sealed class InDayCloseView : InReportQueryView { }
+public sealed class InCurrentStockView : InReportQueryView { }
+public sealed class InItemLedgerView : InReportQueryView { }
+public sealed class InStockLedgerView : InReportQueryView { }
+public sealed class InStockMovementReportView : InReportQueryView { }
+public sealed class InLowStockReportView : InReportQueryView { }
+public sealed class InNonMovingView : InReportQueryView { }
+public sealed class InPurchaseBillsView : InReportQueryView { }
+public sealed class InPurchaseAnalysisView : InReportQueryView { }
+public sealed class InGstSummaryView : InReportQueryView { }
+public sealed class InProfitMarginView : InReportQueryView { }
+public sealed class InDiscountReportView : InReportQueryView { }
+public sealed class InCancelledBillsView : InReportQueryView { }
+public sealed class InStockAdjustmentReportView : InReportQueryView { }
+public sealed class InHourlySalesView : InReportQueryView { }
+public sealed class InMasterListsView : InReportQueryView { }
+
+public sealed class InputReportQuery
+{
+    public string ReportKey { get; set; } = string.Empty;
+    public int ActorUserId { get; set; }
+    public int ActorFkStore { get; set; }
+    public bool IsPlatformSuperAdmin { get; set; }
+    public bool CanSeeProfit { get; set; }
+    public string? PrintedBy { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
+    public DateTime FromUtc { get; set; }
+    public DateTime ToUtcExclusive { get; set; }
+    public DateOnly FromLocal { get; set; }
+    public DateOnly ToLocal { get; set; }
+    public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Utc;
+    public string TimeZoneId { get; set; } = "Asia/Kolkata";
+    public string Currency { get; set; } = "INR";
+    public int FkStore { get; set; }
+    public List<int>? StoreIds { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
+    public bool ForExport { get; set; }
+    public string? SortBy { get; set; }
+    public string? SortDir { get; set; }
+    public int? FkCategory { get; set; }
+    public int? FkSubCategory { get; set; }
+    public int? FkBrand { get; set; }
+    public int? FkSupplier { get; set; }
+    public int? FkCustomer { get; set; }
+    public int? FkUser { get; set; }
+    public int? FkProduct { get; set; }
+    public int? FkProductVariant { get; set; }
+    public string? Search { get; set; }
+    public string? PaymentMode { get; set; }
+    public string? Status { get; set; }
+    public string? Level { get; set; }
+    public string? GroupBy { get; set; }
+    public string? MovementType { get; set; }
+    public int? Days { get; set; }
+    public bool ShowZero { get; set; }
+    public bool OnlyNegative { get; set; }
+    public bool OnlyInStock { get; set; } = true;
+}
+
+public sealed class ReportColumn
+{
+    public string Name { get; set; } = string.Empty;
+    public string Align { get; set; } = "start";
+    public string? SortKey { get; set; }
+}
+
+public sealed class ReportCell
+{
+    public string Text { get; set; } = string.Empty;
+    public string? Href { get; set; }
+    public bool Muted { get; set; }
+    public bool Warn { get; set; }
+}
+
+public sealed class OutputReportNamedOption
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public sealed class OutputReportChoice
+{
+    public string Value { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+}
+
+public sealed class OutputReportQuickPick
+{
+    public string Label { get; set; } = string.Empty;
+    public string From { get; set; } = string.Empty;
+    public string To { get; set; } = string.Empty;
+}
+
+public sealed class OutputReportTable
+{
+    public List<ReportColumn> Columns { get; set; } = new();
+    public List<ReportCell[]> Rows { get; set; } = new();
+    public ReportCell[]? Totals { get; set; }
+    public int TotalCount { get; set; }
+    public List<OutputReportKpi> Kpis { get; set; } = new();
+    public string? Notice { get; set; }
+}
+
+public sealed class OutputReportScreen
+{
+    public string Key { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string Section { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string CompanyName { get; set; } = string.Empty;
+    public string StoreLabel { get; set; } = string.Empty;
+    public string Currency { get; set; } = "INR";
+    public string TimeZoneId { get; set; } = "Asia/Kolkata";
+    public string? PrintedBy { get; set; }
+    public DateTime PrintedAtLocal { get; set; }
+    public string? Error { get; set; }
+    public string? Notice { get; set; }
+    public InReportQueryView Filter { get; set; } = new();
+    public Dictionary<string, string> Route { get; set; } = new();
+    public bool ShowDates { get; set; }
+    public bool ShowStore { get; set; }
+    public bool ShowCashier { get; set; }
+    public bool ShowCustomer { get; set; }
+    public bool ShowPayment { get; set; }
+    public bool ShowStatus { get; set; }
+    public bool ShowCategory { get; set; }
+    public bool ShowSubCategory { get; set; }
+    public bool ShowBrand { get; set; }
+    public bool ShowSupplier { get; set; }
+    public bool ShowSearch { get; set; }
+    public bool ShowLevel { get; set; }
+    public bool ShowGroup { get; set; }
+    public bool ShowMovement { get; set; }
+    public bool ShowDays { get; set; }
+    public bool ShowZero { get; set; }
+    public bool ShowNegative { get; set; }
+    public bool ShowInStock { get; set; }
+    public string SearchLabel { get; set; } = "Item";
+    public List<OutputReportChoice> StatusOptions { get; set; } = new();
+    public List<OutputReportChoice> LevelOptions { get; set; } = new();
+    public List<OutputReportChoice> GroupOptions { get; set; } = new();
+    public List<OutputReportChoice> MovementOptions { get; set; } = new();
+    public List<OutputReportChoice> DayOptions { get; set; } = new();
+    public List<OutputReportQuickPick> QuickPicks { get; set; } = new();
+    public List<OutputReportStoreOption> Stores { get; set; } = new();
+    public List<OutputReportNamedOption> Categories { get; set; } = new();
+    public List<OutputReportNamedOption> SubCategories { get; set; } = new();
+    public List<OutputReportNamedOption> Brands { get; set; } = new();
+    public List<OutputReportNamedOption> Suppliers { get; set; } = new();
+    public List<OutputReportNamedOption> Customers { get; set; } = new();
+    public List<OutputReportNamedOption> Cashiers { get; set; } = new();
+    public List<OutputReportKpi> Kpis { get; set; } = new();
+    public List<ReportColumn> Columns { get; set; } = new();
+    public List<ReportCell[]> Rows { get; set; } = new();
+    public ReportCell[]? Totals { get; set; }
+    public int TotalCount { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
+    public int PageCount { get; set; } = 1;
+    public string SortBy { get; set; } = string.Empty;
+    public string SortDir { get; set; } = "desc";
 }
 
 #endregion

@@ -11,4 +11,5 @@ public interface IReportService
     Task<OutputReportTax> GetTaxAsync(InputReportTax input, CancellationToken ct = default);
     Task<OutputReportPurchases> GetPurchasesAsync(InputReportPurchases input, CancellationToken ct = default);
     Task<OutputReportCustomers> GetCustomersAsync(InputReportCustomers input, CancellationToken ct = default);
+    Task<OutputReportScreen> GetScreenAsync(InputReportQuery input, CancellationToken ct = default);
 }

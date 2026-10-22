@@ -99,14 +99,26 @@
             <div class="card-body pt-0">
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
-                        <thead><tr><th>Category</th><th class="text-end">On hand</th><th class="text-end">Value</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-end">On hand</th>
+                                @if (Model.ShowCost)
+                                {
+                                    <th class="text-end">Value</th>
+                                }
+                            </tr>
+                        </thead>
                         <tbody>
                         @foreach (var group in Model.CategoryTotals)
                         {
                             <tr>
                                 <td>@group.CategoryName</td>
                                 <td class="text-end">@group.QuantityOnHand.ToString("0.###")</td>
-                                <td class="text-end">@Model.Currency @group.StockValue.ToString("N2")</td>
+                                @if (Model.ShowCost)
+                                {
+                                    <td class="text-end">@Model.Currency @group.StockValue.ToString("N2")</td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -133,8 +145,11 @@
                                 <th>Category</th>
                                 <th>Store</th>
                                 <th class="text-end">On hand</th>
-                                <th class="text-end">Unit cost</th>
-                                <th class="text-end">Value</th>
+                                @if (Model.ShowCost)
+                                {
+                                    <th class="text-end">Unit cost</th>
+                                    <th class="text-end">Value</th>
+                                }
                             </tr>
                         </thead>
                         <tbody>
@@ -146,8 +161,11 @@
                                 <td>@row.CategoryName</td>
                                 <td>@(string.IsNullOrWhiteSpace(row.StoreName) ? "—" : row.StoreName)</td>
                                 <td class="text-end">@row.QuantityOnHand.ToString("0.###")</td>
-                                <td class="text-end">@Model.Currency @row.UnitCost.ToString("N2")</td>
-                                <td class="text-end">@Model.Currency @row.StockValue.ToString("N2")</td>
+                                @if (Model.ShowCost)
+                                {
+                                    <td class="text-end">@Model.Currency @row.UnitCost.ToString("N2")</td>
+                                    <td class="text-end">@Model.Currency @row.StockValue.ToString("N2")</td>
+                                }
                             </tr>
                         }
                         </tbody>

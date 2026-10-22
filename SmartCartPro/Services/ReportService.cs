@@ -9,15 +9,17 @@ namespace SmartCartPro.Services;
 /// Store-scoped report orchestration: locale day bounds, store access, and CSV-ready aggregates.
 /// Queries live in IReportRepository; this layer never touches DbContext.
 /// </summary>
-public class ReportService : IReportService
+public partial class ReportService : IReportService
 {
     private readonly IReportRepository _repo;
     private readonly ISettingService _settings;
+    private readonly IReportSuiteRepository _suite;
 
-    public ReportService(IReportRepository repo, ISettingService settings)
+    public ReportService(IReportRepository repo, ISettingService settings, IReportSuiteRepository suite)
     {
         _repo = repo;
         _settings = settings;
+        _suite = suite;
     }
 
     public async Task<OutputReportIndex> GetIndexAsync(InputReportIndex input, CancellationToken ct = default)
@@ -27,24 +29,7 @@ public class ReportService : IReportService
         {
             Currency = currency,
             TimeZoneId = timeZoneId,
-            Cards = new List<OutputReportIndexCard>
-            {
-                Card("Sales", "Invoices, net, tax, returns and payments", "Sales", "bi-graph-up-arrow"),
-                Card("Products", "Top sellers by quantity or revenue", "Products", "bi-bar-chart"),
-                Card("Stock valuation", "On-hand quantity × product cost", "StockValuation", "bi-box-seam"),
-                Card("Tax", "Tax collected by name and rate", "Tax", "bi-percent"),
-                Card("Purchases", "Ordered versus received by supplier", "Purchases", "bi-truck"),
-                Card("Customers", "Top spenders, visits and last purchase", "Customers", "bi-person-lines-fill"),
-                new OutputReportIndexCard
-                {
-                    Title = "Low stock",
-                    Description = "Items at or below reorder level",
-                    Action = "LowStock",
-                    Icon = "bi-exclamation-triangle",
-                    ExternalController = "Inventory",
-                    ExternalAction = "LowStock"
-                }
-            }
+            Cards = ReportCards(input.CanSeeProfit)
         };
     }
 
@@ -194,13 +179,22 @@ public class ReportService : IReportService
                 IncludeZeroNegative = input.IncludeZeroNegative
             },
             Currency = currency,
-            ShowStorePicker = input.IsPlatformSuperAdmin
+            ShowStorePicker = input.IsPlatformSuperAdmin,
+            ShowCost = input.CanSeeProfit
         };
 
         if (input.StoreIds is { Count: 0 })
             return await WithLookupsAsync(output, ct);
 
         var rows = await _repo.ListStockValuationAsync(input, ct);
+        if (!input.CanSeeProfit)
+        {
+            foreach (var row in rows)
+            {
+                row.UnitCost = 0;
+                row.StockValue = 0;
+            }
+        }
         output.Rows = rows;
         output.CategoryTotals = rows
             .GroupBy(r => r.CategoryName)
@@ -213,12 +207,21 @@ public class ReportService : IReportService
             .OrderByDescending(g => g.StockValue)
             .ToList();
         output.TotalStockValue = rows.Sum(r => r.StockValue);
+        if (!input.CanSeeProfit)
+        {
+            output.TotalStockValue = 0;
+            foreach (var group in output.CategoryTotals)
+                group.StockValue = 0;
+            output.CostBasisNote = "Cost and stock value need the reports.profit permission.";
+        }
+
         output.Kpis = new List<OutputReportKpi>
         {
             Kpi("Lines", rows.Count.ToString("N0", CultureInfo.InvariantCulture)),
-            Kpi("On hand", LocaleClock.Number(rows.Sum(r => r.QuantityOnHand))),
-            Kpi("Stock value", LocaleClock.Money(currency, output.TotalStockValue))
+            Kpi("On hand", LocaleClock.Number(rows.Sum(r => r.QuantityOnHand)))
         };
+        if (input.CanSeeProfit)
+            output.Kpis.Add(Kpi("Stock value", LocaleClock.Money(currency, output.TotalStockValue)));
 
         return await WithLookupsAsync(output, ct);
     }

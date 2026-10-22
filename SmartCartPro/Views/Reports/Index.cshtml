@@ -17,26 +17,40 @@
     </div>
 </div>
 
-<div class="row g-3 sc-report-cards">
-    @foreach (var card in Model.Cards)
-    {
-        var controller = string.IsNullOrWhiteSpace(card.ExternalController) ? "Reports" : card.ExternalController;
-        var action = string.IsNullOrWhiteSpace(card.ExternalAction) ? card.Action : card.ExternalAction;
-        <div class="col-sm-6 col-xl-4">
-            <a class="card border-0 shadow-sm h-100" asp-controller="@controller" asp-action="@action">
-                <div class="card-body">
-                    <div class="d-flex align-items-start gap-3">
-                        <span class="rounded-3 bg-light p-2"><i class="bi @card.Icon fs-4" aria-hidden="true"></i></span>
-                        <div>
-                            <h2 class="h6 mb-1">@card.Title</h2>
-                            <p class="text-muted small mb-0">@card.Description</p>
+@{
+    var sectionOrder = new[] { "Sales", "Stock", "Purchase", "Tax", "Profit", "Parties & Masters" };
+    var sections = Model.Cards
+        .GroupBy(c => string.IsNullOrWhiteSpace(c.Section) ? "Reports" : c.Section)
+        .OrderBy(g =>
+        {
+            var index = Array.IndexOf(sectionOrder, g.Key);
+            return index < 0 ? 99 : index;
+        });
+}
+@foreach (var group in sections)
+{
+    <h2 class="h5 mt-4 mb-3">@group.Key</h2>
+    <div class="row g-3 sc-report-cards">
+        @foreach (var card in group)
+        {
+            var controller = string.IsNullOrWhiteSpace(card.ExternalController) ? "Reports" : card.ExternalController;
+            var action = string.IsNullOrWhiteSpace(card.ExternalAction) ? card.Action : card.ExternalAction;
+            <div class="col-sm-6 col-xl-4">
+                <a class="card border-0 shadow-sm h-100 text-decoration-none" asp-controller="@controller" asp-action="@action">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="rounded-3 bg-light p-2"><i class="bi @card.Icon fs-4" aria-hidden="true"></i></span>
+                            <div>
+                                <h3 class="h6 mb-1 text-body">@card.Title</h3>
+                                <p class="text-muted small mb-0">@card.Description</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </a>
-        </div>
-    }
-</div>
+                </a>
+            </div>
+        }
+    </div>
+}
 
 @section Styles {
     <link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />

@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
 
         // ── Phase 7: Reports + dashboard ──────────────────────────
         services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IReportSuiteRepository, ReportSuiteRepository>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
         services.AddScoped<IDashboardService, DashboardService>();

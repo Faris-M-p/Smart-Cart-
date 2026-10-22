@@ -12,11 +12,16 @@ namespace SmartCartPro.Controllers;
 [Authorize]
 [ModuleAccess("REPORTS")]
 [RequirePermission("reports.view")]
-public class ReportsController : Controller
+public partial class ReportsController : Controller
 {
     private readonly IReportService _svc;
+    private readonly ICurrentUserAccess _access;
 
-    public ReportsController(IReportService svc) => _svc = svc;
+    public ReportsController(IReportService svc, ICurrentUserAccess access)
+    {
+        _svc = svc;
+        _access = access;
+    }
 
     private int ActorUserId => AuthClaims.GetUserId(User) ?? 0;
     private int ActorFkStore => AuthClaims.GetFkStore(User) ?? 0;
@@ -33,7 +38,8 @@ public class ReportsController : Controller
         {
             ActorUserId = ActorUserId,
             ActorFkStore = ActorFkStore,
-            IsPlatformSuperAdmin = IsSuperAdmin
+            IsPlatformSuperAdmin = IsSuperAdmin,
+            CanSeeProfit = IsSuperAdmin || await _access.CanAsync("reports.profit", ct)
         };
         var model = await _svc.GetIndexAsync(input, ct);
         return View(model);
@@ -167,7 +173,8 @@ public class ReportsController : Controller
             IsPlatformSuperAdmin = IsSuperAdmin,
             FkStore = model.FkStore,
             FkCategory = model.FkCategory > 0 ? model.FkCategory : null,
-            IncludeZeroNegative = model.IncludeZeroNegative
+            IncludeZeroNegative = model.IncludeZeroNegative,
+            CanSeeProfit = IsSuperAdmin || await _access.CanAsync("reports.profit", ct)
         };
         var result = await _svc.GetStockValuationAsync(input, ct);
         return View(result);
@@ -187,21 +194,34 @@ public class ReportsController : Controller
             IsPlatformSuperAdmin = IsSuperAdmin,
             FkStore = model.FkStore,
             FkCategory = model.FkCategory > 0 ? model.FkCategory : null,
-            IncludeZeroNegative = model.IncludeZeroNegative
+            IncludeZeroNegative = model.IncludeZeroNegative,
+            CanSeeProfit = IsSuperAdmin || await _access.CanAsync("reports.profit", ct)
         };
         var result = await _svc.GetStockValuationAsync(input, ct);
+        var headers = result.ShowCost
+            ? new[] { "Product", "Code", "Category", "Store", "On hand", "Unit cost", "Stock value" }
+            : new[] { "Product", "Code", "Category", "Store", "On hand" };
         return CsvFile("stock-valuation.csv",
-            new[] { "Product", "Code", "Category", "Store", "On hand", "Unit cost", "Stock value" },
-            result.Rows.Select(r => new[]
-            {
-                r.ProductName,
-                r.ProductCode ?? "",
-                r.CategoryName,
-                r.StoreName ?? "",
-                Num(r.QuantityOnHand),
-                Num(r.UnitCost),
-                Num(r.StockValue)
-            }));
+            headers,
+            result.Rows.Select(r => result.ShowCost
+                ? new[]
+                {
+                    r.ProductName,
+                    r.ProductCode ?? "",
+                    r.CategoryName,
+                    r.StoreName ?? "",
+                    Num(r.QuantityOnHand),
+                    Num(r.UnitCost),
+                    Num(r.StockValue)
+                }
+                : new[]
+                {
+                    r.ProductName,
+                    r.ProductCode ?? "",
+                    r.CategoryName,
+                    r.StoreName ?? "",
+                    Num(r.QuantityOnHand)
+                }));
     }
 
     /// <summary>

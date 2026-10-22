@@ -33,6 +33,7 @@ FROM (VALUES
     ('CUSTOMERS', 'customers.view', 'View customers', 1),
     ('CUSTOMERS', 'customers.manage', 'Manage customers', 2),
     ('REPORTS', 'reports.view', 'View reports', 1),
+    ('REPORTS', 'reports.profit', 'View cost and profit on reports', 2),
     ('SETTINGS', 'settings.manage', 'Manage settings', 1),
     ('USERS', 'users.manage', 'Manage users and roles', 1)
 ) AS v(modulecode, permissioncode, permissionname, displayorder)
