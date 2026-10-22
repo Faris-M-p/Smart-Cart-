@@ -20,4 +20,10 @@ public interface ICurrentUserAccess
 
     /// <summary>True when the module (e.g. <c>PRODUCTS</c>) is enabled for this installation. Users and Settings are also true for the company Admin role.</summary>
     Task<bool> ModuleEnabledAsync(string moduleCode, CancellationToken ct = default);
+
+    /// <summary>True when the leaf feature is enabled and its module is enabled. Platform Super Admin always passes.</summary>
+    Task<bool> FeatureEnabledAsync(string featureCode, CancellationToken ct = default);
+
+    /// <summary>True when at least one of the feature codes is enabled.</summary>
+    Task<bool> AnyFeatureEnabledAsync(IEnumerable<string> featureCodes, CancellationToken ct = default);
 }

@@ -68,6 +68,9 @@ public class SmartCartDbContext : DbContext
     public DbSet<ModulePreset> ModulePresets => Set<ModulePreset>();
     public DbSet<ModulePresetItem> ModulePresetItems => Set<ModulePresetItem>();
     public DbSet<InstallationModule> InstallationModules => Set<InstallationModule>();
+    public DbSet<ModuleFeature> ModuleFeatures => Set<ModuleFeature>();
+    public DbSet<InstallationFeature> InstallationFeatures => Set<InstallationFeature>();
+    public DbSet<ModulePresetFeature> ModulePresetFeatures => Set<ModulePresetFeature>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
     public DbSet<Permission> Permissions => Set<Permission>();
@@ -220,6 +223,41 @@ public class SmartCartDbContext : DbContext
                 .HasForeignKey(x => x.FkModule)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => x.FkModule).IsUnique();
+        });
+
+        modelBuilder.Entity<ModuleFeature>(e =>
+        {
+            e.HasIndex(x => x.FeatureCode).IsUnique();
+            e.HasOne(x => x.Module)
+                .WithMany()
+                .HasForeignKey(x => x.FkModule)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.FkParentFeature)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InstallationFeature>(e =>
+        {
+            e.HasOne(x => x.Feature)
+                .WithMany()
+                .HasForeignKey(x => x.FkFeature)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.FkFeature).IsUnique();
+        });
+
+        modelBuilder.Entity<ModulePresetFeature>(e =>
+        {
+            e.HasOne(x => x.Preset)
+                .WithMany()
+                .HasForeignKey(x => x.FkPreset)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Feature)
+                .WithMany()
+                .HasForeignKey(x => x.FkFeature)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.FkPreset, x.FkFeature }).IsUnique();
         });
 
         modelBuilder.Entity<AuditLog>(e =>

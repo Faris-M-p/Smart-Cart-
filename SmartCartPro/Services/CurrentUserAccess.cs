@@ -1,4 +1,5 @@
 using SmartCartPro.Helpers;
+using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Services;
@@ -20,7 +21,7 @@ public sealed class CurrentUserAccess : ICurrentUserAccess
     private readonly IModuleService _moduleService;
 
     private HashSet<string>? _permissions;
-    private HashSet<string>? _enabledModules;
+    private OutputFeatureGate? _gate;
     private bool? _isCompanyAdmin;
 
     public CurrentUserAccess(
@@ -87,13 +88,66 @@ public sealed class CurrentUserAccess : ICurrentUserAccess
             return true;
         }
 
-        if (_enabledModules is null)
+        var gate = await LoadGateAsync(ct);
+        return gate.EnabledModuleCodes.Contains(moduleCode, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task<bool> FeatureEnabledAsync(string featureCode, CancellationToken ct = default)
+    {
+        if (!IsAuthenticated || string.IsNullOrWhiteSpace(featureCode))
         {
-            var codes = await _moduleService.GetEnabledModuleCodesAsync(ct);
-            _enabledModules = new HashSet<string>(codes, StringComparer.OrdinalIgnoreCase);
+            return false;
         }
 
-        return _enabledModules.Contains(moduleCode);
+        if (IsPlatformSuperAdmin)
+        {
+            return true;
+        }
+
+        var gate = await LoadGateAsync(ct);
+        if (!gate.CatalogReady)
+        {
+            var module = featureCode.Split('.')[0];
+            return await ModuleEnabledAsync(module, ct);
+        }
+
+        if (gate.CompanyAdminCoreFeatureCodes.Contains(featureCode, StringComparer.OrdinalIgnoreCase)
+            && await IsCompanyAdminAsync(ct))
+        {
+            return true;
+        }
+
+        if (!gate.EnabledFeatureCodes.Contains(featureCode, StringComparer.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var moduleCode = featureCode.Split('.')[0];
+        return await ModuleEnabledAsync(moduleCode, ct);
+    }
+
+    public async Task<bool> AnyFeatureEnabledAsync(IEnumerable<string> featureCodes, CancellationToken ct = default)
+    {
+        foreach (var code in featureCodes)
+        {
+            if (await FeatureEnabledAsync(code, ct))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<OutputFeatureGate> LoadGateAsync(CancellationToken ct)
+    {
+        if (_gate is not null)
+        {
+            return _gate;
+        }
+
+        _gate = await _moduleService.GetFeatureGateAsync(ct);
+        return _gate;
     }
 
     private async Task<HashSet<string>> LoadPermissionsAsync(CancellationToken ct)

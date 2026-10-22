@@ -9,4 +9,7 @@ public interface IModuleRepository
     Task<List<int>> GetEnabledModuleIdsAsync(CancellationToken ct = default);
     Task<List<string>> GetEnabledModuleCodesAsync(CancellationToken ct = default);
     Task<OutputModuleAssign> SaveModuleAssignmentAsync(InputModuleAssign input, CancellationToken ct = default);
+    Task<List<OutputModuleFeatureRow>> ListFeatureRowsAsync(CancellationToken ct = default);
+    Task<List<OutputModuleFeaturePreset>> ListFeaturePresetsAsync(CancellationToken ct = default);
+    Task SaveFeatureAssignmentAsync(IReadOnlyCollection<int> featureIds, IReadOnlyCollection<int> moduleIds, CancellationToken ct = default);
 }

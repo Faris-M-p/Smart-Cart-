@@ -19,8 +19,14 @@ public class Module
     [Column("modulename")]
     public string ModuleName { get; set; } = string.Empty;
 
+    [Column("description")]
+    public string? Description { get; set; }
+
     [Column("displayorder")]
     public int DisplayOrder { get; set; }
+
+    [Column("is_core")]
+    public bool IsCore { get; set; }
 
     [Column("isactive")]
     public bool IsActive { get; set; } = true;
@@ -106,4 +112,99 @@ public class InstallationModule
 
     [ForeignKey(nameof(FkModule))]
     public Module? Module { get; set; }
+}
+
+/// <summary>Maps to <c>module_features</c>. A menu group or a leaf screen under a module.</summary>
+[Table("module_features")]
+public class ModuleFeature
+{
+    [Key]
+    [Column("id_feature")]
+    public int IdFeature { get; set; }
+
+    [Column("fk_module")]
+    public int FkModule { get; set; }
+
+    [Column("fk_parent_feature")]
+    public int? FkParentFeature { get; set; }
+
+    [Required]
+    [Column("featurecode")]
+    public string FeatureCode { get; set; } = string.Empty;
+
+    [Required]
+    [Column("featurename")]
+    public string FeatureName { get; set; } = string.Empty;
+
+    [Column("description")]
+    public string? Description { get; set; }
+
+    [Column("is_core")]
+    public bool IsCore { get; set; }
+
+    [Column("displayorder")]
+    public int DisplayOrder { get; set; }
+
+    [Column("isactive")]
+    public bool IsActive { get; set; } = true;
+
+    [Column("createdat")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updatedat")]
+    public DateTime? UpdatedAt { get; set; }
+
+    [Column("cancelled")]
+    public bool Cancelled { get; set; }
+
+    [Column("cancelledon")]
+    public DateTime? CancelledOn { get; set; }
+
+    [Column("cancelledreason")]
+    public string? CancelledReason { get; set; }
+
+    [ForeignKey(nameof(FkModule))]
+    public Module? Module { get; set; }
+
+    [ForeignKey(nameof(FkParentFeature))]
+    public ModuleFeature? Parent { get; set; }
+}
+
+/// <summary>Maps to <c>installation_features</c>. Leaf features enabled for this installation.</summary>
+[Table("installation_features")]
+public class InstallationFeature
+{
+    [Key]
+    [Column("id_inst_feature")]
+    public int IdInstFeature { get; set; }
+
+    [Column("fk_feature")]
+    public int FkFeature { get; set; }
+
+    [Column("createdat")]
+    public DateTime CreatedAt { get; set; }
+
+    [ForeignKey(nameof(FkFeature))]
+    public ModuleFeature? Feature { get; set; }
+}
+
+/// <summary>Maps to <c>module_preset_features</c>. Leaf features included in a preset.</summary>
+[Table("module_preset_features")]
+public class ModulePresetFeature
+{
+    [Key]
+    [Column("id_preset_feature")]
+    public int IdPresetFeature { get; set; }
+
+    [Column("fk_preset")]
+    public int FkPreset { get; set; }
+
+    [Column("fk_feature")]
+    public int FkFeature { get; set; }
+
+    [ForeignKey(nameof(FkPreset))]
+    public ModulePreset? Preset { get; set; }
+
+    [ForeignKey(nameof(FkFeature))]
+    public ModuleFeature? Feature { get; set; }
 }
