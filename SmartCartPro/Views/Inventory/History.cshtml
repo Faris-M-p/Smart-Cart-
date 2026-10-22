@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Movement history";
     var canAdjust = await Access.CanAsync("inventory.adjust");
+    var showOpening = canAdjust && await Access.FeatureEnabledAsync("INVENTORY.OPENING");
     var f = Model.Filter ?? new SmartCartPro.Models.InputStockMovementList();
     var storeName = AuthClaims.GetStoreName(User);
     var invariant = System.Globalization.CultureInfo.InvariantCulture;
@@ -182,7 +183,7 @@
                     {
                         <i class="bi bi-clock-history display-5 text-muted d-block mb-3" aria-hidden="true"></i>
                         <p class="text-muted mb-3">No stock movements have been recorded for this store yet.</p>
-                        @if (canAdjust)
+                        @if (showOpening)
                         {
                             <a class="btn btn-primary" asp-action="Opening">
                                 <i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Record opening stock

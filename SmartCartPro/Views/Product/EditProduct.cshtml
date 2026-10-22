@@ -14,6 +14,8 @@
     var categoryItems = lookup.Categories.Select(c => new SelectListItem(Label(c), c.Id.ToString())).ToList();
     var subCategoryItems = lookup.SubCategories.Select(s => new SelectListItem(Label(s), s.Id.ToString())).ToList();
     var brandItems = lookup.Brands.Select(b => new SelectListItem(Label(b), b.Id.ToString())).ToList();
+    var showBrands = await Access.FeatureEnabledAsync("PRODUCTS.BRANDS");
+    var showVariants = await Access.FeatureEnabledAsync("PRODUCTS.VARIANTS");
     var unitItems = lookup.Units.Select(u => new SelectListItem(UnitLabel(u), u.Id.ToString())).ToList();
     var taxItems = lookup.Taxes.Select(t => new SelectListItem(TaxLabel(t), t.Id.ToString())).ToList();
 }
@@ -30,9 +32,12 @@
     <h1 class="h3 mb-0">Edit product</h1>
     <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-sm btn-outline-secondary" href="@detailsUrl">View details</a>
+        @if (showVariants)
+        {
         <a class="btn btn-sm btn-outline-secondary"
            asp-controller="Product" asp-action="Variants"
            asp-route-productId="@Model.IdProduct">Variants</a>
+        }
     </div>
 </div>
 
@@ -120,6 +125,8 @@
                     <span asp-validation-for="FkSubcategory" class="text-danger"></span>
                     <div class="form-text">Pick a category first to choose a sub-category.</div>
                 </div>
+                @if (showBrands)
+                {
                 <div class="col-md-4">
                     <label class="form-label" asp-for="FkBrand"></label>
                     <select class="form-select" asp-for="FkBrand" asp-items="brandItems">
@@ -127,6 +134,11 @@
                     </select>
                     <span asp-validation-for="FkBrand" class="text-danger"></span>
                 </div>
+                }
+                else
+                {
+                    <input type="hidden" asp-for="FkBrand" />
+                }
                 <div class="col-md-6">
                     <label class="form-label" asp-for="FkUnit"></label>
                     <select class="form-select" asp-for="FkUnit" asp-items="unitItems">

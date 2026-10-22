@@ -2,6 +2,11 @@
 @model string
 @{
     var canAdjust = await Access.CanAsync("inventory.adjust");
+    var showLow = await Access.FeatureEnabledAsync("INVENTORY.LOW_STOCK");
+    var showHistory = await Access.FeatureEnabledAsync("INVENTORY.HISTORY");
+    var showOpening = canAdjust && await Access.FeatureEnabledAsync("INVENTORY.OPENING");
+    var showAdjust = canAdjust && await Access.FeatureEnabledAsync("INVENTORY.ADJUST");
+    var showTransfer = canAdjust && await Access.FeatureEnabledAsync("INVENTORY.TRANSFER");
 
     string Cls(string key) => string.Equals(Model, key, StringComparison.OrdinalIgnoreCase) ? "nav-link active" : "nav-link";
 }
@@ -9,20 +14,32 @@
     <li class="nav-item">
         <a class="@Cls("stock")" asp-controller="Inventory" asp-action="Stock"><i class="bi bi-stack me-1" aria-hidden="true"></i>Stock</a>
     </li>
+    @if (showLow)
+    {
     <li class="nav-item">
         <a class="@Cls("low")" asp-controller="Inventory" asp-action="LowStock"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Low stock</a>
     </li>
+    }
+    @if (showHistory)
+    {
     <li class="nav-item">
         <a class="@Cls("history")" asp-controller="Inventory" asp-action="History"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Movement history</a>
     </li>
-    @if (canAdjust)
+    }
+    @if (showOpening)
     {
         <li class="nav-item">
             <a class="@Cls("opening")" asp-controller="Inventory" asp-action="Opening"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Opening stock</a>
         </li>
+    }
+    @if (showAdjust)
+    {
         <li class="nav-item">
             <a class="@Cls("adjust")" asp-controller="Inventory" asp-action="Adjust"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Adjust</a>
         </li>
+    }
+    @if (showTransfer)
+    {
         <li class="nav-item">
             <a class="@Cls("transfer")" asp-controller="Inventory" asp-action="Transfer"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>Transfer</a>
         </li>

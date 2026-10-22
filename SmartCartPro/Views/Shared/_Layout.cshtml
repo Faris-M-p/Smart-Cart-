@@ -31,6 +31,47 @@
     var showReports = await Access.ModuleEnabledAsync("REPORTS") && await Access.CanAsync("reports.view");
     var showUsers = await Access.ModuleEnabledAsync("USERS") && await Access.CanAsync("users.manage");
     var showSettings = await Access.ModuleEnabledAsync("SETTINGS") && await Access.CanAsync("settings.manage");
+    var canManageProducts = await Access.CanAsync("products.manage");
+    var canAdjustStock = await Access.CanAsync("inventory.adjust");
+    var canPosSell = await Access.CanAsync("pos.sell");
+    var canPosReturn = await Access.CanAsync("pos.return");
+    var canSeeInvoices = await Access.CanAnyAsync(new[] { "pos.sell", "reports.view" });
+
+    var showCategories = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.CATEGORIES");
+    var showSubCategories = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.SUBCATEGORIES");
+    var showBrands = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.BRANDS");
+    var showUnits = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.UNITS");
+    var showTaxes = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.TAXES");
+    var showProducts = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.PRODUCTS");
+    var showVariants = showCatalog && await Access.FeatureEnabledAsync("PRODUCTS.VARIANTS");
+    var showReviews = showCatalog && canManageProducts && await Access.FeatureEnabledAsync("PRODUCTS.REVIEWS");
+    var showCatalogGroup = showCategories || showSubCategories || showBrands || showUnits || showTaxes || showProducts || showVariants || showReviews;
+
+    var showSuppliers = showPurchases && await Access.FeatureEnabledAsync("PURCHASES.SUPPLIERS");
+    var showPurchaseOrders = showPurchases && await Access.FeatureEnabledAsync("PURCHASES.ORDERS");
+    var showStock = showInventory && await Access.FeatureEnabledAsync("INVENTORY.STOCK");
+    var showLowStock = showInventory && await Access.FeatureEnabledAsync("INVENTORY.LOW_STOCK");
+    var showStockHistory = showInventory && await Access.FeatureEnabledAsync("INVENTORY.HISTORY");
+    var showOpening = showInventory && canAdjustStock && await Access.FeatureEnabledAsync("INVENTORY.OPENING");
+    var showAdjust = showInventory && canAdjustStock && await Access.FeatureEnabledAsync("INVENTORY.ADJUST");
+    var showTransfer = showInventory && canAdjustStock && await Access.FeatureEnabledAsync("INVENTORY.TRANSFER");
+    var showStockGroup = showSuppliers || showPurchaseOrders || showStock || showLowStock || showStockHistory || showOpening || showAdjust || showTransfer;
+
+    var showPosBilling = showPos && canPosSell && await Access.FeatureEnabledAsync("POS.BILLING");
+    var showCashSession = showPos && canPosSell && await Access.FeatureEnabledAsync("POS.CASH_SESSION");
+    var showInvoices = (showPos || showCustomers) && canSeeInvoices && await Access.FeatureEnabledAsync("POS.INVOICES");
+    var showReturns = showPos && canPosReturn && await Access.FeatureEnabledAsync("POS.RETURNS");
+    var showOnlineOrders = showPos && canPosSell && await Access.FeatureEnabledAsync("POS.ONLINE_ORDERS");
+    var showCustomerItem = showCustomers && await Access.FeatureEnabledAsync("CUSTOMERS.MANAGE");
+    var showSalesGroup = showPosBilling || showCashSession || showInvoices || showReturns || showOnlineOrders || showCustomerItem;
+
+    var showEmployees = showUsers && await Access.FeatureEnabledAsync("USERS.EMPLOYEES");
+    var showRoles = showUsers && await Access.FeatureEnabledAsync("USERS.ROLES");
+    var showCompany = showSettings && await Access.FeatureEnabledAsync("SETTINGS.COMPANY");
+    var showStores = showSettings && await Access.FeatureEnabledAsync("SETTINGS.STORES");
+    var showSettingItem = showSettings && await Access.FeatureEnabledAsync("SETTINGS.SETTINGS");
+    var showAudit = showSettings && await Access.FeatureEnabledAsync("SETTINGS.AUDIT");
+    var showAdminGroup = showEmployees || showRoles || showCompany || showStores || showSettingItem || showAudit || isPlatform;
 
     bool On(params string[] controllers) =>
         controllers.Any(c => string.Equals(ctrl, c, StringComparison.OrdinalIgnoreCase));
@@ -86,7 +127,7 @@
                     </a>
                 </li>
 
-                @if (showCatalog)
+                @if (showCatalogGroup)
                 {
                     <li class="nav-group @(On("Catalog", "Product", "ProductReview") ? "is-open" : "")" data-sc-nav-group="catalog">
                         <button type="button" class="nav-group-toggle" aria-expanded="@(On("Catalog", "Product", "ProductReview") ? "true" : "false")">
@@ -94,42 +135,63 @@
                             <i class="bi bi-chevron-right" aria-hidden="true"></i>
                         </button>
                         <ul class="nav flex-column nav-group-items">
+                    @if (showCategories)
+                    {
                     <li class="nav-item">
                         <a class="@Nav("Catalog", "Categories")" asp-controller="Catalog" asp-action="Categories">
                             <i class="bi bi-folder"></i><span>Categories</span>
                         </a>
                     </li>
+                    }
+                    @if (showSubCategories)
+                    {
                     <li class="nav-item">
                         <a class="@Nav("Catalog", "SubCategories")" asp-controller="Catalog" asp-action="SubCategories">
                             <i class="bi bi-diagram-3"></i><span>Sub-categories</span>
                         </a>
                     </li>
+                    }
+                    @if (showBrands)
+                    {
                     <li class="nav-item">
                         <a class="@Nav("Catalog", "Brands")" asp-controller="Catalog" asp-action="Brands">
                             <i class="bi bi-bookmark"></i><span>Brands</span>
                         </a>
                     </li>
+                    }
+                    @if (showUnits)
+                    {
                     <li class="nav-item">
                         <a class="@Nav("Catalog", "Units")" asp-controller="Catalog" asp-action="Units">
                             <i class="bi bi-rulers"></i><span>Units</span>
                         </a>
                     </li>
+                    }
+                    @if (showTaxes)
+                    {
                     <li class="nav-item">
                         <a class="@Nav("Catalog", "Taxes")" asp-controller="Catalog" asp-action="Taxes">
                             <i class="bi bi-percent"></i><span>Taxes</span>
                         </a>
                     </li>
+                    }
+                    @if (showProducts)
+                    {
                     <li class="nav-item">
                         <a class="@NavAny("Product", "Index", "Create", "Edit", "Details")" asp-controller="Product" asp-action="Index">
                             <i class="bi bi-box"></i><span>Products</span>
                         </a>
                     </li>
+                    }
+                    @if (showVariants)
+                    {
                     <li class="nav-item">
                         <a class="@NavAny("Product", "Variants", "CreateVariant", "EditVariant")" asp-controller="Product" asp-action="Variants">
                             <i class="bi bi-upc-scan"></i><span>SKU / Variants</span>
                         </a>
                     </li>
-                    @if (await Access.CanAsync("products.manage"))
+                    }
+                    @if (showReviews)
                     {
                         <li class="nav-item">
                             <a class="@Nav("ProductReview")" asp-controller="ProductReview" asp-action="Index">
@@ -141,7 +203,7 @@
                     </li>
                 }
 
-                @if (showPurchases || showInventory)
+                @if (showStockGroup)
                 {
                     <li class="nav-group @(On("Supplier", "Purchase", "Inventory") ? "is-open" : "")" data-sc-nav-group="stock">
                         <button type="button" class="nav-group-toggle" aria-expanded="@(On("Supplier", "Purchase", "Inventory") ? "true" : "false")">
@@ -149,60 +211,75 @@
                             <i class="bi bi-chevron-right" aria-hidden="true"></i>
                         </button>
                         <ul class="nav flex-column nav-group-items">
-                    @if (showPurchases)
+                    @if (showSuppliers)
                     {
                         <li class="nav-item">
                             <a class="@Nav("Supplier")" asp-controller="Supplier" asp-action="Index">
                                 <i class="bi bi-truck"></i><span>Suppliers</span>
                             </a>
                         </li>
+                    }
+                    @if (showPurchaseOrders)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Purchase")" asp-controller="Purchase" asp-action="Index">
                                 <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
                             </a>
                         </li>
                     }
-                    @if (showInventory)
+                    @if (showStock)
                     {
                         <li class="nav-item">
                             <a class="@NavAny("Inventory", "Stock", "Index")" asp-controller="Inventory" asp-action="Stock">
                                 <i class="bi bi-boxes"></i><span>Stock</span>
                             </a>
                         </li>
+                    }
+                    @if (showLowStock)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Inventory", "LowStock")" asp-controller="Inventory" asp-action="LowStock">
                                 <i class="bi bi-exclamation-triangle"></i><span>Low stock</span>
                             </a>
                         </li>
+                    }
+                    @if (showStockHistory)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Inventory", "History")" asp-controller="Inventory" asp-action="History">
                                 <i class="bi bi-clock-history"></i><span>Stock history</span>
                             </a>
                         </li>
-                        @if (await Access.CanAsync("inventory.adjust"))
-                        {
-                            <li class="nav-item">
-                                <a class="@Nav("Inventory", "Opening")" asp-controller="Inventory" asp-action="Opening">
-                                    <i class="bi bi-box-arrow-in-down"></i><span>Opening stock</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="@Nav("Inventory", "Adjust")" asp-controller="Inventory" asp-action="Adjust">
-                                    <i class="bi bi-sliders"></i><span>Adjust stock</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="@Nav("Inventory", "Transfer")" asp-controller="Inventory" asp-action="Transfer">
-                                    <i class="bi bi-arrow-left-right"></i><span>Transfer</span>
-                                </a>
-                            </li>
-                        }
+                    }
+                    @if (showOpening)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Inventory", "Opening")" asp-controller="Inventory" asp-action="Opening">
+                                <i class="bi bi-box-arrow-in-down"></i><span>Opening stock</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showAdjust)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Inventory", "Adjust")" asp-controller="Inventory" asp-action="Adjust">
+                                <i class="bi bi-sliders"></i><span>Adjust stock</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showTransfer)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Inventory", "Transfer")" asp-controller="Inventory" asp-action="Transfer">
+                                <i class="bi bi-arrow-left-right"></i><span>Transfer</span>
+                            </a>
+                        </li>
                     }
                         </ul>
                     </li>
                 }
 
-                @if (showPos || showCustomers)
+                @if (showSalesGroup)
                 {
                     <li class="nav-group @(On("Sales", "OnlineOrder", "Customers") ? "is-open" : "")" data-sc-nav-group="sales">
                         <button type="button" class="nav-group-toggle" aria-expanded="@(On("Sales", "OnlineOrder", "Customers") ? "true" : "false")">
@@ -210,20 +287,23 @@
                             <i class="bi bi-chevron-right" aria-hidden="true"></i>
                         </button>
                         <ul class="nav flex-column nav-group-items">
-                    @if (await Access.CanAsync("pos.sell"))
+                    @if (showPosBilling)
                     {
                         <li class="nav-item">
                             <a class="@Nav("Sales", "Pos")" asp-controller="Sales" asp-action="Pos">
                                 <i class="bi bi-calculator"></i><span>POS Billing</span>
                             </a>
                         </li>
+                    }
+                    @if (showCashSession)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Sales", "Session")" asp-controller="Sales" asp-action="Session">
                                 <i class="bi bi-wallet2"></i><span>Cash session</span>
                             </a>
                         </li>
                     }
-                    @if (await Access.CanAnyAsync(new[] { "pos.sell", "reports.view" }))
+                    @if (showInvoices)
                     {
                         <li class="nav-item">
                             <a class="@NavAny("Sales", "Invoices", "InvoiceDetails", "InvoicePrint", "CancelSale")" asp-controller="Sales" asp-action="Invoices">
@@ -231,7 +311,7 @@
                             </a>
                         </li>
                     }
-                    @if (await Access.CanAsync("pos.return"))
+                    @if (showReturns)
                     {
                         <li class="nav-item">
                             <a class="@NavAny("Sales", "Returns", "Return", "ReturnDetails")" asp-controller="Sales" asp-action="Returns">
@@ -239,7 +319,7 @@
                             </a>
                         </li>
                     }
-                    @if (await Access.CanAsync("pos.sell"))
+                    @if (showOnlineOrders)
                     {
                         <li class="nav-item">
                             <a class="@Nav("OnlineOrder")" asp-controller="OnlineOrder" asp-action="Index">
@@ -247,7 +327,7 @@
                             </a>
                         </li>
                     }
-                    @if (showCustomers)
+                    @if (showCustomerItem)
                     {
                         <li class="nav-item">
                             <a class="@Nav("Customers")" asp-controller="Customers" asp-action="Index">
@@ -259,7 +339,7 @@
                     </li>
                 }
 
-                @if (showReports)
+                @if (showReports && await Access.FeatureEnabledAsync("REPORTS.HUB"))
                 {
                     <li class="nav-group @(On("Reports") ? "is-open" : "")" data-sc-nav-group="reports">
                         <button type="button" class="nav-group-toggle" aria-expanded="@(On("Reports") ? "true" : "false")">
@@ -276,7 +356,7 @@
                     </li>
                 }
 
-                @if (showUsers || showSettings || isPlatform)
+                @if (showAdminGroup)
                 {
                     <li class="nav-group @(On("Employee", "Role", "Company", "Store", "Setting", "Audit", "License", "Module") ? "is-open" : "")" data-sc-nav-group="admin">
                         <button type="button" class="nav-group-toggle" aria-expanded="@(On("Employee", "Role", "Company", "Store", "Setting", "Audit", "License", "Module") ? "true" : "false")">
@@ -284,36 +364,48 @@
                             <i class="bi bi-chevron-right" aria-hidden="true"></i>
                         </button>
                         <ul class="nav flex-column nav-group-items">
-                    @if (showUsers)
+                    @if (showEmployees)
                     {
                         <li class="nav-item">
                             <a class="@Nav("Employee")" asp-controller="Employee" asp-action="Index">
                                 <i class="bi bi-person-badge"></i><span>Employees</span>
                             </a>
                         </li>
+                    }
+                    @if (showRoles)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Role")" asp-controller="Role" asp-action="Index">
                                 <i class="bi bi-shield-lock"></i><span>Roles</span>
                             </a>
                         </li>
                     }
-                    @if (showSettings)
+                    @if (showCompany)
                     {
                         <li class="nav-item">
                             <a class="@Nav("Company")" asp-controller="Company" asp-action="Index">
                                 <i class="bi bi-building"></i><span>Company</span>
                             </a>
                         </li>
+                    }
+                    @if (showStores)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Store")" asp-controller="Store" asp-action="Index">
                                 <i class="bi bi-shop"></i><span>Stores</span>
                             </a>
                         </li>
+                    }
+                    @if (showSettingItem)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Setting")" asp-controller="Setting" asp-action="Index">
                                 <i class="bi bi-gear"></i><span>Settings</span>
                             </a>
                         </li>
+                    }
+                    @if (showAudit)
+                    {
                         <li class="nav-item">
                             <a class="@Nav("Audit")" asp-controller="Audit" asp-action="Index">
                                 <i class="bi bi-journal-text"></i><span>Audit log</span>

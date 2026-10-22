@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "Inventory";
     var canAdjust = await Access.CanAsync("inventory.adjust");
+    var showAdjust = canAdjust && await Access.FeatureEnabledAsync("INVENTORY.ADJUST");
+    var showOpening = canAdjust && await Access.FeatureEnabledAsync("INVENTORY.OPENING");
     var f = Model.Filter ?? new SmartCartPro.Models.InputInventoryList();
     var storeName = AuthClaims.GetStoreName(User);
     var currentListUrl = Context.Request.Path + Context.Request.QueryString;
@@ -86,7 +88,7 @@
         <h1 class="h3 mb-1">Inventory</h1>
         <p class="text-muted mb-0">On-hand stock@(string.IsNullOrWhiteSpace(storeName) ? "" : " at " + storeName)</p>
     </div>
-    @if (canAdjust)
+    @if (showAdjust)
     {
         <a class="btn btn-primary" asp-action="Adjust" asp-route-returnUrl="@currentListUrl">
             <i class="bi bi-sliders me-1" aria-hidden="true"></i>Adjust stock
@@ -179,7 +181,7 @@
                     {
                         <i class="bi bi-box-seam display-5 text-muted d-block mb-3" aria-hidden="true"></i>
                         <p class="text-muted mb-3">No stock has been recorded for this store yet.</p>
-                        @if (canAdjust)
+                        @if (showOpening)
                         {
                             <a class="btn btn-primary" asp-action="Opening">
                                 <i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Record opening stock

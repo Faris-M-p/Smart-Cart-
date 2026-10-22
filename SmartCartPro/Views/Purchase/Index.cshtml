@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Purchases";
     var canManage = await Access.CanAsync("purchases.manage");
+    var canReceiveGoods = canManage && await Access.FeatureEnabledAsync("PURCHASES.RECEIVING");
     var f = Model.Filter ?? new SmartCartPro.Models.InputPurchaseList();
     var suppliers = ViewBag.Suppliers as IReadOnlyList<SmartCartPro.Models.OutputSupplierSelect>
                     ?? new List<SmartCartPro.Models.OutputSupplierSelect>();
@@ -251,7 +252,7 @@
                                     <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@item.IdPurchase" title="View">
                                         <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span>
                                     </a>
-                                    @if (canManage && item.CanReceive)
+                                    @if (canReceiveGoods && item.CanReceive)
                                     {
                                         <a class="btn btn-sm btn-outline-success ms-1" asp-action="Receive" asp-route-id="@item.IdPurchase" title="Receive goods">
                                             <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i><span class="visually-hidden">Receive goods</span>

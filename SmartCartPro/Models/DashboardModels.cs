@@ -24,6 +24,10 @@ public sealed class InputDashboardSelect
     public bool ModuleReports { get; set; }
     public bool ModuleSettings { get; set; }
     public bool ModuleUsers { get; set; }
+    public bool FeatureLowStock { get; set; }
+    public bool FeatureOnlineOrders { get; set; }
+    public bool FeatureCashSession { get; set; }
+    public bool FeaturePurchases { get; set; }
     public string? StoreName { get; set; }
 }
 
@@ -112,6 +116,11 @@ public sealed class OutputDashboardSelect
     public string? StoreName { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public bool CanRefresh { get; set; }
+    public bool ShowPosMetrics { get; set; }
+    public bool ShowLowStock { get; set; }
+    public bool ShowPurchases { get; set; }
+    public bool ShowOnlineOrders { get; set; }
+    public bool ShowCashSession { get; set; }
     public List<OutputDashboardQuickAction> QuickActions { get; set; } = new();
     public OutputDashboardPlatform? Platform { get; set; }
     public OutputDashboardKpis? Kpis { get; set; }
@@ -133,6 +142,11 @@ public sealed class InputDashboardSnapshot
     public int ActorUserId { get; set; }
     public int ActorFkStore { get; set; }
     public bool IsPlatformSuperAdmin { get; set; }
+    public bool ModulePos { get; set; }
+    public bool FeatureLowStock { get; set; }
+    public bool FeatureOnlineOrders { get; set; }
+    public bool FeatureCashSession { get; set; }
+    public bool FeaturePurchases { get; set; }
 }
 
 public sealed class OutputDashboardSnapshot

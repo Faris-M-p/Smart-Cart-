@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.PoNumber;
     var canManage = await Access.CanAsync("purchases.manage");
+    var canReceiveGoods = canManage && await Access.FeatureEnabledAsync("PURCHASES.RECEIVING");
     var notice = ViewBag.Notice as string;
     var isDraft = Model.Status == "draft";
 
@@ -45,7 +46,7 @@
                     <i class="bi bi-pencil me-1"></i>Edit
                 </a>
             }
-            @if (canManage && Model.CanReceive)
+            @if (canReceiveGoods && Model.CanReceive)
             {
                 <a class="btn btn-success" asp-action="Receive" asp-route-id="@Model.IdPurchase">
                     <i class="bi bi-box-arrow-in-down me-1"></i>Receive goods

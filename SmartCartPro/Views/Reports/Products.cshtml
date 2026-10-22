@@ -23,7 +23,10 @@
         <p class="text-muted mb-0">Top sellers for the selected range. Low stock lives on Inventory.</p>
     </div>
     <div class="sc-report-actions d-flex gap-2">
+        @if (await Access.FeatureEnabledAsync("INVENTORY.LOW_STOCK"))
+        {
         <a class="btn btn-outline-secondary" asp-controller="Inventory" asp-action="LowStock">Low stock</a>
+        }
         <button type="button" class="btn btn-outline-secondary" data-sc-print><i class="bi bi-printer me-1"></i>Print</button>
         <a class="btn btn-outline-primary" href="@csvUrl"><i class="bi bi-download me-1"></i>CSV</a>
     </div>

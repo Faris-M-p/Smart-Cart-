@@ -3,6 +3,8 @@
     var p = Model.Product;
     ViewData["Title"] = p.ProductName;
     var canManage = await Access.CanAsync("products.manage");
+    var showBrands = await Access.FeatureEnabledAsync("PRODUCTS.BRANDS");
+    var showVariants = await Access.FeatureEnabledAsync("PRODUCTS.VARIANTS");
     var canSeeCost = canManage || await Access.CanAnyAsync(new[] { "purchases.view", "purchases.manage" });
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
     var listUrl = ViewBag.ReturnUrl as string ?? Url.Action("Index", "Product");
@@ -109,8 +111,11 @@
                     <dd class="col-sm-8">@Dash(p.Barcode)</dd>
                     <dt class="col-sm-4">Category</dt>
                     <dd class="col-sm-8">@categoryText</dd>
+                    @if (showBrands)
+                    {
                     <dt class="col-sm-4">Brand</dt>
                     <dd class="col-sm-8">@Dash(p.BrandName)</dd>
+                    }
                     <dt class="col-sm-4">Unit</dt>
                     <dd class="col-sm-8">@Dash(p.UnitName)</dd>
                     <dt class="col-sm-4">Tax</dt>
@@ -220,6 +225,8 @@
     </div>
 </div>
 
+@if (showVariants)
+{
 <div class="card border-0 shadow-sm mt-3">
     <div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
@@ -325,6 +332,7 @@
         }
     </div>
 </div>
+}
 
 @if (canManage)
 {

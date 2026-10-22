@@ -47,14 +47,18 @@ public class HomeController : Controller
             CanReportsView = await _access.CanAsync("reports.view", ct),
             CanSettingsManage = await _access.CanAsync("settings.manage", ct),
             CanUsersManage = await _access.CanAsync("users.manage", ct),
-            ModulePos = await _access.ModuleEnabledAsync("POS", ct),
-            ModuleProducts = await _access.ModuleEnabledAsync("PRODUCTS", ct),
+            ModulePos = await _access.FeatureEnabledAsync("POS.BILLING", ct),
+            ModuleProducts = await _access.FeatureEnabledAsync("PRODUCTS.PRODUCTS", ct),
             ModulePurchases = await _access.ModuleEnabledAsync("PURCHASES", ct),
             ModuleInventory = await _access.ModuleEnabledAsync("INVENTORY", ct),
-            ModuleCustomers = await _access.ModuleEnabledAsync("CUSTOMERS", ct),
-            ModuleReports = await _access.ModuleEnabledAsync("REPORTS", ct),
-            ModuleSettings = await _access.ModuleEnabledAsync("SETTINGS", ct),
-            ModuleUsers = await _access.ModuleEnabledAsync("USERS", ct)
+            ModuleCustomers = await _access.FeatureEnabledAsync("CUSTOMERS.MANAGE", ct),
+            ModuleReports = await _access.FeatureEnabledAsync("REPORTS.HUB", ct),
+            ModuleSettings = await _access.FeatureEnabledAsync("SETTINGS.SETTINGS", ct),
+            ModuleUsers = await _access.FeatureEnabledAsync("USERS.EMPLOYEES", ct),
+            FeatureLowStock = await _access.FeatureEnabledAsync("INVENTORY.LOW_STOCK", ct),
+            FeatureOnlineOrders = await _access.FeatureEnabledAsync("POS.ONLINE_ORDERS", ct),
+            FeatureCashSession = await _access.FeatureEnabledAsync("POS.CASH_SESSION", ct),
+            FeaturePurchases = await _access.FeatureEnabledAsync("PURCHASES.ORDERS", ct)
         };
         var model = await _dashboard.GetHomeAsync(input, ct);
         return View(model);

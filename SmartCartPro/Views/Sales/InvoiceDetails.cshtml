@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = Model.InvoiceNumber;
     var canCancel = await Access.CanAsync("pos.cancel") && Model.CanCancel;
-    var canReturn = await Access.CanAsync("pos.return") && Model.CanReturn;
+    var canReturn = await Access.CanAsync("pos.return") && Model.CanReturn && await Access.FeatureEnabledAsync("POS.RETURNS");
 
     string Money(decimal value) => value.ToString("N2");
     string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);

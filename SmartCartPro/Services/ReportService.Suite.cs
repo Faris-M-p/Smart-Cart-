@@ -186,8 +186,9 @@ public partial class ReportService
         return screen;
     }
 
-    private static List<OutputReportIndexCard> ReportCards(bool canSeeProfit) =>
-        ReportCatalog.All
+    private static List<OutputReportIndexCard> ReportCards(bool canSeeProfit)
+    {
+        var cards = ReportCatalog.All
             .Where(d => !d.ProfitOnly || canSeeProfit)
             .Select(d => new OutputReportIndexCard
             {
@@ -199,6 +200,16 @@ public partial class ReportService
                 RequiresProfit = d.ProfitOnly
             })
             .ToList();
+        cards.Add(new OutputReportIndexCard
+        {
+            Section = "Parties & Masters",
+            Title = "Customers",
+            Description = "Customer spend from the earlier customers report",
+            Action = "Customers",
+            Icon = "bi-people"
+        });
+        return cards;
+    }
 
     private static List<OutputReportQuickPick> QuickPicks(DateOnly today)
     {

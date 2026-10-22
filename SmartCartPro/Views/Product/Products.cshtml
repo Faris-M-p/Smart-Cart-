@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Products";
     var canManage = await Access.CanAsync("products.manage");
+    var showBrands = await Access.FeatureEnabledAsync("PRODUCTS.BRANDS");
+    var showVariants = await Access.FeatureEnabledAsync("PRODUCTS.VARIANTS");
     var f = Model.Filter;
     var lookup = Model.Lookup;
     var currentListUrl = Context.Request.Path + Context.Request.QueryString;
@@ -118,10 +120,13 @@
                     <label class="form-label" for="productSubCategory">Sub-category</label>
                     <select id="productSubCategory" name="FkSubcategory" class="form-select" asp-items="subCategoryItems" data-sc-auto-submit></select>
                 </div>
+                @if (showBrands)
+                {
                 <div class="col-6 col-md-3 col-lg-2">
                     <label class="form-label" for="productBrand">Brand</label>
                     <select id="productBrand" name="FkBrand" class="form-select" asp-items="brandItems" data-sc-auto-submit></select>
                 </div>
+                }
                 <div class="col-6 col-md-3 col-lg-2">
                     <label class="form-label" for="productStatus">Status</label>
                     <select id="productStatus" name="ActiveOnly" class="form-select" asp-items="statusItems" data-sc-auto-submit></select>
@@ -182,13 +187,19 @@
                                         Category <i class="bi @SortIcon("category")"></i>
                                     </a>
                                 </th>
+                                @if (showBrands)
+                                {
                                 <th class="d-none d-xl-table-cell">Brand</th>
+                                }
                                 <th class="text-end">
                                     <a class="text-decoration-none text-body" href="@SortUrl("sellingprice")">
                                         Price <i class="bi @SortIcon("sellingprice")"></i>
                                     </a>
                                 </th>
+                                @if (showVariants)
+                                {
                                 <th class="text-center d-none d-md-table-cell">Variants</th>
+                                }
                                 <th>
                                     <a class="text-decoration-none text-body" href="@SortUrl("isactive")">
                                         Status <i class="bi @SortIcon("isactive")"></i>
@@ -237,6 +248,8 @@
                                         <span class="text-muted">—</span>
                                     }
                                 </td>
+                                @if (showBrands)
+                                {
                                 <td class="d-none d-xl-table-cell">
                                     @if (!string.IsNullOrEmpty(item.BrandName))
                                     {
@@ -247,6 +260,7 @@
                                         <span class="text-muted">—</span>
                                     }
                                 </td>
+                                }
                                 <td class="text-end text-nowrap">
                                     <div>@Money(item.SellingPrice)</div>
                                     @if (item.Mrp.HasValue)
@@ -254,6 +268,8 @@
                                         <div class="small text-muted">MRP @Money(item.Mrp.Value)</div>
                                     }
                                 </td>
+                                @if (showVariants)
+                                {
                                 <td class="text-center d-none d-md-table-cell">
                                     @if (item.VariantCount > 0)
                                     {
@@ -266,6 +282,7 @@
                                         <span class="text-muted">0</span>
                                     }
                                 </td>
+                                }
                                 <td>
                                     <partial name="_StatusBadge" model="item.IsActive" />
                                 </td>

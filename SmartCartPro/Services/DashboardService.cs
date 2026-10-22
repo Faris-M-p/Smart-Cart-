@@ -59,6 +59,7 @@ public class DashboardService : IDashboardService
         }
 
         var snapshot = await LoadStoreSnapshotAsync(input.ActorFkStore, currency, timeZoneId, tz, ct);
+        ApplyWidgetRules(snapshot, input.ModulePos, input.FeatureLowStock, input.FeatureOnlineOrders, input.FeatureCashSession, input.FeaturePurchases);
         return new OutputDashboardSelect
         {
             Mode = "store",
@@ -67,6 +68,11 @@ public class DashboardService : IDashboardService
             StoreName = input.StoreName,
             DisplayName = input.StoreName ?? "Store",
             CanRefresh = true,
+            ShowPosMetrics = input.ModulePos,
+            ShowLowStock = input.FeatureLowStock,
+            ShowPurchases = input.FeaturePurchases,
+            ShowOnlineOrders = input.FeatureOnlineOrders,
+            ShowCashSession = input.FeatureCashSession,
             QuickActions = actions,
             Kpis = snapshot.Kpis,
             Trend7 = snapshot.Trend7,
@@ -103,7 +109,9 @@ public class DashboardService : IDashboardService
             };
         }
 
-        return await LoadStoreSnapshotAsync(storeId, currency, timeZoneId, tz, ct);
+        var snapshot = await LoadStoreSnapshotAsync(storeId, currency, timeZoneId, tz, ct);
+        ApplyWidgetRules(snapshot, input.ModulePos, input.FeatureLowStock, input.FeatureOnlineOrders, input.FeatureCashSession, input.FeaturePurchases);
+        return snapshot;
     }
 
     private async Task<OutputDashboardSnapshot> LoadStoreSnapshotAsync(
@@ -176,9 +184,9 @@ public class DashboardService : IDashboardService
             list.Add(Action("Open POS", "Sales", "Pos", "bi-cash-register"));
         if (input.CanProductsView && input.ModuleProducts)
             list.Add(Action("Products", "Product", "Index", "bi-box"));
-        if (input.CanPurchasesManage && input.ModulePurchases)
+        if (input.CanPurchasesManage && input.FeaturePurchases)
             list.Add(Action("New purchase", "Purchase", "Create", "bi-truck"));
-        if (input.CanInventoryView && input.ModuleInventory)
+        if (input.CanInventoryView && input.FeatureLowStock)
             list.Add(Action("Low stock", "Inventory", "LowStock", "bi-exclamation-triangle"));
         if (input.CanCustomersView && input.ModuleCustomers)
             list.Add(Action("Customers", "Customers", "Index", "bi-people"));
@@ -199,6 +207,48 @@ public class DashboardService : IDashboardService
             Action("License", "License", "Index", "bi-award"),
             Action("Modules", "Module", "Index", "bi-grid")
         };
+
+    /// <summary>
+    /// Sales, payments, invoices and top products follow the POS module.
+    /// Low stock follows INVENTORY.LOW_STOCK. Pending purchases follow PURCHASES.ORDERS.
+    /// Online orders follow POS.ONLINE_ORDERS. Open sessions follow POS.CASH_SESSION.
+    /// </summary>
+    private static void ApplyWidgetRules(
+        OutputDashboardSnapshot snapshot,
+        bool showPos,
+        bool showLowStock,
+        bool showOnline,
+        bool showCash,
+        bool showPurchases)
+    {
+        var kpis = snapshot.Kpis;
+        if (!showPos)
+        {
+            kpis.SalesToday = 0;
+            kpis.SalesYesterday = 0;
+            kpis.SalesMonth = 0;
+            kpis.InvoiceCountToday = 0;
+            kpis.TodayChangePercent = 0;
+            snapshot.Trend7 = new();
+            snapshot.Trend30 = new();
+            snapshot.Payments = new();
+            snapshot.TopProducts = new();
+            snapshot.RecentInvoices = new();
+        }
+
+        if (!showLowStock)
+        {
+            kpis.LowStockCount = 0;
+            snapshot.LowStock = new();
+        }
+
+        if (!showPurchases)
+            kpis.PendingPurchaseOrders = 0;
+        if (!showOnline)
+            kpis.PendingOnlineOrders = 0;
+        if (!showCash)
+            kpis.OpenCashSessions = 0;
+    }
 
     private static OutputDashboardQuickAction Action(string title, string controller, string action, string icon) =>
         new()

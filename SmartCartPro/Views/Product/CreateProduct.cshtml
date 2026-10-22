@@ -13,6 +13,7 @@
     var categoryItems = lookup.Categories.Select(c => new SelectListItem(Label(c), c.Id.ToString())).ToList();
     var subCategoryItems = lookup.SubCategories.Select(s => new SelectListItem(Label(s), s.Id.ToString())).ToList();
     var brandItems = lookup.Brands.Select(b => new SelectListItem(Label(b), b.Id.ToString())).ToList();
+    var showBrands = await Access.FeatureEnabledAsync("PRODUCTS.BRANDS");
     var unitItems = lookup.Units.Select(u => new SelectListItem(UnitLabel(u), u.Id.ToString())).ToList();
     var taxItems = lookup.Taxes.Select(t => new SelectListItem(TaxLabel(t), t.Id.ToString())).ToList();
 }
@@ -108,6 +109,8 @@
                     <span asp-validation-for="FkSubcategory" class="text-danger"></span>
                     <div class="form-text">Pick a category first to choose a sub-category.</div>
                 </div>
+                @if (showBrands)
+                {
                 <div class="col-md-4">
                     <label class="form-label" asp-for="FkBrand"></label>
                     <select class="form-select" asp-for="FkBrand" asp-items="brandItems">
@@ -115,6 +118,7 @@
                     </select>
                     <span asp-validation-for="FkBrand" class="text-danger"></span>
                 </div>
+                }
                 <div class="col-md-6">
                     <label class="form-label" asp-for="FkUnit"></label>
                     <select class="form-select" asp-for="FkUnit" asp-items="unitItems">
