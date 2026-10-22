@@ -17,51 +17,51 @@ public class ModuleController : Controller
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
     /// <summary>
-    /// Shows module toggles, descriptions and Basic / Premium / Custom presets for the installation.
-    /// Platform Super Admin configures which licensed features appear in the admin menu.
+    /// Shows the module and feature tree for this installation.
+    /// Platform Super Admin configures which screens the company can open.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var data = await _svc.GetModuleListAsync(ct);
-        var model = new InModuleAssignView
+        var tree = await _svc.GetFeatureTreeAsync(ct);
+        var model = new InModuleFeatureTreeView
         {
-            AllModules = data.Modules,
-            Presets = data.Presets,
-            EnabledModuleIds = data.EnabledModuleIds
+            Modules = tree.Modules,
+            Presets = tree.Presets,
+            EnabledFeatureCodes = tree.EnabledFeatureCodes
         };
         return View(model);
     }
 
     /// <summary>
-    /// Saves the selected enabled modules. Core modules from the Basic preset stay on.
-    /// Platform Super Admin submits the toggles after reviewing descriptions.
+    /// Saves the enabled leaf features and rebuilds installation_modules from them.
+    /// Platform Super Admin submits the Modules page after reviewing the tree.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Save(InModuleAssignView model, CancellationToken ct)
+    public async Task<IActionResult> Save([FromBody] InModuleFeatureSaveView model, CancellationToken ct)
     {
-        var input = new InputModuleAssign
+        var input = new InputModuleFeatureAssign
         {
             ActorUserId = ActorId,
-            EnabledModuleIds = model.EnabledModuleIds ?? new List<int>()
+            EnabledFeatureCodes = model?.EnabledFeatureCodes ?? new List<string>()
         };
-        var result = await _svc.AssignModulesAsync(input, ct);
+        var result = await _svc.AssignFeaturesAsync(input, ct);
         return CommonHelpers.SuccessResponse(
-            $"Module assignment saved ({result.EnabledCount} modules enabled).",
-            new { enabledCount = result.EnabledCount, redirectUrl = Url.Action(nameof(Index)) });
+            $"Feature assignment saved ({result.EnabledCount} features enabled).",
+            result);
     }
 
     /// <summary>
-    /// Applies a Basic or Premium preset from seed data and saves it immediately.
-    /// Platform Super Admin uses the preset buttons on the modules page.
+    /// Applies a Basic or Premium preset and saves it immediately.
+    /// Kept for callers that post a preset code. The Modules page fills the tree first and saves separately.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApplyPreset(InModuleAssignView model, CancellationToken ct)
     {
-        var data = await _svc.GetModuleListAsync(ct);
-        var preset = data.Presets.FirstOrDefault(p =>
+        var tree = await _svc.GetFeatureTreeAsync(ct);
+        var preset = tree.Presets.FirstOrDefault(p =>
             string.Equals(p.PresetCode, model.SelectedPresetCode, StringComparison.OrdinalIgnoreCase));
 
         if (preset is null)
@@ -71,14 +71,14 @@ public class ModuleController : Controller
                 $"PresetCode={model.SelectedPresetCode}");
         }
 
-        var input = new InputModuleAssign
+        var input = new InputModuleFeatureAssign
         {
             ActorUserId = ActorId,
-            EnabledModuleIds = preset.ModuleIds
+            EnabledFeatureCodes = preset.FeatureCodes
         };
-        var result = await _svc.AssignModulesAsync(input, ct);
+        var result = await _svc.AssignFeaturesAsync(input, ct);
         return CommonHelpers.SuccessResponse(
-            $"Preset '{preset.PresetName}' applied ({result.EnabledCount} modules enabled).",
-            new { enabledCount = result.EnabledCount, presetCode = preset.PresetCode, redirectUrl = Url.Action(nameof(Index)) });
+            $"Preset '{preset.PresetName}' applied ({result.EnabledCount} features enabled).",
+            result);
     }
 }
