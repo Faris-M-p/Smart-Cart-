@@ -15,6 +15,7 @@ namespace SmartCartPro.Controllers;
 /// </summary>
 [Authorize]
 [ModuleAccess("POS")]
+[FeatureAccess("POS.ONLINE_ORDERS")]
 public class OnlineOrderController : Controller
 {
     private readonly IOnlineOrderService _svc;

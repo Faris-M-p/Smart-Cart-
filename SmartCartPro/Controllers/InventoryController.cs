@@ -60,6 +60,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("inventory.adjust")]
+    [FeatureAccess("INVENTORY.OPENING")]
     public async Task<IActionResult> Opening(int? productId, int? variantId, string? returnUrl, CancellationToken ct)
     {
         if (StoreId <= 0) return View("NoStore", "Opening stock");
@@ -91,6 +92,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("inventory.adjust")]
+    [FeatureAccess("INVENTORY.OPENING")]
     public async Task<IActionResult> Opening(InOpeningStockView model, string? returnUrl, CancellationToken ct)
     {
         if (StoreId <= 0)
@@ -134,6 +136,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("inventory.adjust")]
+    [FeatureAccess("INVENTORY.ADJUST")]
     public async Task<IActionResult> Adjust(int? productId, int? variantId, string? returnUrl, CancellationToken ct)
     {
         if (StoreId <= 0) return View("NoStore", "Stock adjustment");
@@ -165,6 +168,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("inventory.adjust")]
+    [FeatureAccess("INVENTORY.ADJUST")]
     public async Task<IActionResult> Adjust(InStockAdjustView model, string? returnUrl, CancellationToken ct)
     {
         if (StoreId <= 0)
@@ -205,6 +209,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("inventory.adjust")]
+    [FeatureAccess("INVENTORY.TRANSFER")]
     public async Task<IActionResult> Transfer(int? productId, int? variantId, string? returnUrl, CancellationToken ct)
     {
         if (StoreId <= 0) return View("NoStore", "Transfer stock");
@@ -233,6 +238,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("inventory.adjust")]
+    [FeatureAccess("INVENTORY.TRANSFER")]
     public async Task<IActionResult> Transfer([FromBody] InStockTransferCreateView model, CancellationToken ct)
     {
         if (StoreId <= 0)
@@ -278,6 +284,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("inventory.view")]
+    [FeatureAccess("INVENTORY.HISTORY")]
     public async Task<IActionResult> History([FromQuery] InputStockMovementList input, CancellationToken ct)
     {
         if (StoreId <= 0) return View("NoStore", "Movement history");
@@ -297,6 +304,7 @@ public class InventoryController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("inventory.view")]
+    [FeatureAccess("INVENTORY.LOW_STOCK")]
     public async Task<IActionResult> LowStock([FromQuery] InputLowStockList input, CancellationToken ct)
     {
         if (StoreId <= 0) return View("NoStore", "Low stock");

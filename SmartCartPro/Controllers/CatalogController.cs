@@ -428,6 +428,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public async Task<IActionResult> Brands([FromQuery] InputBrandList input, CancellationToken ct)
     {
         var model = await _svc.ListBrandsAsync(input, ct);
@@ -440,6 +441,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public IActionResult CreateBrand(string? returnUrl = null)
     {
         ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
@@ -452,6 +454,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public async Task<IActionResult> CreateBrand(InBrandCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
@@ -489,6 +492,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public async Task<IActionResult> EditBrand(int id, string? returnUrl, CancellationToken ct)
     {
         var item = await _svc.GetBrandAsync(new InputBrandSelect { IdBrand = id }, ct);
@@ -503,6 +507,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public async Task<IActionResult> EditBrand(int id, InBrandUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdBrand = id;
@@ -549,6 +554,7 @@ public class CatalogController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public async Task<IActionResult> SetBrandActive(int id, bool isActive, CancellationToken ct)
     {
         var item = await _svc.GetBrandAsync(new InputBrandSelect { IdBrand = id }, ct);
@@ -596,6 +602,7 @@ public class CatalogController : Controller
     /// Product create and edit screens request this when loading dropdown options.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("PRODUCTS.BRANDS")]
     public async Task<IActionResult> BrandLookup(CancellationToken ct)
         => Json(await _svc.GetBrandLookupAsync(ct));
 

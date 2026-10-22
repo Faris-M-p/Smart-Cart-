@@ -14,6 +14,7 @@ namespace SmartCartPro.Controllers;
 /// </summary>
 [Authorize]
 [ModuleAccess("PRODUCTS")]
+[FeatureAccess("PRODUCTS.REVIEWS")]
 public class ProductReviewController : Controller
 {
     private readonly IProductReviewService _svc;

@@ -206,6 +206,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.view")]
+    [FeatureAccess("PRODUCTS.VARIANTS")]
     public async Task<IActionResult> Variants([FromQuery] InputVariantList input, int? productId, CancellationToken ct)
     {
         if (productId is > 0)
@@ -224,6 +225,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.VARIANTS")]
     public async Task<IActionResult> CreateVariant(int productId, string? returnUrl, CancellationToken ct)
     {
         var selectInput = new InputProductSelect { IdProduct = productId };
@@ -244,6 +246,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.VARIANTS")]
     public async Task<IActionResult> CreateVariant(InVariantCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
@@ -271,6 +274,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.VARIANTS")]
     public async Task<IActionResult> EditVariant(int id, string? returnUrl, CancellationToken ct)
     {
         var selectInput = new InputVariantSelect { IdProductVariant = id };
@@ -289,6 +293,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.VARIANTS")]
     public async Task<IActionResult> EditVariant(int id, InVariantUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdProductVariant = id;
@@ -318,6 +323,7 @@ public class ProductController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("products.manage")]
+    [FeatureAccess("PRODUCTS.VARIANTS")]
     public async Task<IActionResult> SetVariantActive(int id, bool isActive, CancellationToken ct)
     {
         var input = new InputVariantSetActive { IdProductVariant = id, IsActive = isActive };
@@ -337,6 +343,7 @@ public class ProductController : Controller
     /// Purchase, stock and POS screens call this while the user types; the rows sit in data.
     /// </summary>
     [HttpGet]
+    [RequirePermission("products.view", "pos.sell")]
     public async Task<IActionResult> Search(string? term, int take = 20, bool expandVariants = true, CancellationToken ct = default)
     {
         var input = new InputProductSearch
@@ -355,6 +362,7 @@ public class ProductController : Controller
     /// POS and receiving UIs call this during fast item lookup; 404 means no active match.
     /// </summary>
     [HttpGet]
+    [RequirePermission("products.view", "pos.sell")]
     public async Task<IActionResult> FindByBarcode(string barcode, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(barcode))

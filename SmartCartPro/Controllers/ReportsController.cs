@@ -42,6 +42,15 @@ public partial class ReportsController : Controller
             CanSeeProfit = IsSuperAdmin || await _access.CanAsync("reports.profit", ct)
         };
         var model = await _svc.GetIndexAsync(input, ct);
+        var kept = new List<OutputReportIndexCard>();
+        foreach (var card in model.Cards)
+        {
+            var code = ReportFeatureMap.ForAction(card.Action);
+            if (code is null || await _access.FeatureEnabledAsync(code, ct))
+                kept.Add(card);
+        }
+
+        model.Cards = kept;
         return View(model);
     }
 
@@ -50,6 +59,7 @@ public partial class ReportsController : Controller
     /// Used from Reports / Sales with month-to-date as the default range.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.SALES.BILL_WISE")]
     public async Task<IActionResult> Sales([FromQuery] InReportSalesView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -72,6 +82,7 @@ public partial class ReportsController : Controller
     /// Used from the Sales report Print / export bar.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.SALES.BILL_WISE")]
     public async Task<IActionResult> SalesCsv([FromQuery] InReportSalesView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -106,6 +117,7 @@ public partial class ReportsController : Controller
     /// Merchandisers open this from Reports / Products.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.SALES.ITEM")]
     public async Task<IActionResult> Products([FromQuery] InReportProductsView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -130,6 +142,7 @@ public partial class ReportsController : Controller
     /// Used from the Products report export button.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.SALES.ITEM")]
     public async Task<IActionResult> ProductsCsv([FromQuery] InReportProductsView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -164,6 +177,7 @@ public partial class ReportsController : Controller
     /// Inventory staff open this from the reports hub.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.STOCK.VALUATION")]
     public async Task<IActionResult> StockValuation([FromQuery] InReportStockValuationView model, CancellationToken ct)
     {
         var input = new InputReportStockValuation
@@ -185,6 +199,7 @@ public partial class ReportsController : Controller
     /// Used from the Stock valuation export button.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.STOCK.VALUATION")]
     public async Task<IActionResult> StockValuationCsv([FromQuery] InReportStockValuationView model, CancellationToken ct)
     {
         var input = new InputReportStockValuation
@@ -229,6 +244,7 @@ public partial class ReportsController : Controller
     /// Finance staff open this from the reports hub.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.TAX.GST")]
     public async Task<IActionResult> Tax([FromQuery] InReportTaxView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -250,6 +266,7 @@ public partial class ReportsController : Controller
     /// Used from the Tax report export button.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.TAX.GST")]
     public async Task<IActionResult> TaxCsv([FromQuery] InReportTaxView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -281,6 +298,7 @@ public partial class ReportsController : Controller
     /// Buyers open this from the reports hub; cancelled orders are excluded by default.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.PURCHASE.BILLS")]
     public async Task<IActionResult> Purchases([FromQuery] InReportPurchasesView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -303,6 +321,7 @@ public partial class ReportsController : Controller
     /// Used from the Purchases report export button.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.PURCHASE.BILLS")]
     public async Task<IActionResult> PurchasesCsv([FromQuery] InReportPurchasesView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -334,6 +353,7 @@ public partial class ReportsController : Controller
     /// Walk-in sales appear as a single row. Used from Reports / Customers.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.PARTIES.CUSTOMERS")]
     public async Task<IActionResult> Customers([FromQuery] InReportCustomersView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);
@@ -356,6 +376,7 @@ public partial class ReportsController : Controller
     /// Used from the Customers report export button.
     /// </summary>
     [HttpGet]
+    [FeatureAccess("REPORTS.PARTIES.CUSTOMERS")]
     public async Task<IActionResult> CustomersCsv([FromQuery] InReportCustomersView model, CancellationToken ct)
     {
         ClearInvalidDates(model.DateFrom, model.DateTo);

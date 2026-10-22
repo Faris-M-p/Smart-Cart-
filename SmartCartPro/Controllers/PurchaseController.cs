@@ -210,6 +210,7 @@ public class PurchaseController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("purchases.manage")]
+    [FeatureAccess("PURCHASES.RECEIVING")]
     public async Task<IActionResult> Receive(int id, CancellationToken ct)
     {
         if (StoreId <= 0) return StoreRequiredView("Receive goods");
@@ -229,6 +230,7 @@ public class PurchaseController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchases.manage")]
+    [FeatureAccess("PURCHASES.RECEIVING")]
     public async Task<IActionResult> Receive(int id, [FromBody] InGoodsReceiptView model, CancellationToken ct)
     {
         // The id comes from the route; validate first so an unreadable JSON body (null model) is reported, not dereferenced.

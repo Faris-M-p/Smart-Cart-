@@ -221,6 +221,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("pos.return")]
+    [FeatureAccess("POS.RETURNS")]
     public async Task<IActionResult> Returns(int? id, [FromQuery] InputSalesReturnList input, CancellationToken ct)
     {
         if (StoreId <= 0) return StoreRequiredView("Returns");
@@ -236,6 +237,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.return")]
+    [FeatureAccess("POS.RETURNS")]
     public Task<IActionResult> Returns(int id, InSaleReturnView model, CancellationToken ct)
         => CompleteReturnAsync(id, model, ct);
 
@@ -245,6 +247,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("pos.return")]
+    [FeatureAccess("POS.RETURNS")]
     public async Task<IActionResult> Return(int id, CancellationToken ct)
     {
         if (StoreId <= 0) return StoreRequiredView("Return");
@@ -284,6 +287,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.return")]
+    [FeatureAccess("POS.RETURNS")]
     public Task<IActionResult> Return(int id, InSaleReturnView model, CancellationToken ct)
         => CompleteReturnAsync(id, model, ct);
 
@@ -293,6 +297,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("pos.return")]
+    [FeatureAccess("POS.RETURNS")]
     public async Task<IActionResult> ReturnDetails(int id, CancellationToken ct)
     {
         if (StoreId <= 0) return StoreRequiredView("Return");
@@ -317,6 +322,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("pos.sell")]
+    [FeatureAccess("POS.CASH_SESSION")]
     public async Task<IActionResult> Session([FromQuery] InputCashSessionList input, CancellationToken ct)
     {
         if (StoreId <= 0) return StoreRequiredView("Cash session");
@@ -331,6 +337,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.sell")]
+    [FeatureAccess("POS.CASH_SESSION")]
     public async Task<IActionResult> OpenSession(InCashSessionOpenView model, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
@@ -355,6 +362,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("pos.sell")]
+    [FeatureAccess("POS.CASH_SESSION")]
     public async Task<IActionResult> CloseSession(InCashSessionCloseView model, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
@@ -389,6 +397,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("pos.sell")]
+    [FeatureAccess("POS.CASH_SESSION")]
     public async Task<IActionResult> DayClose(int id, CancellationToken ct)
     {
         if (StoreId <= 0) return StoreRequiredView("Day close");
@@ -403,6 +412,7 @@ public class SalesController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("pos.sell")]
+    [FeatureAccess("POS.CASH_SESSION")]
     public async Task<IActionResult> CashSummaryJson(int id, CancellationToken ct)
     {
         var input = new InputCashSummary { FkStore = StoreId, IdCashSession = id };

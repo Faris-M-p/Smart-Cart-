@@ -14,6 +14,7 @@ namespace SmartCartPro.Controllers;
 /// </summary>
 [Authorize]
 [ModuleAccess("SETTINGS")]
+[FeatureAccess("SETTINGS.AUDIT")]
 public class AuditController : Controller
 {
     private readonly IAuditService _svc;
