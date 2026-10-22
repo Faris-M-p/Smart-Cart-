@@ -29,6 +29,7 @@ public class StoreController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("settings.manage")]
+    [ModuleAccess("SETTINGS")]
     public async Task<IActionResult> Index([FromQuery] InputStoreList input, CancellationToken ct)
     {
         input.CanCreate = CanCreateStore;
@@ -42,6 +43,8 @@ public class StoreController : Controller
     /// </summary>
     [HttpGet]
     [Authorize(Policy = "PlatformSuperAdmin")]
+    [ModuleAccess("SETTINGS")]
+    [RequirePermission("settings.manage")]
     public IActionResult Create(string? returnUrl)
     {
         ViewBag.ReturnUrl = SafeReturnUrl(returnUrl);
@@ -55,6 +58,8 @@ public class StoreController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "PlatformSuperAdmin")]
+    [ModuleAccess("SETTINGS")]
+    [RequirePermission("settings.manage")]
     public async Task<IActionResult> Create(InStoreCreateView model, string? returnUrl, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
@@ -100,6 +105,7 @@ public class StoreController : Controller
     /// </summary>
     [HttpGet]
     [RequirePermission("settings.manage")]
+    [ModuleAccess("SETTINGS")]
     public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
         var store = await _svc.GetStoreAsync(new InputStoreSelect { IdStore = id }, ct);
@@ -119,6 +125,7 @@ public class StoreController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission("settings.manage")]
+    [ModuleAccess("SETTINGS")]
     public async Task<IActionResult> Edit(int id, InStoreUpdateView model, string? returnUrl, CancellationToken ct)
     {
         model.IdStore = id;
@@ -155,6 +162,7 @@ public class StoreController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission("settings.manage")]
+    [ModuleAccess("SETTINGS")]
     public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken ct)
     {
         var input = new InputStoreStatusUpdate

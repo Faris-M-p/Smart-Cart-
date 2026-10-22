@@ -9,7 +9,6 @@ namespace SmartCartPro.Controllers;
 
 /// <summary>Customer master used by POS, invoices, and online orders.</summary>
 [Authorize]
-[ModuleAccess("CUSTOMERS", "POS")]
 public class CustomersController : Controller
 {
     private readonly ICustomerService _svc;
@@ -21,6 +20,7 @@ public class CustomersController : Controller
     /// Staff with customers.view open this from Customers; cashiers with POS access use the same list.
     /// </summary>
     [HttpGet]
+    [ModuleAccess("CUSTOMERS")]
     [RequirePermission("customers.view")]
     public async Task<IActionResult> Index([FromQuery] InputCustomerList input, CancellationToken ct)
         => View(await _svc.ListCustomersAsync(input, ct));
@@ -30,6 +30,7 @@ public class CustomersController : Controller
     /// Staff with customers.manage use it when adding a walk-in or online customer.
     /// </summary>
     [HttpGet]
+    [ModuleAccess("CUSTOMERS")]
     [RequirePermission("customers.manage")]
     public IActionResult Create(string? returnUrl = null)
     {
@@ -42,6 +43,7 @@ public class CustomersController : Controller
     /// Staff with customers.manage submit the create customer form during or after a sale.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
+    [ModuleAccess("CUSTOMERS")]
     [RequirePermission("customers.manage")]
     public async Task<IActionResult> Create(InCustomerCreateView model, string? returnUrl, CancellationToken ct)
     {
@@ -68,6 +70,7 @@ public class CustomersController : Controller
     /// Supervisors with customers.manage open this from the customer list to fix profile data.
     /// </summary>
     [HttpGet]
+    [ModuleAccess("CUSTOMERS")]
     [RequirePermission("customers.manage")]
     public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
     {
@@ -82,6 +85,7 @@ public class CustomersController : Controller
     /// Staff with customers.manage submit the edit customer form after correcting details.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
+    [ModuleAccess("CUSTOMERS")]
     [RequirePermission("customers.manage")]
     public async Task<IActionResult> Edit(int id, InCustomerUpdateView model, string? returnUrl, CancellationToken ct)
     {
@@ -110,6 +114,7 @@ public class CustomersController : Controller
     /// Inactive customers stay on existing invoices but are hidden from POS search.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
+    [ModuleAccess("CUSTOMERS")]
     [RequirePermission("customers.manage")]
     public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken ct)
     {
@@ -126,6 +131,7 @@ public class CustomersController : Controller
     /// Cashiers with pos.sell and staff with customers.view share this JSON search.
     /// </summary>
     [HttpGet]
+    [ModuleAccess("CUSTOMERS", "POS")]
     [RequirePermission("customers.view", "pos.sell")]
     public async Task<IActionResult> Search(string? term, int take = 10, CancellationToken ct = default)
     {
@@ -139,6 +145,7 @@ public class CustomersController : Controller
     /// Cashiers with pos.sell and staff with customers.manage submit name, phone, and email.
     /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
+    [ModuleAccess("CUSTOMERS", "POS")]
     [RequirePermission("customers.manage", "pos.sell")]
     public async Task<IActionResult> QuickCreate(InCustomerQuickCreateView model, CancellationToken ct)
     {

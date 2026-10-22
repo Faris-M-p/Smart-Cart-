@@ -8,6 +8,7 @@ using SmartCartPro.Services.Interfaces;
 namespace SmartCartPro.Controllers;
 
 [Authorize]
+[ModuleAccess("SETTINGS")]
 public class CompanyController : Controller
 {
     private readonly ICompanyService _svc;
