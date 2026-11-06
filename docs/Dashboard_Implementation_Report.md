@@ -116,3 +116,4 @@ COMMIT;
    - Recent Invoices → `/Sales/Invoices`
    - Category Sales → `/Reports/CategorySales`
 5. **Responsive Layout:** Dynamic CSS grid collapsing cleanly across 1280px, 1100px, 900px, and 720px screens.
+

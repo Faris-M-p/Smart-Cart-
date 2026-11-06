@@ -28,3 +28,4 @@ VALUES ('V002', 'Dashboard analytics performance indexes', CURRENT_USER, TRUE)
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT;
+
