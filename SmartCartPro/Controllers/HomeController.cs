@@ -45,6 +45,7 @@ public class HomeController : Controller
             CanInventoryView = await _access.CanAsync("inventory.view", ct),
             CanCustomersView = await _access.CanAsync("customers.view", ct),
             CanReportsView = await _access.CanAsync("reports.view", ct),
+            CanReportsProfit = await _access.CanAsync("reports.profit", ct),
             CanSettingsManage = await _access.CanAsync("settings.manage", ct),
             CanUsersManage = await _access.CanAsync("users.manage", ct),
             ModulePos = await _access.FeatureEnabledAsync("POS.BILLING", ct),
