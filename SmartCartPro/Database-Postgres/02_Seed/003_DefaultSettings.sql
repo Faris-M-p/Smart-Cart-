@@ -1,5 +1,4 @@
 -- Default company-level settings (no fake transactional data)
-\set ON_ERROR_STOP on
 
 INSERT INTO settings (setting_scope, fk_store, settingkey, settingvalue, valuetype, description)
 SELECT 'company', NULL, v.settingkey, v.settingvalue, v.valuetype, v.description

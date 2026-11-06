@@ -1,5 +1,4 @@
 -- Default modules + permissions (repeatable)
-\set ON_ERROR_STOP on
 
 INSERT INTO modules (modulecode, modulename, displayorder, isactive)
 SELECT v.modulecode, v.modulename, v.displayorder, TRUE

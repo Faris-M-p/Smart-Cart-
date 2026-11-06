@@ -8,6 +8,7 @@
 | `001_DefaultRoles.sql` | Company roles used by the employee and permission flows |
 | `002_DefaultPermissions.sql` | Module catalog, permission catalog (including `pos.cancel` and `reports.profit`), Admin grants, and default grants for built-in employee roles |
 | `003_DefaultSettings.sql` | Company-level settings defaults used by POS, inventory, and locale behavior |
+| `004_PlatformSuperAdmin.sql` | Platform Super Admin credential (`Muhdfarismp@gmail.com`) for system administration and onboarding |
 | `005_ModulePresets.sql` | Basic/Premium presets and their module membership |
 | `007_ModuleFeatures.sql` | Module descriptions/core flags, menu feature catalog, enabled core modules/features, and preset feature membership |
 

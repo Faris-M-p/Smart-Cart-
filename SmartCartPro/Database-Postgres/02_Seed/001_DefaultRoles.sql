@@ -1,5 +1,4 @@
 -- Default roles (repeatable / idempotent)
-\set ON_ERROR_STOP on
 
 INSERT INTO roles (rolecode, rolename, description, issystem, isactive)
 SELECT v.rolecode, v.rolename, v.description, TRUE, TRUE

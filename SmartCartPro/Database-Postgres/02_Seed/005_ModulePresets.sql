@@ -1,5 +1,4 @@
 -- Required module presets and their module catalog membership.
-\set ON_ERROR_STOP on
 
 INSERT INTO module_presets (presetcode, presetname, description, displayorder)
 SELECT v.presetcode, v.presetname, v.description, v.displayorder

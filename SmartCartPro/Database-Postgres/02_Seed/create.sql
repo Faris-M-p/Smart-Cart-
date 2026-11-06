@@ -11,6 +11,9 @@
 \echo Seeding 003_DefaultSettings.sql
 \ir ./003_DefaultSettings.sql
 
+\echo Seeding 004_PlatformSuperAdmin.sql
+\ir ./004_PlatformSuperAdmin.sql
+
 \echo Seeding 005_ModulePresets.sql
 \ir ./005_ModulePresets.sql
 

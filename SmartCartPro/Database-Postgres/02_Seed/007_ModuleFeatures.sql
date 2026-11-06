@@ -1,5 +1,4 @@
 -- Required feature/menu catalog, installation defaults, and preset feature membership.
-\set ON_ERROR_STOP on
 
 -- Seed descriptive metadata for the final modules table.
 UPDATE modules AS m

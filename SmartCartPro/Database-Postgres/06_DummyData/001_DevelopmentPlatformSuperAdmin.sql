@@ -1,9 +1,8 @@
 -- Optional development-only Platform Super Admin account.
 -- Never run on a production database. This account has a hard-coded demo credential.
 -- Login email: Muhdfarismp@gmail.com
--- Dev password: Admin@123 (ASP.NET Identity PasswordHasher V3 hash below)
+-- Dev password: Faris@8816 (ASP.NET Identity PasswordHasher V3 hash below)
 -- Company Employees UI must never expose/edit is_platform_super_admin.
-\set ON_ERROR_STOP on
 
 INSERT INTO users (
     username,
@@ -18,7 +17,7 @@ INSERT INTO users (
 SELECT
     'Muhdfarismp@gmail.com',
     'Muhdfarismp@gmail.com',
-    'AQAAAAIAAYagAAAAEMwD8hjWbMf/QYpdRJNr7Lh4y+wGZTz0+4bgKBektuHXhV1ZqgL/KONn5CMWhSCZXQ==',
+    'AQAAAAIAAYagAAAAEGBtvSNJmffomee/xytczFFkIFuNPWWCoWTzC3wrHtAVr5iDiH++s++D8ytpJYYPWg==',
     'Platform Super Admin',
     TRUE,
     TRUE,
