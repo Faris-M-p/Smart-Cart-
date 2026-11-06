@@ -1,19 +1,20 @@
-# Patches
+# Baseline and future patches
 
-## Naming
+`V001__Baseline.sql` is the reviewed pre-release baseline. It includes the
+authoritative final definitions in `01_Tables/create.sql` and required system
+data in `02_Seed/create.sql`, then records the V001 success marker in the same
+transaction. It contains no dummy/demo records.
 
-`V###__ShortDescription.sql` — three-digit version, double underscore, then description.
+`BuildDatabase.bat` creates a new target database through a maintenance
+connection, then installs V001 exactly once. If the target already exists, the
+runner leaves it unchanged and directs you to `ApplyPatches.bat`. The patch
+runner requires the exact baseline marker and applies future
+`V002__Description.sql`, `V003__Description.sql`, and later patches. It skips
+V001 because the build runner already installed it. It never reads
+`06_DummyData/`.
 
-| Version | File | Purpose |
-|---------|------|---------|
-| V001 | `V001__InitialSchema.sql` | Full initial schema |
-| V002 | `V002__CompanyStoreRelationships.sql` | Reserved / no-op marker for future composite integrity |
-| V003 | `V003__PlatformSuperAdminOtp.sql` | `users.is_platform_super_admin` + `auth_otp_challenges` |
-
-## Rules
-
-- Apply only via `ApplyPatches.bat`.
-- Success is recorded in `patch_history` **after** the script exits 0.
-- Never mark a failed patch successful by hand.
-- Do not edit already-applied patches on shared databases; add a new version instead.
-- `BuildDatabase.bat` records `V001` so the initial schema is not re-applied by the patch runner.
+Do not create an empty V002 now. Do not edit V001 after release or on a shared
+database; add the next additive version instead. A pre-release development DB
+with the old V001–V013 sequence requires the explicit backup/schema review and
+history transition documented in `../README.md`; the runner rejects old V001
+history rather than reinterpreting it.

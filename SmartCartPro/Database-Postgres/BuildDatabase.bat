@@ -1,116 +1,15 @@
 @echo off
-setlocal EnableExtensions EnableDelayedExpansion
-cd /d "%~dp0"
+setlocal EnableExtensions DisableDelayedExpansion
 
-REM =============================================================================
-REM SmartCartPro | BuildDatabase.bat
-REM Applies 01_Tables (create.sql) then 02_Seed scripts to database.
-REM =============================================================================
+REM Double-click entry point. Paths are always resolved beside this file.
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0DatabaseRunner.ps1" -Action BuildDatabase
+set "RUNNER_EXIT_CODE=%ERRORLEVEL%"
 
-echo ============================================
-echo   SmartCartPro PostgreSQL Database Build
-echo ============================================
-
-if not defined SC_PGHOST set "SC_PGHOST=localhost"
-if not defined SC_PGPORT set "SC_PGPORT=5432"
-if not defined SC_PGUSER set "SC_PGUSER=postgres"
-if not defined SC_PGDATABASE set "SC_PGDATABASE=smartcart_pro"
-if not defined PGPASSWORD set "PGPASSWORD=8816"
-
-set "PSQL_CMD=psql"
-if defined SC_PSQL set "PSQL_CMD=%SC_PSQL%"
-
-where "%PSQL_CMD%" >nul 2>&1
-if errorlevel 1 (
-    if exist "C:\Program Files\PostgreSQL\18\bin\psql.exe" (
-        set "PSQL_CMD=C:\Program Files\PostgreSQL\18\bin\psql.exe"
-        goto :psql_ok
-    )
-    if exist "C:\Program Files\PostgreSQL\17\bin\psql.exe" (
-        set "PSQL_CMD=C:\Program Files\PostgreSQL\17\bin\psql.exe"
-        goto :psql_ok
-    )
-    if exist "C:\Program Files\PostgreSQL\16\bin\psql.exe" (
-        set "PSQL_CMD=C:\Program Files\PostgreSQL\16\bin\psql.exe"
-        goto :psql_ok
-    )
-    if exist "%PSQL_CMD%" goto :psql_ok
-    echo ERROR: psql not found. Install PostgreSQL client tools or set SC_PSQL to psql.exe.
-    pause
-    exit /b 1
-)
-:psql_ok
-
-echo Host     : %SC_PGHOST%
-echo Port     : %SC_PGPORT%
-echo User     : %SC_PGUSER%
-echo Database : %SC_PGDATABASE%
-echo PSQL     : %PSQL_CMD%
-echo.
-
-REM Automatically ensure target database exists
-echo Checking if database "%SC_PGDATABASE%" exists...
-"%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '%SC_PGDATABASE%';" > "%TEMP%\sc_db_check.txt" 2>nul
-set /p DB_EXISTS=<"%TEMP%\sc_db_check.txt"
-if not "!DB_EXISTS!"=="1" (
-    echo Creating database "%SC_PGDATABASE%"...
-    "%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d postgres -c "CREATE DATABASE %SC_PGDATABASE%;"
-    if errorlevel 1 (
-        echo ERROR: Failed to create database "%SC_PGDATABASE%".
-        pause
-        exit /b 1
-    )
-)
-
-"%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d "%SC_PGDATABASE%" -v ON_ERROR_STOP=1 -c "SELECT 1;" >nul
-if errorlevel 1 (
-    echo ERROR: Cannot connect to database "%SC_PGDATABASE%".
-    pause
-    exit /b 1
-)
-
-echo --- Creating / ensuring tables ---
-"%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d "%SC_PGDATABASE%" -v ON_ERROR_STOP=1 -f "01_Tables\create.sql"
-if errorlevel 1 (
-    echo ERROR: Table creation failed.
-    pause
-    exit /b 1
-)
-
-echo --- Seeding reference data ---
-for %%F in (
-    "02_Seed\001_DefaultRoles.sql"
-    "02_Seed\002_DefaultPermissions.sql"
-    "02_Seed\003_DefaultSettings.sql"
-    "02_Seed\004_PlatformSuperAdmin.sql"
-    "02_Seed\007_ModuleFeatures.sql"
-) do (
-    echo Applying %%~F
-    "%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d "%SC_PGDATABASE%" -v ON_ERROR_STOP=1 -f "%%~F"
-    if errorlevel 1 (
-        echo ERROR: Seed script failed: %%~F
-        pause
-        exit /b 1
-    )
-)
-
-echo --- Recording schema version ---
-"%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d "%SC_PGDATABASE%" -v ON_ERROR_STOP=1 -f "DatabaseVersion.sql"
-if errorlevel 1 (
-    echo ERROR: DatabaseVersion.sql failed.
-    pause
-    exit /b 1
-)
-
-REM Mark V001 applied if patch_history exists and row missing (build path, not re-apply DDL)
-"%PSQL_CMD%" -h "%SC_PGHOST%" -p "%SC_PGPORT%" -U "%SC_PGUSER%" -d "%SC_PGDATABASE%" -v ON_ERROR_STOP=1 -c "INSERT INTO patch_history (version, description, appliedby) SELECT 'V001', 'Initial schema via BuildDatabase.bat', current_user WHERE NOT EXISTS (SELECT 1 FROM patch_history WHERE version = 'V001');"
-if errorlevel 1 (
-    echo ERROR: Failed to record V001 in patch_history.
-    pause
-    exit /b 1
+if not "%RUNNER_EXIT_CODE%"=="0" (
+    echo.
+    echo ERROR: Database setup stopped with exit code %RUNNER_EXIT_CODE%.
 )
 
 echo.
-echo SUCCESS: Database build completed for %SC_PGDATABASE%.
-pause
-exit /b 0
+if /I not "%SC_NO_PAUSE%"=="1" pause
+exit /b %RUNNER_EXIT_CODE%

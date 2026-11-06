@@ -1,7 +1,6 @@
 -- =============================================================================
--- SmartCartPro | Seed V006 — Development / Trial License
--- Applied by: BuildDatabase.bat (02_Seed phase) or manually.
--- Idempotent — safe to rerun (inserts only if no license exists).
+-- Optional development trial license. Manual-only through RunDummyData.bat.
+-- Idempotent: inserts only if no license exists.
 -- =============================================================================
 \set ON_ERROR_STOP on
 
@@ -14,7 +13,7 @@ SELECT
     CURRENT_DATE,
     CURRENT_DATE + INTERVAL '1 year',
     5,
-    'Auto-seeded development trial license. Replace with a production key before go-live.',
+    'Optional development-only trial license. Never use this key in production.',
     NOW()
 WHERE NOT EXISTS (
     SELECT 1 FROM license WHERE cancelled = FALSE

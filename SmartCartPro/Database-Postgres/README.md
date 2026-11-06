@@ -1,145 +1,188 @@
-# SmartCartPro — PostgreSQL database scripts
+# SmartCartPro PostgreSQL database
 
-SQL scripts are the **source of truth** for schema. EF Core maps to these tables; do **not** use EF migrations, `EnsureCreated`, `EnsureDeleted`, or `Database.Migrate` for this project.
+PostgreSQL scripts are the schema source of truth. EF Core maps the SQL schema;
+do not use EF migrations, `EnsureCreated`, `EnsureDeleted`, or `Database.Migrate`.
+No SQL script is executed automatically by application startup.
 
-Reference conventions were audited from `Ecommerce/Database-Postgres/` (identity PKs `id_*`, FKs `fk_*`, soft-cancel columns, `TIMESTAMP DEFAULT NOW()`, `NUMERIC` money, `CREATE TABLE IF NOT EXISTS`). Company/Store and `fk_store` are new for SmartCartPro.
-
-## Directory structure
+## Layout
 
 ```text
 Database-Postgres/
-├── 01_Tables/          Numbered table DDL (source fragments + create.sql)
-├── 02_Seed/            Idempotent reference data only
-├── 03_Patches/         Versioned patches V###__Name.sql
-├── 04_Procedures/      Reserved — no executable routines yet
-├── 05_Functions/       Reserved — no executable routines yet
-├── BuildDatabase.bat   Initial tables + seed (existing DB)
-├── ApplyPatches.bat    Pending patches + patch_history
-├── DatabaseVersion.sql patch_history helper / version comment
-└── README.md
+  01_Tables/       Final authoritative table definitions and ordered create.sql
+  02_Seed/         Required system/reference data and explicit create.sql
+  03_Patches/      V001__Baseline.sql, then future V002__Description.sql onward
+  04_Procedures/   Reserved; no executable procedures
+  05_Functions/    Reserved; no executable functions
+  06_DummyData/    Optional fictional data; manual execution only
+  DatabaseRunner.ps1 Shared configuration, psql, authentication, and errors
+  BuildDatabase.bat
+  ApplyPatches.bat
+  RunDummyData.bat
+  DatabaseVersion.sql
 ```
 
-File naming: `NNN_EntityName.sql` under `01_Tables/`; patches `V001__InitialSchema.sql` (double underscore).
+`BuildDatabase.bat` invokes only `03_Patches/V001__Baseline.sql`. The baseline
+includes `01_Tables/create.sql`, `02_Seed/create.sql`, and version metadata by
+explicit `\ir` paths. It writes the successful V001 marker in the same
+transaction, after schema and required seeds complete. `ApplyPatches.bat`
+accepts only a database with that exact marker and applies pending V002+ files.
+Neither normal runner reads or calls `06_DummyData`.
 
-## Table scopes
+## Required system data and optional dummy data
 
-| Scope | Meaning | `fk_store` |
-|-------|---------|------------|
-| **Platform-wide** | Shared reference / meta inside the client DB | No (or N/A) |
-| **Company-wide** | Shared across all stores of the company | No |
-| **Store-scoped** | Belongs to one store | **Required** `fk_store` → `store(id_store)` |
+`02_Seed/` holds the module and permission catalog, role definitions and their
+default grants, company settings, module presets, and menu feature catalog/core
+module selections. These records are used by application authorization,
+settings, navigation, and installation-module flows. See
+[`02_Seed/README.md`](02_Seed/README.md).
 
-### Platform-wide
+`06_DummyData/` holds the optional development Platform Super Admin account,
+development trial license, and GreenBasket sample company/store, users,
+catalog, suppliers, stock, purchases, sales, and other fictional transactions.
+They contain no production credentials and are never included in V001 or future
+patches. Run them only by explicitly invoking `RunDummyData.bat` against a
+disposable development/test database. The scripts do not truncate or delete
+rows to make room for samples and insert by stable natural keys. See
+[`06_DummyData/README.md`](06_DummyData/README.md).
 
-`modules`, `permissions`, `patch_history`
+A production installation gets its license and first administrator through a
+secure provisioning process; no hard-coded production account or license key
+is seeded.
 
-### Company-wide
+## Connection configuration
 
-`company`, `store` (store master), `users`, `roles`, `role_permissions`, `user_roles`, `units`, `taxes`, `categories`, `subcategories`, `brands`, `products`, `product_variants`, `product_images`, `suppliers`, `customers`, `customer_addresses`, `audit_logs` (optional `fk_store`), `product_reviews` (optional `fk_store`)
-
-### Store-scoped
-
-`user_store_access`, `inventory`, `stock_movements`, `purchases`, `purchase_details`, `cash_sessions`, `sales`, `sale_details`, `payments`, `sales_returns`, `sales_return_details`, `expenses`, `online_orders`, `online_order_items`, `carts`, `cart_items`, `wishlists`, `wishlist_items`, `invoice_sequences`
-
-### Mixed
-
-`settings` — `setting_scope` in (`platform`,`company`,`store`); when `store`, `fk_store` is NOT NULL (CHECK enforced).
-
-## `fk_company` and `fk_store` conventions
-
-- PostgreSQL columns are unquoted lowercase: `fk_company`, `fk_store` (same family as legacy `fk_product`).
-- C# / EF map these as `FkCompany` / `FkStore` (or `FK_Store` documentation alias); **never** use `StoreId` in SQL.
-- `store.fk_company` → `company(id_company)`; store codes unique per company: `UNIQUE (fk_company, storecode)`.
-- At most one default store: partial unique index `uq_store_one_default` on `(fk_company) WHERE isdefault AND NOT cancelled`.
-- Check: default store must be active and not cancelled.
-- **Application transaction required:** create company + first default store together; promote another default before deactivating/cancelling the current default (SQL cannot express “exactly one after setup” alone without blocking the first insert).
-
-## Cross-company integrity
-
-Architecture assumes **one company per client database**. Cross-tenant isolation is primarily by separate databases. Within a client DB:
-
-- All stores share one `company` row (or a small set under the same DB).
-- Store-scoped rows always carry `fk_store`; company-wide masters are not duplicated per store.
-- Line tables also carry `fk_store` denormalized for indexing and same-store validation; application should ensure parent sale/purchase store matches line `fk_store`. Composite FKs may be added in a later patch (`V002` reserved) if needed.
-
-Do **not** silently `ON DELETE CASCADE` historical `sales`, `payments`, or `stock_movements`. Soft-cancel (`cancelled` / `cancelledon`) is preferred for business documents.
-
-## Build and patch execution
-
-### Prerequisites
-
-- PostgreSQL client `psql` on PATH, or set `SC_PSQL` to full path of `psql.exe`.
-- Target database **already created** (this toolset does not `DROP`/`CREATE DATABASE` by default). Creating a DB needs `CREATEDB` / superuser — do that manually.
-
-### Environment variables
+The local connection defaults are hard-coded near the top of
+`DatabaseRunner.ps1`. Edit them when switching servers. Existing libpq
+environment variables still override those values:
 
 | Variable | Purpose |
-|----------|---------|
-| `SC_PGHOST` | Host (default `localhost`) |
-| `SC_PGPORT` | Port (default `5432`) |
-| `SC_PGUSER` | User (default `postgres`) |
-| `SC_PGDATABASE` | **Required** target database name |
-| `PGPASSWORD` | **Required** password (never commit; not echoed by design beyond env) |
-| `SC_PSQL` | Optional full path to `psql.exe` |
+|---|---|
+| `SC_PGHOST` | Host; defaults to `localhost` |
+| `SC_PGPORT` | Port; defaults to `5432` |
+| `SC_PGUSER` | User; defaults to `postgres` |
+| `SC_PGDATABASE` | Optional target database override; defaults to `smartcart_pro` |
+| `SC_PGMAINTENANCEDATABASE` | Maintenance database for creation; defaults to `postgres` |
+| `PGPASSWORD` | Optional inherited password; otherwise one hidden password prompt is shown |
+| `SC_NO_PAUSE` | Set to `1` only for command-line use when the final pause is not wanted |
+| `SC_PSQL` | Optional path or command for `psql.exe`; otherwise use the hard-coded PostgreSQL 18 path, PATH, or another standard PostgreSQL install folder |
 
-Example (PowerShell):
+The built-in values are `localhost`, `5432`, `postgres`, `smartcart_pro`, and
+the `postgres` maintenance database. The target name is validated before use.
+`BuildDatabase.bat` needs a PostgreSQL account with `CREATEDB` permission when
+creating a new database. Passwords are never stored in these files; typed
+passwords are entered invisibly and passed to `psql.exe` through its process
+environment. Alternatively, use a PostgreSQL `pgpass` file or another
+configured libpq authentication method. If `psql.exe` cannot be found, set
+`SC_PSQL` or edit `DefaultSettings.PsqlPath` in `DatabaseRunner.ps1`.
+
+## Fresh database workflow
+
+1. In File Explorer, open `Database-Postgres` and double-click
+   `BuildDatabase.bat`.
+2. The local connection settings are used without a settings form. Enter the
+   PostgreSQL password at the single hidden prompt unless it is already
+   supplied through `PGPASSWORD` or another libpq authentication method.
+3. For a new `smartcart_pro` target, the runner connects to the maintenance
+   database, creates the target, and executes `03_Patches/V001__Baseline.sql`
+   once. If it already exists, no changes are made and the runner directs you
+   to `ApplyPatches.bat`.
+
+The baseline creates the final tables, required system/reference rows, patch
+history, and successful V001 marker in one transaction. It does not create a
+company, store, employee, license, or dummy business records. Provision
+installation data through the approved setup workflow. The baseline already
+includes all schema changes; do not run it separately or apply V001 again.
+
+To update an existing SmartCartPro database, double-click `ApplyPatches.bat`.
+It verifies the V001 marker and applies only successful-history-missing V002+
+patches. There are currently no V002+ patch files.
+
+## Future schema changes
+
+The next patch is `03_Patches/V002__Description.sql`. For each future change:
+
+1. Update the final table definition in `01_Tables/` and its include in
+   `01_Tables/create.sql` when the schema changes.
+2. Add an additive, reviewed V002+ patch for databases already at the baseline.
+   If required system seed rows change, keep them idempotent in `02_Seed/` and
+   include that seed file explicitly from the patch when existing installations
+   need the rows.
+3. Run `ApplyPatches.bat` against each already-baselined database. It applies
+   only pending V002+ files and records success only after SQL succeeds.
+4. Update documentation and EF entities/mappings to match the final schema.
+
+With the same connection variables set, the future update command is:
 
 ```powershell
-$env:SC_PGDATABASE = "smartcartpro"
-$env:PGPASSWORD = "<secret>"
-# optional: $env:SC_PSQL = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
-.\BuildDatabase.bat
 .\ApplyPatches.bat
 ```
 
-### `BuildDatabase.bat`
+Never edit a patch that may already have run on a shared database. Never put
+dummy/demo statements in a patch. A failed patch is not marked successful;
+review its partial effects and repair them before retrying.
 
-1. Verifies `psql` and connection.
-2. Runs `01_Tables/create.sql` (dependency order, `\ir`).
-3. Runs seed scripts.
-4. Runs `DatabaseVersion.sql`.
-5. Inserts `patch_history` row for `V001` if missing (so later `ApplyPatches` skips re-applying initial schema).
-6. Exits non-zero on any failure; does not report success otherwise.
+## Manual dummy data workflow
 
-### `ApplyPatches.bat`
+After the fresh baseline succeeds on a database intentionally chosen for local
+development/testing, manually double-click `RunDummyData.bat`.
 
-1. Ensures `patch_history`.
-2. Takes `pg_advisory_lock(87245001)`.
-3. For each `03_Patches/V*.sql` in name order: skip if version already successful; else apply with `ON_ERROR_STOP`; **only then** insert success row.
-4. Unlocks; exits non-zero on failure.
+The runner uses the same hard-coded defaults, optional `SC_PG*` overrides,
+`PGPASSWORD`, and `SC_PSQL` settings and checks for the reviewed V001 marker. It
+explicitly lists its scripts; it does not recursively discover SQL. Dummy data is only run when
+you manually launch this separate file; `BuildDatabase.bat`,
+`ApplyPatches.bat`, the baseline, and application startup never invoke it. Demo
+prerequisites are documented in `06_DummyData/README.md`.
 
-**Failed patch recovery:** fix the SQL; re-run `ApplyPatches.bat`. Do **not** manually insert a success row for a failed patch. If DDL partially applied outside a transaction, repair objects manually to a consistent state before re-running.
+## Existing development databases with old V001–V013 history
 
-Do not re-apply `V001` on an initialized DB — history skip prevents it after Build or a successful Apply.
+The old V001 meant `InitialSchema`; it is not the new `Baseline`. The patch
+runner checks the V001 description and rejects old history rather than silently
+skipping the new baseline. Do not run `BuildDatabase.bat` on an existing DB.
 
-## Seed data
+An explicit transition is available only for a development database whose old
+patch history and schema have been reviewed:
 
-See `02_Seed/README.md`. Roles, permissions, settings only. No fake sales/customers. First company, default store, and admin user are provisioned by a secure application/ops bootstrap (hashed password), not by seed scripts.
+1. Take and verify a database backup. Inspect `patch_history`; do not transition
+   a database with failed, unknown, or partially applied old patches.
+2. Confirm the schema already includes the cumulative old V002–V013 structure
+   needed by the current `01_Tables/` final definitions, including
+   `users.session_version`, licensing/installation/feature tables,
+   `product_reviews.fk_onlineorderitem`, purchase status constraint, and report
+   indexes. Resolve missing or custom schema changes manually before proceeding.
+3. Preserve the old history rows under legacy labels, then insert the new
+   baseline marker. This does not delete/reset rows or apply DDL. Run only after
+   the schema review and backup:
 
-## Adding a new table or patch
+   ```sql
+   BEGIN;
+   DO $$
+   BEGIN
+       IF EXISTS (SELECT 1 FROM patch_history WHERE version LIKE 'LEGACY-%') THEN
+           RAISE EXCEPTION 'Legacy history labels already exist; inspect before transition';
+       END IF;
+       IF EXISTS (SELECT 1 FROM patch_history WHERE version !~ '^V[0-9]{3}$') THEN
+           RAISE EXCEPTION 'Unexpected patch-history versions; inspect before transition';
+       END IF;
+   END $$;
+   UPDATE patch_history
+      SET version = 'LEGACY-' || version,
+          description = 'Preserved pre-baseline history: ' || COALESCE(description, '')
+    WHERE version ~ '^V[0-9]{3}$';
+   INSERT INTO patch_history (version, description, appliedby, success)
+   VALUES ('V001', 'SmartCartPro baseline V001', current_user, TRUE);
+   COMMENT ON TABLE patch_history IS
+       'SmartCartPro baseline V001; successful follow-up patches are recorded in patch_history.';
+   COMMIT;
+   ```
 
-1. Add `01_Tables/0NN_Name.sql` and include it in `create.sql` in dependency order.
-2. Add the same DDL to a new patch `03_Patches/V00N__ShortName.sql` (do not edit applied V001 on shared environments).
-3. Update this README scope classification.
-4. Add/update EF entity + `SmartCartDbContext` fluent mapping to match column names (`fk_store`, etc.).
-5. Apply with `ApplyPatches.bat` on each environment.
+4. Run `ApplyPatches.bat` only after that manual transition. Existing data is
+   retained. Old V010 may already have inserted GreenBasket demo rows; this
+   transition does not identify or delete them. Review fictional records
+   separately and never delete rows without confirming they are safe to remove.
 
-## EF Core synchronization
-
-- Map tables/columns explicitly (`ToTable`, `HasColumnName`).
-- Prefer SQL nullability and types; money → `numeric(12,2)` / `HasPrecision(12,2)`.
-- Keep schema changes in SQL first, then align C# entities.
-- No migrations in this workflow.
-
-## Deferred features (not in initial schema)
-
-- Multi-warehouse transfers beyond movement types
-- Full accounting GL / chart of accounts
-- Loyalty / gift cards
-- Advanced pricing engines
-- Platform (multi-tenant registry) database objects — separate from client DB scripts here
-- Stored procedures and PostgreSQL functions (`04_Procedures/`, `05_Functions/` reserved empty)
-
-## Restrictions
-
-Scripts are for controlled developer/ops use. They do not run when the .NET app starts. Do not auto-modify production databases.
+This transition only re-labels known version-history rows and marks the
+already-present cumulative schema as the new baseline; it does not make an old
+database match the new schema. If the old patch history is incomplete, the
+schema differs from the final definitions, or real and demo data cannot be
+distinguished, keep the database untouched and plan a reviewed manual migration
+or a clean development database.

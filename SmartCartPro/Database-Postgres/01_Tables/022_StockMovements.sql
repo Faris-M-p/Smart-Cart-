@@ -30,3 +30,5 @@ CREATE TABLE IF NOT EXISTS stock_movements (
 CREATE INDEX IF NOT EXISTS ix_stock_movements_fk_store ON stock_movements (fk_store);
 CREATE INDEX IF NOT EXISTS ix_stock_movements_fk_product ON stock_movements (fk_product);
 CREATE INDEX IF NOT EXISTS ix_stock_movements_createdat ON stock_movements (createdat);
+CREATE INDEX IF NOT EXISTS ix_stock_movements_store_product_created ON stock_movements (fk_store, fk_product, createdat);
+CREATE INDEX IF NOT EXISTS ix_stock_movements_type ON stock_movements (movementtype);

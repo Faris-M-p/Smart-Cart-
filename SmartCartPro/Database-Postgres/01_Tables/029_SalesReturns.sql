@@ -29,3 +29,4 @@ CREATE TABLE IF NOT EXISTS sales_returns (
 
 CREATE INDEX IF NOT EXISTS ix_sales_returns_fk_store ON sales_returns (fk_store);
 CREATE INDEX IF NOT EXISTS ix_sales_returns_fk_sale ON sales_returns (fk_sale);
+CREATE INDEX IF NOT EXISTS ix_sales_returns_store_date ON sales_returns (fk_store, returndate);

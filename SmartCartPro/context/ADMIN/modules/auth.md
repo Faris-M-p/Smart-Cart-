@@ -14,7 +14,7 @@ Shared employee + platform Super Admin sign-in on `/Auth/Login`. Store admins ge
 - **Resend OTP:** invalidates prior open challenges, sends a new code, returns the new challenge token (JSON).
 - **Change password / Logout** (`LogoutGet` link in the header, `Logout` POST).
 - **Forgot / Reset password:** `ForgotPassword` POST emails a link `…/Auth/ResetPassword?token=…`; the response is identical whether or not the account exists. Token = ASP.NET Data Protection time-limited payload (`OtpSettings:PasswordResetExpiryMinutes`, default 30) bound to a fingerprint of the current password hash, so it is **single use** (changing the password invalidates it) and needs **no table**. Link host comes from `EnvironmentSettings:PublicBaseUrl` (required outside Development; Development falls back to the request origin) to prevent Host-header poisoning. In production persist the Data Protection key ring so links survive restarts.
-- **Seed:** `02_Seed/004_PlatformSuperAdmin.sql` — `Muhdfarismp@gmail.com` / `Admin@123` (dev; force a change on first use).
+- **Optional dev data:** `Database-Postgres/06_DummyData/001_DevelopmentPlatformSuperAdmin.sql` creates a local-only account with a known development credential. It is never run by the baseline or patch runner; production accounts must be provisioned securely.
 
 ## UI (AJAX, common JSON)
 - Views in `Views/Auth/` (`Login`, `VerifyOtp`, `ChangePassword`, `ForgotPassword`, `ResetPassword`) on `_AuthLayout`; one script `wwwroot/js/auth/auth.js` using `SmartCartAjax.submitForm`.

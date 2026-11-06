@@ -20,3 +20,4 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX IF NOT EXISTS ix_audit_logs_createdat ON audit_logs (createdat);
 CREATE INDEX IF NOT EXISTS ix_audit_logs_entity ON audit_logs (entityname, entityid);
+CREATE INDEX IF NOT EXISTS ix_audit_logs_fk_user ON audit_logs (fk_user);

@@ -10,7 +10,7 @@ Choose which catalog modules are enabled for this installation (`installation_mo
 
 ## Implemented Features
 - `Module/Index`: checkbox list with descriptions, Core badge, Basic / Premium preset buttons (from `005_ModulePresets.sql`) and a Custom indicator when the saved set matches neither preset.
-- `Module/Save`: posts `EnabledModuleIds`. Core modules (the Basic preset: DASHBOARD, PRODUCTS, POS, INVENTORY) are always included even if the form omitted them.
+- `Module/Save`: posts `EnabledModuleIds`. Core modules (DASHBOARD, PRODUCTS, SETTINGS, USERS) are always included even if the form omitted them.
 - `Module/ApplyPreset`: applies Basic or Premium immediately and saves.
 
 ## Routes & Permissions
@@ -28,10 +28,10 @@ Class-level `[Authorize(Policy = "PlatformSuperAdmin")]`.
 ## Data
 - Entities (repository only): `Module`, `ModulePreset`, `ModulePresetItem`, `InstallationModule`.
 - Models: `Models/ModuleModels.cs` — `OutputModuleSelect` (`Description`, `IsCore`, `IsEnabled`), `OutputModuleList`, `OutputModulePresetSelect`, `InModuleAssignView`, `InputModuleAssign` / `OutputModuleAssign`.
-- Descriptions are filled in `ModuleService` (the `modules` table has no description column).
+- Module descriptions and core flags are stored in `modules` and loaded from the required system seed.
 
 ## Database Dependencies
-- `005_Modules.sql` catalog. `V004` installation tables. Seed `005_ModulePresets.sql`: BASIC (DASHBOARD, PRODUCTS, POS, INVENTORY) and PREMIUM (all nine). There is no CUSTOM row — Custom is “whatever is saved that is not a preset”.
+- `01_Tables/005_Modules.sql`, `044_LicenseInstallationInvitations.sql`, and `045_ModuleFeatures.sql` define the module installation schema. Required seed `005_ModulePresets.sql` defines BASIC (DASHBOARD, PRODUCTS, INVENTORY, POS, SETTINGS, USERS) and PREMIUM (all nine). There is no CUSTOM row — Custom is whatever is saved that is not a preset.
 
 ## API & Data Access
 - `ModuleController` → `IModuleService` / `ModuleService` → `IModuleRepository` / `ModuleRepository`.

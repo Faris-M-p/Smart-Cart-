@@ -12,7 +12,7 @@ Document planned work here so AI does not invent it as “done”.
 - Stored procedures / PostgreSQL functions
 - EF migrations (explicitly out of policy unless product decision changes)
 - Advanced pricing, loyalty, gift cards, full GL accounting
-- Composite cross-entity store FKs beyond current denormalized `fk_store` (see patch V002 notes)
+- Composite cross-entity store FKs beyond current denormalized `fk_store` (consider in a future additive patch)
 - License / package / OTP / storefront-theme tables (not in schema yet — see super-admin.md)
 
 ## Schema already present but UI/app incomplete

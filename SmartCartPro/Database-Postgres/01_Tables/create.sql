@@ -131,16 +131,8 @@
 \echo Creating 043_AuthOtpChallenges.sql
 \ir ./043_AuthOtpChallenges.sql
 
--- Wire sales.fk_cashsession after cash_sessions exists
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'fk_sales_cashsession'
-    ) THEN
-        ALTER TABLE sales
-            ADD CONSTRAINT fk_sales_cashsession
-            FOREIGN KEY (fk_cashsession) REFERENCES cash_sessions (id_cashsession);
-    END IF;
-END $$;
+\echo Creating 044_LicenseInstallationInvitations.sql
+\ir ./044_LicenseInstallationInvitations.sql
 
-CREATE INDEX IF NOT EXISTS ix_sales_fk_cashsession ON sales (fk_cashsession);
+\echo Creating 045_ModuleFeatures.sql
+\ir ./045_ModuleFeatures.sql

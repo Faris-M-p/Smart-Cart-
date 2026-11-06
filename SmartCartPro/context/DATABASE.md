@@ -1,65 +1,25 @@
-# SmartCartPro — Database
+# Database
 
-PostgreSQL. Scripts: `SmartCartPro/Database-Postgres/`.
+PostgreSQL scripts: `Database-Postgres/`. SQL is authoritative; do not use EF migrations.
 
-## Source of truth
+## Layout
 
 | Path | Role |
-|------|------|
-| `01_Tables/` | Numbered table DDL + `create.sql` |
-| `02_Seed/` | Roles, permissions, settings (idempotent; no fake sales) |
-| `03_Patches/` | `V001__InitialSchema.sql`, `V002__…` |
-| `BuildDatabase.bat` / `ApplyPatches.bat` | Windows ops (env-based) |
-| `DatabaseVersion.sql` / `patch_history` | Patch tracking |
+|---|---|
+| `01_Tables/` | Final table definitions and dependency-ordered `create.sql` |
+| `02_Seed/` | Required roles, permissions, settings, presets, and module features |
+| `03_Patches/` | `V001__Baseline.sql`; future patches begin with V002 |
+| `06_DummyData/` | Optional fictional records; manual-only via `RunDummyData.bat` |
+| `BuildDatabase.bat` / `ApplyPatches.bat` | Fresh baseline / future patch runners |
+| `DatabaseVersion.sql` / `patch_history` | Baseline and patch tracking |
 
-**Do not** use EF migrations. Align entities after SQL changes.
+The baseline includes final table DDL and required system seeds. It creates no
+company, store, employee account, production credential, or license. Dummy data
+is never run by baseline, patch, or app startup paths.
 
-## Naming
+License, installation, module preset/feature, invitation, and OTP challenge
+tables are included in the baseline. `01_Tables/` is authoritative for their
+final definitions.
 
-- PK: `id_<entity>` `INT GENERATED ALWAYS AS IDENTITY`
-- FK: `fk_<ref>` (e.g. `fk_store`, `fk_category`)
-- Soft cancel columns on business tables
-- Money: `NUMERIC(12,2)`
-
-## Scopes
-
-| Scope | Examples | `fk_store` |
-|-------|----------|------------|
-| Platform-wide | `modules`, `permissions`, `patch_history` | No |
-| Company-wide | `company`, `store`, users/roles, categories, products, customers, suppliers | No (store master has `fk_company`) |
-| Store-scoped | inventory, stock_movements, purchases, sales, payments, cash_sessions, online_orders, carts | **Required** |
-
-## Company / store invariants
-
-- Store codes unique per company.
-- At most one default store per company (partial unique index).
-- Create company + first default store in **one application transaction**.
-- Promote another default before deactivating/cancelling the current default.
-
-## Filter-related tables
-
-- `products` → mode 1 fills (`id_product`, `productname`)
-- `categories` → mode 2 (`id_category`, `categoryname`)
-- `subcategories` → mode 3 (`id_subcategory`, `subcategoryname`, `fk_category`)
-
-## Seed
-
-Roles (`ADMIN`, `STORE_MANAGER`, `CASHIER`, …), permissions, company settings.  
-No production admin password in seed — bootstrap hashed admin separately.
-
-**Naming:** `ADMIN` = company administrator. The software-team Super Admin is `users.is_platform_super_admin`, not a role — see `ADMIN/modules/super-admin.md`.
-
-## Not in schema yet (Super Admin hold)
-
-License, package/menu-group, company feature entitlement, OTP challenge, and storefront-theme tables are **not** created. Add only via SQL scripts when Super Admin implementation is authorized. Prefer resolving platform-registry DB vs multi-company single DB first (`FUTURE.md`).
-
-## Change workflow
-
-```text
-Change SQL in Database-Postgres/
-  → Update DATABASE.md (this file)
-  → Align Entities + SmartCartDbContext
-  → Update affected ADMIN/modules/*.md
-```
-
-Full operational detail: `Database-Postgres/README.md`.
+Full workflows and the explicit legacy development history transition are in
+`Database-Postgres/README.md`.

@@ -28,3 +28,4 @@ CREATE TABLE IF NOT EXISTS purchase_details (
 
 CREATE INDEX IF NOT EXISTS ix_purchase_details_fk_purchase ON purchase_details (fk_purchase);
 CREATE INDEX IF NOT EXISTS ix_purchase_details_fk_store ON purchase_details (fk_store);
+CREATE INDEX IF NOT EXISTS ix_purchase_details_product ON purchase_details (fk_product, fk_productvariant);

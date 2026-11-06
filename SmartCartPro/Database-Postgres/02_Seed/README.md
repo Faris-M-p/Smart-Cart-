@@ -1,27 +1,27 @@
-# Seed data
+# Required system seed data
 
-## Scripts
+`create.sql` is the explicit dependency-ordered entry point. It runs only from
+`V001__Baseline.sql`; it does not discover files recursively.
 
-| File | Purpose |
-|------|---------|
-| `001_DefaultRoles.sql` | System roles (ADMIN, STORE_MANAGER, …) |
-| `002_DefaultPermissions.sql` | Modules, permissions, ADMIN grants |
-| `003_DefaultSettings.sql` | Company-level default settings |
-| `004_PlatformSuperAdmin.sql` | Platform Super Admin (`Muhdfarismp@gmail.com`) — OTP login; change password in non-dev |
+| File | Required data |
+|---|---|
+| `001_DefaultRoles.sql` | Company roles used by the employee and permission flows |
+| `002_DefaultPermissions.sql` | Module catalog, permission catalog (including `pos.cancel` and `reports.profit`), Admin grants, and default grants for built-in employee roles |
+| `003_DefaultSettings.sql` | Company-level settings defaults used by POS, inventory, and locale behavior |
+| `005_ModulePresets.sql` | Basic/Premium presets and their module membership |
+| `007_ModuleFeatures.sql` | Module descriptions/core flags, menu feature catalog, enabled core modules/features, and preset feature membership |
 
-Seeds are **idempotent** (`WHERE NOT EXISTS`) and contain **no** fake customers, sales, or payments.
+The seed scripts are idempotent for normal reruns and use stable role, module,
+permission, setting, preset, and feature codes. They do not create a company,
+store, employee account, license, customer, product, supplier, or transaction.
 
-## First company / store / administrator
+## First installation provisioning
 
-Company store admins are provisioned by **platform Super Admin** (not public register).  
-Do **not** treat the platform Super Admin seed password as a production secret forever — rotate after first deploy.
+After the baseline, provision a real license and the first platform/company
+administrator through the authorized secure operations workflow. Do not add a
+production username, password, or license key to these seed files. Create the
+company, default store, and company Admin user with a securely supplied hashed
+password, then assign `ADMIN` and default-store access in one transaction.
 
-Recommended bootstrap (application or one-time ops script, in a single transaction):
-
-1. `INSERT` into `company`.
-2. `INSERT` into `store` with `isdefault = TRUE` for that company.
-3. Create the first user with a **hashed** password supplied securely (prompt / secret store).
-4. Assign `ADMIN` via `user_roles`.
-5. Grant `user_store_access` for the default store.
-
-`BuildDatabase.bat` applies seed scripts after the schema; it does not create a company or admin user.
+Development accounts, trial licenses, and fictional business records are in
+`06_DummyData/` and run only through the explicit `RunDummyData.bat` command.

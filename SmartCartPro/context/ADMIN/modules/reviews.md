@@ -27,7 +27,7 @@ Moderate customer product reviews. New reviews start unapproved. Approve makes t
 - Entity `ProductReview` stays in the repository
 
 ## Database Dependencies
-- `product_reviews` (optional `fk_onlineorderitem` from V007)
+- `product_reviews`, including nullable `fk_onlineorderitem`, is fully defined in `01_Tables/040_ProductReviews.sql`.
 - Purchase-required and one-review-per-order-item rules stay in `CreateReviewAsync`
 
 ## API & Data Access

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS product_reviews (
     fk_customer     INT NOT NULL,
     fk_store        INT NULL,
     fk_onlineorder  INT NULL,
+    fk_onlineorderitem INT NULL,
     rating          INT NOT NULL,
     title           TEXT NULL,
     reviewtext      TEXT NULL,
@@ -26,7 +27,15 @@ CREATE TABLE IF NOT EXISTS product_reviews (
         FOREIGN KEY (fk_store) REFERENCES store (id_store),
     CONSTRAINT fk_product_reviews_onlineorder
         FOREIGN KEY (fk_onlineorder) REFERENCES online_orders (id_onlineorder),
+    CONSTRAINT fk_product_reviews_onlineorderitem
+        FOREIGN KEY (fk_onlineorderitem) REFERENCES online_order_items (id_onlineorderitem),
     CONSTRAINT ck_product_reviews_rating CHECK (rating BETWEEN 1 AND 5)
 );
 
 CREATE INDEX IF NOT EXISTS ix_product_reviews_fk_product ON product_reviews (fk_product);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_product_reviews_customer_orderitem
+    ON product_reviews (fk_customer, fk_onlineorderitem)
+    WHERE fk_onlineorderitem IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_product_reviews_fk_onlineorderitem
+    ON product_reviews (fk_onlineorderitem)
+    WHERE fk_onlineorderitem IS NOT NULL;

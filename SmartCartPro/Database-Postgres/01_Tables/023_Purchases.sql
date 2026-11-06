@@ -26,9 +26,12 @@ CREATE TABLE IF NOT EXISTS purchases (
     CONSTRAINT fk_purchases_supplier
         FOREIGN KEY (fk_supplier) REFERENCES suppliers (id_supplier),
     CONSTRAINT fk_purchases_createdby
-        FOREIGN KEY (createdby) REFERENCES users (id_user)
+        FOREIGN KEY (createdby) REFERENCES users (id_user),
+    CONSTRAINT ck_purchases_status
+        CHECK (status IN ('draft','posted','partially_received','received','cancelled'))
 );
 
 CREATE INDEX IF NOT EXISTS ix_purchases_fk_store ON purchases (fk_store);
 CREATE INDEX IF NOT EXISTS ix_purchases_fk_supplier ON purchases (fk_supplier);
 CREATE INDEX IF NOT EXISTS ix_purchases_purchasedate ON purchases (purchasedate);
+CREATE INDEX IF NOT EXISTS ix_purchases_store_date ON purchases (fk_store, purchasedate);

@@ -30,6 +30,7 @@ FROM (VALUES
     ('PURCHASES', 'purchases.manage', 'Manage purchases', 2),
     ('POS', 'pos.sell', 'Create POS sales', 1),
     ('POS', 'pos.return', 'Process sales returns', 2),
+    ('POS', 'pos.cancel', 'Cancel POS invoices', 3),
     ('CUSTOMERS', 'customers.view', 'View customers', 1),
     ('CUSTOMERS', 'customers.manage', 'Manage customers', 2),
     ('REPORTS', 'reports.view', 'View reports', 1),
@@ -42,16 +43,39 @@ WHERE NOT EXISTS (
     SELECT 1 FROM permissions p WHERE p.permissioncode = v.permissioncode AND p.cancelled = FALSE
 );
 
--- Grant all permissions to the company Admin role (idempotent).
--- SUPER_ADMIN is accepted so a database that has not yet run the rename patch still receives grants.
+-- Grant every permission to the company Admin role (idempotent).
 INSERT INTO role_permissions (fk_role, fk_permission)
 SELECT r.id_role, p.id_permission
 FROM roles r
 CROSS JOIN permissions p
-WHERE r.rolecode IN ('ADMIN', 'SUPER_ADMIN')
+WHERE r.rolecode = 'ADMIN'
   AND r.cancelled = FALSE
   AND p.cancelled = FALSE
   AND NOT EXISTS (
       SELECT 1 FROM role_permissions rp
       WHERE rp.fk_role = r.id_role AND rp.fk_permission = p.id_permission
   );
+
+-- Default least-privilege grants for the built-in employee roles.
+INSERT INTO role_permissions (fk_role, fk_permission)
+SELECT r.id_role, p.id_permission
+FROM (VALUES
+    ('STORE_MANAGER', 'dashboard.view'),
+    ('STORE_MANAGER', 'products.view'), ('STORE_MANAGER', 'products.manage'),
+    ('STORE_MANAGER', 'inventory.view'), ('STORE_MANAGER', 'inventory.adjust'),
+    ('STORE_MANAGER', 'purchases.view'), ('STORE_MANAGER', 'purchases.manage'),
+    ('STORE_MANAGER', 'pos.sell'), ('STORE_MANAGER', 'pos.return'), ('STORE_MANAGER', 'pos.cancel'),
+    ('STORE_MANAGER', 'customers.view'), ('STORE_MANAGER', 'customers.manage'),
+    ('STORE_MANAGER', 'reports.view'),
+    ('CASHIER', 'pos.sell'),
+    ('INVENTORY', 'inventory.view'), ('INVENTORY', 'inventory.adjust'),
+    ('INVENTORY', 'products.view'), ('INVENTORY', 'purchases.view'),
+    ('VIEWER', 'reports.view'), ('VIEWER', 'dashboard.view'),
+    ('VIEWER', 'products.view'), ('VIEWER', 'inventory.view')
+) AS g(rolecode, permissioncode)
+JOIN roles r ON r.rolecode = g.rolecode AND r.cancelled = FALSE
+JOIN permissions p ON p.permissioncode = g.permissioncode AND p.cancelled = FALSE
+WHERE NOT EXISTS (
+    SELECT 1 FROM role_permissions rp
+    WHERE rp.fk_role = r.id_role AND rp.fk_permission = p.id_permission
+);

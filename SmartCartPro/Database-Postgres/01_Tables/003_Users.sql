@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     isactive        BOOLEAN NOT NULL DEFAULT TRUE,
     mustchangepassword BOOLEAN NOT NULL DEFAULT TRUE,
     is_platform_super_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    session_version INT NOT NULL DEFAULT 1,
     lastloginat     TIMESTAMP NULL,
     createdat       TIMESTAMP NOT NULL DEFAULT NOW(),
     updatedat       TIMESTAMP NULL,

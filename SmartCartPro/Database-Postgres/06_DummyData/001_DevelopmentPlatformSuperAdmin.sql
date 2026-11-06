@@ -1,4 +1,5 @@
--- Platform Super Admin seed (idempotent)
+-- Optional development-only Platform Super Admin account.
+-- Never run on a production database. This account has a hard-coded demo credential.
 -- Login email: Muhdfarismp@gmail.com
 -- Dev password: Admin@123 (ASP.NET Identity PasswordHasher V3 hash below)
 -- Company Employees UI must never expose/edit is_platform_super_admin.
@@ -20,7 +21,7 @@ SELECT
     'AQAAAAIAAYagAAAAEMwD8hjWbMf/QYpdRJNr7Lh4y+wGZTz0+4bgKBektuHXhV1ZqgL/KONn5CMWhSCZXQ==',
     'Platform Super Admin',
     TRUE,
-    FALSE,
+    TRUE,
     TRUE,
     NOW()
 WHERE NOT EXISTS (
@@ -29,10 +30,4 @@ WHERE NOT EXISTS (
       AND u.cancelled = FALSE
 );
 
--- Ensure flag if the email already existed without platform rights
-UPDATE users
-SET is_platform_super_admin = TRUE,
-    updatedat = NOW()
-WHERE LOWER(email) = LOWER('Muhdfarismp@gmail.com')
-  AND cancelled = FALSE
-  AND is_platform_super_admin = FALSE;
+-- Existing users are never modified: this inserts only when the email is unused.

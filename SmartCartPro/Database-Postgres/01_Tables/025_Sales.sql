@@ -30,9 +30,15 @@ CREATE TABLE IF NOT EXISTS sales (
         FOREIGN KEY (fk_customer) REFERENCES customers (id_customer),
     CONSTRAINT fk_sales_createdby
         FOREIGN KEY (createdby) REFERENCES users (id_user),
+    CONSTRAINT fk_sales_cashsession
+        FOREIGN KEY (fk_cashsession) REFERENCES cash_sessions (id_cashsession),
     CONSTRAINT uq_sales_store_invoicenumber UNIQUE (fk_store, invoicenumber)
 );
 
 CREATE INDEX IF NOT EXISTS ix_sales_fk_store ON sales (fk_store);
 CREATE INDEX IF NOT EXISTS ix_sales_saledate ON sales (saledate);
 CREATE INDEX IF NOT EXISTS ix_sales_fk_customer ON sales (fk_customer);
+CREATE INDEX IF NOT EXISTS ix_sales_store_saledate ON sales (fk_store, saledate);
+CREATE INDEX IF NOT EXISTS ix_sales_createdby ON sales (createdby);
+CREATE INDEX IF NOT EXISTS ix_sales_status ON sales (status) WHERE cancelled = FALSE;
+CREATE INDEX IF NOT EXISTS ix_sales_fk_cashsession ON sales (fk_cashsession);

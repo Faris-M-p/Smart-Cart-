@@ -26,3 +26,4 @@ CREATE TABLE IF NOT EXISTS cash_sessions (
 
 CREATE INDEX IF NOT EXISTS ix_cash_sessions_fk_store ON cash_sessions (fk_store);
 CREATE INDEX IF NOT EXISTS ix_cash_sessions_status ON cash_sessions (status);
+CREATE INDEX IF NOT EXISTS ix_cash_sessions_store_opened ON cash_sessions (fk_store, openedat);

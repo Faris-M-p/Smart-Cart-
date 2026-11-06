@@ -1,12 +1,13 @@
 -- =============================================================================
--- V010__GreenBasketSupermarketDemoData.sql
--- Green Basket Supermarket demo data for manual admin and POS testing.
+-- GreenBasketSupermarket.sql
+-- Optional Green Basket Supermarket dummy data for manual admin and POS testing.
 --
--- NOT EXECUTED by the author. Run it yourself after V001–V009 and the
--- 02_Seed scripts. Safe to run again: if setting gb.demo.dataset exists,
+-- Manual-only. Run after BuildDatabase.bat succeeds on a disposable
+-- development/test database. If setting gb.demo.dataset exists,
 -- the script inserts nothing and commits.
 --
--- Does not TRUNCATE, drop, or update existing business rows.
+-- Does not TRUNCATE, drop, or update unrelated existing business rows.
+-- It updates only the cash session identified by its GB-DEMO marker below.
 -- Does not change passwords of users that already exist.
 -- Does not raise maxstores and does not insert a second store, so there
 -- are no inter-store transfers.
@@ -24,7 +25,7 @@
 --
 -- Test employee sign-in (development only):
 --   Password hash is the Identity V3 hash already stored in
---   02_Seed/004_PlatformSuperAdmin.sql. mustchangepassword is true.
+--   06_DummyData/001_DevelopmentPlatformSuperAdmin.sql. mustchangepassword is true.
 --   These accounts are not platform super admins.
 --   Customer passwordhash is left null. There is no customer login seed.
 --
@@ -61,71 +62,15 @@ BEGIN
         RETURN;
     END IF;
 
-    -- Masters the app expects. Insert only when that code is missing.
-    INSERT INTO modules (modulecode, modulename, displayorder, isactive)
-    SELECT v.modulecode, v.modulename, v.displayorder, TRUE
-    FROM (VALUES
-        ('DASHBOARD', 'Dashboard', 10),
-        ('PRODUCTS', 'Products', 20),
-        ('INVENTORY', 'Inventory', 30),
-        ('PURCHASES', 'Purchases', 40),
-        ('POS', 'Point of Sale', 50),
-        ('CUSTOMERS', 'Customers', 60),
-        ('REPORTS', 'Reports', 70),
-        ('SETTINGS', 'Settings', 80),
-        ('USERS', 'Users & Roles', 90)
-    ) AS v(modulecode, modulename, displayorder)
-    WHERE NOT EXISTS (
-        SELECT 1 FROM modules m
-        WHERE m.modulecode = v.modulecode AND m.cancelled = FALSE
-    );
-
-    INSERT INTO permissions (fk_module, permissioncode, permissionname, displayorder, isactive)
-    SELECT m.id_module, v.permissioncode, v.permissionname, v.displayorder, TRUE
-    FROM (VALUES
-        ('DASHBOARD', 'dashboard.view', 'View dashboard', 1),
-        ('PRODUCTS', 'products.view', 'View products', 1),
-        ('PRODUCTS', 'products.manage', 'Manage products', 2),
-        ('INVENTORY', 'inventory.view', 'View inventory', 1),
-        ('INVENTORY', 'inventory.adjust', 'Adjust stock', 2),
-        ('PURCHASES', 'purchases.view', 'View purchases', 1),
-        ('PURCHASES', 'purchases.manage', 'Manage purchases', 2),
-        ('POS', 'pos.sell', 'Create POS sales', 1),
-        ('POS', 'pos.return', 'Process sales returns', 2),
-        ('CUSTOMERS', 'customers.view', 'View customers', 1),
-        ('CUSTOMERS', 'customers.manage', 'Manage customers', 2),
-        ('REPORTS', 'reports.view', 'View reports', 1),
-        ('SETTINGS', 'settings.manage', 'Manage settings', 1),
-        ('USERS', 'users.manage', 'Manage users and roles', 1)
-    ) AS v(modulecode, permissioncode, permissionname, displayorder)
-    JOIN modules m ON m.modulecode = v.modulecode AND m.cancelled = FALSE
-    WHERE NOT EXISTS (
-        SELECT 1 FROM permissions p
-        WHERE p.permissioncode = v.permissioncode AND p.cancelled = FALSE
-    );
-
-    INSERT INTO permissions (fk_module, permissioncode, permissionname, displayorder, isactive)
-    SELECT m.id_module, 'pos.cancel', 'Cancel POS invoices', 3, TRUE
-    FROM modules m
-    WHERE m.modulecode = 'POS' AND m.cancelled = FALSE
-      AND NOT EXISTS (
-          SELECT 1 FROM permissions p
-          WHERE p.permissioncode = 'pos.cancel' AND p.cancelled = FALSE
-      );
-
+    -- Demo-only employee roles. Production roles and permissions are seeded by 02_Seed.
     INSERT INTO roles (rolecode, rolename, description, issystem, isactive)
-    SELECT v.rolecode, v.rolename, v.description, v.issystem, TRUE
+    SELECT v.rolecode, v.rolename, v.description, FALSE, TRUE
     FROM (VALUES
-        ('ADMIN', 'Admin', 'Company administrator. Uses every module the software provider has enabled, and manages employees and roles.', TRUE),
-        ('STORE_MANAGER', 'Store Manager', 'Manage a store', TRUE),
-        ('CASHIER', 'Cashier', 'POS billing', TRUE),
-        ('INVENTORY', 'Inventory Clerk', 'Stock and purchasing', TRUE),
-        ('VIEWER', 'Viewer', 'Read-only reporting', TRUE),
-        ('SENIOR_CASHIER', 'Senior Cashier', 'POS billing, returns and invoice cancel. Demo role.', FALSE),
-        ('PURCHASE_EXEC', 'Purchase Executive', 'Purchasing. Demo role.', FALSE),
-        ('SALES_EXEC', 'Sales Executive', 'POS selling and customer view. Demo role.', FALSE),
-        ('STOCK_ASSIST', 'Stock Assistant', 'View stock and products. Demo role.', FALSE)
-    ) AS v(rolecode, rolename, description, issystem)
+        ('SENIOR_CASHIER', 'Senior Cashier', 'POS billing, returns and invoice cancel. Demo role.'),
+        ('PURCHASE_EXEC', 'Purchase Executive', 'Purchasing. Demo role.'),
+        ('SALES_EXEC', 'Sales Executive', 'POS selling and customer view. Demo role.'),
+        ('STOCK_ASSIST', 'Stock Assistant', 'View stock and products. Demo role.')
+    ) AS v(rolecode, rolename, description)
     WHERE NOT EXISTS (
         SELECT 1 FROM roles r WHERE r.rolecode = v.rolecode AND r.cancelled = FALSE
     );
@@ -133,32 +78,13 @@ BEGIN
     INSERT INTO role_permissions (fk_role, fk_permission)
     SELECT r.id_role, p.id_permission
     FROM (VALUES
-        ('ADMIN', 'dashboard.view'),
-        ('ADMIN', 'products.view'), ('ADMIN', 'products.manage'),
-        ('ADMIN', 'inventory.view'), ('ADMIN', 'inventory.adjust'),
-        ('ADMIN', 'purchases.view'), ('ADMIN', 'purchases.manage'),
-        ('ADMIN', 'pos.sell'), ('ADMIN', 'pos.return'), ('ADMIN', 'pos.cancel'),
-        ('ADMIN', 'customers.view'), ('ADMIN', 'customers.manage'),
-        ('ADMIN', 'reports.view'), ('ADMIN', 'settings.manage'), ('ADMIN', 'users.manage'),
-        ('STORE_MANAGER', 'dashboard.view'),
-        ('STORE_MANAGER', 'products.view'), ('STORE_MANAGER', 'products.manage'),
-        ('STORE_MANAGER', 'inventory.view'), ('STORE_MANAGER', 'inventory.adjust'),
-        ('STORE_MANAGER', 'purchases.view'), ('STORE_MANAGER', 'purchases.manage'),
-        ('STORE_MANAGER', 'pos.sell'), ('STORE_MANAGER', 'pos.return'), ('STORE_MANAGER', 'pos.cancel'),
-        ('STORE_MANAGER', 'customers.view'), ('STORE_MANAGER', 'customers.manage'),
-        ('STORE_MANAGER', 'reports.view'),
-        ('CASHIER', 'pos.sell'),
         ('SENIOR_CASHIER', 'pos.sell'), ('SENIOR_CASHIER', 'pos.return'), ('SENIOR_CASHIER', 'pos.cancel'),
         ('SENIOR_CASHIER', 'products.view'),
-        ('INVENTORY', 'inventory.view'), ('INVENTORY', 'inventory.adjust'),
-        ('INVENTORY', 'products.view'), ('INVENTORY', 'purchases.view'),
         ('PURCHASE_EXEC', 'purchases.view'), ('PURCHASE_EXEC', 'purchases.manage'),
         ('PURCHASE_EXEC', 'products.view'), ('PURCHASE_EXEC', 'inventory.view'),
         ('SALES_EXEC', 'pos.sell'), ('SALES_EXEC', 'customers.view'),
         ('SALES_EXEC', 'products.view'), ('SALES_EXEC', 'dashboard.view'),
-        ('STOCK_ASSIST', 'inventory.view'), ('STOCK_ASSIST', 'products.view'),
-        ('VIEWER', 'reports.view'), ('VIEWER', 'dashboard.view'),
-        ('VIEWER', 'products.view'), ('VIEWER', 'inventory.view')
+        ('STOCK_ASSIST', 'inventory.view'), ('STOCK_ASSIST', 'products.view')
     ) AS g(rolecode, permissioncode)
     JOIN roles r ON r.rolecode = g.rolecode AND r.cancelled = FALSE
     JOIN permissions p ON p.permissioncode = g.permissioncode AND p.cancelled = FALSE
@@ -167,7 +93,7 @@ BEGIN
         WHERE rp.fk_role = r.id_role AND rp.fk_permission = p.id_permission
     );
 
-    -- Turns on modules this demo uses. Does not remove modules already on.
+    -- Enable all active modules for the demo installation without removing existing selections.
     INSERT INTO installation_modules (fk_module)
     SELECT m.id_module
     FROM modules m
@@ -176,7 +102,6 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM installation_modules i WHERE i.fk_module = m.id_module
       );
-
     INSERT INTO company (
         companycode, companyname, legalname, email, phone, website,
         addressline1, city, state, postalcode, country,
@@ -1401,50 +1326,9 @@ BEGIN
         WHERE s.setting_scope = 'store' AND s.fk_store = v_store AND s.settingkey = 'pos.allow_negative_stock'
     );
 
-    INSERT INTO module_presets (presetcode, presetname, description, displayorder)
-    SELECT v.presetcode, v.presetname, v.description, v.displayorder
-    FROM (VALUES
-        ('BASIC', 'Basic', 'Core modules: Dashboard, POS, Products, Inventory', 10),
-        ('PREMIUM', 'Premium', 'All supported modules including Reports and User Management', 20)
-    ) AS v(presetcode, presetname, description, displayorder)
-    WHERE NOT EXISTS (
-        SELECT 1 FROM module_presets p WHERE p.presetcode = v.presetcode
-    );
-
-    INSERT INTO module_preset_items (fk_preset, fk_module)
-    SELECT p.id_preset, m.id_module
-    FROM module_presets p
-    JOIN modules m ON m.cancelled = FALSE
-    WHERE (
-            (p.presetcode = 'BASIC' AND m.modulecode IN ('DASHBOARD','PRODUCTS','POS','INVENTORY'))
-         OR (p.presetcode = 'PREMIUM' AND m.modulecode IN (
-                'DASHBOARD','PRODUCTS','INVENTORY','PURCHASES','POS',
-                'CUSTOMERS','REPORTS','SETTINGS','USERS'))
-          )
-      AND NOT EXISTS (
-          SELECT 1 FROM module_preset_items i
-          WHERE i.fk_preset = p.id_preset AND i.fk_module = m.id_module
-      );
-
-    INSERT INTO settings (setting_scope, fk_store, settingkey, settingvalue, valuetype, description)
-    SELECT 'company', NULL, v.settingkey, v.settingvalue, v.valuetype, v.description
-    FROM (VALUES
-        ('pos.invoice_prefix', 'INV', 'string', 'Default POS invoice prefix'),
-        ('pos.allow_negative_stock', 'false', 'bool', 'Allow selling below zero stock'),
-        ('inventory.track_variants', 'true', 'bool', 'Track stock per product variant'),
-        ('locale.currency', 'INR', 'string', 'Default currency code'),
-        ('locale.timezone', 'Asia/Kolkata', 'string', 'Default timezone')
-    ) AS v(settingkey, settingvalue, valuetype, description)
-    WHERE NOT EXISTS (
-        SELECT 1 FROM settings s
-        WHERE s.setting_scope = 'company'
-          AND s.fk_store IS NULL
-          AND s.settingkey = v.settingkey
-    );
-
     INSERT INTO settings (setting_scope, fk_store, settingkey, settingvalue, valuetype, description)
     SELECT 'company', NULL, 'gb.demo.dataset', 'v1', 'string',
-           'Marker that V010 Green Basket demo data is loaded. Do not delete unless you intend to load it again.'
+           'Marker that Green Basket dummy data is loaded. Do not delete unless you intend to load it again.'
     WHERE NOT EXISTS (
         SELECT 1 FROM settings s
         WHERE s.setting_scope = 'company' AND s.fk_store IS NULL AND s.settingkey = 'gb.demo.dataset'

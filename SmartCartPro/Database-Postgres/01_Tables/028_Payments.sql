@@ -33,3 +33,5 @@ CREATE TABLE IF NOT EXISTS payments (
 
 CREATE INDEX IF NOT EXISTS ix_payments_fk_store ON payments (fk_store);
 CREATE INDEX IF NOT EXISTS ix_payments_fk_sale ON payments (fk_sale);
+CREATE INDEX IF NOT EXISTS ix_payments_cashsession ON payments (fk_cashsession);
+CREATE INDEX IF NOT EXISTS ix_payments_store_paidat ON payments (fk_store, paidat);

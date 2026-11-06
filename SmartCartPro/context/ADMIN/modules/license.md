@@ -31,7 +31,7 @@ Class-level `[Authorize(Policy = "PlatformSuperAdmin")]`.
 - Models: `Models/LicenseModels.cs` — `InLicenseUpdateView`, `InputLicenseUpdate` / `OutputLicenseUpdate`, `InputLicenseSelect` / `OutputLicenseSelect` (includes `ActiveStoreCount`, `ActiveUserCount`, `DaysRemaining`, `IsExpired`), `InLicenseStatusView` / `InputLicenseStatusUpdate` / `OutputLicenseStatusUpdate`.
 
 ## Database Dependencies
-- `V004__LicenseAndInstallation.sql`: `ck_license_dates` (`expirydate >= startdate`), `ck_license_maxstores` (≥ 1), unique `licensekey`. No `maxusers` column.
+- `01_Tables/044_LicenseInstallationInvitations.sql`: `ck_license_dates` (`expirydate >= startdate`), `ck_license_maxstores` (≥ 1), unique `licensekey`. No `maxusers` column. Development trial keys are optional dummy data only.
 
 ## API & Data Access
 - `LicenseController` → `ICompanyService` / `CompanyService` → `ICompanyRepository` / `CompanyRepository`.
