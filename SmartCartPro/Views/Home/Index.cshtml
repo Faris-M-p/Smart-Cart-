@@ -1,320 +1,250 @@
 @using SmartCartPro.Helpers
 @model SmartCartPro.Models.OutputDashboardSelect
 @{
-    ViewData["Title"] = "Dashboard";
-    var kpis = Model.Kpis;
-    var currency = Model.Currency;
-    var trend7Json = System.Text.Json.JsonSerializer.Serialize(
-        Model.Trend7.Select(p => new { label = p.Label, value = p.NetSales }));
-    var trend30Json = System.Text.Json.JsonSerializer.Serialize(
-        Model.Trend30.Select(p => new { label = p.Label, value = p.NetSales }));
-    var payJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.Payments.Select(p => new { label = p.PaymentMethod, value = p.Amount }));
-    var prodJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.TopProducts.Select(p => new { label = p.ProductName, value = p.Revenue }));
-    var invoiceTemplate = Url.Action("InvoiceDetails", "Sales", new { id = 0 });
-    var change = kpis?.TodayChangePercent ?? 0;
-    var changeClass = change > 0 ? "text-bg-success-subtle text-success" : (change < 0 ? "text-bg-danger-subtle text-danger" : "text-bg-secondary-subtle text-secondary");
-    var changeText = (change > 0 ? "+" : "") + change.ToString("0.0") + "% vs yesterday";
+    ViewData["Title"] = Model.DisplayName;
+    var isSetup = Model.Mode == "setup";
 }
 
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-    <div>
-        <h1 class="h3 mb-1">Dashboard</h1>
-        @if (Model.Mode == "setup")
+<div class="dash-container"
+     id="dashboardPage"
+     data-essentials-url="@Url.Action("Essentials", "Dashboard")"
+     data-adv-sales-url="@Url.Action("AdvancedSales", "Dashboard")"
+     data-adv-categories-url="@Url.Action("AdvancedCategories", "Dashboard")"
+     data-adv-stock-url="@Url.Action("AdvancedStock", "Dashboard")"
+     data-adv-purchases-url="@Url.Action("AdvancedPurchases", "Dashboard")"
+     data-adv-team-url="@Url.Action("AdvancedTeam", "Dashboard")"
+     data-adv-profit-url="@Url.Action("AdvancedProfit", "Dashboard")"
+     data-role="@Model.Role"
+     data-can-see-profit="@Model.CanSeeProfit.ToString().ToLowerInvariant()">
+
+    <!-- Header -->
+    <div class="page-head">
+        <div>
+            <h1 id="pageTitle">@Model.DisplayName</h1>
+            @if (isSetup)
+            {
+                <p id="pageSub">Create your company and first store. You will have full access once a store is selected.</p>
+            }
+            else
+            {
+                <p id="pageSub">@(string.IsNullOrWhiteSpace(Model.StoreName) ? "Store" : Model.StoreName) · @Model.Currency · @Model.TimeZoneId</p>
+            }
+        </div>
+        @if (!isSetup)
         {
-            <p class="text-muted mb-0">Create the company and first store. You have full access once a store is selected.</p>
-        }
-        else if (Model.Mode == "store")
-        {
-            <p class="text-muted mb-0">
-                Today’s overview@(string.IsNullOrWhiteSpace(Model.StoreName) ? "" : " · " + Model.StoreName)
-                <span class="ms-1">(@currency · @Model.TimeZoneId)</span>
-            </p>
-        }
-        else
-        {
-            <p class="text-muted mb-0">Welcome. Use a quick action below to get started.</p>
+            <div class="head-tools">
+                <div class="seg" role="group" aria-label="Date range" id="range">
+                    <button data-r="today" class="active">Today</button>
+                    <button data-r="d7">7 days</button>
+                    <button data-r="d30">30 days</button>
+                    <button data-r="month">This month</button>
+                </div>
+                <span class="updated-time" id="updated"></span>
+                <button class="dash-btn" id="refresh" title="Reload live metrics">
+                    <i class="bi bi-arrow-clockwise"></i>Refresh
+                </button>
+            </div>
         }
     </div>
-    @if (Model.CanRefresh)
+
+    @if (isSetup)
     {
-        <div class="d-flex align-items-center gap-2">
-            <span class="small text-muted">
-                Updated
-                <time data-generated data-sc-utc="@TimeDisplay.Iso(Model.GeneratedAt)" data-sc-format="datetime">
-                    @Model.GeneratedAt.ToString("dd MMM yyyy HH:mm")
-                </time>
-            </span>
-            <button type="button" class="btn btn-outline-secondary" data-sc-refresh>
-                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-            </button>
+        <div class="qa mt-3">
+            @foreach (var action in Model.QuickActions)
+            {
+                <a href="/@action.Controller/@action.Action">
+                    <i class="bi bi-@action.Icon me-1"></i>@action.Title
+                </a>
+            }
         </div>
     }
+    else
+    {
+        <!-- Alerts Strip -->
+        <div class="alerts" id="alerts"></div>
+
+        <!-- Quick Actions Row -->
+        <div class="qa" id="qa">
+            @foreach (var action in Model.QuickActions)
+            {
+                <a href="/@action.Controller/@action.Action">
+                    <i class="bi bi-@action.Icon me-1"></i>@action.Title
+                </a>
+            }
+        </div>
+
+        <!-- ESSENTIAL: KPI Cards -->
+        <section class="kpis @(Model.Role == "cashier" ? "k4" : "")" id="kpis" aria-label="Key figures">
+            <!-- Skeletons rendered by JS on load -->
+        </section>
+
+        <!-- ESSENTIAL: Trend + Payment Modes -->
+        <div class="dash-grid g-2-1">
+            <div class="dash-panel">
+                <div class="ph">
+                    <h3 id="trendTitle">Sales trend</h3>
+                    <small id="trendSub"></small>
+                </div>
+                <div class="dash-chart" id="trend" style="height:250px"></div>
+                <div class="legend">
+                    <span><i class="sw" style="background:var(--c1)"></i><span id="lgCur">This period</span></span>
+                    <span><i class="sw dash"></i><span id="lgPrev">Previous period</span></span>
+                </div>
+            </div>
+            <div class="dash-panel">
+                <div class="ph">
+                    <h3>Payment modes</h3>
+                    <small id="payTotal"></small>
+                </div>
+                <div id="pay"></div>
+            </div>
+        </div>
+
+        <!-- ESSENTIAL: Top 5, Low Stock, Recent Invoices -->
+        <div class="dash-grid g-3">
+            <div class="dash-panel" data-hide="cashier">
+                <div class="ph">
+                    <h3>Top 5 products</h3>
+                    <a id="top5Link" href="@Url.Action("ItemSales", "Reports")">Item sales report</a>
+                </div>
+                <div id="top5"></div>
+            </div>
+            <div class="dash-panel" data-hide="cashier">
+                <div class="ph">
+                    <h3>Low stock</h3>
+                    <a id="lowLink" href="@Url.Action("LowStock", "Inventory")">All low stock</a>
+                </div>
+                <div id="low"></div>
+            </div>
+            <div class="dash-panel" id="invPanel">
+                <div class="ph">
+                    <h3 id="invTitle">Recent invoices</h3>
+                    <a id="invLink" href="@Url.Action("Invoices", "Sales")">All invoices</a>
+                </div>
+                <div id="inv"></div>
+            </div>
+        </div>
+
+        <!-- ADVANCED TRIGGER BAR -->
+        <div class="adv-bar" id="advBar" data-hide="cashier" @(Model.CanSeeAdvanced ? "" : "hidden")>
+            <i class="bi bi-stars" style="color:var(--c1);font-size:22px"></i>
+            <div class="t">
+                <b>Advanced insights</b>
+                <small>Hourly sales, categories, stock health, sales vs purchases, channels, cashiers@(Model.CanSeeProfit ? ", profit" : ""). Loaded only when you open it.</small>
+            </div>
+            <button class="dash-btn dash-btn-primary" id="advBtn" aria-expanded="false" aria-controls="advanced">
+                <i class="bi bi-chevron-down"></i><span>Show advanced</span>
+            </button>
+        </div>
+
+        <!-- ADVANCED INSIGHTS (Lazy-loaded via parallel AJAX) -->
+        <section id="advanced" aria-label="Advanced insights">
+            <h2 class="adv-title">Advanced insights <span class="badge-lazy">Loaded on demand</span></h2>
+            
+            <div class="dash-grid g-2">
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Hourly sales</h3>
+                        <small>Peak hours · <span class="rngLbl"></span></small>
+                    </div>
+                    <div class="dash-chart" id="a-hourly" style="height:220px"></div>
+                </div>
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Category-wise sales</h3>
+                        <a href="@Url.Action("CategorySales", "Reports")">Category report</a>
+                    </div>
+                    <div id="a-cat"></div>
+                </div>
+            </div>
+
+            <div class="dash-grid g-auto">
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Stock health</h3>
+                        <small>Current stock</small>
+                    </div>
+                    <div id="a-stock"></div>
+                </div>
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Counter vs online</h3>
+                        <small class="rngLbl"></small>
+                    </div>
+                    <div id="a-channel"></div>
+                </div>
+                @if (Model.CanSeeProfit)
+                {
+                    <div class="dash-panel" data-only="owner">
+                        <div class="ph">
+                            <h3>Gross profit</h3>
+                            <small class="rngLbl"></small>
+                        </div>
+                        <div id="a-profit"></div>
+                        <div class="only-owner-note">Visible only with the “View cost and profit” permission.</div>
+                    </div>
+                }
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Day-of-week pattern</h3>
+                        <small>Last 4 weeks</small>
+                    </div>
+                    <div class="dash-chart" id="a-dow" style="height:200px"></div>
+                </div>
+            </div>
+
+            <div class="dash-grid g-2">
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Sales vs purchases</h3>
+                        <small>Last 6 months</small>
+                    </div>
+                    <div class="dash-chart" id="a-svp" style="height:230px"></div>
+                    <div class="legend">
+                        <span><i class="sw" style="background:var(--c1)"></i>Sales</span>
+                        <span><i class="sw" style="background:var(--c3)"></i>Purchases</span>
+                    </div>
+                </div>
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Top 10 products</h3>
+                        <div class="mini-seg" id="t10seg">
+                            <button data-m="rev" class="active">Revenue</button>
+                            <button data-m="qty">Qty</button>
+                        </div>
+                    </div>
+                    <div id="a-top10"></div>
+                </div>
+            </div>
+
+            <div class="dash-grid g-2">
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Cashier performance</h3>
+                        <small class="rngLbl"></small>
+                    </div>
+                    <div id="a-cashier"></div>
+                </div>
+                <div class="dash-panel">
+                    <div class="ph">
+                        <h3>Store comparison</h3>
+                        <small>Shown only when company has 2+ stores</small>
+                    </div>
+                    <div id="a-stores"></div>
+                </div>
+            </div>
+        </section>
+    }
 </div>
-
-@if (Model.Mode == "store" && kpis is not null)
-{
-    <div id="dashboardPage"
-         data-sc-dashboard
-         data-auto-refresh="true"
-         data-currency="@currency"
-         data-snapshot-url="@Url.Action("Snapshot", "Dashboard")"
-         data-invoice-details="@invoiceTemplate">
-        <div class="row g-3 mb-4 sc-dash-kpi">
-            @if (Model.ShowPosMetrics)
-            {
-            <div class="col-sm-6 col-xl-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Sales today</div>
-                        <div class="fs-4 fw-semibold" data-kpi="salesToday">@currency @kpis.SalesToday.ToString("N2")</div>
-                        <span class="badge @changeClass" data-kpi="todayChange">@changeText</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Sales this month</div>
-                        <div class="fs-4 fw-semibold" data-kpi="salesMonth">@currency @kpis.SalesMonth.ToString("N2")</div>
-                        <span class="small text-muted" data-kpi="invoicesToday">@kpis.InvoiceCountToday invoices today</span>
-                    </div>
-                </div>
-            </div>
-            }
-            @if (Model.ShowLowStock)
-            {
-            <div class="col-sm-6 col-xl-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Low stock</div>
-                        <div class="fs-4 fw-semibold" data-kpi="lowStock">@kpis.LowStockCount</div>
-                        <a class="small" asp-controller="Inventory" asp-action="LowStock">View low stock</a>
-                    </div>
-                </div>
-            </div>
-            }
-            @if (Model.ShowPurchases)
-            {
-            <div class="col-sm-6 col-xl-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Pending POs</div>
-                        <div class="fs-4 fw-semibold" data-kpi="pendingPo">@kpis.PendingPurchaseOrders</div>
-                        <span class="small text-muted">Posted or partially received</span>
-                    </div>
-                </div>
-            </div>
-            }
-            @if (Model.ShowOnlineOrders)
-            {
-            <div class="col-sm-6 col-xl-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Pending online orders</div>
-                        <div class="fs-4 fw-semibold" data-kpi="pendingOrders">@kpis.PendingOnlineOrders</div>
-                        <a class="small" asp-controller="OnlineOrder" asp-action="Index">View orders</a>
-                    </div>
-                </div>
-            </div>
-            }
-            @if (Model.ShowCashSession)
-            {
-            <div class="col-sm-6 col-xl-3">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="text-muted small">Open cash session</div>
-                        <div class="fs-4 fw-semibold" data-kpi="openCash">@kpis.OpenCashSessions</div>
-                    </div>
-                </div>
-            </div>
-            }
-        </div>
-
-        @if (Model.ShowPosMetrics)
-        {
-        <div class="row g-3 mb-4">
-            <div class="col-lg-7">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
-                        <h2 class="h6 mb-0" data-trend-title>7-day sales</h2>
-                        <div class="btn-group btn-group-sm" role="group" aria-label="Trend range">
-                            <button type="button" class="btn btn-outline-secondary active" data-trend="7">7 days</button>
-                            <button type="button" class="btn btn-outline-secondary" data-trend="30">30 days</button>
-                        </div>
-                    </div>
-                    <div class="card-body pt-0">
-                        <div data-chart="trend"
-                             data-sc-chart="line"
-                             data-sc-chart-title="7-day sales"
-                             data-sc-chart-json="@trend7Json"
-                             data-trend-7="@trend7Json"
-                             data-trend-30="@trend30Json"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-5">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-transparent border-0 pt-3">
-                        <h2 class="h6 mb-0">Payments this month</h2>
-                    </div>
-                    <div class="card-body pt-0">
-                        <div data-chart="payments" data-sc-chart="donut" data-sc-chart-title="Payments this month" data-sc-chart-json="@payJson"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        }
-
-        <div class="row g-3 mb-4">
-            @if (Model.ShowPosMetrics)
-            {
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-transparent border-0 pt-3">
-                        <h2 class="h6 mb-0">Top products this month</h2>
-                    </div>
-                    <div class="card-body pt-0">
-                        <div data-chart="products" data-sc-chart="bars" data-sc-chart-title="Top products" data-sc-chart-json="@prodJson"></div>
-                    </div>
-                </div>
-            </div>
-            }
-            @if (Model.ShowLowStock)
-            {
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between">
-                        <h2 class="h6 mb-0">Low stock</h2>
-                        <a class="small" asp-controller="Inventory" asp-action="LowStock">All low stock</a>
-                    </div>
-                    <div class="card-body pt-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead><tr><th>Product</th><th class="text-end">On hand</th><th class="text-end">Reorder</th></tr></thead>
-                                <tbody data-table="lowstock">
-                                @if (Model.LowStock.Count == 0)
-                                {
-                                    <tr><td colspan="3" class="text-muted text-center py-4">No low-stock items</td></tr>
-                                }
-                                else
-                                {
-                                    foreach (var row in Model.LowStock)
-                                    {
-                                        <tr>
-                                            <td>@row.ProductName</td>
-                                            <td class="text-end">@row.QuantityOnHand.ToString("0.###")</td>
-                                            <td class="text-end">@row.ReorderLevel.ToString("0.###")</td>
-                                        </tr>
-                                    }
-                                }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            }
-        </div>
-
-        @if (Model.ShowPosMetrics)
-        {
-        <div class="row g-3 mb-4">
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-transparent border-0 pt-3">
-                        <h2 class="h6 mb-0">Recent invoices</h2>
-                    </div>
-                    <div class="card-body pt-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead><tr><th>Invoice</th><th>Customer</th><th class="text-end">Amount</th><th>When</th></tr></thead>
-                                <tbody data-table="recent">
-                                @if (Model.RecentInvoices.Count == 0)
-                                {
-                                    <tr><td colspan="4" class="text-muted text-center py-4">No invoices yet</td></tr>
-                                }
-                                else
-                                {
-                                    foreach (var row in Model.RecentInvoices)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <a asp-controller="Sales" asp-action="InvoiceDetails" asp-route-id="@row.IdSale">@row.InvoiceNumber</a>
-                                            </td>
-                                            <td>@row.CustomerName</td>
-                                            <td class="text-end">@currency @row.TotalAmount.ToString("N2")</td>
-                                            <td>
-                                                <time data-sc-utc="@TimeDisplay.Iso(row.SaleDate)" data-sc-format="datetime">
-                                                    @row.SaleDate.ToString("dd MMM yyyy HH:mm")
-                                                </time>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        }
-        <div class="row g-3 mb-4">
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-transparent border-0 pt-3">
-                        <h2 class="h6 mb-0">Quick actions</h2>
-                    </div>
-                    <div class="card-body pt-0 d-grid gap-2 sc-dash-actions">
-                        @foreach (var action in Model.QuickActions)
-                        {
-                            <a class="btn btn-outline-primary text-start" asp-controller="@action.Controller" asp-action="@action.Action">
-                                <i class="bi @action.Icon me-2"></i>@action.Title
-                            </a>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-else
-{
-    <div class="row g-3">
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 pt-3">
-                    <h2 class="h6 mb-0">Quick actions</h2>
-                </div>
-                <div class="card-body pt-0 d-grid gap-2 sc-dash-actions">
-                    @if (Model.QuickActions.Count == 0)
-                    {
-                        <p class="text-muted mb-0">No actions are available for your role yet.</p>
-                    }
-                    else
-                    {
-                        foreach (var action in Model.QuickActions)
-                        {
-                            <a class="btn btn-outline-primary text-start" asp-controller="@action.Controller" asp-action="@action.Action">
-                                <i class="bi @action.Icon me-2"></i>@action.Title
-                            </a>
-                        }
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @section Styles {
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
 }
+
 @section Scripts {
-    @if (Model.CanRefresh)
+    @if (!isSetup)
     {
-        <script src="~/js/sc-charts.js" asp-append-version="true"></script>
+        <script src="~/js/dashboard/charts.js" asp-append-version="true"></script>
         <script src="~/js/dashboard/dashboard.js" asp-append-version="true"></script>
     }
 }
