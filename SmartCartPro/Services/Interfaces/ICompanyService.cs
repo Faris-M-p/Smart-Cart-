@@ -16,6 +16,12 @@ public interface ICompanyService
     Task<OutputStoreStatusUpdate> SetStoreActiveAsync(InputStoreStatusUpdate input, CancellationToken ct = default);
 
     Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default);
+    Task<DateOnly> GetLicenseTodayAsync(CancellationToken ct = default);
+    Task<int> GetActiveStoreCountForLicenseAsync(CancellationToken ct = default);
+    Task<int> GetActiveUserCountForLicenseAsync(CancellationToken ct = default);
+    Task<List<OutputLicenseSelect>> ListLicensesAsync(CancellationToken ct = default);
+    Task<OutputLicenseSelect?> GetLicenseByIdAsync(int idLicense, CancellationToken ct = default);
+    Task<OutputLicenseUpdate> CreateLicenseAsync(InputLicenseCreate input, CancellationToken ct = default);
     Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default);
     Task<OutputLicenseStatusUpdate> SetLicenseStatusAsync(InputLicenseStatusUpdate input, CancellationToken ct = default);
 }

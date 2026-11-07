@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartCartPro.Entities;
 
-/// <summary>Maps to <c>license</c>. One row per installation.</summary>
+/// <summary>Maps one issued validity period in the installation's license history.</summary>
 [Table("license")]
 public class License
 {
@@ -51,15 +51,15 @@ public class License
     [Column("cancelledreason")]
     public string? CancelledReason { get; set; }
 
-    /// <summary>Derived: true when active and not expired and not cancelled.</summary>
+    /// <summary>Legacy UTC-day convenience property. Licensing policy uses the configured company time zone in the service.</summary>
     [NotMapped]
     public bool IsValid =>
         !Cancelled
-        && Status == "active"
+        && Status != "suspended"
+        && StartDate <= DateOnly.FromDateTime(DateTime.UtcNow)
         && ExpiryDate >= DateOnly.FromDateTime(DateTime.UtcNow);
 
     [NotMapped]
     public int DaysUntilExpiry =>
-        (int)(ExpiryDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
-              - DateTime.UtcNow).TotalDays;
+        ExpiryDate.DayNumber - DateOnly.FromDateTime(DateTime.UtcNow).DayNumber;
 }

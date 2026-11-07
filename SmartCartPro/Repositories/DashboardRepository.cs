@@ -321,11 +321,19 @@ public class DashboardRepository : IDashboardRepository
         return openSession;
     }
 
-    public async Task<DateOnly?> GetLicenseExpiryDateAsync(CancellationToken ct = default)
+    public async Task<DateOnly?> GetLicenseExpiryDateAsync(DateOnly today, CancellationToken ct = default)
     {
+        var currentExpiry = await _db.Licenses.AsNoTracking()
+            .Where(l => !l.Cancelled && l.Status != "suspended"
+                && l.StartDate <= today && l.ExpiryDate >= today)
+            .OrderByDescending(l => l.StartDate)
+            .Select(l => (DateOnly?)l.ExpiryDate)
+            .FirstOrDefaultAsync(ct);
+        if (currentExpiry.HasValue) return currentExpiry;
+
         return await _db.Licenses.AsNoTracking()
-            .Where(l => !l.Cancelled && l.Status == "active")
-            .OrderBy(l => l.ExpiryDate)
+            .Where(l => !l.Cancelled && l.Status != "suspended" && l.ExpiryDate < today)
+            .OrderByDescending(l => l.ExpiryDate)
             .Select(l => (DateOnly?)l.ExpiryDate)
             .FirstOrDefaultAsync(ct);
     }

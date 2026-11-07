@@ -17,7 +17,10 @@ CREATE TABLE IF NOT EXISTS license (
     CONSTRAINT uq_license_licensekey UNIQUE (licensekey),
     CONSTRAINT ck_license_status CHECK (status IN ('active','suspended','expired','trial')),
     CONSTRAINT ck_license_dates CHECK (expirydate >= startdate),
-    CONSTRAINT ck_license_maxstores CHECK (maxstores >= 1)
+    CONSTRAINT ck_license_maxstores CHECK (maxstores >= 1),
+    CONSTRAINT ex_license_nonoverlap EXCLUDE USING gist
+        (daterange(startdate, expirydate, '[]') WITH &&)
+        WHERE (cancelled = FALSE)
 );
 
 CREATE TABLE IF NOT EXISTS installation_config (

@@ -15,14 +15,16 @@ public class CommonModel
 {
     /// <summary>
     /// License status (int for view/input). DB column <c>license.status</c> stores TEXT:
-    /// active | suspended | expired | trial.
+    /// Effective state: active | suspended | expired | trial | scheduled | cancelled.
     /// </summary>
     public enum LicenseStatus
     {
         Active = 1,
         Suspended = 2,
         Expired = 3,
-        Trial = 4
+        Trial = 4,
+        Scheduled = 5,
+        Cancelled = 6
     }
 }
 

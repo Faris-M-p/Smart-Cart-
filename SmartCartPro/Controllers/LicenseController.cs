@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartCartPro.Exceptions;
 using SmartCartPro.Helpers;
 using SmartCartPro.Models;
 using SmartCartPro.Services.Interfaces;
@@ -15,117 +16,143 @@ public class LicenseController : Controller
 
     private int ActorId => AuthClaims.GetUserId(User) ?? 0;
 
-    /// <summary>
-    /// Displays the platform license plan, status, dates, remaining days and usage against MaxStores.
-    /// Used by the Platform Super Admin to view and manage the installation license.
-    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    public async Task<IActionResult> Index(string? mode, int? editId, CancellationToken ct)
     {
-        var license = await _svc.GetLicenseAsync(new InputLicenseSelect(), ct);
-        InLicenseUpdateView view;
-        if (license is not null)
+        var licenses = await _svc.ListLicensesAsync(ct);
+        var today = licenses.FirstOrDefault()?.Today ?? await _svc.GetLicenseTodayAsync(ct);
+        var stores = licenses.Count > 0
+            ? licenses[0].ActiveStoreCount
+            : await _svc.GetActiveStoreCountForLicenseAsync(ct);
+        var users = licenses.Count > 0
+            ? licenses[0].ActiveUserCount
+            : await _svc.GetActiveUserCountForLicenseAsync(ct);
+        var current = licenses
+            .Where(x => !x.Cancelled && x.StartDate <= today && x.ExpiryDate >= today)
+            .OrderByDescending(x => x.StartDate)
+            .FirstOrDefault();
+        var summary = current
+            ?? licenses.Where(x => !x.Cancelled && x.StartDate > today).OrderBy(x => x.StartDate).FirstOrDefault()
+            ?? licenses.Where(x => !x.Cancelled && x.ExpiryDate < today).OrderByDescending(x => x.ExpiryDate).FirstOrDefault()
+            ?? licenses.Where(x => x.Cancelled).OrderByDescending(x => x.StartDate).FirstOrDefault();
+
+        var page = new LicensePageViewModel
         {
-            view = new InLicenseUpdateView
+            Today = today,
+            ActiveStoreCount = stores,
+            ActiveUserCount = users,
+            Summary = summary,
+            Licenses = licenses
+        };
+
+        if (editId is > 0)
+        {
+            var existing = await _svc.GetLicenseByIdAsync(editId.Value, ct)
+                ?? throw new ResourceNotFoundException("License not found.", $"License {editId.Value} was not found.");
+            if (existing.Cancelled)
+                throw new ConflictException("Cancelled licenses cannot be edited.", $"License {existing.IdLicense} is cancelled.");
+            page.IsEditMode = true;
+            page.Editor = new InLicenseSaveView
             {
-                LicenseKey = license.LicenseKey,
-                LicenseType = license.LicenseType,
-                Status = license.Status,
-                StartDate = license.StartDate,
-                ExpiryDate = license.ExpiryDate,
-                MaxStores = license.MaxStores,
-                Notes = license.Notes,
-                ActiveStoreCount = license.ActiveStoreCount,
-                ActiveUserCount = license.ActiveUserCount,
-                DaysRemaining = license.DaysRemaining,
-                IsExpired = license.IsExpired,
-                HasLicense = true
+                IdLicense = existing.IdLicense,
+                StartDate = existing.StartDate,
+                ExpiryDate = existing.ExpiryDate,
+                MaxStores = existing.MaxStores,
+                Notes = existing.Notes
             };
+        }
+        else if (string.Equals(mode, "create", StringComparison.OrdinalIgnoreCase))
+        {
+            var latestExpiry = licenses.Where(x => !x.Cancelled).Select(x => (DateOnly?)x.ExpiryDate).Max();
+            var startDate = latestExpiry is { } expiry && expiry >= today && expiry < DateOnly.MaxValue
+                ? expiry.AddDays(1)
+                : today;
+            page.IsCreateMode = true;
+            page.Editor = new InLicenseSaveView
+            {
+                StartDate = startDate,
+                ExpiryDate = startDate.AddYears(1).AddDays(-1),
+                MaxStores = Math.Max(1, stores)
+            };
+        }
+
+        return View(page);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Save(InLicenseSaveView model, CancellationToken ct)
+    {
+        CommonHelpers.ValidateModelState(ModelState);
+        OutputLicenseUpdate result;
+        if (model.IdLicense == 0)
+        {
+            result = await _svc.CreateLicenseAsync(new InputLicenseCreate
+            {
+                ActorUserId = ActorId,
+                CanEditLicense = true,
+                StartDate = model.StartDate,
+                ExpiryDate = model.ExpiryDate,
+                MaxStores = model.MaxStores,
+                Notes = model.Notes,
+                Reason = model.Reason
+            }, ct);
         }
         else
         {
-            var stores = await _svc.ListStoresAsync(new InputStoreList(), ct);
-            view = new InLicenseUpdateView
+            result = await _svc.UpdateLicenseAsync(new InputLicenseUpdate
             {
-                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                ExpiryDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)),
-                ActiveStoreCount = stores.CurrentStoreCount,
-                HasLicense = false
-            };
+                ActorUserId = ActorId,
+                CanEditLicense = true,
+                IdLicense = model.IdLicense,
+                StartDate = model.StartDate,
+                ExpiryDate = model.ExpiryDate,
+                MaxStores = model.MaxStores,
+                Notes = model.Notes,
+                Reason = model.Reason
+            }, ct);
         }
 
-        return View(view);
-    }
-
-    /// <summary>
-    /// Creates or updates the license key, plan, dates, store limit and notes.
-    /// Expiry must be on or after start; MaxStores cannot fall below current active store usage.
-    /// </summary>
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Save(InLicenseUpdateView model, CancellationToken ct)
-    {
-        CommonHelpers.ValidateModelState(ModelState);
-
-        var input = new InputLicenseUpdate
-        {
-            ActorUserId = ActorId,
-            CanEditLicense = true,
-            LicenseKey = model.LicenseKey,
-            LicenseType = model.LicenseType,
-            Status = model.Status,
-            StartDate = model.StartDate,
-            ExpiryDate = model.ExpiryDate,
-            MaxStores = model.MaxStores,
-            Notes = model.Notes
-        };
-        var result = await _svc.UpdateLicenseAsync(input, ct);
         return CommonHelpers.SuccessResponse(
-            "License saved.",
+            model.IdLicense == 0 ? "License created." : "License updated.",
             new { id = result.IdLicense, redirectUrl = Url.Action(nameof(Index)) });
     }
 
-    /// <summary>
-    /// Suspends the license so LicenseGateFilter returns 403 for every non–super-admin request.
-    /// Platform Super Admin confirms with a written reason from the license page.
-    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Suspend(InLicenseStatusView model, CancellationToken ct)
-    {
-        CommonHelpers.ValidateModelState(ModelState);
+    public Task<IActionResult> Suspend(InLicenseStatusView model, CancellationToken ct) => ChangeStatus(model, "suspend", ct);
 
-        var input = new InputLicenseStatusUpdate
-        {
-            ActorUserId = ActorId,
-            Activate = false,
-            Reason = model.Reason
-        };
-        var result = await _svc.SetLicenseStatusAsync(input, ct);
-        return CommonHelpers.SuccessResponse(
-            "License suspended.",
-            new { id = result.IdLicense, redirectUrl = Url.Action(nameof(Index)) });
-    }
-
-    /// <summary>
-    /// Reactivates a suspended license. Expired dates still leave writes blocked until the expiry is extended.
-    /// Platform Super Admin confirms with a written reason from the license page.
-    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Activate(InLicenseStatusView model, CancellationToken ct)
+    public Task<IActionResult> Resume(InLicenseStatusView model, CancellationToken ct) => ChangeStatus(model, "resume", ct);
+
+    // Keep the previous endpoint available for existing links/clients.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Activate(InLicenseStatusView model, CancellationToken ct) => ChangeStatus(model, "resume", ct);
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Cancel(InLicenseStatusView model, CancellationToken ct) => ChangeStatus(model, "cancel", ct);
+
+    private async Task<IActionResult> ChangeStatus(InLicenseStatusView model, string action, CancellationToken ct)
     {
         CommonHelpers.ValidateModelState(ModelState);
-
-        var input = new InputLicenseStatusUpdate
+        var result = await _svc.SetLicenseStatusAsync(new InputLicenseStatusUpdate
         {
             ActorUserId = ActorId,
-            Activate = true,
+            IdLicense = model.IdLicense,
+            Action = action,
+            Today = await _svc.GetLicenseTodayAsync(ct),
             Reason = model.Reason
+        }, ct);
+        var message = action switch
+        {
+            "suspend" => "License suspended.",
+            "resume" => "License resumed. Its validity dates are unchanged.",
+            _ => "Future license cancelled."
         };
-        var result = await _svc.SetLicenseStatusAsync(input, ct);
-        return CommonHelpers.SuccessResponse(
-            "License activated.",
+        return CommonHelpers.SuccessResponse(message,
             new { id = result.IdLicense, redirectUrl = Url.Action(nameof(Index)) });
     }
 }

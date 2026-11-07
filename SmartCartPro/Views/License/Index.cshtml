@@ -1,29 +1,18 @@
-@model InLicenseUpdateView
+@model LicensePageViewModel
 @{
     ViewData["Title"] = "License";
-    var isSuspended = Model.HasLicense && Model.Status == (int)CommonModel.LicenseStatus.Suspended;
-    var badgeClass = !Model.HasLicense
-        ? "text-bg-secondary"
-        : isSuspended
-            ? "text-bg-warning"
-            : Model.IsExpired
-                ? "text-bg-danger"
-                : Model.Status == (int)CommonModel.LicenseStatus.Trial
-                    ? "text-bg-info"
-                    : "text-bg-success";
-    var badgeText = !Model.HasLicense
-        ? "None"
-        : isSuspended ? "Suspended" : Model.IsExpired ? "Expired" : ((CommonModel.LicenseStatus)Model.Status).ToString();
-
-    var planItems = new List<SelectListItem>
-    {
-        new("Standard", "standard", string.Equals(Model.LicenseType, "standard", StringComparison.OrdinalIgnoreCase)),
-        new("Premium", "premium", string.Equals(Model.LicenseType, "premium", StringComparison.OrdinalIgnoreCase)),
-        new("Enterprise", "enterprise", string.Equals(Model.LicenseType, "enterprise", StringComparison.OrdinalIgnoreCase))
-    };
-    var statusItems = Enum.GetValues<CommonModel.LicenseStatus>()
-        .Select(s => new SelectListItem(s.ToString(), ((int)s).ToString(), Model.Status == (int)s))
-        .ToList();
+    var summary = Model.Summary;
+    var hasCurrentCoverage = summary is not null && !summary.Cancelled
+        && summary.StartDate <= Model.Today && summary.ExpiryDate >= Model.Today;
+    var summaryHeading = hasCurrentCoverage
+        ? "Current license"
+        : summary?.IsScheduled == true ? "Next scheduled license"
+        : summary?.IsExpired == true ? "Most recent expired license" : "License coverage";
+    var isEditing = Model.IsEditMode;
+    var editor = Model.Editor;
+    var originalStatus = isEditing
+        ? Model.Licenses.FirstOrDefault(x => x.IdLicense == editor!.IdLicense)?.StatusLabel ?? "Unknown"
+        : string.Empty;
 }
 
 <nav aria-label="breadcrumb" class="mb-2">
@@ -33,142 +22,224 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_PageHeader", (Title: "License", Subtitle: "Installation plan, dates and store limit. Platform Super Admin only.", ActionText: (string?)null, ActionUrl: (string?)null))
+@await Html.PartialAsync("_PageHeader", (Title: "License", Subtitle: "Manual validity and store limit management. Platform Super Admin only.", ActionText: (string?)null, ActionUrl: (string?)null))
 
-<div class="row g-3" id="licensePage"
+<div id="licensePage"
      data-suspend-url="@Url.Action("Suspend")"
-     data-activate-url="@Url.Action("Activate")">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-                    <div>
-                        <div class="text-muted small">Plan</div>
-                        <div class="h5 mb-0 text-capitalize">@(Model.HasLicense ? Model.LicenseType : "—")</div>
-                    </div>
-                    <span class="badge @badgeClass">@badgeText</span>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="text-muted small">Start</div>
-                        <div>@Model.StartDate.ToString("dd MMM yyyy")</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted small">Expiry</div>
-                        <div>@Model.ExpiryDate.ToString("dd MMM yyyy")</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted small">Days left</div>
-                        <div>@(Model.HasLicense ? Model.DaysRemaining.ToString() : "—")</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-muted small">Stores</div>
-                        <div>@Model.ActiveStoreCount of @Model.MaxStores used</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-muted small">Active users</div>
-                        <div>@Model.ActiveUserCount (no user cap on this license)</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+     data-resume-url="@Url.Action("Resume")"
+     data-cancel-url="@Url.Action("Cancel")"
+     data-today="@Model.Today.ToString("yyyy-MM-dd")">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="h5 mb-0">License overview</h2>
+        <a class="btn btn-primary" asp-action="Index" asp-route-mode="create">
+            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Create license
+        </a>
+    </div>
 
-        <div class="card border-0 shadow-sm">
+    <section class="card border-0 shadow-sm mb-4" aria-labelledby="licenseSummaryHeading">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <h3 id="licenseSummaryHeading" class="h6 text-muted mb-1">@summaryHeading</h3>
+                    @if (summary is null)
+                    {
+                        <p class="h5 mb-1">No license has been created</p>
+                        <p class="text-muted mb-0">Create a license to record this installation's validity period.</p>
+                    }
+                    else
+                    {
+                        @if (!hasCurrentCoverage)
+                        {
+                            <p class="text-muted mb-2">There is no current license coverage.</p>
+                        }
+                        <p class="h5 mb-1">@summary.LicenseKey</p>
+                        <span class="badge @(summary.Status switch {
+                            (int)CommonModel.LicenseStatus.Active => "text-bg-success",
+                            (int)CommonModel.LicenseStatus.Suspended => "text-bg-warning",
+                            (int)CommonModel.LicenseStatus.Scheduled => "text-bg-info",
+                            (int)CommonModel.LicenseStatus.Cancelled => "text-bg-secondary",
+                            _ => "text-bg-danger"
+                        })">@summary.StatusLabel</span>
+                    }
+                </div>
+                @if (summary is not null)
+                {
+                    <div class="license-summary-dates">
+                        <div><span class="text-muted small">Start Date</span><strong>@summary.StartDate.ToString("dd MMM yyyy")</strong></div>
+                        <div><span class="text-muted small">Expiry Date (inclusive)</span><strong>@summary.ExpiryDate.ToString("dd MMM yyyy")</strong></div>
+                        <div><span class="text-muted small">Max Stores</span><strong>@summary.MaxStores</strong></div>
+                    </div>
+                }
+            </div>
+            @if (summary is not null)
+            {
+                <hr />
+                <div class="d-flex flex-wrap gap-4 small">
+                    <span><span class="text-muted">Stores:</span> @Model.ActiveStoreCount of @summary.MaxStores used</span>
+                    <span><span class="text-muted">Active users:</span> @Model.ActiveUserCount</span>
+                    @if (hasCurrentCoverage)
+                    {
+                        <span><span class="text-muted">Days remaining:</span> @summary.DaysRemaining</span>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    @if (editor is not null)
+    {
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="licenseEditorHeading">
             <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                    <h2 id="licenseEditorHeading" class="h5 mb-0">@(isEditing ? "Edit license validity" : "Create license")</h2>
+                    @if (isEditing)
+                    {
+                        <span class="badge bg-body-secondary text-body border">@Model.Licenses.First(x => x.IdLicense == editor.IdLicense).LicenseKey</span>
+                    }
+                </div>
+                <div class="alert alert-warning d-none" id="licenseGapWarning" role="status">
+                    These dates leave a gap in license coverage. Review the previous expiry and next start date before saving.
+                </div>
+                <div class="alert alert-warning d-none" id="licenseImmediateExpiryWarning" role="status">
+                    This edit will make the currently valid license expire immediately. You will be asked to confirm before saving.
+                </div>
                 <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
-                <form id="licenseForm"
-                      asp-action="Save"
-                      method="post"
-                      data-sc-ajax-form="true"
-                      novalidate>
+                <form id="licenseForm" asp-action="Save" method="post" data-sc-ajax-form="true" novalidate
+                      data-original-status="@originalStatus" data-license-id="@editor.IdLicense">
+                    <input type="hidden" id="IdLicense" name="IdLicense" value="@editor.IdLicense" />
                     <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label" asp-for="LicenseKey"></label>
-                            <input class="form-control" asp-for="LicenseKey" autocomplete="off" />
-                            <span asp-validation-for="LicenseKey" class="text-danger"></span>
+                        <div class="col-md-6">
+                            <label class="form-label" for="StartDate">Start Date <span class="text-danger" aria-label="required">*</span></label>
+                            <input class="form-control" id="StartDate" name="StartDate" type="date" value="@editor.StartDate.ToString("yyyy-MM-dd")" required />
+                            <span class="text-danger" data-valmsg-for="StartDate"></span>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label" asp-for="LicenseType"></label>
-                            <select class="form-select" asp-for="LicenseType" asp-items="planItems"></select>
-                            <span asp-validation-for="LicenseType" class="text-danger"></span>
+                        <div class="col-md-6">
+                            <label class="form-label" for="ExpiryDate">Expiry Date <span class="text-danger" aria-label="required">*</span></label>
+                            <input class="form-control" id="ExpiryDate" name="ExpiryDate" type="date" value="@editor.ExpiryDate.ToString("yyyy-MM-dd")" required />
+                            <span class="text-danger" data-valmsg-for="ExpiryDate"></span>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label" asp-for="Status"></label>
-                            <select class="form-select" asp-for="Status" asp-items="statusItems"></select>
-                            <span asp-validation-for="Status" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" asp-for="StartDate"></label>
-                            <input class="form-control" asp-for="StartDate" type="date" />
-                            <span asp-validation-for="StartDate" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" asp-for="ExpiryDate"></label>
-                            <input class="form-control" asp-for="ExpiryDate" type="date" />
-                            <span asp-validation-for="ExpiryDate" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" asp-for="MaxStores"></label>
-                            <input class="form-control" asp-for="MaxStores" />
-                            <span asp-validation-for="MaxStores" class="text-danger"></span>
+                        <div class="col-md-6">
+                            <label class="form-label" for="MaxStores">Max Stores <span class="text-danger" aria-label="required">*</span></label>
+                            <input class="form-control" id="MaxStores" name="MaxStores" type="number" min="@Math.Max(1, Model.ActiveStoreCount)" value="@editor.MaxStores" required />
                             <div class="form-text">Must be at least @Model.ActiveStoreCount (current active stores).</div>
+                            <span class="text-danger" data-valmsg-for="MaxStores"></span>
                         </div>
                         <div class="col-12">
-                            <label class="form-label" asp-for="Notes"></label>
-                            <textarea class="form-control" asp-for="Notes" rows="3"></textarea>
-                            <span asp-validation-for="Notes" class="text-danger"></span>
+                            <label class="form-label" for="Notes">Notes <span class="text-muted small">(optional)</span></label>
+                            <textarea class="form-control" id="Notes" name="Notes" rows="3" maxlength="1000">@editor.Notes</textarea>
+                            <span class="text-danger" data-valmsg-for="Notes"></span>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="Reason">Reason for change <span class="text-danger" aria-label="required">*</span></label>
+                            <textarea class="form-control" id="Reason" name="Reason" rows="2" maxlength="500" required></textarea>
+                            <span class="text-danger" data-valmsg-for="Reason"></span>
                         </div>
                     </div>
                     <div class="mt-4 d-flex flex-wrap gap-2">
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>@(isEditing ? "Save changes" : "Create license")</button>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header">
-                <h2 class="h6 mb-0">How the license gate works</h2>
-            </div>
-            <div class="card-body small">
-                <ul class="mb-0 ps-3">
-                    <li class="mb-2"><strong>Platform Super Admin</strong> always bypasses the gate.</li>
-                    <li class="mb-2"><strong>Suspended</strong> — every signed-in request is blocked (403) until you activate again.</li>
-                    <li class="mb-2"><strong>Expired</strong> — browsing (GET) stays allowed; saving and other writes are blocked.</li>
-                    <li class="mb-2"><strong>No license</strong> — same as expired: reads only.</li>
-                    <li>Anonymous pages (sign-in, password reset, errors) stay reachable so you can fix this.</li>
-                </ul>
-            </div>
-        </div>
+        </section>
+    }
 
-        @if (Model.HasLicense)
-        {
-            <div class="card border-0 shadow-sm">
-                <div class="card-header">
-                    <h2 class="h6 mb-0">@(isSuspended ? "Activate" : "Suspend")</h2>
-                </div>
-                <div class="card-body">
-                    <label class="form-label" for="licenseReason">Reason</label>
-                    <textarea id="licenseReason" class="form-control" rows="3" maxlength="500"
-                              placeholder="Required. Stored on the license notes."></textarea>
-                    <div class="mt-3 d-grid">
-                        @if (isSuspended)
-                        {
-                            <button type="button" class="btn btn-success" id="licenseActivateBtn">Activate license</button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-warning" id="licenseSuspendBtn">Suspend license</button>
-                        }
-                    </div>
-                </div>
+    @if (Model.Licenses.Any(x => !x.Cancelled && x.StartDate > Model.Today))
+    {
+        <div class="alert alert-info" role="status">A scheduled license begins in the future. It does not replace today's current coverage.</div>
+    }
+
+    <section class="card border-0 shadow-sm" aria-labelledby="licenseHistoryHeading">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 id="licenseHistoryHeading" class="h5 mb-0">License records</h2>
+                <a asp-controller="Audit" asp-action="Index" asp-route-EntityName="License">View license audit history</a>
             </div>
-        }
-    </div>
+            <div class="mb-3">
+                <label class="form-label" for="licenseActionReason">Reason for Suspend, Resume, or Cancel <span class="text-danger" aria-label="required">*</span></label>
+                <input class="form-control" id="licenseActionReason" maxlength="500" autocomplete="off" placeholder="Enter a reason before choosing an action" />
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="licenseHistoryTable">
+                    <thead><tr>
+                        <th scope="col">License identifier</th><th scope="col">Start Date</th><th scope="col">Expiry Date</th>
+                        <th scope="col">Max Stores</th><th scope="col">Effective Status</th><th scope="col">Created On (UTC)</th>
+                        <th scope="col">Details / Notes</th><th scope="col">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                    @if (Model.Licenses.Count == 0)
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">No license has been created.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var license in Model.Licenses)
+                        {
+                            var badge = license.Status switch
+                            {
+                                (int)CommonModel.LicenseStatus.Active => "text-bg-success",
+                                (int)CommonModel.LicenseStatus.Suspended => "text-bg-warning",
+                                (int)CommonModel.LicenseStatus.Scheduled => "text-bg-info",
+                                (int)CommonModel.LicenseStatus.Cancelled => "text-bg-secondary",
+                                _ => "text-bg-danger"
+                            };
+                            <tr data-license-period data-license-id="@license.IdLicense" data-start="@license.StartDate.ToString("yyyy-MM-dd")"
+                                data-expiry="@license.ExpiryDate.ToString("yyyy-MM-dd")" data-cancelled="@license.Cancelled.ToString().ToLowerInvariant()">
+                                <td><strong>@license.LicenseKey</strong><div class="text-muted small">Record #@license.IdLicense</div></td>
+                                <td>@license.StartDate.ToString("dd MMM yyyy")</td>
+                                <td>@license.ExpiryDate.ToString("dd MMM yyyy") <span class="text-muted small">(inclusive)</span></td>
+                                <td>@license.MaxStores</td>
+                                <td><span class="badge @badge">@license.StatusLabel</span></td>
+                                <td>@license.CreatedAt.ToString("dd MMM yyyy HH:mm")</td>
+                                <td>
+                                    <details>
+                                        <summary>View details</summary>
+                                        <div class="small mt-2"><strong>Notes:</strong><br />@(string.IsNullOrWhiteSpace(license.Notes) ? "Not provided" : license.Notes)</div>
+                                        @if (license.Cancelled)
+                                        {
+                                            <div class="small mt-2"><strong>Cancellation reason:</strong><br />@license.CancelledReason</div>
+                                        }
+                                    </details>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if (!license.Cancelled)
+                                        {
+                                            <a class="btn btn-sm btn-outline-primary" asp-action="Index" asp-route-editId="@license.IdLicense">Edit</a>
+                                            @if (license.IsSuspended)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-success" data-license-action="resume" data-license-id="@license.IdLicense">Resume</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-warning" data-license-action="suspend" data-license-id="@license.IdLicense">Suspend</button>
+                                            }
+                                            @if (license.StartDate > Model.Today)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-license-action="cancel" data-license-id="@license.IdLicense">Cancel</button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">No actions available</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 
 <partial name="_ConfirmModal" />
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin/license.css" asp-append-version="true" />
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

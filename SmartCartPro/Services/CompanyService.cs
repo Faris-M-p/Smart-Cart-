@@ -12,11 +12,13 @@ public class CompanyService : ICompanyService
 
     private readonly ICompanyRepository _repo;
     private readonly IMemoryCache _cache;
+    private readonly ISettingService _settings;
 
-    public CompanyService(ICompanyRepository repo, IMemoryCache cache)
+    public CompanyService(ICompanyRepository repo, IMemoryCache cache, ISettingService settings)
     {
         _repo = repo;
         _cache = cache;
+        _settings = settings;
     }
 
     public async Task<OutputCompanySelect> GetCompanyAsync(InputCompanySelect input, CancellationToken ct = default)
@@ -208,72 +210,88 @@ public class CompanyService : ICompanyService
 
     public async Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default)
     {
-        var lic = await _repo.GetLicenseAsync(input, ct);
-        if (lic is null)
-        {
-            return null;
-        }
-
+        var today = await GetLicenseTodayAsync(ct);
+        var licenses = await _repo.ListLicensesAsync(ct);
+        var lic = licenses
+            .Where(x => !x.Cancelled && x.StartDate <= today && x.ExpiryDate >= today)
+            .OrderByDescending(x => x.StartDate)
+            .FirstOrDefault()
+            ?? licenses.Where(x => !x.Cancelled && x.ExpiryDate < today)
+                .OrderByDescending(x => x.ExpiryDate).FirstOrDefault()
+            ?? licenses.Where(x => !x.Cancelled && x.StartDate > today)
+                .OrderBy(x => x.StartDate).FirstOrDefault();
+        if (lic is null) return null;
+        SetEffectiveLicenseState(lic, today);
         lic.ActiveStoreCount = await _repo.GetActiveStoreCountAsync(ct);
         lic.ActiveUserCount = await _repo.GetActiveUserCountAsync(ct);
         return lic;
     }
 
+    public async Task<List<OutputLicenseSelect>> ListLicensesAsync(CancellationToken ct = default)
+    {
+        var today = await GetLicenseTodayAsync(ct);
+        var licenses = await _repo.ListLicensesAsync(ct);
+        var stores = await _repo.GetActiveStoreCountAsync(ct);
+        var users = await _repo.GetActiveUserCountAsync(ct);
+        foreach (var license in licenses)
+        {
+            SetEffectiveLicenseState(license, today);
+            license.ActiveStoreCount = stores;
+            license.ActiveUserCount = users;
+        }
+        return licenses;
+    }
+
+    public async Task<OutputLicenseSelect?> GetLicenseByIdAsync(int idLicense, CancellationToken ct = default)
+    {
+        var license = await _repo.GetLicenseByIdAsync(idLicense, ct);
+        if (license is null) return null;
+        var today = await GetLicenseTodayAsync(ct);
+        SetEffectiveLicenseState(license, today);
+        license.ActiveStoreCount = await _repo.GetActiveStoreCountAsync(ct);
+        license.ActiveUserCount = await _repo.GetActiveUserCountAsync(ct);
+        return license;
+    }
+
+    public async Task<OutputLicenseUpdate> CreateLicenseAsync(InputLicenseCreate input, CancellationToken ct = default)
+    {
+        EnsureLicenseMutationAllowed(input.CanEditLicense, input.ActorUserId);
+        ValidateLicenseDates(input.StartDate, input.ExpiryDate);
+        await ValidateMaxStoresAsync(input.MaxStores, ct);
+        await EnsureNoLicenseOverlapAsync(input.StartDate, input.ExpiryDate, null, ct);
+
+        input.LicenseKey = "LIC-" + Guid.NewGuid().ToString("N")[..16].ToUpperInvariant();
+        var created = await _repo.CreateLicenseAsync(input, ct);
+        if (!created.Ok)
+        {
+            await ThrowLicenseWriteFailureAsync(created, input.StartDate, input.ExpiryDate, null, ct);
+        }
+
+        await AuditLicenseAsync(input.ActorUserId, created.IdLicense, "Create",
+            $"Before: none. After: key={created.LicenseKey}; start={created.StartDate:dd MMM yyyy}; expiry={created.ExpiryDate:dd MMM yyyy}; max stores={created.MaxStores}; notes={created.Notes ?? "Not provided"}. Reason: {input.Reason.Trim()}", ct);
+        _cache.Remove(LicenseStatusCacheKey);
+        return created;
+    }
+
     public async Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default)
     {
-        if (!input.CanEditLicense)
-        {
-            throw new ForbiddenException(
-                "Only a platform administrator can change license settings.",
-                $"Actor {input.ActorUserId} cannot edit the license.");
-        }
-
-        if (input.ExpiryDate < input.StartDate)
-        {
-            throw new ValidationException(
-                "Please correct the highlighted fields.",
-                "Expiry must be on or after start date.",
-                new Dictionary<string, string[]>
-                {
-                    ["ExpiryDate"] = ["The Expiry Date must be greater than or equal to the Start Date."]
-                });
-        }
-
-        if (!Enum.IsDefined(typeof(CommonModel.LicenseStatus), input.Status))
-        {
-            throw new ValidationException(
-                "Please correct the highlighted fields.",
-                $"Invalid license status {input.Status}.",
-                new Dictionary<string, string[]>
-                {
-                    ["Status"] = ["Please select a valid status."]
-                });
-        }
-
-        var activeStores = await _repo.GetActiveStoreCountAsync(ct);
-        if (input.MaxStores < activeStores)
-        {
-            throw new ValidationException(
-                "Please correct the highlighted fields.",
-                $"MaxStores {input.MaxStores} < active stores {activeStores}.",
-                new Dictionary<string, string[]>
-                {
-                    ["MaxStores"] = [$"Max stores cannot be below current usage ({activeStores} active stores)."]
-                });
-        }
-
+        EnsureLicenseMutationAllowed(input.CanEditLicense, input.ActorUserId);
+        ValidateLicenseDates(input.StartDate, input.ExpiryDate);
+        await ValidateMaxStoresAsync(input.MaxStores, ct);
+        var before = await GetLicenseByIdAsync(input.IdLicense, ct)
+            ?? throw new ResourceNotFoundException("License not found.", $"License {input.IdLicense} does not exist.");
+        if (before.Cancelled)
+            throw new ConflictException("Cancelled licenses cannot be edited.", $"License {input.IdLicense} is cancelled.");
+        await EnsureNoLicenseOverlapAsync(input.StartDate, input.ExpiryDate, input.IdLicense, ct);
         var updated = await _repo.UpdateLicenseAsync(input, ct);
         if (!updated.Ok)
         {
-            throw new UpdateFailedException(
-                updated.ResponseMsg ?? "Unable to save license.",
-                updated.ResponseMsg ?? "Unable to save license.");
+            await ThrowLicenseWriteFailureAsync(updated, input.StartDate, input.ExpiryDate, input.IdLicense, ct);
         }
 
         _cache.Remove(LicenseStatusCacheKey);
-
-        await Audit(input.ActorUserId, "License", updated.IdLicense, "Update",
-            $"License updated. Key={input.LicenseKey}, MaxStores={input.MaxStores}.", ct);
+        await AuditLicenseAsync(input.ActorUserId, updated.IdLicense, "Update",
+            $"Before: key={before.LicenseKey}; start={before.StartDate:dd MMM yyyy}; expiry={before.ExpiryDate:dd MMM yyyy}; max stores={before.MaxStores}; notes={before.Notes ?? "Not provided"}. After: key={updated.LicenseKey}; start={updated.StartDate:dd MMM yyyy}; expiry={updated.ExpiryDate:dd MMM yyyy}; max stores={updated.MaxStores}; notes={updated.Notes ?? "Not provided"}. Reason: {input.Reason.Trim()}", ct);
         return updated;
     }
 
@@ -281,43 +299,149 @@ public class CompanyService : ICompanyService
         InputLicenseStatusUpdate input,
         CancellationToken ct = default)
     {
-        var license = await _repo.GetLicenseAsync(new InputLicenseSelect(), ct)
-            ?? throw new ResourceNotFoundException("No license found.", "License row is missing.");
+        if (string.IsNullOrWhiteSpace(input.Action)
+            || input.Action is not ("suspend" or "resume" or "cancel"))
+            throw new ValidationException("Please choose a valid license action.", "Unknown license action.");
+        EnsureLicenseMutationAllowed(true, input.ActorUserId);
+        input.Today = await GetLicenseTodayAsync(ct);
+        var license = await GetLicenseByIdAsync(input.IdLicense, ct)
+            ?? throw new ResourceNotFoundException("License not found.", $"License {input.IdLicense} does not exist.");
+        if (license.Cancelled)
+            throw new ConflictException("Cancelled licenses cannot be changed.", $"License {input.IdLicense} is cancelled.");
+        if (input.Action == "resume" && !license.IsSuspended)
+            throw new ConflictException("Only suspended licenses can be resumed.", $"License {input.IdLicense} is not suspended.");
+        if (input.Action == "cancel" && license.StartDate <= license.Today)
+            throw new ConflictException("Only a future license can be cancelled.", $"License {input.IdLicense} has already started.");
 
-        var reason = input.Reason.Trim();
-        var stamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm") + " UTC";
-        var noteLine = input.Activate
-            ? $"[{stamp}] Activated: {reason}"
-            : $"[{stamp}] Suspended: {reason}";
-        var notes = string.IsNullOrWhiteSpace(license.Notes)
-            ? noteLine
-            : license.Notes.Trim() + Environment.NewLine + noteLine;
-
-        var updateInput = new InputLicenseUpdate
+        var changed = await _repo.SetLicenseActionAsync(input, ct);
+        if (!changed.Ok)
+            ThrowLicenseStatusFailure(changed);
+        _cache.Remove(LicenseStatusCacheKey);
+        var actionName = input.Action switch { "resume" => "Resume", "cancel" => "Cancel", _ => "Suspend" };
+        var resultingState = input.Action switch
         {
-            ActorUserId = input.ActorUserId,
-            CanEditLicense = true,
-            LicenseKey = license.LicenseKey,
-            LicenseType = license.LicenseType,
-            Status = input.Activate
-                ? (int)CommonModel.LicenseStatus.Active
-                : (int)CommonModel.LicenseStatus.Suspended,
-            StartDate = license.StartDate,
-            ExpiryDate = license.ExpiryDate,
-            MaxStores = license.MaxStores,
-            Notes = notes
+            "suspend" => "Suspended",
+            "cancel" => "Cancelled",
+            _ when license.StartDate > input.Today => "Scheduled",
+            _ when license.ExpiryDate < input.Today => "Expired",
+            _ => "Active"
         };
-
-        var updated = await UpdateLicenseAsync(updateInput, ct);
-        return new OutputLicenseStatusUpdate
-        {
-            ResponseCode = 0,
-            ResponseMsg = updated.ResponseMsg,
-            StatusCode = 200,
-            IdLicense = updated.IdLicense,
-            Status = updated.Status
-        };
+        await AuditLicenseAsync(input.ActorUserId, license.IdLicense, actionName,
+            $"Before: status={license.StatusLabel}; start={license.StartDate:dd MMM yyyy}; expiry={license.ExpiryDate:dd MMM yyyy}; cancelled={license.Cancelled}. After: status={resultingState}; start={license.StartDate:dd MMM yyyy}; expiry={license.ExpiryDate:dd MMM yyyy}; cancelled={input.Action == "cancel"}. Reason: {input.Reason.Trim()}", ct);
+        return changed;
     }
+
+    public async Task<DateOnly> GetLicenseTodayAsync(CancellationToken ct = default)
+    {
+        var configuredTimeZone = await _settings.GetEffectiveValueAsync("locale.timezone", null, ct);
+        return LocaleClock.LocalToday(LocaleClock.ResolveTimeZone(configuredTimeZone));
+    }
+
+    public Task<int> GetActiveStoreCountForLicenseAsync(CancellationToken ct = default) =>
+        _repo.GetActiveStoreCountAsync(ct);
+
+    public Task<int> GetActiveUserCountForLicenseAsync(CancellationToken ct = default) =>
+        _repo.GetActiveUserCountAsync(ct);
+
+    private static void SetEffectiveLicenseState(OutputLicenseSelect license, DateOnly today)
+    {
+        license.Today = today;
+        license.Status = license.Cancelled
+            ? (int)CommonModel.LicenseStatus.Cancelled
+            : string.Equals(license.StoredStatus, "suspended", StringComparison.OrdinalIgnoreCase)
+                ? (int)CommonModel.LicenseStatus.Suspended
+                : today < license.StartDate
+                    ? (int)CommonModel.LicenseStatus.Scheduled
+                    : today > license.ExpiryDate
+                        ? (int)CommonModel.LicenseStatus.Expired
+                        : (int)CommonModel.LicenseStatus.Active;
+    }
+
+    private static void EnsureLicenseMutationAllowed(bool canEdit, int actorUserId)
+    {
+        if (!canEdit)
+            throw new ForbiddenException("Only a platform administrator can change license settings.",
+                $"Actor {actorUserId} cannot edit license records.");
+    }
+
+    private static void ValidateLicenseDates(DateOnly startDate, DateOnly expiryDate)
+    {
+        if (expiryDate >= startDate) return;
+        const string message = "The Expiry Date must be on or after the Start Date.";
+        throw new ValidationException("Please correct the highlighted fields.", message,
+            new Dictionary<string, string[]> { ["ExpiryDate"] = [message] });
+    }
+
+    private async Task ValidateMaxStoresAsync(int maxStores, CancellationToken ct)
+    {
+        var activeStores = await _repo.GetActiveStoreCountAsync(ct);
+        if (maxStores >= 1 && maxStores >= activeStores) return;
+        var message = maxStores < 1
+            ? "Max Stores must be at least 1."
+            : $"Max stores cannot be below current usage ({activeStores} active stores).";
+        throw new ValidationException("Please correct the highlighted fields.", message,
+            new Dictionary<string, string[]> { ["MaxStores"] = [message] });
+    }
+
+    private async Task EnsureNoLicenseOverlapAsync(
+        DateOnly startDate,
+        DateOnly expiryDate,
+        int? excludeId,
+        CancellationToken ct)
+    {
+        var conflict = await _repo.FindLicenseOverlapAsync(startDate, expiryDate, excludeId, ct);
+        if (conflict is not null)
+            throw LicenseOverlapException(conflict);
+    }
+
+    private async Task ThrowLicenseWriteFailureAsync(
+        OutputLicenseUpdate result,
+        DateOnly startDate,
+        DateOnly expiryDate,
+        int? excludeId,
+        CancellationToken ct)
+    {
+        if (result.StatusCode == 409)
+        {
+            var conflict = await _repo.FindLicenseOverlapAsync(startDate, expiryDate, excludeId, ct);
+            if (conflict is not null) throw LicenseOverlapException(conflict);
+            throw new ConflictException(result.ResponseMsg, result.ResponseMsg);
+        }
+        if (result.StatusCode == 404)
+            throw new ResourceNotFoundException(result.ResponseMsg, result.ResponseMsg);
+        throw new UpdateFailedException(result.ResponseMsg, result.ResponseMsg);
+    }
+
+    private static ConflictException LicenseOverlapException(OutputLicenseSelect conflict)
+    {
+        var message = $"A license already exists for this period: {conflict.LicenseKey} "
+            + $"({conflict.StartDate:dd MMM yyyy} – {conflict.ExpiryDate:dd MMM yyyy}). "
+            + "Edit that license or choose a non-overlapping period.";
+        return new ConflictException(message, message);
+    }
+
+    private static void ThrowLicenseStatusFailure(OutputLicenseStatusUpdate result)
+    {
+        switch (result.StatusCode)
+        {
+            case 404:
+                throw new ResourceNotFoundException(result.ResponseMsg, result.ResponseMsg);
+            case 409:
+                throw new ConflictException(result.ResponseMsg, result.ResponseMsg);
+            default:
+                throw new ValidationException(result.ResponseMsg, result.ResponseMsg);
+        }
+    }
+
+    private Task AuditLicenseAsync(int actorUserId, int entityId, string action, string details, CancellationToken ct) =>
+        _repo.AddAuditLogAsync(new InputAuditLogCreate
+        {
+            ActorUserId = actorUserId,
+            EntityName = "License",
+            EntityId = entityId,
+            Action = action,
+            Details = details
+        }, ct);
 
     private Task Audit(int actorUserId, string entity, int? entityId, string action, string details, CancellationToken ct) =>
         _repo.AddAuditLogAsync(new InputAuditLogCreate

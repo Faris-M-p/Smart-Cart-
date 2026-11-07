@@ -399,7 +399,7 @@ public class DashboardService : IDashboardService
 
         if (input.IsPlatformSuperAdmin)
         {
-            var licExpiry = await _repo.GetLicenseExpiryDateAsync(ct);
+            var licExpiry = await _repo.GetLicenseExpiryDateAsync(today, ct);
             if (licExpiry.HasValue)
             {
                 var daysRemaining = licExpiry.Value.DayNumber - today.DayNumber;

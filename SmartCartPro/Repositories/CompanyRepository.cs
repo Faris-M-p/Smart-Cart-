@@ -591,12 +591,11 @@ public class CompanyRepository : ICompanyRepository
         };
     }
 
-    public async Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default)
+    public async Task<List<OutputLicenseSelect>> ListLicensesAsync(CancellationToken ct = default)
     {
         try
         {
-            var row = await _db.Licenses.AsNoTracking()
-                .Where(l => !l.Cancelled)
+            var rows = await _db.Licenses.AsNoTracking()
                 .Select(l => new
                 {
                     l.IdLicense,
@@ -606,93 +605,236 @@ public class CompanyRepository : ICompanyRepository
                     l.StartDate,
                     l.ExpiryDate,
                     l.MaxStores,
-                    l.Notes
+                    l.Notes,
+                    l.CreatedAt,
+                    l.UpdatedAt,
+                    l.Cancelled,
+                    l.CancelledReason
                 })
-                .FirstOrDefaultAsync(ct);
+                .OrderByDescending(l => l.StartDate)
+                .ThenByDescending(l => l.IdLicense)
+                .ToListAsync(ct);
 
-            if (row is null)
-                return null;
-
-            return new OutputLicenseSelect
+            return rows.Select(row => new OutputLicenseSelect
             {
                 IdLicense = row.IdLicense,
                 LicenseKey = row.LicenseKey,
                 LicenseType = row.LicenseType,
                 Status = MapLicenseStatusFromDb(row.Status),
+                StoredStatus = row.Status,
                 StartDate = row.StartDate,
                 ExpiryDate = row.ExpiryDate,
                 MaxStores = row.MaxStores,
-                Notes = row.Notes
-            };
+                Notes = row.Notes,
+                CreatedAt = row.CreatedAt,
+                UpdatedAt = row.UpdatedAt,
+                Cancelled = row.Cancelled,
+                CancelledReason = row.CancelledReason
+            }).ToList();
         }
         catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedTable)
         {
-            return null;
+            return new List<OutputLicenseSelect>();
         }
+    }
+
+    public async Task<OutputLicenseSelect?> GetLicenseByIdAsync(int idLicense, CancellationToken ct = default)
+    {
+        var row = await _db.Licenses.AsNoTracking().FirstOrDefaultAsync(l => l.IdLicense == idLicense, ct);
+        return row is null ? null : ToLicenseSelect(row);
+    }
+
+    public async Task<OutputLicenseSelect?> FindLicenseOverlapAsync(
+        DateOnly startDate,
+        DateOnly expiryDate,
+        int? excludeId = null,
+        CancellationToken ct = default)
+    {
+        var row = await _db.Licenses.AsNoTracking()
+            .Where(l => !l.Cancelled
+                && (!excludeId.HasValue || l.IdLicense != excludeId.Value)
+                && l.StartDate <= expiryDate
+                && l.ExpiryDate >= startDate)
+            .OrderBy(l => l.StartDate)
+            .Select(l => new
+            {
+                l.IdLicense,
+                l.LicenseKey,
+                l.LicenseType,
+                l.Status,
+                l.StartDate,
+                l.ExpiryDate,
+                l.MaxStores,
+                l.Notes,
+                l.CreatedAt,
+                l.UpdatedAt,
+                l.Cancelled,
+                l.CancelledReason
+            })
+            .FirstOrDefaultAsync(ct);
+
+        return row is null ? null : new OutputLicenseSelect
+        {
+            IdLicense = row.IdLicense,
+            LicenseKey = row.LicenseKey,
+            LicenseType = row.LicenseType,
+            Status = MapLicenseStatusFromDb(row.Status),
+            StoredStatus = row.Status,
+            StartDate = row.StartDate,
+            ExpiryDate = row.ExpiryDate,
+            MaxStores = row.MaxStores,
+            Notes = row.Notes,
+            CreatedAt = row.CreatedAt,
+            UpdatedAt = row.UpdatedAt,
+            Cancelled = row.Cancelled,
+            CancelledReason = row.CancelledReason
+        };
+    }
+
+    public async Task<OutputLicenseUpdate> CreateLicenseAsync(InputLicenseCreate input, CancellationToken ct = default)
+    {
+        var entity = new License
+        {
+            LicenseKey = input.LicenseKey,
+            LicenseType = "standard",
+            Status = "active",
+            StartDate = input.StartDate,
+            ExpiryDate = input.ExpiryDate,
+            MaxStores = input.MaxStores,
+            Notes = input.Notes?.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.Licenses.Add(entity);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsLicensePeriodConflict(ex) || IsUniqueViolation(ex))
+        {
+            _db.Entry(entity).State = EntityState.Detached;
+            return LicenseWriteConflict("The license conflicts with an existing license or identifier.");
+        }
+
+        return ToLicenseUpdate(entity, "Created");
     }
 
     public async Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default)
     {
-        var statusDb = MapLicenseStatusToDb(input.Status);
-
-        var existing = await _db.Licenses.FirstOrDefaultAsync(l => !l.Cancelled, ct);
+        var existing = await _db.Licenses.FirstOrDefaultAsync(l => l.IdLicense == input.IdLicense && !l.Cancelled, ct);
         if (existing is null)
-        {
-            var created = new License
-            {
-                LicenseKey = input.LicenseKey.Trim(),
-                LicenseType = input.LicenseType.Trim(),
-                Status = statusDb,
-                StartDate = input.StartDate,
-                ExpiryDate = input.ExpiryDate,
-                MaxStores = input.MaxStores,
-                Notes = input.Notes?.Trim(),
-                CreatedAt = DateTime.UtcNow
-            };
-            _db.Licenses.Add(created);
-            await _db.SaveChangesAsync(ct);
+            return LicenseWriteNotFound();
 
-            return new OutputLicenseUpdate
-            {
-                ResponseCode = 0,
-                ResponseMsg = "Created",
-                StatusCode = 200,
-                IdLicense = created.IdLicense,
-                LicenseKey = created.LicenseKey,
-                LicenseType = created.LicenseType,
-                Status = input.Status,
-                StartDate = created.StartDate,
-                ExpiryDate = created.ExpiryDate,
-                MaxStores = created.MaxStores,
-                Notes = created.Notes
-            };
-        }
-
-        existing.LicenseKey = input.LicenseKey.Trim();
-        existing.LicenseType = input.LicenseType.Trim();
-        existing.Status = statusDb;
         existing.StartDate = input.StartDate;
         existing.ExpiryDate = input.ExpiryDate;
         existing.MaxStores = input.MaxStores;
         existing.Notes = input.Notes?.Trim();
         existing.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsLicensePeriodConflict(ex))
+        {
+            await _db.Entry(existing).ReloadAsync(ct);
+            return LicenseWriteConflict("The license period overlaps another license.");
+        }
 
-        return new OutputLicenseUpdate
+        return ToLicenseUpdate(existing, "Updated");
+    }
+
+    public async Task<OutputLicenseStatusUpdate> SetLicenseActionAsync(
+        InputLicenseStatusUpdate input,
+        CancellationToken ct = default)
+    {
+        var license = await _db.Licenses.FirstOrDefaultAsync(l => l.IdLicense == input.IdLicense, ct);
+        if (license is null)
+            return new OutputLicenseStatusUpdate { ResponseCode = 1, ResponseMsg = "License not found.", StatusCode = 404 };
+        if (license.Cancelled)
+            return new OutputLicenseStatusUpdate { ResponseCode = 1, ResponseMsg = "Cancelled licenses cannot be changed.", StatusCode = 409 };
+
+        switch (input.Action)
+        {
+            case "suspend":
+                license.Status = "suspended";
+                break;
+            case "resume":
+                license.Status = "active";
+                break;
+            case "cancel" when license.StartDate > input.Today:
+                license.Cancelled = true;
+                license.CancelledOn = DateTime.UtcNow;
+                license.CancelledReason = input.Reason.Trim();
+                break;
+            case "cancel":
+                return new OutputLicenseStatusUpdate { ResponseCode = 1, ResponseMsg = "Only a future license can be cancelled.", StatusCode = 409 };
+            default:
+                return new OutputLicenseStatusUpdate { ResponseCode = 1, ResponseMsg = "Unknown license action.", StatusCode = 400 };
+        }
+
+        license.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return new OutputLicenseStatusUpdate
         {
             ResponseCode = 0,
             ResponseMsg = "Updated",
             StatusCode = 200,
-            IdLicense = existing.IdLicense,
-            LicenseKey = existing.LicenseKey,
-            LicenseType = existing.LicenseType,
-            Status = input.Status,
-            StartDate = existing.StartDate,
-            ExpiryDate = existing.ExpiryDate,
-            MaxStores = existing.MaxStores,
-            Notes = existing.Notes
+            IdLicense = license.IdLicense,
+            Status = MapLicenseStatusFromDb(license.Status),
+            Cancelled = license.Cancelled
         };
     }
+
+    private static OutputLicenseSelect ToLicenseSelect(License row) => new()
+    {
+        IdLicense = row.IdLicense,
+        LicenseKey = row.LicenseKey,
+        LicenseType = row.LicenseType,
+        Status = MapLicenseStatusFromDb(row.Status),
+        StoredStatus = row.Status,
+        StartDate = row.StartDate,
+        ExpiryDate = row.ExpiryDate,
+        MaxStores = row.MaxStores,
+        Notes = row.Notes,
+        CreatedAt = row.CreatedAt,
+        UpdatedAt = row.UpdatedAt,
+        Cancelled = row.Cancelled,
+        CancelledReason = row.CancelledReason
+    };
+
+    private static OutputLicenseUpdate ToLicenseUpdate(License row, string message) => new()
+    {
+        ResponseCode = 0,
+        ResponseMsg = message,
+        StatusCode = 200,
+        IdLicense = row.IdLicense,
+        LicenseKey = row.LicenseKey,
+        LicenseType = row.LicenseType,
+        Status = MapLicenseStatusFromDb(row.Status),
+        StartDate = row.StartDate,
+        ExpiryDate = row.ExpiryDate,
+        MaxStores = row.MaxStores,
+        Notes = row.Notes
+    };
+
+    private static OutputLicenseUpdate LicenseWriteConflict(string message) => new()
+    {
+        ResponseCode = 1,
+        ResponseMsg = message,
+        StatusCode = 409
+    };
+
+    private static OutputLicenseUpdate LicenseWriteNotFound() => new()
+    {
+        ResponseCode = 1,
+        ResponseMsg = "License not found.",
+        StatusCode = 404
+    };
+
+    private static bool IsLicensePeriodConflict(DbUpdateException ex) =>
+        ex.GetBaseException() is PostgresException pg && pg.SqlState == PostgresErrorCodes.ExclusionViolation;
+
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.GetBaseException() is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
 
     public async Task AddAuditLogAsync(InputAuditLogCreate input, CancellationToken ct = default)
     {
@@ -718,13 +860,4 @@ public class CompanyRepository : ICompanyRepository
             _ => throw new ArgumentOutOfRangeException(nameof(dbValue), dbValue, "Unknown license status in database.")
         };
 
-    private static string MapLicenseStatusToDb(int status) =>
-        (CommonModel.LicenseStatus)status switch
-        {
-            CommonModel.LicenseStatus.Active => "active",
-            CommonModel.LicenseStatus.Suspended => "suspended",
-            CommonModel.LicenseStatus.Expired => "expired",
-            CommonModel.LicenseStatus.Trial => "trial",
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown license status.")
-        };
 }

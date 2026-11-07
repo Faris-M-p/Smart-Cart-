@@ -17,7 +17,7 @@ public interface IDashboardRepository
     Task<(decimal? LastVariance, string? LastCashierName)> GetLastClosedSessionDifferenceAsync(int storeId, CancellationToken ct = default);
     Task<(int PendingCount, DateTime? OldestOrderDate)> GetOldestPendingOnlineOrderAsync(int storeId, CancellationToken ct = default);
     Task<DateTime?> GetCashierOpenSessionTimeAsync(int storeId, int userId, CancellationToken ct = default);
-    Task<DateOnly?> GetLicenseExpiryDateAsync(CancellationToken ct = default);
+    Task<DateOnly?> GetLicenseExpiryDateAsync(DateOnly today, CancellationToken ct = default);
 
     // Advanced Queries
     Task<List<OutputDashboardHourlyPoint>> ListHourlySalesAsync(int storeId, DateTime fromUtc, DateTime toUtcExclusive, TimeZoneInfo tz, CancellationToken ct = default);

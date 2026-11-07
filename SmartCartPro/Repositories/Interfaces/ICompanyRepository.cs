@@ -17,8 +17,12 @@ public interface ICompanyRepository
     Task<OutputStoreUpdate> UpdateStoreAsync(InputStoreUpdate input, CancellationToken ct = default);
     Task<OutputStoreStatusUpdate> UpdateStoreStatusAsync(InputStoreStatusUpdate input, CancellationToken ct = default);
 
-    Task<OutputLicenseSelect?> GetLicenseAsync(InputLicenseSelect input, CancellationToken ct = default);
+    Task<List<OutputLicenseSelect>> ListLicensesAsync(CancellationToken ct = default);
+    Task<OutputLicenseSelect?> GetLicenseByIdAsync(int idLicense, CancellationToken ct = default);
+    Task<OutputLicenseSelect?> FindLicenseOverlapAsync(DateOnly startDate, DateOnly expiryDate, int? excludeId = null, CancellationToken ct = default);
+    Task<OutputLicenseUpdate> CreateLicenseAsync(InputLicenseCreate input, CancellationToken ct = default);
     Task<OutputLicenseUpdate> UpdateLicenseAsync(InputLicenseUpdate input, CancellationToken ct = default);
+    Task<OutputLicenseStatusUpdate> SetLicenseActionAsync(InputLicenseStatusUpdate input, CancellationToken ct = default);
 
     Task AddAuditLogAsync(InputAuditLogCreate input, CancellationToken ct = default);
 }

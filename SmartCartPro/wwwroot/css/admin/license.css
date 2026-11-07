@@ -1,0 +1,44 @@
+#licensePage .license-summary-dates {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(9rem, 1fr));
+    gap: .75rem 1.5rem;
+}
+
+#licensePage .license-summary-dates > div {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+#licensePage .license-summary-dates strong {
+    color: var(--bs-body-color);
+}
+
+#licenseHistoryTable {
+    min-width: 900px;
+}
+
+#licenseHistoryTable th {
+    white-space: nowrap;
+}
+
+#licenseHistoryTable td:last-child {
+    min-width: 175px;
+}
+
+#licenseHistoryTable details summary {
+    color: var(--bs-link-color);
+    cursor: pointer;
+}
+
+@media (max-width: 767.98px) {
+    #licensePage .license-summary-dates {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    #licensePage .license-summary-dates {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
