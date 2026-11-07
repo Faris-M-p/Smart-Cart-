@@ -91,7 +91,22 @@ public class CompanyRepository : ICompanyRepository
         };
 
         _db.Companies.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (
+            ex.GetBaseException() is PostgresException pg
+            && pg.SqlState == PostgresErrorCodes.UniqueViolation)
+        {
+            _db.Entry(entity).State = EntityState.Detached;
+            return new OutputCompanyCreate
+            {
+                ResponseCode = 1,
+                ResponseMsg = "A company already exists in this database.",
+                StatusCode = 409
+            };
+        }
 
         return new OutputCompanyCreate
         {
@@ -122,7 +137,8 @@ public class CompanyRepository : ICompanyRepository
 
     public async Task<OutputCompanyUpdate> UpdateCompanyAsync(InputCompanyUpdate input, CancellationToken ct = default)
     {
-        var existing = await _db.Companies.FirstOrDefaultAsync(c => !c.Cancelled, ct);
+        var existing = await _db.Companies.FirstOrDefaultAsync(
+            c => c.IdCompany == input.IdCompany && !c.Cancelled, ct);
         if (existing is null)
         {
             return new OutputCompanyUpdate

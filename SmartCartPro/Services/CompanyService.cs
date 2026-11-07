@@ -67,11 +67,11 @@ public class CompanyService : ICompanyService
     public async Task<OutputCompanyUpdate> UpdateCompanyAsync(InputCompanyUpdate input, CancellationToken ct = default)
     {
         var existing = await _repo.GetCompanyAsync(new InputCompanySelect(), ct);
-        if (existing is null)
+        if (existing is null || existing.IdCompany != input.IdCompany)
         {
             throw new ResourceNotFoundException(
                 "Company not found.",
-                $"Actor {input.ActorUserId} tried to update a missing company.");
+                $"Actor {input.ActorUserId} tried to update missing company {input.IdCompany}.");
         }
 
         var updated = await _repo.UpdateCompanyAsync(input, ct);

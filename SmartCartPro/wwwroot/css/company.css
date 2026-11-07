@@ -1,0 +1,73 @@
+/* Company page only. Colors follow Bootstrap's active data-bs-theme tokens. */
+#companyPage .company-section-title {
+    display: flex;
+    align-items: center;
+    gap: .15rem;
+    margin-bottom: 1rem;
+    color: var(--bs-emphasis-color);
+}
+
+#companyPage .company-section-title i {
+    color: var(--bs-primary);
+}
+
+#companyPage .company-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.5rem;
+}
+
+#companyPage .company-detail-grid > div {
+    min-width: 0;
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+#companyPage .company-detail-grid > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+#companyPage .company-detail-grid dt {
+    margin-bottom: .25rem;
+    color: var(--bs-secondary-color);
+    font-size: .875rem;
+    font-weight: 500;
+}
+
+#companyPage .company-detail-grid dd {
+    margin: 0;
+    color: var(--bs-body-color);
+    overflow-wrap: anywhere;
+}
+
+#companyPage .company-required-mark {
+    color: var(--bs-danger);
+    font-weight: 700;
+}
+
+#companyPage .company-optional-mark {
+    color: var(--bs-secondary-color);
+    font-size: .8rem;
+}
+
+#companyPage .company-profile .card {
+    height: 100%;
+}
+
+@media (max-width: 575.98px) {
+    #companyPage .company-detail-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .75rem;
+    }
+
+    #companyPage .company-detail-grid > div:nth-last-child(-n + 2) {
+        border-bottom: 1px solid var(--bs-border-color);
+        padding-bottom: .75rem;
+    }
+
+    #companyPage .company-detail-grid > div:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+}

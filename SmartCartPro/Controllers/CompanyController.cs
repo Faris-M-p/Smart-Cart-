@@ -43,7 +43,9 @@ public class CompanyController : Controller
     {
         CommonHelpers.ValidateModelState(ModelState);
 
-        if (model.RequiresBootstrap || model.IdCompany <= 0)
+        // Resolve setup versus update from persisted state, never from hidden form fields.
+        var current = await _svc.GetCompanyAsync(new InputCompanySelect { CanCreate = IsPlatformAdmin }, ct);
+        if (current.RequiresBootstrap)
         {
             var input = new InputCompanyCreate
             {
@@ -77,7 +79,7 @@ public class CompanyController : Controller
         var updateInput = new InputCompanyUpdate
         {
             ActorUserId = ActorId,
-            IdCompany = model.IdCompany,
+            IdCompany = current.IdCompany,
             CompanyName = model.CompanyName,
             CompanyCode = model.CompanyCode,
             LegalName = model.LegalName,
