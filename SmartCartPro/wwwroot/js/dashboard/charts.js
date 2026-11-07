@@ -39,13 +39,18 @@
 
   function svgI(name, attrs) {
     attrs = attrs || '';
-    return '<svg class="i" viewBox="0 0 24 24" ' + attrs + '>' + (ICONS[name] || '') + '</svg>';
+    return '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ' + attrs + '>' + (ICONS[name] || '') + '</svg>';
   }
 
   function hydrate(root) {
     root = root || document;
     root.querySelectorAll('svg[data-i]').forEach(function (s) {
       s.setAttribute('viewBox', '0 0 24 24');
+      s.setAttribute('fill', 'none');
+      s.setAttribute('stroke', 'currentColor');
+      s.setAttribute('stroke-width', '1.8');
+      s.setAttribute('stroke-linecap', 'round');
+      s.setAttribute('stroke-linejoin', 'round');
       s.innerHTML = ICONS[s.dataset.i] || '';
       s.removeAttribute('data-i');
     });
@@ -102,8 +107,8 @@
     var s = '';
     for (var i = 0; i <= ticks; i++) {
       var y = P.t + (H - P.t - P.b) * (1 - i / ticks);
-      s += '<line x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + y + '" y2="' + y + '" stroke="#eef1f5"/>' +
-           '<text x="' + (P.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="#9aa3b2">' + fmt(max * i / ticks) + '</text>';
+      s += '<line x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + y + '" y2="' + y + '" stroke="var(--sc-chart-grid)"/>' +
+           '<text x="' + (P.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--sc-chart-muted)">' + fmt(max * i / ticks) + '</text>';
     }
     return s;
   }
@@ -121,7 +126,7 @@
     }
     return idx.map(function (i) {
       var anchor = (i === n - 1 && n > 8) ? 'end' : 'middle';
-      return '<text x="' + xs(i) + '" y="' + (H - P.b + 18) + '" text-anchor="' + anchor + '" font-size="11" fill="#9aa3b2">' + esc(labels[i]) + '</text>';
+      return '<text x="' + xs(i) + '" y="' + (H - P.b + 18) + '" text-anchor="' + anchor + '" font-size="11" fill="var(--sc-chart-muted)">' + esc(labels[i]) + '</text>';
     }).join('');
   }
 
@@ -147,21 +152,21 @@
     };
 
     var area = cur.length > 0 ? (line(cur) + 'L' + xs(cur.length - 1) + ',' + ys(0) + 'L' + xs(0) + ',' + ys(0) + 'Z') : '';
-    var prevLine = prev && prev.length ? '<path d="' + line(prev) + '" fill="none" stroke="#9aa3b2" stroke-width="1.6" stroke-dasharray="5 4"/>' : '';
+    var prevLine = prev && prev.length ? '<path d="' + line(prev) + '" fill="none" stroke="var(--sc-chart-muted)" stroke-width="1.6" stroke-dasharray="5 4"/>' : '';
 
     var dots = (cur.length <= 31) ? cur.map(function (v, i) {
-      return '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="' + (cur.length > 14 ? 2.2 : 3.4) + '" fill="#fff" stroke="#2563eb" stroke-width="2"/>';
+      return '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="' + (cur.length > 14 ? 2.2 : 3.4) + '" fill="var(--sc-panel-bg)" stroke="var(--bs-primary)" stroke-width="2"/>';
     }).join('') : '';
 
     el.innerHTML = '<svg width="' + W + '" height="' + H + '" role="img" aria-label="Sales trend chart">' +
-      '<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".22"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs>' +
+      '<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--bs-primary)" stop-opacity=".22"/><stop offset="1" stop-color="var(--bs-primary)" stop-opacity="0"/></linearGradient></defs>' +
       axes(W, H, P, max, 4, inrAxis) +
       xLabels(labels, xs, H, P) +
       prevLine +
       '<path d="' + area + '" fill="url(#ga)"/>' +
-      '<path d="' + line(cur) + '" fill="none" stroke="#2563eb" stroke-width="2.4"/>' +
+      '<path d="' + line(cur) + '" fill="none" stroke="var(--bs-primary)" stroke-width="2.4"/>' +
       dots +
-      '<line id="hl" x1="0" x2="0" y1="' + P.t + '" y2="' + (H - P.b) + '" stroke="#cbd5e1" opacity="0"/>' +
+      '<line id="hl" x1="0" x2="0" y1="' + P.t + '" y2="' + (H - P.b) + '" stroke="var(--sc-chart-grid)" opacity="0"/>' +
       '</svg>';
 
     var svg = el.querySelector('svg');
@@ -179,7 +184,7 @@
 
       var prevV = prev && prev[i] ? prev[i] : 0;
       var d = prevV ? ((cur[i] - prevV) / prevV * 100) : 0;
-      var deltaText = prevV ? '<br><span style="color:#cbd5e1">Prev: ' + inr0.format(prevV) + ' (' + (d >= 0 ? '+' : '') + d.toFixed(1) + '%)</span>' : '';
+      var deltaText = prevV ? '<br><span>Prev: ' + inr0.format(prevV) + ' (' + (d >= 0 ? '+' : '') + d.toFixed(1) + '%)</span>' : '';
       tip.innerHTML = '<b>' + esc(labels[i]) + '</b>' + inr0.format(cur[i]) + deltaText;
       tip.style.left = xs(i) + 'px';
       tip.style.top = ys(cur[i]) + 'px';
@@ -269,8 +274,8 @@
     }).join('');
 
     el.innerHTML = '<div class="donut-wrap"><svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Donut chart">' + arcs +
-      '<text x="80" y="76" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">' + esc(centerTop) + '</text>' +
-      '<text x="80" y="96" text-anchor="middle" font-size="11" fill="#6b7280">' + esc(centerBottom) + '</text></svg>' +
+      '<text x="80" y="76" text-anchor="middle" font-size="16" font-weight="700" fill="var(--sc-text-primary)">' + esc(centerTop) + '</text>' +
+      '<text x="80" y="96" text-anchor="middle" font-size="11" fill="var(--sc-text-secondary)">' + esc(centerBottom) + '</text></svg>' +
       '<div class="donut-legend">' + items.map(function (it) {
         var pct = total ? Math.round(it.v / total * 100) : 0;
         var displayVal = it.fmt ? it.fmt(it.v) : inrShort(it.v);

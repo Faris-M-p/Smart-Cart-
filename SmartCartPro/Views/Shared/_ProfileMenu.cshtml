@@ -96,6 +96,13 @@
         <li><hr class="dropdown-divider" /></li>
         @* Account section. Add the next item as one more <li> with an <a class="dropdown-item"> here. *@
         <li>
+            <button type="button" class="dropdown-item sc-theme-toggle" data-theme-toggle aria-label="Toggle colour theme">
+                <i class="bi bi-sun-fill theme-icon-light" aria-hidden="true"></i>
+                <i class="bi bi-moon-fill theme-icon-dark d-none" aria-hidden="true"></i>
+                <span>Appearance</span>
+            </button>
+        </li>
+        <li>
             <a class="dropdown-item" asp-controller="Auth" asp-action="ChangePassword" asp-route-returnUrl="@here">
                 <i class="bi bi-key" aria-hidden="true"></i>
                 <span>Change password</span>

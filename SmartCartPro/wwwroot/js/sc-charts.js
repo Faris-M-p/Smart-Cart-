@@ -104,7 +104,7 @@
       x: '200',
       y: '120',
       'text-anchor': 'middle',
-      fill: cssVar('--bs-secondary-color', '#6c757d'),
+      fill: 'var(--bs-secondary-color)',
       'font-size': '14'
     });
     text.textContent = message || 'No data';
@@ -164,7 +164,7 @@
         x: String(x + barW / 2),
         y: '228',
         'text-anchor': 'middle',
-        fill: cssVar('--bs-body-color', '#212529'),
+        fill: 'var(--bs-body-color)',
         'font-size': '9'
       });
       label.textContent = row.label.length > 10 ? row.label.slice(0, 9) + '…' : row.label;
@@ -206,7 +206,7 @@
       y1: String(top + height),
       x2: String(left + width),
       y2: String(top + height),
-      stroke: cssVar('--bs-border-color', '#dee2e6'),
+      stroke: 'var(--bs-border-color)',
       'stroke-width': '1'
     });
     svg.appendChild(axis);
@@ -246,7 +246,7 @@
         x: String(left + i * step),
         y: '228',
         'text-anchor': 'middle',
-        fill: cssVar('--bs-body-color', '#212529'),
+        fill: 'var(--bs-body-color)',
         'font-size': '9'
       });
       label.textContent = row.label.length > 8 ? row.label.slice(0, 7) + '…' : row.label;
@@ -318,7 +318,7 @@
       var text = svgEl('text', {
         x: '246',
         y: String(y),
-        fill: cssVar('--bs-body-color', '#212529'),
+        fill: 'var(--bs-body-color)',
         'font-size': '11'
       });
       text.textContent = row.label;

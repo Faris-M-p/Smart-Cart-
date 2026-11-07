@@ -1,6 +1,222 @@
 /* SmartCart admin shell: responsive sidebar, collapse, independent scroll.
    Loaded after Metis so these rules win without rebuilding the template. */
 
+[data-bs-theme="light"] {
+  color-scheme: light;
+  --sc-page-bg: var(--surface-app, var(--bs-body-bg));
+  --sc-panel-bg: var(--surface-panel, var(--bs-body-bg));
+  --sc-inset-bg: var(--surface-sunken, var(--bs-secondary-bg));
+  --sc-text-primary: var(--ink-primary, var(--bs-body-color));
+  --sc-text-secondary: var(--ink-secondary, var(--bs-secondary-color));
+  --sc-text-muted: var(--sc-text-secondary);
+  --sc-border: var(--bs-border-color);
+  --sc-control-bg: var(--surface-panel, var(--bs-body-bg));
+  --sc-control-border: #71717a;
+  --sc-icon-color: var(--bs-primary-text-emphasis);
+  --sc-icon-surface: var(--surface-sunken, var(--bs-secondary-bg));
+  --sc-hover-bg: var(--surface-hover, var(--bs-tertiary-bg));
+  --sc-focus-color: var(--bs-primary);
+  --sc-active-bg: var(--bs-primary);
+  --sc-status-success: var(--bs-success-text-emphasis, #146c43);
+  --sc-status-success-bg: var(--bs-success-bg-subtle, #d1e7dd);
+  --sc-status-warning: var(--bs-warning-text-emphasis, #664d03);
+  --sc-status-warning-bg: var(--bs-warning-bg-subtle, #fff3cd);
+  --sc-status-danger: var(--bs-danger-text-emphasis, #b02a37);
+  --sc-status-danger-bg: var(--bs-danger-bg-subtle, #f8d7da);
+  --sc-status-info: var(--bs-info-text-emphasis, #055160);
+  --sc-status-info-bg: var(--bs-info-bg-subtle, #cff4fc);
+  --sc-chart-grid: #e4e4e7;
+  --sc-chart-muted: #52525b;
+}
+
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+  --sc-page-bg: var(--surface-app, var(--bs-body-bg));
+  --sc-panel-bg: var(--surface-panel, var(--bs-body-bg));
+  --sc-inset-bg: var(--surface-sunken, var(--bs-secondary-bg));
+  --sc-text-primary: var(--ink-primary, var(--bs-body-color));
+  --sc-text-secondary: var(--ink-secondary, var(--bs-secondary-color));
+  --sc-text-muted: var(--sc-text-secondary);
+  --sc-border: var(--bs-border-color);
+  --sc-control-bg: var(--surface-panel, var(--bs-body-bg));
+  --sc-control-border: #71717a;
+  --sc-icon-color: var(--bs-primary-text-emphasis);
+  --sc-icon-surface: var(--surface-sunken, var(--bs-secondary-bg));
+  --sc-hover-bg: var(--surface-hover, var(--bs-tertiary-bg));
+  --sc-focus-color: #60a5fa;
+  --sc-active-bg: var(--bs-primary);
+  --sc-status-success: var(--bs-success-text-emphasis, #86efac);
+  --sc-status-success-bg: var(--bs-success-bg-subtle, #0f2d1d);
+  --sc-status-warning: var(--bs-warning-text-emphasis, #fcd34d);
+  --sc-status-warning-bg: var(--bs-warning-bg-subtle, #35270e);
+  --sc-status-danger: var(--bs-danger-text-emphasis, #fca5a5);
+  --sc-status-danger-bg: var(--bs-danger-bg-subtle, #3a171a);
+  --sc-status-info: var(--bs-info-text-emphasis, #67e8f9);
+  --sc-status-info-bg: var(--bs-info-bg-subtle, #102c33);
+  --sc-chart-grid: #3f3f46;
+  --sc-chart-muted: #a1a1aa;
+}
+
+body.admin-layout {
+  background-color: var(--sc-page-bg);
+  color: var(--sc-text-primary);
+}
+
+.admin-header .navbar,
+.admin-sidebar {
+  color: var(--sc-text-primary);
+  border-color: var(--sc-border);
+}
+
+.admin-layout .dropdown-menu,
+.admin-layout .modal-content,
+.admin-layout .popover,
+.admin-layout .toast {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-panel-bg);
+  border-color: var(--sc-border);
+}
+
+.admin-layout .modal-header,
+.admin-layout .modal-footer,
+.admin-layout .toast-header,
+.admin-layout .dropdown-divider {
+  border-color: var(--sc-border);
+}
+
+.admin-layout .form-control,
+.admin-layout .form-select {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-control-bg);
+  border-color: var(--sc-control-border);
+}
+
+.admin-layout .form-control:focus,
+.admin-layout .form-select:focus {
+  border-color: var(--sc-focus-color);
+}
+
+.admin-layout .form-check-input {
+  background-color: var(--sc-control-bg);
+  border-color: var(--sc-control-border);
+}
+
+.admin-layout .form-check-input:checked {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.admin-layout .form-check-input:focus {
+  border-color: var(--sc-focus-color);
+}
+
+.admin-layout .form-control::placeholder {
+  color: var(--sc-text-secondary);
+  opacity: 1;
+}
+
+.admin-layout .input-group-text {
+  color: var(--sc-text-secondary);
+  background-color: var(--sc-inset-bg);
+  border-color: var(--sc-control-border);
+}
+
+.admin-layout .text-secondary,
+.admin-layout .form-subtitle,
+.admin-layout .table > thead > tr > th {
+  color: var(--sc-text-secondary) !important;
+}
+
+.admin-layout .table-light {
+  --bs-table-color: var(--sc-text-primary);
+  --bs-table-bg: var(--sc-inset-bg);
+  --bs-table-border-color: var(--sc-border);
+}
+
+.admin-layout .table .table-light > * > * {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-inset-bg);
+  border-color: var(--sc-border);
+}
+
+.admin-layout .btn-outline-secondary {
+  --bs-btn-color: var(--sc-text-secondary);
+  --bs-btn-border-color: var(--sc-border);
+  --bs-btn-hover-color: var(--sc-text-primary);
+  --bs-btn-hover-bg: var(--sc-hover-bg);
+  --bs-btn-hover-border-color: var(--sc-border);
+  --bs-btn-active-color: var(--sc-text-primary);
+  --bs-btn-active-bg: var(--sc-hover-bg);
+  --bs-btn-active-border-color: var(--sc-border);
+}
+
+.admin-layout .pagination .page-link {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-panel-bg);
+  border-color: var(--sc-border);
+}
+
+.admin-layout .pagination .page-link:hover,
+.admin-layout .pagination .page-link:focus-visible {
+  color: var(--bs-primary-text-emphasis);
+  background-color: var(--sc-hover-bg);
+  border-color: var(--sc-border);
+}
+
+.admin-layout .pagination .page-item.active .page-link {
+  color: #fff;
+  background-color: var(--sc-active-bg);
+  border-color: var(--sc-active-bg);
+}
+
+.admin-layout button:focus-visible,
+.admin-layout a:focus-visible,
+.admin-layout .form-control:focus-visible,
+.admin-layout .form-select:focus-visible {
+  outline: 2px solid var(--sc-focus-color);
+  outline-offset: 2px;
+}
+
+.admin-layout .nav-tabs {
+  border-bottom-color: var(--sc-border);
+}
+
+.admin-layout .nav-tabs .nav-link {
+  color: var(--sc-text-secondary);
+}
+
+.admin-layout .nav-tabs .nav-link:hover,
+.admin-layout .nav-tabs .nav-link:focus-visible {
+  color: var(--sc-text-primary);
+  border-color: var(--sc-border) var(--sc-border) transparent;
+}
+
+.admin-layout .nav-tabs .nav-link.active {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-panel-bg);
+  border-color: var(--sc-border) var(--sc-border) var(--sc-panel-bg);
+}
+
+.admin-sidebar .sidebar-nav .nav-link {
+  color: var(--sc-text-secondary);
+}
+
+.admin-sidebar .sidebar-nav .nav-link:hover,
+.admin-sidebar .sidebar-nav .nav-link:focus-visible {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-hover-bg);
+}
+
+.admin-sidebar .sidebar-nav .nav-link.active {
+  color: var(--bs-primary-text-emphasis);
+}
+
+.admin-header .bi,
+.admin-sidebar .bi,
+.sc-profile-menu .bi {
+  color: currentColor;
+}
+
 html,
 body.admin-layout {
   height: 100%;
@@ -297,8 +513,9 @@ body.admin-layout {
   padding: 0.2rem 0.7rem 0.2rem 0.2rem;
   border: 1px solid var(--bs-border-color);
   border-radius: 999px;
-  background: #fff;
-  color: inherit;
+  background: var(--sc-panel-bg);
+  color: var(--sc-text-primary);
+  border-color: var(--sc-border);
   line-height: 1.15;
 }
 
@@ -354,14 +571,14 @@ body.admin-layout {
 .sc-profile-role,
 .sc-profile-card-email,
 .sc-profile-card-role {
-  color: var(--bs-secondary-color);
+  color: var(--sc-text-secondary);
   font-size: 0.75rem;
 }
 
 .sc-profile-chevron {
   flex: 0 0 auto;
   font-size: 0.75rem;
-  color: var(--bs-secondary-color);
+  color: var(--sc-text-secondary);
 }
 
 .sc-profile-menu .dropdown-menu {
@@ -398,6 +615,41 @@ body.admin-layout {
   gap: 0.55rem;
 }
 
+.sc-profile-menu .sc-theme-toggle {
+  width: 100%;
+  border: 0;
+  text-align: left;
+}
+
+.sc-profile-menu .sc-theme-toggle > * {
+  pointer-events: none;
+}
+
+.sc-profile-menu .sc-profile-name,
+.sc-profile-menu .sc-profile-card-name {
+  color: var(--sc-text-primary);
+}
+
+.sc-profile-menu .dropdown-menu {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-panel-bg);
+  border-color: var(--sc-border);
+}
+
+.sc-profile-menu .dropdown-item {
+  color: var(--sc-text-primary);
+}
+
+.sc-profile-menu .dropdown-item:hover,
+.sc-profile-menu .dropdown-item:focus-visible {
+  color: var(--sc-text-primary);
+  background-color: var(--sc-hover-bg);
+}
+
+.sc-profile-menu .dropdown-divider {
+  border-color: var(--sc-border);
+}
+
 .sc-profile-menu .dropdown-item form,
 .sc-profile-signout-form {
   margin: 0;
@@ -405,7 +657,7 @@ body.admin-layout {
 
 .sc-profile-signout {
   width: 100%;
-  color: var(--bs-danger);
+  color: var(--sc-status-danger);
   background: transparent;
   border: 0;
   text-align: left;
@@ -413,8 +665,8 @@ body.admin-layout {
 
 .sc-profile-signout:hover,
 .sc-profile-signout:focus {
-  color: var(--bs-danger);
-  background: rgba(220, 53, 69, 0.08);
+  color: var(--sc-status-danger);
+  background: var(--sc-status-danger-bg);
 }
 
 @media (max-width: 768px) {

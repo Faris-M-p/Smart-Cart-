@@ -128,7 +128,7 @@
     </div>
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header bg-white">
+            <div class="card-header">
                 <h2 class="h6 mb-0">How the license gate works</h2>
             </div>
             <div class="card-body small">
@@ -145,7 +145,7 @@
         @if (Model.HasLicense)
         {
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header">
                     <h2 class="h6 mb-0">@(isSuspended ? "Activate" : "Suspend")</h2>
                 </div>
                 <div class="card-body">

@@ -2,6 +2,15 @@
   min-height: 5.5rem;
 }
 
+.sc-report-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--sc-icon-color, var(--bs-primary-text-emphasis));
+  background-color: var(--sc-icon-surface, var(--bs-secondary-bg));
+}
+
 .sc-chart {
   width: 100%;
   min-height: 240px;
@@ -29,16 +38,16 @@
 .sc-report-table thead th {
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--sc-panel-bg, var(--bs-body-bg));
   z-index: 1;
 }
 
 .sc-row-muted {
-  color: #6c757d;
+  color: var(--sc-text-muted, var(--bs-secondary-color));
 }
 
 .sc-diff {
-  color: #b45309;
+  color: var(--sc-status-warning, var(--bs-warning-text-emphasis));
   font-weight: 600;
 }
 
@@ -55,6 +64,11 @@
 
   .sc-chart svg {
     max-height: 280px;
+  }
+
+  .sc-report-table thead th {
+    color: #212529;
+    background: #fff;
   }
 
   .card {

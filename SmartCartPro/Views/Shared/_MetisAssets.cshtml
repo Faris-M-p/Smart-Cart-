@@ -13,6 +13,16 @@
     var favPng = "/metis/assets/favicon-DiW6HRCs.png";
     var mode = ViewData["MetisMode"] as string ?? "admin";
 }
+<script>
+    (() => {
+        let theme = null;
+        try { theme = localStorage.getItem('theme'); } catch { }
+        if (theme !== 'light' && theme !== 'dark') {
+            theme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-bs-theme', theme);
+    })();
+</script>
 <link rel="icon" type="image/svg+xml" href="@favSvg" />
 <link rel="icon" type="image/png" href="@favPng" />
 <link rel="stylesheet" crossorigin href="@css" />
