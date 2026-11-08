@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SmartCartPro.Entities;
 
-/// <summary>Purchase order line item. Maps to <c>purchase_details</c>.</summary>
+/// <summary>Purchase line item. Maps to <c>purchase_details</c>.</summary>
 [Table("purchase_details")]
 public class PurchaseDetail
 {
@@ -33,6 +33,21 @@ public class PurchaseDetail
     public decimal UnitCost { get; set; }
 
     [Precision(12, 2)]
+    [Column("discountamount", TypeName = "numeric(12,2)")]
+    public decimal DiscountAmount { get; set; }
+
+    [Precision(12, 2)]
+    [Column("taxableamount", TypeName = "numeric(12,2)")]
+    public decimal TaxableAmount { get; set; }
+
+    [Precision(7, 4)]
+    [Column("taxrate", TypeName = "numeric(7,4)")]
+    public decimal TaxRate { get; set; }
+
+    [Column("taxinclusive")]
+    public bool TaxInclusive { get; set; }
+
+    [Precision(12, 2)]
     [Column("taxamount", TypeName = "numeric(12,2)")]
     public decimal TaxAmount { get; set; }
 
@@ -51,4 +66,7 @@ public class PurchaseDetail
 
     [ForeignKey(nameof(FkProduct))]
     public Product? Product { get; set; }
+
+    [ForeignKey(nameof(FkProductVariant))]
+    public ProductVariant? ProductVariant { get; set; }
 }

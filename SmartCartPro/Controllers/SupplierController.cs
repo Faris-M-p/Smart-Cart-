@@ -7,28 +7,32 @@ using SmartCartPro.Services.Interfaces;
 
 namespace SmartCartPro.Controllers;
 
-/// <summary>Supplier master: list, create, edit and activate / deactivate (company-wide, not store-scoped).</summary>
+/// <summary>
+/// Supplier master, ledger statement, payments, and refunds.
+/// </summary>
 [Authorize]
 [ModuleAccess("PURCHASES")]
 public class SupplierController : Controller
 {
     private readonly ISupplierService _svc;
+    private readonly IPurchaseService _purchaseSvc;
 
-    public SupplierController(ISupplierService svc) => _svc = svc;
+    private int ActorId => AuthClaims.GetUserId(User) ?? 0;
+    private int StoreId => AuthClaims.GetFkStore(User) ?? 0;
 
-    /// <summary>
-    /// Lists vendors used when raising purchase orders and receiving stock, with search, status filter and paging.
-    /// Staff with purchases.view open this from the Suppliers menu entry.
-    /// </summary>
+    public SupplierController(ISupplierService svc, IPurchaseService purchaseSvc)
+    {
+        _svc = svc;
+        _purchaseSvc = purchaseSvc;
+    }
+
+    #region Supplier Management
+
     [HttpGet]
     [RequirePermission("purchases.view")]
     public async Task<IActionResult> Index([FromQuery] InputSupplierList input, CancellationToken ct)
         => View(await _svc.ListSuppliersAsync(input, ct));
 
-    /// <summary>
-    /// Shows the form to onboard a supplier with contact, address, and tax details.
-    /// Buyers with purchases.manage use it before creating purchase orders.
-    /// </summary>
     [HttpGet]
     [RequirePermission("purchases.manage")]
     public IActionResult Create(string? returnUrl)
@@ -37,10 +41,6 @@ public class SupplierController : Controller
         return View(new InSupplierCreateView { IsActive = true });
     }
 
-    /// <summary>
-    /// Saves a new supplier available on purchase documents.
-    /// Buyers submit the create supplier form during vendor setup.
-    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Create(InSupplierCreateView model, string? returnUrl, CancellationToken ct)
@@ -70,10 +70,6 @@ public class SupplierController : Controller
             new { id = result.IdSupplier, redirectUrl = listUrl });
     }
 
-    /// <summary>
-    /// Loads one supplier for editing contacts, address, or tax registration.
-    /// Buyers with purchases.manage navigate here from the supplier list for corrections.
-    /// </summary>
     [HttpGet]
     [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Edit(int id, string? returnUrl, CancellationToken ct)
@@ -86,10 +82,6 @@ public class SupplierController : Controller
         return View(item.ToUpdateView());
     }
 
-    /// <summary>
-    /// Persists supplier updates shown on purchase orders and print-outs.
-    /// Buyers submit the edit supplier form after revising vendor master data.
-    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchases.manage")]
     public async Task<IActionResult> Edit(int id, InSupplierUpdateView model, string? returnUrl, CancellationToken ct)
@@ -121,10 +113,6 @@ public class SupplierController : Controller
             new { id = result.IdSupplier, redirectUrl = listUrl });
     }
 
-    /// <summary>
-    /// Activates or deactivates a supplier from the list without opening the edit form.
-    /// Inactive suppliers stay on existing documents but cannot be chosen on new purchase orders.
-    /// </summary>
     [HttpPost, ValidateAntiForgeryToken]
     [RequirePermission("purchases.manage")]
     public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken ct)
@@ -137,14 +125,130 @@ public class SupplierController : Controller
             new { id = result.IdSupplier, isActive = result.IsActive });
     }
 
-    /// <summary>
-    /// Returns active suppliers as JSON for vendor pickers.
-    /// Purchasing screens call this via AJAX when a vendor must be selected.
-    /// </summary>
     [HttpGet]
     [RequirePermission("purchases.view")]
     public async Task<IActionResult> Lookup(CancellationToken ct)
         => Json(await _svc.GetSupplierLookupAsync(ct));
+
+    [HttpGet]
+    [RequirePermission("purchases.view")]
+    public async Task<IActionResult> Balance(int id, CancellationToken ct)
+    {
+        if (StoreId <= 0) return BadRequest("Store context required.");
+        var balance = await _purchaseSvc.GetSupplierBalanceAsync(id, StoreId, ct);
+        return Json(balance);
+    }
+
+    #endregion
+
+    #region Supplier Accounts & Ledger
+
+    [HttpGet]
+    [Route("Supplier/Accounts")]
+    [Route("SupplierAccount")]
+    [Route("SupplierAccount/Index")]
+    [RequirePermission("purchases.view")]
+    public async Task<IActionResult> Accounts(CancellationToken ct)
+    {
+        var suppliers = await _svc.GetSupplierLookupAsync(true, ct);
+        return View("Accounts", suppliers);
+    }
+
+    [HttpGet]
+    [Route("Supplier/Details/{id:int?}")]
+    [Route("Supplier/Details")]
+    [Route("SupplierAccount/Details/{id:int?}")]
+    [Route("SupplierAccount/Details")]
+    [RequirePermission("purchases.view")]
+    public async Task<IActionResult> Details(int id, DateOnly? from, DateOnly? to, CancellationToken ct)
+    {
+        if (StoreId <= 0) return StoreRequiredView("Supplier Statement");
+        if (id <= 0) return RedirectToAction(nameof(Accounts));
+
+        var statement = await _purchaseSvc.GetSupplierStatementAsync(id, StoreId, from, to, ct);
+        return View("Details", statement);
+    }
+
+    #endregion
+
+    #region Supplier Payments & Refunds
+
+    [HttpGet]
+    [Route("Supplier/Payments")]
+    [Route("SupplierAccount/Payments")]
+    [RequirePermission("purchases.view")]
+    public async Task<IActionResult> Payments([FromQuery] InputSupplierTransactionList filter, CancellationToken ct)
+    {
+        if (StoreId <= 0) return StoreRequiredView("Supplier Payments");
+
+        filter.FkStore = StoreId;
+        ViewBag.Suppliers = await _svc.GetSupplierLookupAsync(true, ct);
+        return View("Payments", await _purchaseSvc.ListSupplierTransactionsAsync(filter, ct));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Route("Supplier/RecordMoney")]
+    [Route("SupplierAccount/RecordMoney")]
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> RecordMoney([FromForm] InSupplierPaymentView model, CancellationToken ct)
+    {
+        CommonHelpers.ValidateModelState(ModelState);
+        await _purchaseSvc.RecordSupplierTransactionAsync(model, StoreId, ActorId, ct);
+        return Saved(model.FkSupplier);
+    }
+
+    #endregion
+
+    #region Payment Allocations
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Route("Supplier/Allocate")]
+    [Route("SupplierAccount/Allocate")]
+    [RequirePermission("purchases.manage")]
+    public IActionResult Allocate([FromForm] InSupplierPaymentView model)
+    {
+        return Saved(model.FkSupplier);
+    }
+
+    #endregion
+
+    #region Opening Balances & Reversals
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Route("Supplier/Reverse/{id:int?}")]
+    [Route("SupplierAccount/Reverse/{id:int?}")]
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Reverse(int id, int supplierId, string reason, CancellationToken ct)
+    {
+        await _purchaseSvc.ReverseSupplierTransactionAsync(id, StoreId, ActorId, reason, ct);
+        return Saved(supplierId);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Route("Supplier/Opening")]
+    [Route("SupplierAccount/Opening")]
+    [RequirePermission("purchases.manage")]
+    public async Task<IActionResult> Opening(int supplierId, [FromForm] InSupplierPaymentView model, CancellationToken ct)
+    {
+        model.FkSupplier = supplierId;
+        model.TransactionType = "Opening";
+        CommonHelpers.ValidateModelState(ModelState);
+        await _purchaseSvc.RecordSupplierTransactionAsync(model, StoreId, ActorId, ct);
+        return Saved(supplierId);
+    }
+
+    #endregion
+
+    #region Private Helpers
+
+    private IActionResult Saved(int id)
+        => CommonHelpers.SuccessResponse("Supplier account updated.", new { redirectUrl = Url.Action(nameof(Details), new { id }) });
+
+    private IActionResult StoreRequiredView(string title)
+    {
+        ViewData["Title"] = title;
+        return View("StoreRequired");
+    }
 
     private string? SafeReturnUrl(string? returnUrl)
     {
@@ -154,4 +258,6 @@ public class SupplierController : Controller
             return null;
         return returnUrl;
     }
+
+    #endregion
 }

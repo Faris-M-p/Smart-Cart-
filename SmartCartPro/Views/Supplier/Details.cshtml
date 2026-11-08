@@ -1,0 +1,268 @@
+@model OutputSupplierStatement
+@{
+    ViewData["Title"] = Model.SupplierName + " — Supplier Account Statement";
+    var sid = Model.IdSupplier;
+    var canManage = await Access.CanAsync("purchases.manage");
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-1">@Model.SupplierName</h1>
+            <p class="text-body-secondary mb-0">Supplier Account &amp; Financial Ledger Statement</p>
+        </div>
+        <div class="d-flex gap-2 no-print">
+            <a asp-action="Accounts" class="btn btn-outline-secondary">All Accounts</a>
+            <a asp-action="Payments" asp-route-fkSupplier="@sid" class="btn btn-outline-primary">Payments &amp; Refunds</a>
+            <button type="button" onclick="window.print()" class="btn btn-outline-secondary">Print Statement</button>
+        </div>
+    </div>
+
+    <!-- Balance Summary Card -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 border-end">
+                    <span class="text-muted small text-uppercase fw-semibold">Current Account Balance</span>
+                    <div class="d-flex align-items-baseline gap-2 mt-1">
+                        <span class="display-6 fw-bold @(Model.CurrentBalance < 0 ? "text-danger" : Model.CurrentBalance > 0 ? "text-success" : "text-muted")">
+                            ₹@Math.Abs(Model.CurrentBalance).ToString("N2")
+                        </span>
+                        <span class="badge @(Model.CurrentBalance < 0 ? "bg-danger-subtle text-danger" : Model.CurrentBalance > 0 ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") fs-6">
+                            @(Model.CurrentBalance < 0 ? "Amount Payable (We Owe)" : Model.CurrentBalance > 0 ? "Advance / Credit (Supplier Owes)" : "Settled")
+                        </span>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Signed arithmetic convention: Positive (+) = Advance / Credit; Negative (−) = Amount Payable.
+                    </div>
+                </div>
+                <div class="col-md-6 ps-md-4">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <span class="text-muted small">Opening Balance:</span>
+                            <div class="fw-semibold">₹@Model.OpeningBalance.ToString("N2")</div>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small">Period Closing:</span>
+                            <div class="fw-semibold">₹@Model.ClosingBalance.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (canManage)
+    {
+        <!-- Action Cards: Make Payment or Opening Balance -->
+        <div class="row g-3 mb-4 no-print">
+            <div class="col-md-6">
+                <details class="card shadow-sm border-0">
+                    <summary class="card-header bg-white fw-semibold py-3 cursor-pointer">
+                        <i class="bi bi-cash-stack me-2 text-primary"></i> Record Supplier Payment / Refund
+                    </summary>
+                    <div class="card-body">
+                        <form asp-action="RecordMoney" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="FkSupplier" value="@sid" />
+                            
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Type</label>
+                                    <select name="TransactionType" class="form-select form-select-sm">
+                                        <option value="Payment">Payment to Supplier</option>
+                                        <option value="Refund">Refund from Supplier</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Amount (₹)</label>
+                                    <input name="Amount" type="number" step="0.01" min="0.01" class="form-control form-select-sm" required />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Date</label>
+                                    <input name="TransactionDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-select-sm" required />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Method</label>
+                                    <select name="PaymentMethod" class="form-select form-select-sm">
+                                        <option value="Cash">Cash</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Cheque">Cheque</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Reference / Cheque #</label>
+                                    <input name="ReferenceNo" class="form-control form-select-sm" placeholder="e.g. UTR / Cheque / Receipt #" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Notes</label>
+                                    <textarea name="Notes" rows="2" class="form-control form-select-sm"></textarea>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <button type="submit" class="btn btn-primary btn-sm">Save Transaction</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </details>
+            </div>
+
+            <div class="col-md-6">
+                <details class="card shadow-sm border-0">
+                    <summary class="card-header bg-white fw-semibold py-3 cursor-pointer">
+                        <i class="bi bi-clock-history me-2 text-secondary"></i> Record Opening Balance
+                    </summary>
+                    <div class="card-body">
+                        <form asp-action="Opening" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="supplierId" value="@sid" />
+
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Amount (₹)</label>
+                                    <input name="Amount" type="number" step="0.01" min="0.01" class="form-control form-select-sm" required />
+                                    <small class="text-muted d-block">Initial outstanding balance.</small>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Date</label>
+                                    <input name="TransactionDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-select-sm" required />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Remarks</label>
+                                    <input name="Notes" class="form-control form-select-sm" placeholder="Opening balance on onboarding" />
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Set Opening Balance</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </details>
+            </div>
+        </div>
+    }
+
+    <!-- Date Range Filter -->
+    <div class="card shadow-sm border-0 mb-4 no-print">
+        <div class="card-body py-2">
+            <form method="get" class="row g-2 align-items-center">
+                <input type="hidden" name="id" value="@sid" />
+                <div class="col-auto">
+                    <span class="small fw-semibold text-muted">Statement Period:</span>
+                </div>
+                <div class="col-auto">
+                    <input name="from" type="date" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+                </div>
+                <div class="col-auto">
+                    <span class="text-muted">to</span>
+                </div>
+                <div class="col-auto">
+                    <input name="to" type="date" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Filter Statement</button>
+                    <a asp-action="Details" asp-route-id="@sid" class="btn btn-sm btn-link text-decoration-none">All Time</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statement Entries Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0">Ledger Statement Transactions</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Txn #</th>
+                        <th>Type</th>
+                        <th>Reference</th>
+                        <th class="text-end">Debit (We Owe +)</th>
+                        <th class="text-end">Credit (Paid/Credited -)</th>
+                        <th class="text-end">Signed Balance</th>
+                        @if (canManage)
+                        {
+                            <th class="text-center no-print">Action</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Entries.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                No ledger transactions found for the selected period.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var row in Model.Entries)
+                        {
+                            <tr>
+                                <td>@row.TransactionDate.ToString("dd MMM yyyy")</td>
+                                <td class="fw-semibold">@row.TransactionNumber</td>
+                                <td>
+                                    <span class="badge @(row.TransactionType switch {
+                                        "Purchase" => "bg-primary-subtle text-primary",
+                                        "Payment" => "bg-success-subtle text-success",
+                                        "Return" => "bg-info-subtle text-info",
+                                        "Refund" => "bg-warning-subtle text-dark",
+                                        "Opening" => "bg-secondary-subtle text-secondary",
+                                        _ => "bg-light text-dark"
+                                    })">@row.TransactionType</span>
+                                </td>
+                                <td>
+                                    <div>@row.ReferenceNo</div>
+                                    @if (!string.IsNullOrWhiteSpace(row.Notes))
+                                    {
+                                        <small class="text-muted d-block">@row.Notes</small>
+                                    }
+                                </td>
+                                <td class="text-end fw-semibold @(row.Debit > 0 ? "text-danger" : "text-muted")">
+                                    @(row.Debit > 0 ? "₹" + row.Debit.ToString("N2") : "—")
+                                </td>
+                                <td class="text-end fw-semibold @(row.Credit > 0 ? "text-success" : "text-muted")">
+                                    @(row.Credit > 0 ? "₹" + row.Credit.ToString("N2") : "—")
+                                </td>
+                                <td class="text-end fw-bold">
+                                    ₹@row.RunningBalance.ToString("N2")
+                                </td>
+                                @if (canManage)
+                                {
+                                    <td class="text-center no-print">
+                                        @if (row.TransactionType is "Payment" or "Refund" or "Opening")
+                                        {
+                                            <details class="d-inline-block text-start">
+                                                <summary class="btn btn-sm btn-outline-danger py-0 px-1">Reverse</summary>
+                                                <div class="p-2 border rounded bg-white shadow position-absolute mt-1" style="z-index: 100; min-width: 220px;">
+                                                    <form asp-action="Reverse" asp-route-id="@row.Id" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="supplierId" value="@sid" />
+                                                        <label class="form-label small fw-semibold">Reversal Reason</label>
+                                                        <input name="reason" class="form-control form-control-sm mb-2" required placeholder="Reason" />
+                                                        <button type="submit" class="btn btn-danger btn-sm w-100">Confirm Reversal</button>
+                                                    </form>
+                                                </div>
+                                            </details>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

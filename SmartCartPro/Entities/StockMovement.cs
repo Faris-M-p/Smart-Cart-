@@ -41,6 +41,14 @@ public class StockMovement
     [Column("referenceid")]
     public int? ReferenceId { get; set; }
 
+    /// <summary>Persisted purchase-bill/return source line; null for existing movement types.</summary>
+    [Column("source_line_id")]
+    public int? SourceLineId { get; set; }
+
+    /// <summary>Invoice-time cost retained independently of later product master changes.</summary>
+    [Column("unit_cost"), Precision(12, 2)]
+    public decimal? UnitCost { get; set; }
+
     [Column("notes")]
     public string? Notes { get; set; }
 

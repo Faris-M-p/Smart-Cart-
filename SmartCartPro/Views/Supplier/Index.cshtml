@@ -57,14 +57,22 @@
         <h1 class="h3 mb-1">Suppliers</h1>
         <p class="text-muted mb-0">Company-wide vendors you buy stock from</p>
     </div>
-    @if (canManage)
-    {
-        <a class="btn btn-primary"
-           asp-action="Create"
-           asp-route-returnUrl="@currentListUrl">
-            <i class="bi bi-plus-lg me-1"></i>Add supplier
-        </a>
-    }
+    <div class="d-flex gap-2">
+        @if (await Access.CanAsync("supplieraccounts.view") && await Access.FeatureEnabledAsync("PURCHASES.ACCOUNTS"))
+        {
+            <a class="btn btn-outline-secondary" asp-action="Accounts">
+                <i class="bi bi-journal-text me-1"></i>Supplier accounts
+            </a>
+        }
+        @if (canManage)
+        {
+            <a class="btn btn-primary"
+               asp-action="Create"
+               asp-route-returnUrl="@currentListUrl">
+                <i class="bi bi-plus-lg me-1"></i>Add supplier
+            </a>
+        }
+    </div>
 </div>
 
 <div id="supplierListPage">
@@ -180,7 +188,14 @@
                             <tr data-supplier-id="@item.IdSupplier">
                                 <td>@(string.IsNullOrWhiteSpace(item.SupplierCode) ? "—" : item.SupplierCode)</td>
                                 <td>
-                                    <div class="fw-medium">@item.SupplierName</div>
+                                    @if (await Access.CanAsync("supplieraccounts.view") && await Access.FeatureEnabledAsync("PURCHASES.ACCOUNTS"))
+                                    {
+                                        <a asp-action="Details" asp-route-id="@item.IdSupplier" class="fw-medium text-decoration-none">@item.SupplierName</a>
+                                    }
+                                    else
+                                    {
+                                        <div class="fw-medium">@item.SupplierName</div>
+                                    }
                                     @if (!string.IsNullOrWhiteSpace(item.ContactPerson))
                                     {
                                         <div class="small text-muted">@item.ContactPerson</div>
@@ -195,6 +210,13 @@
                                 @if (canManage)
                                 {
                                     <td class="text-end text-nowrap">
+                                        @if (await Access.CanAsync("supplieraccounts.view") && await Access.FeatureEnabledAsync("PURCHASES.ACCOUNTS"))
+                                        {
+                                            <a class="btn btn-sm btn-outline-info me-1"
+                                               asp-action="Details"
+                                               asp-route-id="@item.IdSupplier"
+                                               title="Account & statement">Account</a>
+                                        }
                                         <a class="btn btn-sm btn-outline-primary me-1"
                                            asp-action="Edit"
                                            asp-route-id="@item.IdSupplier"

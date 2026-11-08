@@ -1,0 +1,249 @@
+@model InPurchaseOrderView
+@{
+    ViewData["Title"] = "New Purchase Order Requirement";
+    var suppliers = ViewBag.Suppliers as IReadOnlyList<OutputSupplierSelect> ?? new List<OutputSupplierSelect>();
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchase Orders</a></li>
+        <li class="breadcrumb-item active" aria-current="page">New</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">New Purchase Order Requirement</h1>
+        <p class="text-muted mb-0">Prepare internal product purchase requirement list (non-financial).</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to List
+    </a>
+</div>
+
+<form id="orderForm" novalidate>
+    @Html.AntiForgeryToken()
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold" asp-for="OrderDate"></label>
+                    <input class="form-control" asp-for="OrderDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold" asp-for="FkSupplier">Supplier (Optional)</label>
+                    <select class="form-select" asp-for="FkSupplier">
+                        <option value="">No specific supplier / General</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.IdSupplier">@s.SupplierName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold" asp-for="Notes">Remarks / Notes</label>
+                    <input class="form-control" asp-for="Notes" placeholder="Order requirement notes or purpose" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Picker -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input id="productSearch" type="search" class="form-control" placeholder="Search product to add (min 2 chars)…" autocomplete="off" />
+                        <span class="input-group-text d-none" id="searchSpinner">
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end text-muted small mt-2 mt-md-0">
+                    Type product name, barcode or SKU to add to order list
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="orderLinesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>Product</th>
+                        <th class="text-end" style="width: 140px;">Required Qty</th>
+                        <th class="text-end" style="width: 150px;">Est. Unit Cost (₹)</th>
+                        <th>Line Remark</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="orderLinesBody">
+                    <!-- Populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center py-4 text-muted" id="emptyLinesNote">
+            <i class="bi bi-cart-plus display-6 d-block mb-2"></i>
+            No items added yet. Search and select products above.
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="button" id="btnSaveOrder" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Save Purchase Order
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+$(function () {
+    var A = window.SmartCartAjax;
+    var $picker = $('#productSearch');
+    var $spinner = $('#searchSpinner');
+    var $body = $('#orderLinesBody');
+    var $empty = $('#emptyLinesNote');
+    var $btnSave = $('#btnSaveOrder');
+    var lines = [];
+    var seq = 0;
+
+    function renderLines() {
+        $body.empty();
+        if (lines.length === 0) {
+            $empty.removeClass('d-none');
+            return;
+        }
+        $empty.addClass('d-none');
+        lines.forEach(function (line, index) {
+            var $tr = $('<tr data-seq="' + line.seq + '"></tr>');
+            $tr.append('<td class="text-muted">' + (index + 1) + '</td>');
+            
+            var prodHtml = '<div class="fw-semibold">' + $('<div>').text(line.productName).html() + '</div>';
+            if (line.variantName) {
+                prodHtml += '<small class="text-muted">' + $('<div>').text(line.variantName).html() + '</small>';
+            }
+            $tr.append('<td>' + prodHtml + '</td>');
+            
+            $tr.append('<td class="text-end"><input type="number" step="0.001" min="0.001" class="form-control form-control-sm text-end input-qty" value="' + line.quantity + '" /></td>');
+            $tr.append('<td class="text-end"><input type="number" step="0.01" min="0" class="form-control form-control-sm text-end input-cost" value="' + line.unitCost + '" /></td>');
+            $tr.append('<td><input type="text" class="form-control form-control-sm input-notes" value="' + (line.notes || '') + '" placeholder="Remark" /></td>');
+            $tr.append('<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button></td>');
+            $body.append($tr);
+        });
+    }
+
+    if (A) {
+        A.typeahead($picker, {
+            minChars: 2,
+            limit: 20,
+            clearOnSelect: true,
+            source: function (term) {
+                $spinner.removeClass('d-none');
+                return A.getJson('@Url.Action("ProductLookup", "Purchase")', { term: term }).always(function () {
+                    $spinner.addClass('d-none');
+                });
+            },
+            label: function (p) {
+                return p.variantName ? p.productName + ' — ' + p.variantName : p.productName;
+            },
+            sublabel: function (p) {
+                return (p.productCode ? p.productCode + ' · ' : '') + 'Est. Cost ₹' + (p.unitCost || 0);
+            },
+            onSelect: function (product) {
+                var existing = lines.find(function (l) {
+                    return l.fkProduct === product.fkProduct && (l.fkProductVariant || 0) === (product.fkProductVariant || 0);
+                });
+                if (existing) {
+                    existing.quantity += 1;
+                } else {
+                    seq++;
+                    lines.push({
+                        seq: seq,
+                        fkProduct: product.fkProduct,
+                        fkProductVariant: product.fkProductVariant || null,
+                        productName: product.productName,
+                        variantName: product.variantName || '',
+                        quantity: 1,
+                        unitCost: product.unitCost || 0,
+                        notes: ''
+                    });
+                }
+                renderLines();
+            }
+        });
+    }
+
+    $body.on('input change', '.input-qty', function () {
+        var seqId = parseInt($(this).closest('tr').data('seq'), 10);
+        var item = lines.find(function (l) { return l.seq === seqId; });
+        if (item) item.quantity = parseFloat($(this).val()) || 0;
+    });
+
+    $body.on('input change', '.input-cost', function () {
+        var seqId = parseInt($(this).closest('tr').data('seq'), 10);
+        var item = lines.find(function (l) { return l.seq === seqId; });
+        if (item) item.unitCost = parseFloat($(this).val()) || 0;
+    });
+
+    $body.on('input change', '.input-notes', function () {
+        var seqId = parseInt($(this).closest('tr').data('seq'), 10);
+        var item = lines.find(function (l) { return l.seq === seqId; });
+        if (item) item.notes = $(this).val();
+    });
+
+    $body.on('click', '.btn-remove', function () {
+        var seqId = parseInt($(this).closest('tr').data('seq'), 10);
+        lines = lines.filter(function (l) { return l.seq !== seqId; });
+        renderLines();
+    });
+
+    $btnSave.on('click', function () {
+        if (lines.length === 0) {
+            A ? A.toast('Please add at least one product requirement.', 'warning') : alert('Please add at least one product requirement.');
+            return;
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].quantity <= 0) {
+                A ? A.toast('Quantity must be greater than zero.', 'warning') : alert('Quantity must be greater than zero.');
+                return;
+            }
+        }
+
+        var supplierVal = $('#FkSupplier').val();
+        var payload = {
+            orderDate: $('#OrderDate').val(),
+            fkSupplier: supplierVal ? parseInt(supplierVal, 10) : null,
+            notes: $('#Notes').val(),
+            lines: lines.map(function (l) {
+                return {
+                    fkProduct: l.fkProduct,
+                    fkProductVariant: l.fkProductVariant,
+                    quantity: l.quantity,
+                    unitCost: l.unitCost,
+                    notes: l.notes
+                };
+            })
+        };
+
+        if (A) {
+            A.setBusy($btnSave, true);
+            A.postJson('@Url.Action("Create")', payload, {
+                onSuccess: function (res) {
+                    var redirect = res && res.data && res.data.redirectUrl;
+                    A.flash(res && res.message || 'Purchase order saved.');
+                    if (redirect) window.location.href = redirect;
+                },
+                onError: function () {
+                    A.setBusy($btnSave, false);
+                }
+            });
+        }
+    });
+});
+</script>
+}
+

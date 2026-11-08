@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = "Purchases";
     var canManage = await Access.CanAsync("purchases.manage");
-    var canReceiveGoods = canManage && await Access.FeatureEnabledAsync("PURCHASES.RECEIVING");
     var f = Model.Filter ?? new SmartCartPro.Models.InputPurchaseList();
     var suppliers = ViewBag.Suppliers as IReadOnlyList<SmartCartPro.Models.OutputSupplierSelect>
                     ?? new List<SmartCartPro.Models.OutputSupplierSelect>();
@@ -18,11 +17,9 @@
     var statusOptions = new[]
     {
         ("", "All statuses"),
-        ("draft", "Draft"),
-        ("posted", "Posted"),
-        ("partially_received", "Partially received"),
-        ("received", "Received"),
-        ("cancelled", "Cancelled")
+        ("Pending", "Pending"),
+        ("Approved", "Approved"),
+        ("Cancelled", "Cancelled")
     };
 
     string Money(decimal value) => value.ToString("N2");
@@ -82,12 +79,12 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <div>
         <h1 class="h3 mb-1">Purchases</h1>
-        <p class="text-muted mb-0">Purchase orders and goods receipts for your store</p>
+        <p class="text-muted mb-0">Purchase invoices and stock entry for your store</p>
     </div>
     @if (canManage)
     {
         <a class="btn btn-primary" asp-action="Create">
-            <i class="bi bi-plus-lg me-1"></i>New purchase order
+            <i class="bi bi-plus-lg me-1"></i>New Purchase
         </a>
     }
 </div>
@@ -99,14 +96,14 @@
                 <div class="col-lg-3 col-md-6">
                     <label class="form-label" for="purchaseSearch">Search</label>
                     <input id="purchaseSearch" type="search" name="Search" value="@f.Search"
-                           class="form-control" placeholder="PO number, invoice # or supplier" autocomplete="off" />
+                           class="form-control" placeholder="Purchase #, invoice # or supplier" autocomplete="off" />
                 </div>
                 <div class="col-lg-2 col-md-6">
                     <label class="form-label" for="purchaseStatus">Status</label>
                     <select id="purchaseStatus" name="Status" class="form-select" data-sc-auto-submit>
                         @foreach (var (value, label) in statusOptions)
                         {
-                            if ((f.Status ?? string.Empty) == value)
+                            if (string.Equals(f.Status, value, StringComparison.OrdinalIgnoreCase))
                             {
                                 <option value="@value" selected>@label</option>
                             }
@@ -180,16 +177,16 @@
                     <i class="bi bi-file-earmark-text display-5 text-muted" aria-hidden="true"></i>
                     @if (hasFilter)
                     {
-                        <p class="text-muted my-3">No purchase orders match your filters.</p>
+                        <p class="text-muted my-3">No purchases match your filters.</p>
                         <a class="btn btn-outline-secondary" asp-action="Index">Clear filters</a>
                     }
                     else
                     {
-                        <p class="text-muted my-3">No purchase orders yet.</p>
+                        <p class="text-muted my-3">No purchases recorded yet.</p>
                         @if (canManage)
                         {
                             <a class="btn btn-primary" asp-action="Create">
-                                <i class="bi bi-plus-lg me-1"></i>New purchase order
+                                <i class="bi bi-plus-lg me-1"></i>New Purchase
                             </a>
                         }
                     }
@@ -203,7 +200,7 @@
                             <tr>
                                 <th>
                                     <a class="text-decoration-none text-body" href="@SortUrl("id")">
-                                        PO # <i class="bi @SortIcon("id")"></i>
+                                        Purchase # <i class="bi @SortIcon("id")"></i>
                                     </a>
                                 </th>
                                 <th>
@@ -238,36 +235,45 @@
                         <tbody>
                         @foreach (var item in Model.Items)
                         {
-                            <tr data-purchase-id="@item.IdPurchase" class="@(item.Status == "cancelled" ? "text-muted" : null)">
+                            <tr data-purchase-id="@item.IdPurchase" class="@(item.Status == "Cancelled" ? "text-muted" : null)">
                                 <td class="fw-medium text-nowrap">
-                                    <a class="text-decoration-none" asp-action="Details" asp-route-id="@item.IdPurchase">@item.PoNumber</a>
+                                    <a class="text-decoration-none" asp-action="Details" asp-route-id="@item.IdPurchase">@item.PurchaseNumber</a>
                                 </td>
                                 <td class="text-nowrap">@item.PurchaseDate.ToString("dd MMM yyyy")</td>
                                 <td>@item.SupplierName</td>
                                 <td class="d-none d-lg-table-cell">@(string.IsNullOrWhiteSpace(item.InvoiceNumber) ? "—" : item.InvoiceNumber)</td>
                                 <td class="text-end d-none d-md-table-cell">@item.LineCount</td>
-                                <td class="text-end text-nowrap"><span data-sc-money="@Raw(item.TotalAmount)">@Money(item.TotalAmount)</span></td>
+                                <td class="text-end text-nowrap"><span data-sc-money="@Raw(item.TotalAmount)">₹@Money(item.TotalAmount)</span></td>
                                 <td><partial name="_PurchaseStatusBadge" model="item.Status" /></td>
                                 <td class="text-end text-nowrap">
                                     <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@item.IdPurchase" title="View">
-                                        <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span>
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
                                     </a>
-                                    @if (canReceiveGoods && item.CanReceive)
+                                    @if (canManage && item.CanApprove)
                                     {
-                                        <a class="btn btn-sm btn-outline-success ms-1" asp-action="Receive" asp-route-id="@item.IdPurchase" title="Receive goods">
-                                            <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i><span class="visually-hidden">Receive goods</span>
-                                        </a>
+                                        <form asp-action="Approve" asp-route-id="@item.IdPurchase" method="post" class="d-inline" onsubmit="return confirm('Approve this purchase and post stock into inventory?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-success ms-1" title="Approve into Inventory">
+                                                <i class="bi bi-check-circle" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
                                     }
                                     @if (canManage && item.CanEdit)
                                     {
                                         <a class="btn btn-sm btn-outline-secondary ms-1" asp-action="Edit" asp-route-id="@item.IdPurchase" title="Edit">
-                                            <i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Edit</span>
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                    @if (canManage && item.CanReturn)
+                                    {
+                                        <a class="btn btn-sm btn-outline-warning ms-1" asp-controller="PurchaseReturn" asp-action="Create" asp-route-purchaseId="@item.IdPurchase" title="Return to Supplier">
+                                            <i class="bi bi-arrow-return-left" aria-hidden="true"></i>
                                         </a>
                                     }
                                     @if (canManage && item.CanCancel)
                                     {
                                         <a class="btn btn-sm btn-outline-danger ms-1" asp-action="Cancel" asp-route-id="@item.IdPurchase" title="Cancel">
-                                            <i class="bi bi-x-circle" aria-hidden="true"></i><span class="visually-hidden">Cancel</span>
+                                            <i class="bi bi-x-circle" aria-hidden="true"></i>
                                         </a>
                                     }
                                 </td>
@@ -282,7 +288,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script src="~/js/purchasing/purchase.js" asp-append-version="true"></script>
-}

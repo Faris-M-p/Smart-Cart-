@@ -1,11 +1,9 @@
 @using System.Globalization
 @model SmartCartPro.Models.OutputPurchaseSelect
 @{
-    ViewData["Title"] = Model.PoNumber;
+    ViewData["Title"] = Model.PurchaseNumber;
     var canManage = await Access.CanAsync("purchases.manage");
-    var canReceiveGoods = canManage && await Access.FeatureEnabledAsync("PURCHASES.RECEIVING");
     var notice = ViewBag.Notice as string;
-    var isDraft = Model.Status == "draft";
 
     string Money(decimal value) => value.ToString("N2");
     string Raw(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
@@ -18,7 +16,7 @@
     <ol class="breadcrumb mb-0">
         <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
         <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
-        <li class="breadcrumb-item active" aria-current="page">@Model.PoNumber</li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.PurchaseNumber</li>
     </ol>
 </nav>
 
@@ -26,7 +24,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
         <div>
             <div class="d-flex flex-wrap align-items-center gap-2">
-                <h1 class="h3 mb-0">@Model.PoNumber</h1>
+                <h1 class="h3 mb-0">@Model.PurchaseNumber</h1>
                 <partial name="_PurchaseStatusBadge" model="Model.Status" />
             </div>
             <p class="text-muted mb-0">
@@ -40,22 +38,31 @@
             <a class="btn btn-outline-secondary" asp-action="Print" asp-route-id="@Model.IdPurchase" target="_blank" rel="noopener">
                 <i class="bi bi-printer me-1"></i>Print
             </a>
+            @if (canManage && Model.CanApprove)
+            {
+                <form asp-action="Approve" asp-route-id="@Model.IdPurchase" method="post" class="d-inline" onsubmit="return confirm('Approve purchase and add products into inventory?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>Approve into Stock
+                    </button>
+                </form>
+            }
             @if (canManage && Model.CanEdit)
             {
                 <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.IdPurchase">
                     <i class="bi bi-pencil me-1"></i>Edit
                 </a>
             }
-            @if (canReceiveGoods && Model.CanReceive)
+            @if (canManage && Model.CanReturn)
             {
-                <a class="btn btn-success" asp-action="Receive" asp-route-id="@Model.IdPurchase">
-                    <i class="bi bi-box-arrow-in-down me-1"></i>Receive goods
+                <a class="btn btn-warning" asp-controller="PurchaseReturn" asp-action="Create" asp-route-purchaseId="@Model.IdPurchase">
+                    <i class="bi bi-arrow-return-left me-1"></i>Return to Supplier
                 </a>
             }
             @if (canManage && Model.CanCancel)
             {
                 <a class="btn btn-outline-danger" asp-action="Cancel" asp-route-id="@Model.IdPurchase">
-                    <i class="bi bi-x-circle me-1"></i>Cancel order
+                    <i class="bi bi-x-circle me-1"></i>Cancel Purchase
                 </a>
             }
         </div>
@@ -78,16 +85,12 @@
             {
                 <div class="mt-1">Reason: @Model.CancelledReason</div>
             }
-            @if (Model.TotalReceivedQty > 0)
-            {
-                <div class="mt-1">Goods that were already received stay in stock.</div>
-            }
         </div>
     }
-    else if (isDraft)
+    else if (Model.Status == "Pending")
     {
         <div class="alert alert-info" role="alert">
-            This purchase order is a draft. @(canManage ? "Open Edit and choose Save & post" : "Ask a buyer to post it") before goods can be received.
+            This purchase is pending approval. Review the lines and click <strong>Approve into Stock</strong> to update inventory and post to the supplier ledger.
         </div>
     }
 
@@ -96,10 +99,14 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <h2 class="h6 text-muted text-uppercase mb-3">Supplier</h2>
-                    <div class="fw-semibold">@Model.SupplierName</div>
+                    <div class="fw-semibold">
+                        <a asp-controller="Supplier" asp-action="Details" asp-route-id="@Model.FkSupplier" class="text-decoration-none">
+                            @Model.SupplierName
+                        </a>
+                    </div>
                     @if (!string.IsNullOrWhiteSpace(Model.SupplierCode))
                     {
-                        <div class="text-muted small">Code @Model.SupplierCode</div>
+                        <div class="text-muted small">Code: @Model.SupplierCode</div>
                     }
                     <dl class="row small mb-0 mt-2">
                         @if (!string.IsNullOrWhiteSpace(Model.SupplierPhone))
@@ -126,23 +133,26 @@
                 </div>
             </div>
         </div>
+
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h6 text-muted text-uppercase mb-3">Order</h2>
+                    <h2 class="h6 text-muted text-uppercase mb-3">Invoice Details</h2>
                     <dl class="row small mb-0">
-                        <dt class="col-5 fw-normal text-muted">Purchase date</dt>
-                        <dd class="col-7 mb-1">@Model.PurchaseDate.ToString("dd MMM yyyy")</dd>
                         <dt class="col-5 fw-normal text-muted">Invoice #</dt>
-                        <dd class="col-7 mb-1">@(string.IsNullOrWhiteSpace(Model.InvoiceNumber) ? "—" : Model.InvoiceNumber)</dd>
+                        <dd class="col-7 mb-1 fw-semibold">@(string.IsNullOrWhiteSpace(Model.InvoiceNumber) ? "—" : Model.InvoiceNumber)</dd>
+                        <dt class="col-5 fw-normal text-muted">Invoice Date</dt>
+                        <dd class="col-7 mb-1">@(Model.InvoiceDate?.ToString("dd MMM yyyy") ?? Model.PurchaseDate.ToString("dd MMM yyyy"))</dd>
+                        <dt class="col-5 fw-normal text-muted">Purchase Date</dt>
+                        <dd class="col-7 mb-1">@Model.PurchaseDate.ToString("dd MMM yyyy")</dd>
                         <dt class="col-5 fw-normal text-muted">Store</dt>
                         <dd class="col-7 mb-1">@Model.StoreName</dd>
                         <dt class="col-5 fw-normal text-muted">Created</dt>
                         <dd class="col-7 mb-1"><time data-sc-local-datetime datetime="@Utc(Model.CreatedAt)">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm") UTC</time></dd>
-                        @if (Model.UpdatedAt is not null)
+                        @if (Model.ApprovedAt is not null)
                         {
-                            <dt class="col-5 fw-normal text-muted">Updated</dt>
-                            <dd class="col-7 mb-1"><time data-sc-local-datetime datetime="@Utc(Model.UpdatedAt.Value)">@Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm") UTC</time></dd>
+                            <dt class="col-5 fw-normal text-muted text-success">Approved</dt>
+                            <dd class="col-7 mb-1 text-success"><time data-sc-local-datetime datetime="@Utc(Model.ApprovedAt.Value)">@Model.ApprovedAt.Value.ToString("dd MMM yyyy HH:mm") UTC</time></dd>
                         }
                         <dt class="col-5 fw-normal text-muted">Notes</dt>
                         <dd class="col-7 mb-0 text-break">@(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</dd>
@@ -150,44 +160,53 @@
                 </div>
             </div>
         </div>
+
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h6 text-muted text-uppercase mb-3">Totals</h2>
+                    <h2 class="h6 text-muted text-uppercase mb-3">Totals &amp; Settlement</h2>
                     <dl class="row mb-0">
                         <dt class="col-6 fw-normal text-muted">Subtotal</dt>
-                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.SubTotal)">@Money(Model.SubTotal)</span></dd>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.SubTotal)">₹@Money(Model.SubTotal)</span></dd>
                         <dt class="col-6 fw-normal text-muted">Discount</dt>
-                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></dd>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.DiscountAmount)">₹@Money(Model.DiscountAmount)</span></dd>
                         <dt class="col-6 fw-normal text-muted">Tax</dt>
-                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></dd>
-                        <dt class="col-6 border-top pt-2">Total</dt>
-                        <dd class="col-6 text-end border-top pt-2 mb-1 fw-semibold fs-5"><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></dd>
-                        <dt class="col-6 fw-normal text-muted small">Received</dt>
-                        <dd class="col-6 text-end small mb-0">@Qty(Model.TotalReceivedQty) of @Qty(Model.TotalOrderedQty)</dd>
+                        <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.TaxAmount)">₹@Money(Model.TaxAmount)</span></dd>
+                        @if (Model.Charges > 0)
+                        {
+                            <dt class="col-6 fw-normal text-muted">Charges</dt>
+                            <dd class="col-6 text-end mb-1"><span data-sc-money="@Raw(Model.Charges)">₹@Money(Model.Charges)</span></dd>
+                        }
+                        <dt class="col-6 border-top pt-2">Total Amount</dt>
+                        <dd class="col-6 text-end border-top pt-2 mb-1 fw-bold fs-5 text-primary"><span data-sc-money="@Raw(Model.TotalAmount)">₹@Money(Model.TotalAmount)</span></dd>
+                        <dt class="col-6 fw-normal text-muted small border-top pt-2">Amount Paid</dt>
+                        <dd class="col-6 text-end small mb-0 border-top pt-2 text-success fw-semibold">₹@Money(Model.AmountPaid) (@(Model.PaymentMethod ?? "None"))</dd>
+                        <dt class="col-6 fw-normal text-muted small">Balance Due</dt>
+                        <dd class="col-6 text-end small mb-0 fw-semibold text-danger">₹@Money(Math.Max(0m, Model.TotalAmount - Model.AmountPaid))</dd>
                     </dl>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Items Grid -->
     <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-transparent">
-            <h2 class="h6 mb-0">Items <span class="text-muted fw-normal">(@Model.Lines.Count)</span></h2>
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h2 class="h6 mb-0">Purchased Items <span class="text-muted fw-normal">(@Model.Lines.Count)</span></h2>
         </div>
         <div class="table-responsive">
             <table class="table align-middle mb-0">
-                <thead>
+                <thead class="table-light">
                     <tr>
                         <th style="width: 2.5rem;">#</th>
                         <th>Product</th>
-                        <th class="text-end">Ordered</th>
-                        <th class="text-end">Received</th>
-                        <th class="text-end">Pending</th>
-                        <th class="text-end">Unit cost</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-end">Unit Cost</th>
                         <th class="text-end">Discount</th>
-                        <th class="text-end">Tax</th>
-                        <th class="text-end">Line total</th>
+                        <th class="text-end">Tax %</th>
+                        <th class="text-end">Tax Amount</th>
+                        <th class="text-end">Line Total</th>
+                        <th class="text-end">Returned</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,69 +230,26 @@
                                 }
                             </div>
                         </td>
-                        <td class="text-end">@Qty(line.Quantity)</td>
+                        <td class="text-end fw-semibold">@Qty(line.Quantity)</td>
+                        <td class="text-end">₹@Money(line.UnitCost)</td>
+                        <td class="text-end">₹@Money(line.DiscountAmount)</td>
+                        <td class="text-end">@line.TaxRate.ToString("0.##")%</td>
+                        <td class="text-end">₹@Money(line.TaxAmount)</td>
+                        <td class="text-end fw-bold">₹@Money(line.LineTotal)</td>
                         <td class="text-end">
-                            <span class="@(line.ReceivedQty >= line.Quantity ? "text-success fw-medium" : null)">@Qty(line.ReceivedQty)</span>
+                            @if (line.ReturnedQty > 0)
+                            {
+                                <span class="badge bg-warning-subtle text-dark">@Qty(line.ReturnedQty)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
                         </td>
-                        <td class="text-end">
-                            <span class="@(Model.Cancelled ? "text-muted" : null)">@(Model.Cancelled ? "—" : Qty(line.PendingQty))</span>
-                        </td>
-                        <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.UnitCost)">@Money(line.UnitCost)</span></td>
-                        <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.DiscountAmount)">@Money(line.DiscountAmount)</span></td>
-                        <td class="text-end text-nowrap"><span data-sc-money="@Raw(line.TaxAmount)">@Money(line.TaxAmount)</span></td>
-                        <td class="text-end text-nowrap fw-medium"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
                     </tr>
                 }
                 </tbody>
             </table>
         </div>
     </div>
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent">
-            <h2 class="h6 mb-0">Goods receipts <span class="text-muted fw-normal">(@Model.Receipts.Count)</span></h2>
-        </div>
-        @if (Model.Receipts.Count == 0)
-        {
-            <div class="card-body text-muted">No goods have been received for this purchase order yet.</div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Received at</th>
-                            <th>Product</th>
-                            <th class="text-end">Quantity</th>
-                            <th>Receipt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var receipt in Model.Receipts)
-                    {
-                        <tr>
-                            <td class="text-nowrap">
-                                <time data-sc-local-datetime datetime="@Utc(receipt.ReceivedAt)">@receipt.ReceivedAt.ToString("dd MMM yyyy HH:mm") UTC</time>
-                            </td>
-                            <td>
-                                @receipt.ProductName
-                                @if (!string.IsNullOrWhiteSpace(receipt.VariantName))
-                                {
-                                    <span class="text-muted"> · @receipt.VariantName</span>
-                                }
-                            </td>
-                            <td class="text-end">@Qty(receipt.Quantity)</td>
-                            <td class="text-break">@((receipt.Notes ?? string.Empty).Replace(" | ", " · "))</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
 </div>
-
-@section Scripts {
-    <script src="~/js/purchasing/purchase.js" asp-append-version="true"></script>
-}

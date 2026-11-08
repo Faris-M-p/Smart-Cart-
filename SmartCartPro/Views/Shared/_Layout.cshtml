@@ -1,4 +1,4 @@
-﻿@using SmartCartPro.Helpers
+@using SmartCartPro.Helpers
 @{
     ViewData["MetisMode"] = "admin";
     var title = ViewData["Title"] as string ?? "SmartCart Pro";
@@ -48,14 +48,17 @@
     var showCatalogGroup = showCategories || showSubCategories || showBrands || showUnits || showTaxes || showProducts || showVariants || showReviews;
 
     var showSuppliers = showPurchases && await Access.FeatureEnabledAsync("PURCHASES.SUPPLIERS");
-    var showPurchaseOrders = showPurchases && await Access.FeatureEnabledAsync("PURCHASES.ORDERS");
+    var showPurchasesMain = showPurchases;
+    var showPurchaseOrders = showPurchases && (await Access.FeatureEnabledAsync("PURCHASES.ORDERS") || await Access.CanAnyAsync(new[] { "purchaseorders.view", "purchaseorders.manage" }));
+    var showPurchaseReturns = await Access.ModuleEnabledAsync("PURCHASES") && (await Access.FeatureEnabledAsync("PURCHASES.RETURNS") || await Access.CanAnyAsync(new[] { "purchasereturns.view", "purchasereturns.manage" }));
+    var showSupplierAccounts = showPurchases;
     var showStock = showInventory && await Access.FeatureEnabledAsync("INVENTORY.STOCK");
     var showLowStock = showInventory && await Access.FeatureEnabledAsync("INVENTORY.LOW_STOCK");
     var showStockHistory = showInventory && await Access.FeatureEnabledAsync("INVENTORY.HISTORY");
     var showOpening = showInventory && canAdjustStock && await Access.FeatureEnabledAsync("INVENTORY.OPENING");
     var showAdjust = showInventory && canAdjustStock && await Access.FeatureEnabledAsync("INVENTORY.ADJUST");
     var showTransfer = showInventory && canAdjustStock && await Access.FeatureEnabledAsync("INVENTORY.TRANSFER");
-    var showStockGroup = showSuppliers || showPurchaseOrders || showStock || showLowStock || showStockHistory || showOpening || showAdjust || showTransfer;
+    var showStockGroup = showSuppliers || showPurchasesMain || showPurchaseOrders || showPurchaseReturns || showSupplierAccounts || showStock || showLowStock || showStockHistory || showOpening || showAdjust || showTransfer;
 
     var showPosBilling = showPos && canPosSell && await Access.FeatureEnabledAsync("POS.BILLING");
     var showCashSession = showPos && canPosSell && await Access.FeatureEnabledAsync("POS.CASH_SESSION");
@@ -205,8 +208,8 @@
 
                 @if (showStockGroup)
                 {
-                    <li class="nav-group @(On("Supplier", "Purchase", "Inventory") ? "is-open" : "")" data-sc-nav-group="stock">
-                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Supplier", "Purchase", "Inventory") ? "true" : "false")">
+                    <li class="nav-group @(On("Supplier", "Purchase", "PurchaseOrder", "PurchaseReturn", "SupplierAccount", "Inventory") ? "is-open" : "")" data-sc-nav-group="stock">
+                        <button type="button" class="nav-group-toggle" aria-expanded="@(On("Supplier", "Purchase", "PurchaseOrder", "PurchaseReturn", "SupplierAccount", "Inventory") ? "true" : "false")">
                             <span>Purchase &amp; stock</span>
                             <i class="bi bi-chevron-right" aria-hidden="true"></i>
                         </button>
@@ -214,16 +217,45 @@
                     @if (showSuppliers)
                     {
                         <li class="nav-item">
-                            <a class="@Nav("Supplier")" asp-controller="Supplier" asp-action="Index">
+                            <a class="@NavAny("Supplier", "Index", "Create", "Edit")" asp-controller="Supplier" asp-action="Index">
                                 <i class="bi bi-truck"></i><span>Suppliers</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showPurchasesMain)
+                    {
+                        <li class="nav-item">
+                            <a class="@NavAny("Purchase", "Index", "Create", "Edit", "Details", "Print", "Cancel")" asp-controller="Purchase" asp-action="Index">
+                                <i class="bi bi-receipt"></i><span>Purchases</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showPurchaseReturns)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("PurchaseReturn")" asp-controller="PurchaseReturn" asp-action="Index">
+                                <i class="bi bi-arrow-return-left"></i><span>Purchase Returns</span>
                             </a>
                         </li>
                     }
                     @if (showPurchaseOrders)
                     {
                         <li class="nav-item">
-                            <a class="@Nav("Purchase")" asp-controller="Purchase" asp-action="Index">
-                                <i class="bi bi-file-earmark-text"></i><span>Purchases</span>
+                            <a class="@Nav("PurchaseOrder")" asp-controller="PurchaseOrder" asp-action="Index">
+                                <i class="bi bi-file-earmark-text"></i><span>Purchase Orders</span>
+                            </a>
+                        </li>
+                    }
+                    @if (showSupplierAccounts)
+                    {
+                        <li class="nav-item">
+                            <a class="@Nav("Supplier", "Payments")" asp-controller="Supplier" asp-action="Payments">
+                                <i class="bi bi-cash-stack"></i><span>Supplier Payments</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="@NavAny("Supplier", "Accounts", "Details")" asp-controller="Supplier" asp-action="Accounts">
+                                <i class="bi bi-journal-text"></i><span>Supplier Accounts</span>
                             </a>
                         </li>
                     }

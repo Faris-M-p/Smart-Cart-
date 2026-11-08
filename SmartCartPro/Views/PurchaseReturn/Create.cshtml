@@ -1,0 +1,174 @@
+@using System.Globalization
+@model InPurchaseReturnCreateView
+@{
+    var purchase = (OutputPurchaseSelect)ViewBag.Purchase;
+    ViewData["Title"] = "Create Purchase Return — " + purchase.PurchaseNumber;
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Purchase Returns</a></li>
+        <li class="breadcrumb-item"><a asp-action="Sources">Select Purchase</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Return</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Create Purchase Return</h1>
+        <p class="text-muted mb-0">
+            Returning against original purchase <strong>@purchase.PurchaseNumber</strong> (Invoice: @(purchase.InvoiceNumber ?? "—")) · @purchase.SupplierName
+        </p>
+    </div>
+    <a asp-action="Sources" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Cancel &amp; Back
+    </a>
+</div>
+
+<div id="returnFormWrap">
+    <form id="purchaseReturnForm" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="FkPurchase" value="@purchase.IdPurchase" />
+        <input type="hidden" name="FkSupplier" value="@purchase.FkSupplier" />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold" asp-for="ReturnDate"></label>
+                        <input class="form-control" asp-for="ReturnDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold" asp-for="Reason">Return Reason</label>
+                        <input class="form-control" asp-for="Reason" placeholder="e.g. Damaged items, Wrong delivery" />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-semibold" asp-for="Notes">Remarks / Notes</label>
+                        <input class="form-control" asp-for="Notes" placeholder="Optional internal notes" />
+                    </div>
+                    <div class="col-12 border-top pt-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="markAsApprovedSwitch" checked>
+                            <label class="form-check-label fw-semibold" for="markAsApprovedSwitch">
+                                Approve Immediately (Post return, remove stock from inventory, and credit supplier balance)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Items to Return</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="returnItemsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end">Unit Cost</th>
+                            <th class="text-end">Purchased</th>
+                            <th class="text-end">Returned</th>
+                            <th class="text-end">Eligible</th>
+                            <th class="text-end" style="width: 160px;">Return Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < purchase.Lines.Count; i++)
+                        {
+                            var line = purchase.Lines[i];
+                            if (line.EligibleReturnQty <= 0) continue;
+
+                            <tr data-line data-detail-id="@line.IdPurchaseDetail" data-product-id="@line.FkProduct" data-variant-id="@(line.FkProductVariant ?? 0)" data-unit-cost="@line.UnitCost.ToString(CultureInfo.InvariantCulture)">
+                                <td>
+                                    <div class="fw-semibold">@line.ProductName</div>
+                                    @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                                    {
+                                        <small class="text-muted">@line.VariantName</small>
+                                    }
+                                </td>
+                                <td class="text-end">₹@line.UnitCost.ToString("N2")</td>
+                                <td class="text-end">@line.Quantity.ToString("0.###")</td>
+                                <td class="text-end text-muted">@line.ReturnedQty.ToString("0.###")</td>
+                                <td class="text-end fw-semibold text-primary">@line.EligibleReturnQty.ToString("0.###")</td>
+                                <td class="text-end">
+                                    <input type="number" step="0.001" min="0" max="@line.EligibleReturnQty.ToString(CultureInfo.InvariantCulture)"
+                                           class="form-control form-control-sm text-end return-qty-input"
+                                           value="@line.EligibleReturnQty.ToString(CultureInfo.InvariantCulture)" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="button" id="btnSubmitReturn" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i> Submit Purchase Return
+            </button>
+            <a asp-action="Sources" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    var A = window.SmartCartAjax;
+    var $btn = $('#btnSubmitReturn');
+    var $form = $('#purchaseReturnForm');
+
+    $btn.on('click', function () {
+        var lines = [];
+        $('#returnItemsTable tbody tr[data-line]').each(function () {
+            var $tr = $(this);
+            var qty = parseFloat($tr.find('.return-qty-input').val()) || 0;
+            if (qty > 0) {
+                lines.push({
+                    fkPurchaseDetail: parseInt($tr.data('detail-id'), 10),
+                    fkProduct: parseInt($tr.data('product-id'), 10),
+                    fkProductVariant: parseInt($tr.data('variant-id'), 10) || null,
+                    quantity: qty,
+                    unitCost: parseFloat($tr.data('unit-cost')) || 0
+                });
+            }
+        });
+
+        if (lines.length === 0) {
+            A ? A.toast('Please enter a return quantity greater than zero for at least one item.', 'warning')
+              : alert('Please enter a return quantity greater than zero for at least one item.');
+            return;
+        }
+
+        var payload = {
+            fkPurchase: parseInt($form.find('[name="FkPurchase"]').val(), 10),
+            fkSupplier: parseInt($form.find('[name="FkSupplier"]').val(), 10),
+            returnDate: $form.find('[name="ReturnDate"]').val(),
+            reason: $form.find('[name="Reason"]').val(),
+            notes: $form.find('[name="Notes"]').val(),
+            markAsApproved: $('#markAsApprovedSwitch').is(':checked'),
+            lines: lines
+        };
+
+        if (A) {
+            A.setBusy($btn, true);
+            A.postJson('@Url.Action("Create")', payload, {
+                $form: $form,
+                onSuccess: function (res) {
+                    var redirect = res && res.data && res.data.redirectUrl;
+                    A.flash(res && res.message || 'Purchase return created.');
+                    if (redirect) window.location.href = redirect;
+                },
+                onError: function () {
+                    A.setBusy($btn, false);
+                }
+            });
+        }
+    });
+});
+</script>
+}
+

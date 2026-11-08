@@ -1,0 +1,32 @@
+@model IReadOnlyList<OutputSupplierSelect>
+@{
+    ViewData["Title"] = "Supplier accounts";
+}
+<h1 class="h3">Supplier accounts</h1>
+<p class="text-body-secondary">Company-wide accounts across all stores. Positive balance means payable to supplier; negative means receivable or advance.</p>
+<div class="mb-3">
+    <a asp-action="Payments" class="btn btn-outline-primary">Supplier payments and refunds</a>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-2">All suppliers</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Supplier</th>
+                <th>Account</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var s in Model)
+        {
+            <tr>
+                <td>@s.SupplierCode</td>
+                <td>@s.SupplierName</td>
+                <td><a asp-action="Details" asp-route-id="@s.IdSupplier">Open account and statement</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+

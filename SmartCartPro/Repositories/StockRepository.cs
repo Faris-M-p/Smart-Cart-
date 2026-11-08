@@ -239,7 +239,10 @@ public class StockRepository : IStockRepository
                 var id = inventoryId.Value;
 
                 var updated = await _db.Inventories
-                    .Where(x => x.IdInventory == id && (allowNegative || x.QuantityOnHand + delta >= 0))
+                    .Where(x => x.IdInventory == id && (allowNegative ||
+                        (input.RespectReservedQuantity
+                            ? x.QuantityOnHand + delta >= x.QuantityReserved
+                            : x.QuantityOnHand + delta >= 0)))
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.QuantityOnHand, x => x.QuantityOnHand + delta)
                         .SetProperty(x => x.UpdatedAt, (DateTime?)now), ct);
@@ -268,6 +271,8 @@ public class StockRepository : IStockRepository
                 Quantity = quantity,
                 ReferenceType = input.ReferenceType,
                 ReferenceId = input.ReferenceId,
+                SourceLineId = input.SourceLineId,
+                UnitCost = input.UnitCost,
                 Notes = input.Notes,
                 CreatedBy = input.CreatedBy,
                 CreatedAt = now

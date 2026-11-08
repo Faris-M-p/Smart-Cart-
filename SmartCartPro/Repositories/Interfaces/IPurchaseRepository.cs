@@ -1,28 +1,49 @@
+using SmartCartPro.Entities;
 using SmartCartPro.Models;
 
 namespace SmartCartPro.Repositories.Interfaces;
 
 public interface IPurchaseRepository
 {
-    /// <summary>Header, lines (with received quantities) and receipt history of one purchase order in the given store.</summary>
+    #region Purchases
+
     Task<OutputPurchaseSelect?> GetPurchaseAsync(InputPurchaseSelect input, CancellationToken ct = default);
-
     Task<OutputPurchaseList> ListPurchasesAsync(InputPurchaseList input, CancellationToken ct = default);
-
-    /// <summary>Inserts header and lines in a single save (atomic). Amounts arrive pre-computed from the service.</summary>
     Task<OutputPurchaseCreate> CreatePurchaseAsync(InputPurchaseCreate input, CancellationToken ct = default);
-
-    /// <summary>Replaces header and lines of a draft / posted purchase order that has no receipts yet.</summary>
     Task<OutputPurchaseUpdate> UpdatePurchaseAsync(InputPurchaseUpdate input, CancellationToken ct = default);
-
-    /// <summary>
-    /// Posts one stock movement per received line, then moves the purchase order to its new status.
-    /// Must not run inside an outer transaction — each stock movement owns its transaction.
-    /// </summary>
-    Task<OutputGoodsReceipt> ReceiveGoodsAsync(InputGoodsReceipt input, CancellationToken ct = default);
-
+    Task ApprovePurchaseAsync(int id, int storeId, int userId, CancellationToken ct = default);
     Task<OutputPurchaseCancel> CancelPurchaseAsync(InputPurchaseCancel input, CancellationToken ct = default);
-
-    /// <summary>Active products (plus their active variants) for the line picker, with cost price and tax rate.</summary>
     Task<IReadOnlyList<OutputPurchaseProductSelect>> ListProductsAsync(InputPurchaseProductList input, CancellationToken ct = default);
+
+    #endregion
+
+    #region Purchase Returns
+
+    Task<OutputPurchaseReturnSelect?> GetReturnAsync(int id, int storeId, CancellationToken ct = default);
+    Task<OutputPurchaseReturnList> ListReturnsAsync(InputPurchaseReturnList input, CancellationToken ct = default);
+    Task<int> CreateReturnAsync(InPurchaseReturnCreateView input, int storeId, int userId, CancellationToken ct = default);
+    Task ApproveReturnAsync(int id, int storeId, int userId, CancellationToken ct = default);
+    Task CancelReturnAsync(int id, int storeId, string reason, CancellationToken ct = default);
+    Task<IReadOnlyList<OutputPurchaseListItem>> ListReturnSourcePurchasesAsync(int storeId, string? search = null, CancellationToken ct = default);
+
+    #endregion
+
+    #region Purchase Orders
+
+    Task<OutputPurchaseOrderSelect?> GetOrderAsync(int id, int storeId, CancellationToken ct = default);
+    Task<OutputPurchaseOrderList> ListOrdersAsync(InputPurchaseOrderList input, CancellationToken ct = default);
+    Task<int> SaveOrderAsync(InPurchaseOrderView input, int storeId, int userId, CancellationToken ct = default);
+    Task DeleteOrderAsync(int id, int storeId, CancellationToken ct = default);
+
+    #endregion
+
+    #region Supplier Financials & Balance
+
+    Task<OutputSupplierBalance> GetSupplierBalanceAsync(int supplierId, int storeId, CancellationToken ct = default);
+    Task<OutputSupplierStatement> GetSupplierStatementAsync(int supplierId, int storeId, DateOnly? from = null, DateOnly? to = null, CancellationToken ct = default);
+    Task<OutputSupplierTransactionList> ListSupplierTransactionsAsync(InputSupplierTransactionList input, CancellationToken ct = default);
+    Task<int> RecordSupplierTransactionAsync(InSupplierPaymentView input, int storeId, int userId, CancellationToken ct = default);
+    Task ReverseSupplierTransactionAsync(int id, int storeId, int userId, string reason, CancellationToken ct = default);
+
+    #endregion
 }

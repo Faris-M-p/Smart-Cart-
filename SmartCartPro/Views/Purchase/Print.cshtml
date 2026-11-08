@@ -4,11 +4,9 @@
     Layout = null;
     var statusLabel = Model.Status switch
     {
-        "draft" => "Draft",
-        "posted" => "Posted",
-        "partially_received" => "Partially received",
-        "received" => "Received",
-        "cancelled" => "Cancelled",
+        "Pending" or "pending" => "Pending",
+        "Approved" or "approved" => "Approved",
+        "Cancelled" or "cancelled" => "Cancelled",
         _ => Model.Status
     };
 
@@ -21,7 +19,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@Model.PoNumber · Purchase order</title>
+    <title>@Model.PurchaseNumber · Purchase Invoice</title>
     <style>
         :root { color-scheme: light; }
         * { box-sizing: border-box; }
@@ -64,17 +62,17 @@
 <body>
     <div class="sheet">
         <div class="toolbar">
-            <button type="button" class="primary" data-print>Print</button>
-            <button type="button" data-close>Close</button>
+            <button type="button" class="primary" data-print onclick="window.print()">Print</button>
+            <button type="button" data-close onclick="window.close()">Close</button>
         </div>
 
         <header class="doc">
             <div>
-                <h1>Purchase order</h1>
+                <h1>Purchase Invoice</h1>
                 <div class="muted">@Model.StoreName</div>
             </div>
             <div style="text-align: right;">
-                <div class="po">@Model.PoNumber</div>
+                <div class="po">@Model.PurchaseNumber</div>
                 <div class="muted">@Model.PurchaseDate.ToString("dd MMM yyyy")</div>
                 <span class="status">@statusLabel</span>
             </div>
@@ -113,15 +111,15 @@
                 </dl>
             </div>
             <div>
-                <h2>Order</h2>
+                <h2>Purchase Details</h2>
                 <dl>
-                    <dt>PO number</dt>
-                    <dd>@Model.PoNumber</dd>
-                    <dt>Date</dt>
-                    <dd>@Model.PurchaseDate.ToString("dd MMM yyyy")</dd>
-                    <dt>Supplier invoice</dt>
+                    <dt>Purchase #</dt>
+                    <dd>@Model.PurchaseNumber</dd>
+                    <dt>Invoice #</dt>
                     <dd>@(string.IsNullOrWhiteSpace(Model.InvoiceNumber) ? "—" : Model.InvoiceNumber)</dd>
-                    <dt>Deliver to</dt>
+                    <dt>Invoice Date</dt>
+                    <dd>@(Model.InvoiceDate?.ToString("dd MMM yyyy") ?? Model.PurchaseDate.ToString("dd MMM yyyy"))</dd>
+                    <dt>Store</dt>
                     <dd>@Model.StoreName</dd>
                     <dt>Status</dt>
                     <dd>@statusLabel</dd>
@@ -160,20 +158,24 @@
                         }
                     </td>
                     <td class="num">@Qty(line.Quantity)</td>
-                    <td class="num"><span data-sc-money="@Raw(line.UnitCost)">@Money(line.UnitCost)</span></td>
-                    <td class="num"><span data-sc-money="@Raw(line.DiscountAmount)">@Money(line.DiscountAmount)</span></td>
-                    <td class="num"><span data-sc-money="@Raw(line.TaxAmount)">@Money(line.TaxAmount)</span></td>
-                    <td class="num"><span data-sc-money="@Raw(line.LineTotal)">@Money(line.LineTotal)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.UnitCost)">₹@Money(line.UnitCost)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.DiscountAmount)">₹@Money(line.DiscountAmount)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.TaxAmount)">₹@Money(line.TaxAmount)</span></td>
+                    <td class="num"><span data-sc-money="@Raw(line.LineTotal)">₹@Money(line.LineTotal)</span></td>
                 </tr>
             }
             </tbody>
         </table>
 
         <div class="totals">
-            <div><span class="muted">Subtotal</span><span data-sc-money="@Raw(Model.SubTotal)">@Money(Model.SubTotal)</span></div>
-            <div><span class="muted">Discount</span><span data-sc-money="@Raw(Model.DiscountAmount)">@Money(Model.DiscountAmount)</span></div>
-            <div><span class="muted">Tax</span><span data-sc-money="@Raw(Model.TaxAmount)">@Money(Model.TaxAmount)</span></div>
-            <div class="grand"><span>Total</span><span data-sc-money="@Raw(Model.TotalAmount)">@Money(Model.TotalAmount)</span></div>
+            <div><span class="muted">Subtotal</span><span data-sc-money="@Raw(Model.SubTotal)">₹@Money(Model.SubTotal)</span></div>
+            <div><span class="muted">Discount</span><span data-sc-money="@Raw(Model.DiscountAmount)">₹@Money(Model.DiscountAmount)</span></div>
+            <div><span class="muted">Tax</span><span data-sc-money="@Raw(Model.TaxAmount)">₹@Money(Model.TaxAmount)</span></div>
+            <div class="grand"><span>Total</span><span data-sc-money="@Raw(Model.TotalAmount)">₹@Money(Model.TotalAmount)</span></div>
+            @if (Model.AmountPaid > 0)
+            {
+                <div><span class="muted">Paid</span><span class="text-success">₹@Money(Model.AmountPaid)</span></div>
+            }
         </div>
 
         @if (!string.IsNullOrWhiteSpace(Model.Notes))
@@ -192,9 +194,7 @@
             <div>Approved by</div>
         </div>
 
-        <footer class="doc">Printed <span data-printed-at></span></footer>
+        <footer class="doc">Printed on @DateTime.Now.ToString("dd MMM yyyy HH:mm")</footer>
     </div>
-
-    <script src="~/js/purchasing/purchase-print.js" asp-append-version="true"></script>
 </body>
 </html>

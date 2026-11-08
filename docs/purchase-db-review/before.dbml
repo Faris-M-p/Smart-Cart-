@@ -1,0 +1,158 @@
+// =============================================================================
+// SmartCartPro — Database Architecture (BEFORE: Original Schema)
+// Target: PostgreSQL | Dialect: DBML (compatible with https://dbdiagram.io)
+// Scope: Original Purchase, Supplier, Inventory, and Stock Movement Design
+// =============================================================================
+
+Table store {
+  id_store int [pk, increment]
+  storename text [not null]
+  storecode text
+
+  Note: 'Store boundary. Core multi-store entity.'
+}
+
+Table users {
+  id_user int [pk, increment]
+  username text [not null, unique]
+  fullname text
+
+  Note: 'System user entity for audit trail references.'
+}
+
+Table products {
+  id_product int [pk, increment]
+  productname text [not null]
+  productcode text [not null]
+  sku text
+  barcode text
+  costprice numeric(12,2) [not null, default: 0]
+  isactive boolean [not null, default: true]
+  cancelled boolean [not null, default: false]
+
+  Note: 'Master product catalog.'
+}
+
+Table product_variants {
+  id_productvariant int [pk, increment]
+  fk_product int [not null]
+  variantname text [not null]
+  skucode text
+  barcode text
+  isactive boolean [not null, default: true]
+  cancelled boolean [not null, default: false]
+
+  Note: 'Product SKU variants.'
+}
+
+Table suppliers {
+  id_supplier int [pk, increment]
+  suppliercode text
+  suppliername text [not null, unique]
+  contactperson text
+  email text
+  phone text
+  addressline1 text
+  city text
+  state text
+  postalcode text
+  country text
+  taxnumber text
+  isactive boolean [not null, default: true]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledreason text
+
+  Note: 'Company-wide supplier master. Original single source of vendor master data.'
+}
+
+Table purchases {
+  id_purchase int [pk, increment]
+  fk_store int [not null]
+  fk_supplier int [not null]
+  purchasedate date [not null, default: `current_date`]
+  invoicenumber text
+  subtotal numeric(12,2) [not null, default: 0]
+  taxamount numeric(12,2) [not null, default: 0]
+  discountamount numeric(12,2) [not null, default: 0]
+  totalamount numeric(12,2) [not null, default: 0]
+  notes text
+  status text [not null, default: 'posted', note: 'check: status in (draft, posted, partially_received, received, cancelled)']
+  createdby int
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledreason text
+
+  Note: 'Original Purchase document table. Store-scoped. Handled PO & GRN receipt flows in original implementation.'
+}
+
+Table purchase_details {
+  id_purchasedetail int [pk, increment]
+  fk_purchase int [not null]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantity numeric(14,3) [not null, note: 'check: quantity > 0']
+  unitcost numeric(12,2) [not null, default: 0]
+  taxamount numeric(12,2) [not null, default: 0]
+  linetotal numeric(12,2) [not null, default: 0]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+
+  Note: 'Original Purchase line item details. Store-scoped (inherits store from purchase).'
+}
+
+Table inventory {
+  id_inventory int [pk, increment]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantityonhand numeric(14,3) [not null, default: 0]
+  quantityreserved numeric(14,3) [not null, default: 0]
+  reorderlevel numeric(14,3) [not null, default: 0]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+
+  Note: 'Current store-level stock snapshot. check: quantityonhand >= 0 and quantityreserved >= 0. Unique partial indexes on (fk_store, fk_product) where variant is null, and (fk_store, fk_product, fk_productvariant) where not null.'
+}
+
+Table stock_movements {
+  id_stockmovement int [pk, increment]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  movementtype text [not null, note: 'check: purchase, sale, adjustment, transfer_in, transfer_out, return_in, return_out, opening']
+  quantity numeric(14,3) [not null]
+  referencetype text [note: 'Polymorphic source document type: purchase, sale, etc.']
+  referenceid int [note: 'Polymorphic source document ID']
+  notes text
+  createdat timestamp [not null, default: `now()`]
+  createdby int
+
+  Note: 'Store-level immutable stock movement ledger. Movement types include purchase and return_out.'
+}
+
+// -----------------------------------------------------------------------------
+// Relationships (Foreign Keys)
+// -----------------------------------------------------------------------------
+
+Ref: product_variants.fk_product > products.id_product
+Ref: purchases.fk_store > store.id_store
+Ref: purchases.fk_supplier > suppliers.id_supplier
+Ref: purchases.createdby > users.id_user
+Ref: purchase_details.fk_purchase > purchases.id_purchase
+Ref: purchase_details.fk_store > store.id_store
+Ref: purchase_details.fk_product > products.id_product
+Ref: purchase_details.fk_productvariant > product_variants.id_productvariant
+Ref: inventory.fk_store > store.id_store
+Ref: inventory.fk_product > products.id_product
+Ref: inventory.fk_productvariant > product_variants.id_productvariant
+Ref: stock_movements.fk_store > store.id_store
+Ref: stock_movements.fk_product > products.id_product
+Ref: stock_movements.fk_productvariant > product_variants.id_productvariant
+Ref: stock_movements.createdby > users.id_user
+

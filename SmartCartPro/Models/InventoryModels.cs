@@ -23,6 +23,12 @@ public sealed class InputStockMovement
     public decimal Quantity { get; set; }
     public string? ReferenceType { get; set; }
     public int? ReferenceId { get; set; }
+    /// <summary>Optional source document line used to make document posting idempotent and traceable.</summary>
+    public int? SourceLineId { get; set; }
+    /// <summary>Optional unit cost captured by purchasing flows.</summary>
+    public decimal? UnitCost { get; set; }
+    /// <summary>When removing stock, preserve stock already reserved for other operations.</summary>
+    public bool RespectReservedQuantity { get; set; }
     public string? Notes { get; set; }
     public int? CreatedBy { get; set; }
 }
@@ -357,6 +363,12 @@ public sealed class OutputStockMovementItem
     public decimal Quantity { get; set; }
     public string? ReferenceType { get; set; }
     public int? ReferenceId { get; set; }
+    /// <summary>Optional source document line used to make document posting idempotent and traceable.</summary>
+    public int? SourceLineId { get; set; }
+    /// <summary>Optional unit cost captured by purchasing flows.</summary>
+    public decimal? UnitCost { get; set; }
+    /// <summary>When removing stock, preserve stock already reserved for other operations.</summary>
+    public bool RespectReservedQuantity { get; set; }
     public string? Notes { get; set; }
     /// <summary>UTC timestamp as stored.</summary>
     public DateTime CreatedAt { get; set; }

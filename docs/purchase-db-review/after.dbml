@@ -1,0 +1,357 @@
+// =============================================================================
+// SmartCartPro — Database Architecture (AFTER: Current Codex Implementation)
+// Target: PostgreSQL | Dialect: DBML (compatible with https://dbdiagram.io)
+// Scope: Current Database Schema with V004 / 046_PurchaseBills.sql Additions
+// =============================================================================
+
+Table store {
+  id_store int [pk, increment]
+  storename text [not null]
+  storecode text
+
+  Note: 'Store boundary. Core multi-store entity.'
+}
+
+Table users {
+  id_user int [pk, increment]
+  username text [not null, unique]
+  fullname text
+
+  Note: 'System user entity for audit trail references.'
+}
+
+Table products {
+  id_product int [pk, increment]
+  productname text [not null]
+  productcode text [not null]
+  sku text
+  barcode text
+  costprice numeric(12,2) [not null, default: 0]
+  isactive boolean [not null, default: true]
+  cancelled boolean [not null, default: false]
+}
+
+Table product_variants {
+  id_productvariant int [pk, increment]
+  fk_product int [not null]
+  variantname text [not null]
+  skucode text
+  barcode text
+  isactive boolean [not null, default: true]
+  cancelled boolean [not null, default: false]
+}
+
+Table suppliers {
+  id_supplier int [pk, increment]
+  suppliercode text
+  suppliername text [not null, unique]
+  contactperson text
+  email text
+  phone text
+  addressline1 text
+  city text
+  state text
+  postalcode text
+  country text
+  taxnumber text
+  isactive boolean [not null, default: true]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledreason text
+
+  Note: 'Company-wide vendor master.'
+}
+
+// -----------------------------------------------------------------------------
+// Legacy Purchase Tables (Kept alongside new bills in current Codex design)
+// -----------------------------------------------------------------------------
+
+Table purchases {
+  id_purchase int [pk, increment]
+  fk_store int [not null]
+  fk_supplier int [not null]
+  purchasedate date [not null, default: `current_date`]
+  invoicenumber text
+  subtotal numeric(12,2) [not null, default: 0]
+  taxamount numeric(12,2) [not null, default: 0]
+  discountamount numeric(12,2) [not null, default: 0]
+  totalamount numeric(12,2) [not null, default: 0]
+  notes text
+  status text [not null, default: 'posted', note: 'check: draft, posted, partially_received, received, cancelled']
+  createdby int
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledreason text
+
+  Note: '[DUPLICATE SYSTEM] Retained by Codex as "Purchase Orders" while purchase_bills was introduced as actual invoices.'
+}
+
+Table purchase_details {
+  id_purchasedetail int [pk, increment]
+  fk_purchase int [not null]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantity numeric(14,3) [not null]
+  unitcost numeric(12,2) [not null, default: 0]
+  taxamount numeric(12,2) [not null, default: 0]
+  linetotal numeric(12,2) [not null, default: 0]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+
+  Note: '[DUPLICATE SYSTEM] Line items for legacy purchases table.'
+}
+
+// -----------------------------------------------------------------------------
+// New Parallel Purchase System (Codex V004 / 046_PurchaseBills.sql)
+// -----------------------------------------------------------------------------
+
+Table purchase_bills {
+  id int [pk, increment]
+  request_key uuid [not null, unique]
+  fk_supplier int [not null]
+  fk_store int [not null]
+  number text [not null]
+  invoice_number text [not null]
+  invoice_date date [not null]
+  purchase_date date [not null]
+  status text [not null, default: 'Pending', note: 'check: Pending, Approved, Cancelled']
+  supplier_name text [not null, note: 'Denormalized snapshot of supplier name']
+  supplier_tax_number text [note: 'Denormalized snapshot of supplier tax number']
+  store_name text [not null, note: 'Denormalized snapshot of store name']
+  notes text
+  source_type text
+  source_id int
+  subtotal numeric(14,2) [not null]
+  discount_total numeric(14,2) [not null]
+  taxable_total numeric(14,2) [not null]
+  tax_total numeric(14,2) [not null]
+  charges numeric(14,2) [not null, default: 0]
+  round_off numeric(14,2) [not null, default: 0]
+  grand_total numeric(14,2) [not null]
+  returned_total numeric(14,2) [not null, default: 0]
+  version int [not null, default: 1]
+  created_by int [not null]
+  created_at timestamp [not null, default: `now()`]
+  approved_by int
+  approved_at timestamp
+  cancelled_by int
+  cancelled_at timestamp
+  cancel_reason text
+
+  Note: '[NEW TABLE] Parallel purchase bill system introduced by Codex. Unique constraint on (fk_store, number) and (fk_supplier, lower(btrim(invoice_number))). Triggers enforce immutable snapshot on approved/cancelled.'
+}
+
+Table purchase_bill_lines {
+  id int [pk, increment]
+  fk_bill int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  product_code text [not null, note: 'Denormalized SKU snapshot']
+  description text [not null, note: 'Denormalized name snapshot']
+  unit_name text [not null, note: 'Denormalized unit snapshot']
+  quantity numeric(14,3) [not null]
+  unit_cost numeric(12,2) [not null]
+  discount_amount numeric(14,2) [not null]
+  taxable_value numeric(14,2) [not null]
+  tax_name text [not null, note: 'Denormalized tax name']
+  tax_rate numeric(7,4) [not null]
+  tax_inclusive boolean [not null, default: false]
+  tax_amount numeric(14,2) [not null]
+  line_total numeric(14,2) [not null]
+  returned_quantity numeric(14,3) [not null, default: 0]
+  returned_credit numeric(14,2) [not null, default: 0]
+
+  Note: '[NEW TABLE] Line items for purchase_bills. Duplicates functionality of purchase_details with heavy denormalization.'
+}
+
+// -----------------------------------------------------------------------------
+// New Supplier Return System (Codex V004)
+// -----------------------------------------------------------------------------
+
+Table supplier_returns {
+  id int [pk, increment]
+  request_key uuid [not null, unique]
+  fk_bill int [not null, note: 'Tightly coupled to purchase_bills(id), NOT purchases']
+  fk_supplier int [not null]
+  fk_store int [not null]
+  number text [not null]
+  return_date date [not null]
+  status text [not null, default: 'Draft', note: 'check: Draft, Posted']
+  notes text
+  total_credit numeric(14,2) [not null]
+  version int [not null, default: 1]
+  created_by int [not null]
+  created_at timestamp [not null, default: `now()`]
+  posted_by int
+  posted_at timestamp
+
+  Note: '[NEW TABLE] Supplier return headers. Unique on (fk_store, number). Guarded by trigger tr_supplier_return_immutable.'
+}
+
+Table supplier_return_lines {
+  id int [pk, increment]
+  fk_return int [not null]
+  fk_bill_line int [not null, note: 'References purchase_bill_lines(id)']
+  quantity numeric(14,3) [not null]
+  taxable_credit numeric(14,2) [not null]
+  tax_credit numeric(14,2) [not null]
+  total_credit numeric(14,2) [not null]
+
+  Note: '[NEW TABLE] Supplier return line details. Unique on (fk_return, fk_bill_line).'
+}
+
+// -----------------------------------------------------------------------------
+// New Supplier Financial Subledger System (Codex V004)
+// -----------------------------------------------------------------------------
+
+Table supplier_money_transactions {
+  id int [pk, increment]
+  request_key uuid [not null, unique]
+  fk_supplier int [not null]
+  fk_store int [not null]
+  number text [not null]
+  kind text [not null, note: 'check: Payment, Refund, PaymentReversal, RefundReversal']
+  amount numeric(14,2) [not null]
+  transaction_date date [not null]
+  method text [not null]
+  reference text
+  notes text
+  fk_reversal_of int [unique, note: 'Points to reversed money transaction']
+  created_by int [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  Note: '[NEW TABLE] Cash/bank payments made to supplier and refunds received. Guarded by tr_supplier_money_immutable trigger.'
+}
+
+Table supplier_ledger_entries {
+  id int [pk, increment]
+  fk_supplier int [not null]
+  fk_store int
+  entry_date date [not null]
+  entry_type text [not null, default: '']
+  source_type text [not null]
+  source_id int [not null]
+  source_version int [not null, default: 1]
+  signed_amount numeric(14,2) [not null, note: 'Codex convention: Positive = payable to supplier; Negative = receivable/advance. (NOTE: Inverts requested SmartCartPro convention!)']
+  reference text
+  notes text
+  created_by int [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  Note: '[NEW TABLE] Append-only supplier subledger. Unique on (source_type, source_id, source_version). Guarded by trigger tr_supplier_ledger_immutable.'
+}
+
+Table supplier_allocations {
+  id int [pk, increment]
+  request_key uuid [not null, unique]
+  fk_supplier int [not null]
+  fk_bill int [not null, note: 'Allocates payment/credit to purchase_bills(id)']
+  fk_money_transaction int [note: 'Points to supplier_money_transactions']
+  fk_credit_entry int [note: 'Points to supplier_ledger_entries']
+  amount numeric(14,2) [not null]
+  created_by int [not null]
+  created_at timestamp [not null, default: `now()`]
+  released_at timestamp
+  released_by int
+  release_reason text
+
+  Note: '[NEW TABLE] Tracks bill-level payment settlement. Exactly one source required: fk_money_transaction OR fk_credit_entry. Guarded by tr_supplier_allocation_history.'
+}
+
+// -----------------------------------------------------------------------------
+// Inventory & Modified Stock Movements
+// -----------------------------------------------------------------------------
+
+Table inventory {
+  id_inventory int [pk, increment]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantityonhand numeric(14,3) [not null, default: 0]
+  quantityreserved numeric(14,3) [not null, default: 0]
+  reorderlevel numeric(14,3) [not null, default: 0]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+}
+
+Table stock_movements {
+  id_stockmovement int [pk, increment]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  movementtype text [not null]
+  quantity numeric(14,3) [not null]
+  referencetype text
+  referenceid int
+  source_line_id int [note: '[CODEX ADDITION] References purchase_bill_lines(id) or supplier_return_lines(id)']
+  unit_cost numeric(12,2) [note: '[CODEX ADDITION] Historical unit cost snapshot']
+  notes text
+  createdat timestamp [not null, default: `now()`]
+  createdby int
+
+  Note: 'Modified by Codex with columns source_line_id, unit_cost, partial unique index uq_stock_movement_document_line, and validation trigger tr_supplier_stock_source.'
+}
+
+// -----------------------------------------------------------------------------
+// Relationships (Foreign Keys)
+// -----------------------------------------------------------------------------
+
+Ref: product_variants.fk_product > products.id_product
+
+// Legacy purchase refs
+Ref: purchases.fk_store > store.id_store
+Ref: purchases.fk_supplier > suppliers.id_supplier
+Ref: purchases.createdby > users.id_user
+Ref: purchase_details.fk_purchase > purchases.id_purchase
+Ref: purchase_details.fk_store > store.id_store
+Ref: purchase_details.fk_product > products.id_product
+Ref: purchase_details.fk_productvariant > product_variants.id_productvariant
+
+// New purchase_bill refs
+Ref: purchase_bills.fk_supplier > suppliers.id_supplier
+Ref: purchase_bills.fk_store > store.id_store
+Ref: purchase_bills.created_by > users.id_user
+Ref: purchase_bills.approved_by > users.id_user
+Ref: purchase_bills.cancelled_by > users.id_user
+Ref: purchase_bill_lines.fk_bill > purchase_bills.id
+Ref: purchase_bill_lines.fk_product > products.id_product
+Ref: purchase_bill_lines.fk_productvariant > product_variants.id_productvariant
+
+// Supplier return refs
+Ref: supplier_returns.fk_bill > purchase_bills.id
+Ref: supplier_returns.fk_supplier > suppliers.id_supplier
+Ref: supplier_returns.fk_store > store.id_store
+Ref: supplier_returns.created_by > users.id_user
+Ref: supplier_returns.posted_by > users.id_user
+Ref: supplier_return_lines.fk_return > supplier_returns.id
+Ref: supplier_return_lines.fk_bill_line > purchase_bill_lines.id
+
+// Supplier financial refs
+Ref: supplier_money_transactions.fk_supplier > suppliers.id_supplier
+Ref: supplier_money_transactions.fk_store > store.id_store
+Ref: supplier_money_transactions.created_by > users.id_user
+Ref: supplier_money_transactions.fk_reversal_of - supplier_money_transactions.id
+Ref: supplier_ledger_entries.fk_supplier > suppliers.id_supplier
+Ref: supplier_ledger_entries.fk_store > store.id_store
+Ref: supplier_ledger_entries.created_by > users.id_user
+Ref: supplier_allocations.fk_supplier > suppliers.id_supplier
+Ref: supplier_allocations.fk_bill > purchase_bills.id
+Ref: supplier_allocations.fk_money_transaction > supplier_money_transactions.id
+Ref: supplier_allocations.fk_credit_entry > supplier_ledger_entries.id
+Ref: supplier_allocations.created_by > users.id_user
+Ref: supplier_allocations.released_by > users.id_user
+
+// Inventory & stock movement refs
+Ref: inventory.fk_store > store.id_store
+Ref: inventory.fk_product > products.id_product
+Ref: inventory.fk_productvariant > product_variants.id_productvariant
+Ref: stock_movements.fk_store > store.id_store
+Ref: stock_movements.fk_product > products.id_product
+Ref: stock_movements.fk_productvariant > product_variants.id_productvariant
+Ref: stock_movements.createdby > users.id_user
+

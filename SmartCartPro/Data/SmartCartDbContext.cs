@@ -39,6 +39,11 @@ public class SmartCartDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<PurchaseDetail> PurchaseDetails => Set<PurchaseDetail>();
+    public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();
+    public DbSet<PurchaseReturnDetail> PurchaseReturnDetails => Set<PurchaseReturnDetail>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderDetail> PurchaseOrderDetails => Set<PurchaseOrderDetail>();
+    public DbSet<SupplierTransaction> SupplierTransactions => Set<SupplierTransaction>();
 
     // ── Phase 6: POS ──────────────────────────────────────────────
     public DbSet<Customer> Customers => Set<Customer>();
@@ -618,6 +623,71 @@ public class SmartCartDbContext : DbContext
         modelBuilder.Entity<Setting>(e =>
         {
             e.HasIndex(x => new { x.SettingScope, x.FkStore, x.SettingKey }).IsUnique();
+        });
+
+        // ── Phase 5: Purchasing, Returns, Orders & Supplier Financials ─
+        modelBuilder.Entity<Purchase>(e =>
+        {
+            e.HasIndex(x => x.FkStore);
+            e.HasIndex(x => x.FkSupplier);
+            e.HasIndex(x => x.PurchaseDate);
+            e.HasOne(x => x.Supplier).WithMany().HasForeignKey(x => x.FkSupplier).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.FkStore).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Details).WithOne(x => x.Purchase).HasForeignKey(x => x.FkPurchase).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PurchaseDetail>(e =>
+        {
+            e.HasIndex(x => x.FkPurchase);
+            e.HasIndex(x => x.FkProduct);
+            e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.FkProduct).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProductVariant).WithMany().HasForeignKey(x => x.FkProductVariant).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PurchaseReturn>(e =>
+        {
+            e.HasIndex(x => new { x.FkStore, x.ReturnNumber }).IsUnique();
+            e.HasIndex(x => x.FkPurchase);
+            e.HasIndex(x => x.FkSupplier);
+            e.HasOne(x => x.Purchase).WithMany().HasForeignKey(x => x.FkPurchase).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Supplier).WithMany().HasForeignKey(x => x.FkSupplier).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.FkStore).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Details).WithOne(x => x.PurchaseReturn).HasForeignKey(x => x.FkPurchaseReturn).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PurchaseReturnDetail>(e =>
+        {
+            e.HasIndex(x => x.FkPurchaseReturn);
+            e.HasIndex(x => x.FkPurchaseDetail);
+            e.HasOne(x => x.PurchaseDetail).WithMany().HasForeignKey(x => x.FkPurchaseDetail).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.FkProduct).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProductVariant).WithMany().HasForeignKey(x => x.FkProductVariant).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PurchaseOrder>(e =>
+        {
+            e.HasIndex(x => new { x.FkStore, x.OrderNumber }).IsUnique();
+            e.HasIndex(x => x.FkSupplier);
+            e.HasOne(x => x.Supplier).WithMany().HasForeignKey(x => x.FkSupplier).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.FkStore).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Details).WithOne(x => x.PurchaseOrder).HasForeignKey(x => x.FkPurchaseOrder).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PurchaseOrderDetail>(e =>
+        {
+            e.HasIndex(x => x.FkPurchaseOrder);
+            e.HasIndex(x => x.FkProduct);
+            e.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.FkProduct).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProductVariant).WithMany().HasForeignKey(x => x.FkProductVariant).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SupplierTransaction>(e =>
+        {
+            e.HasIndex(x => new { x.FkStore, x.TransactionNumber }).IsUnique();
+            e.HasIndex(x => new { x.FkSupplier, x.TransactionDate });
+            e.HasOne(x => x.Supplier).WithMany().HasForeignKey(x => x.FkSupplier).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.FkStore).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ReversalOf).WithMany().HasForeignKey(x => x.FkReversalOf).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

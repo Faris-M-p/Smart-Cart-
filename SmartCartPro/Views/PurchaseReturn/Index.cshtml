@@ -1,0 +1,116 @@
+@model OutputPurchaseReturnList
+@{
+    ViewData["Title"] = "Purchase Returns";
+    var f = Model.Filter;
+    var suppliers = ViewBag.Suppliers as IReadOnlyList<OutputSupplierSelect> ?? new List<OutputSupplierSelect>();
+    var canManage = await Access.CanAsync("purchasereturns.manage");
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Purchase Returns</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Purchase Returns</h1>
+        <p class="text-muted mb-0">Return purchased goods to suppliers, adjust stock and credit balance.</p>
+    </div>
+    @if (canManage)
+    {
+        <a asp-action="Sources" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>New Purchase Return
+        </a>
+    }
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="search">Search</label>
+                <input id="search" name="Search" value="@f.Search" class="form-control form-control-sm" placeholder="Return #, Purchase #" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="supplier">Supplier</label>
+                <select id="supplier" name="FkSupplier" class="form-select form-select-sm">
+                    <option value="">All Suppliers</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.IdSupplier" selected="@(f.FkSupplier == s.IdSupplier)">@s.SupplierName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold" for="from">From</label>
+                <input id="from" name="From" type="date" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold" for="to">To</label>
+                <input id="to" name="To" type="date" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Return #</th>
+                    <th>Date</th>
+                    <th>Original Purchase</th>
+                    <th>Supplier</th>
+                    <th class="text-end">Credit Total</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No purchase returns found.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var r in Model.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                <a asp-action="Details" asp-route-id="@r.IdPurchaseReturn" class="text-decoration-none">
+                                    @r.ReturnNumber
+                                </a>
+                            </td>
+                            <td>@r.ReturnDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <a asp-controller="Purchase" asp-action="Details" asp-route-id="@r.FkPurchase" class="text-decoration-none">
+                                    @r.PurchaseNumber
+                                </a>
+                            </td>
+                            <td>@r.SupplierName</td>
+                            <td class="text-end fw-bold text-success">₹@r.TotalAmount.ToString("N2")</td>
+                            <td>
+                                <span class="badge @(r.Status == "Approved" ? "bg-success-subtle text-success" : r.Status == "Cancelled" ? "bg-danger-subtle text-danger" : "bg-warning-subtle text-warning")">
+                                    @r.Status
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@r.IdPurchaseReturn" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

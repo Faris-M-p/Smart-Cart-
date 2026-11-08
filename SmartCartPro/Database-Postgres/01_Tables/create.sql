@@ -136,3 +136,6 @@
 
 \echo Creating 045_ModuleFeatures.sql
 \ir ./045_ModuleFeatures.sql
+
+\echo Creating 046_PurchaseManagement.sql
+\ir ./046_PurchaseManagement.sql

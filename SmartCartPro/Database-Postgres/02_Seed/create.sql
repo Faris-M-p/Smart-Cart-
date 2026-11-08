@@ -19,3 +19,6 @@
 
 \echo Seeding 007_ModuleFeatures.sql
 \ir ./007_ModuleFeatures.sql
+
+\echo Seeding 008_PurchaseAccess.sql
+\ir ./008_PurchaseAccess.sql

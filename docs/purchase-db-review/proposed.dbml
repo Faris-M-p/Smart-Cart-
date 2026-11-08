@@ -1,0 +1,279 @@
+// =============================================================================
+// SmartCartPro — Database Architecture (PROPOSED: Target Clean Architecture)
+// Target: PostgreSQL | Dialect: DBML (compatible with https://dbdiagram.io)
+// Scope: Unified Purchase, Return, Supplier Ledger, and Inventory Schema
+// =============================================================================
+
+Table store {
+  id_store int [pk, increment]
+  storename text [not null]
+  storecode text
+
+  Note: 'Store boundary. Core multi-store entity.'
+}
+
+Table users {
+  id_user int [pk, increment]
+  username text [not null, unique]
+  fullname text
+
+  Note: 'System user entity for audit trail.'
+}
+
+Table products {
+  id_product int [pk, increment]
+  productname text [not null]
+  productcode text [not null]
+  sku text
+  barcode text
+  costprice numeric(12,2) [not null, default: 0]
+  isactive boolean [not null, default: true]
+  cancelled boolean [not null, default: false]
+}
+
+Table product_variants {
+  id_productvariant int [pk, increment]
+  fk_product int [not null]
+  variantname text [not null]
+  skucode text
+  barcode text
+  isactive boolean [not null, default: true]
+  cancelled boolean [not null, default: false]
+}
+
+Table suppliers {
+  id_supplier int [pk, increment]
+  suppliercode text
+  suppliername text [not null, unique]
+  contactperson text
+  email text
+  phone text
+  addressline1 text
+  city text
+  state text
+  postalcode text
+  country text
+  taxnumber text
+  isactive boolean [not null, default: true]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledreason text
+
+  Note: '[REUSED AS-IS] Company-wide vendor master. Single master reused for all vendor operations. No separate supplier_accounts master table.'
+}
+
+// -----------------------------------------------------------------------------
+// Unified Main Purchase System (Reusing & Evolving Original Tables)
+// -----------------------------------------------------------------------------
+
+Table purchases {
+  id_purchase int [pk, increment]
+  purchasenumber text [not null, note: '[PROPOSED] Store-scoped unique sequence number (e.g. PUR-0001)']
+  fk_store int [not null]
+  fk_supplier int [not null, note: 'Mandatory supplier reference']
+  purchasedate date [not null, default: `current_date`]
+  invoicenumber text [not null, note: 'Supplier invoice / bill number']
+  invoicedate date [not null, default: `current_date`, note: '[PROPOSED] Date stated on supplier invoice']
+  subtotal numeric(12,2) [not null, default: 0]
+  discountamount numeric(12,2) [not null, default: 0]
+  taxableamount numeric(12,2) [not null, default: 0, note: '[PROPOSED] Total net taxable amount']
+  taxamount numeric(12,2) [not null, default: 0]
+  charges numeric(12,2) [not null, default: 0, note: '[PROPOSED] Freight/handling non-taxable charges']
+  roundoff numeric(12,2) [not null, default: 0, note: '[PROPOSED] Round off difference (abs <= 1)']
+  totalamount numeric(12,2) [not null, default: 0, note: 'Grand total payable before returns/payments']
+  notes text
+  status text [not null, default: 'Pending', note: 'check: status in (Pending, Approved, Cancelled)']
+  createdby int [not null]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+  approvedby int [note: '[PROPOSED] User who approved purchase into stock and supplier ledger']
+  approvedat timestamp [note: '[PROPOSED] Timestamp of approval. Once approved, document is immutable; stock and ledger are updated exactly once']
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledby int [note: '[PROPOSED] User who cancelled pending purchase']
+  cancelledreason text
+
+  Note: '[CORE TRANSACTION TABLE] Reuses original purchases table. Eliminates purchase_bills. Status workflow: Pending (can edit/cancel; no stock/ledger effect) -> Approved (immutable, updates inventory & supplier payable once) -> Cancelled (pending only, with reason). Unique constraints on (fk_store, purchasenumber) and (fk_supplier, lower(invoicenumber)).'
+}
+
+Table purchase_details {
+  id_purchasedetail int [pk, increment]
+  fk_purchase int [not null]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantity numeric(14,3) [not null, note: 'check: quantity > 0']
+  unitcost numeric(12,2) [not null, default: 0]
+  discountamount numeric(12,2) [not null, default: 0, note: '[PROPOSED] Line discount']
+  taxableamount numeric(12,2) [not null, default: 0, note: '[PROPOSED] Line taxable value']
+  taxrate numeric(7,4) [not null, default: 0, note: '[PROPOSED] Applied tax % (0 to 100)']
+  taxinclusive boolean [not null, default: false, note: '[PROPOSED] True if unitcost is tax inclusive']
+  taxamount numeric(12,2) [not null, default: 0]
+  linetotal numeric(12,2) [not null, default: 0]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+
+  Note: '[CORE TRANSACTION LINES] Reuses original purchase_details table. Eliminates purchase_bill_lines. Product code/names and tax names resolve cleanly from master tables or product snapshots without redundant table cloning.'
+}
+
+// -----------------------------------------------------------------------------
+// Purchase Returns (Pattern Matching sales_returns)
+// -----------------------------------------------------------------------------
+
+Table purchase_returns {
+  id_purchasereturn int [pk, increment]
+  fk_store int [not null]
+  fk_purchase int [not null, note: 'Mandatory link to original approved purchase']
+  fk_supplier int [not null]
+  returnnumber text [not null, note: 'Store-scoped return number (e.g. PR-0001)']
+  returndate date [not null, default: `current_date`]
+  status text [not null, default: 'Draft', note: 'check: status in (Draft, Posted, Cancelled)']
+  totalamount numeric(12,2) [not null, default: 0]
+  reason text
+  notes text
+  createdby int [not null]
+  createdat timestamp [not null, default: `now()`]
+  postedby int [note: 'Posting user; posted return reduces stock and reduces supplier payable']
+  postedat timestamp
+  cancelled boolean [not null, default: false]
+  cancelledon timestamp
+  cancelledreason text
+
+  Note: '[PROPOSED STANDARD RETURN TABLE] Direct analog to existing sales_returns table. Replaces supplier_returns. Unique on (fk_store, returnnumber). Links to purchases(id_purchase).'
+}
+
+Table purchase_return_details {
+  id_purchasereturndetail int [pk, increment]
+  fk_purchasereturn int [not null]
+  fk_purchasedetail int [not null, note: 'Points to original purchase_details line']
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantity numeric(14,3) [not null, note: 'check: quantity > 0 and <= original purchase detail quantity']
+  unitcost numeric(12,2) [not null, default: 0]
+  taxamount numeric(12,2) [not null, default: 0]
+  linetotal numeric(12,2) [not null, default: 0]
+
+  Note: '[PROPOSED RETURN LINES] Direct analog to existing sales_return_details table. Replaces supplier_return_lines. Unique on (fk_purchasereturn, fk_purchasedetail).'
+}
+
+// -----------------------------------------------------------------------------
+// Supplier Financials & Subledger (Consolidated, No Redundant Master Table)
+// -----------------------------------------------------------------------------
+
+Table supplier_transactions {
+  id_suppliertransaction int [pk, increment]
+  fk_store int [not null]
+  fk_supplier int [not null]
+  transactionnumber text [not null, note: 'Store-scoped payment/refund sequence (e.g. SPAY-0001)']
+  transactiondate date [not null, default: `current_date`]
+  transactiontype text [not null, note: 'check: Payment, Refund, OpeningBalance, Reversal']
+  amount numeric(12,2) [not null, note: 'Positive gross amount: check amount > 0']
+  signedamount numeric(12,2) [not null, note: 'Consistent signed convention: Positive (+) = receivable/advance from supplier; Negative (-) = payable to supplier']
+  paymentmethod text [not null, note: 'check: cash, bank, upi, cheque, other']
+  referenceno text
+  notes text
+  fk_reversal_of int [unique, note: 'Self-reference to original transaction if this row is an authorized reversal']
+  createdby int [not null]
+  createdat timestamp [not null, default: `now()`]
+
+  Note: '[PROPOSED CONSOLIDATED FINANCIAL TABLE] Consolidates supplier_money_transactions and supplier_ledger_entries into one transparent financial ledger. Supplier balance is computed as the sum of signed effects: Approved Purchases (-), Returns (+), Payments (+), Refunds (-). No unreliable static master balance column.'
+}
+
+Table supplier_payment_allocations {
+  id_allocation int [pk, increment]
+  fk_supplier int [not null]
+  fk_purchase int [not null, note: 'Direct link to purchases(id_purchase)']
+  fk_suppliertransaction int [not null, note: 'Direct link to supplier_transactions']
+  amount numeric(12,2) [not null, note: 'check: amount > 0 and <= remaining purchase balance']
+  allocatedat timestamp [not null, default: `now()`]
+  createdby int [not null]
+
+  Note: '[PROPOSED ALLOCATION TABLE] Streamlined replacement for supplier_allocations. Tracks bill settlement against payments and advances. Unique on (fk_purchase, fk_suppliertransaction).'
+}
+
+// -----------------------------------------------------------------------------
+// Inventory & Stock Movements (Reused Existing Tables)
+// -----------------------------------------------------------------------------
+
+Table inventory {
+  id_inventory int [pk, increment]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  quantityonhand numeric(14,3) [not null, default: 0]
+  quantityreserved numeric(14,3) [not null, default: 0]
+  reorderlevel numeric(14,3) [not null, default: 0]
+  createdat timestamp [not null, default: `now()`]
+  updatedat timestamp
+
+  Note: '[REUSED AS-IS] Real-time inventory balance per store and SKU.'
+}
+
+Table stock_movements {
+  id_stockmovement int [pk, increment]
+  fk_store int [not null]
+  fk_product int [not null]
+  fk_productvariant int
+  movementtype text [not null, note: 'purchase, sale, adjustment, transfer_in, transfer_out, return_in, return_out, opening']
+  quantity numeric(14,3) [not null]
+  referencetype text [note: 'purchase, purchase_return, sale, etc.']
+  referenceid int [note: 'id_purchase, id_purchasereturn, etc.']
+  unitcost numeric(12,2) [note: '[PROPOSED] Unit cost at transaction time for accurate inventory valuation']
+  notes text
+  createdat timestamp [not null, default: `now()`]
+  createdby int
+
+  Note: '[REUSED AS-IS + unitcost] Immutable audit trail for physical inventory changes. For purchase approval, movementtype=purchase & referencetype=purchase. For posted returns, movementtype=return_out & referencetype=purchase_return.'
+}
+
+// -----------------------------------------------------------------------------
+// Relationships (Foreign Keys)
+// -----------------------------------------------------------------------------
+
+Ref: product_variants.fk_product > products.id_product
+
+// Main Purchase refs
+Ref: purchases.fk_store > store.id_store
+Ref: purchases.fk_supplier > suppliers.id_supplier
+Ref: purchases.createdby > users.id_user
+Ref: purchases.approvedby > users.id_user
+Ref: purchases.cancelledby > users.id_user
+Ref: purchase_details.fk_purchase > purchases.id_purchase
+Ref: purchase_details.fk_store > store.id_store
+Ref: purchase_details.fk_product > products.id_product
+Ref: purchase_details.fk_productvariant > product_variants.id_productvariant
+
+// Purchase Return refs
+Ref: purchase_returns.fk_store > store.id_store
+Ref: purchase_returns.fk_purchase > purchases.id_purchase
+Ref: purchase_returns.fk_supplier > suppliers.id_supplier
+Ref: purchase_returns.createdby > users.id_user
+Ref: purchase_returns.postedby > users.id_user
+Ref: purchase_return_details.fk_purchasereturn > purchase_returns.id_purchasereturn
+Ref: purchase_return_details.fk_purchasedetail > purchase_details.id_purchasedetail
+Ref: purchase_return_details.fk_store > store.id_store
+Ref: purchase_return_details.fk_product > products.id_product
+Ref: purchase_return_details.fk_productvariant > product_variants.id_productvariant
+
+// Supplier Financial refs
+Ref: supplier_transactions.fk_supplier > suppliers.id_supplier
+Ref: supplier_transactions.fk_store > store.id_store
+Ref: supplier_transactions.createdby > users.id_user
+Ref: supplier_transactions.fk_reversal_of - supplier_transactions.id
+Ref: supplier_payment_allocations.fk_supplier > suppliers.id_supplier
+Ref: supplier_payment_allocations.fk_purchase > purchases.id_purchase
+Ref: supplier_payment_allocations.fk_suppliertransaction > supplier_transactions.id
+Ref: supplier_payment_allocations.createdby > users.id_user
+
+// Inventory & stock movement refs
+Ref: inventory.fk_store > store.id_store
+Ref: inventory.fk_product > products.id_product
+Ref: inventory.fk_productvariant > product_variants.id_productvariant
+Ref: stock_movements.fk_store > store.id_store
+Ref: stock_movements.fk_product > products.id_product
+Ref: stock_movements.fk_productvariant > product_variants.id_productvariant
+Ref: stock_movements.createdby > users.id_user
+

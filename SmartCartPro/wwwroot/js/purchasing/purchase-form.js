@@ -1,5 +1,5 @@
-/* Purchase order create / edit: dynamic line grid, product typeahead and a live totals preview.
- * The totals shown here are only a preview — the server recomputes tax and every amount from master data when saving.
+/* Purchase order create / edit: dynamic line grid, product typeahead, supplier balance preview, and live totals.
+ * The totals shown here are a preview — the server recomputes tax and every amount from master data when saving.
  * The document is posted as JSON through SmartCartAjax.postJson (controller binds it with [FromBody]). */
 (function (window, $) {
   'use strict';
@@ -15,10 +15,12 @@
   var $picker = $('#productPicker');
   var $spinner = $page.find('[data-picker-spinner]');
   var $count = $page.find('[data-line-count]');
+  var $supplierSelect = $('#supplierSelect');
 
   var mode = $page.attr('data-mode') || 'create';
   var submitUrl = $page.attr('data-submit-url');
   var lookupUrl = $page.attr('data-lookup-url');
+  var balanceUrl = $page.attr('data-supplier-balance-url');
 
   var lines = [];
   var seq = 0;
@@ -35,15 +37,22 @@
     return Math.round((n + Number.EPSILON) * factor) / factor;
   }
 
-  /** Same arithmetic as PurchaseService: tax-exclusive, tax on the discounted amount, 2-decimal rounding. */
+  /** Same arithmetic as PurchaseService: tax on the discounted amount, 2-decimal rounding. */
   function calc(line) {
     var qty = round(num(line.quantity), 3);
     var cost = round(num(line.unitCost), 2);
     var discount = round(num(line.discountAmount), 2);
     var gross = round(qty * cost, 2);
     var net = gross - discount;
-    var tax = round(net * num(line.taxRate) / 100, 2);
-    return { gross: gross, discount: discount, tax: tax, total: net + tax };
+    var taxRate = num(line.taxRate);
+    var tax = 0;
+    if (line.taxInclusive) {
+      var taxable = round(net / (1 + (taxRate / 100)), 2);
+      tax = round(net - taxable, 2);
+    } else {
+      tax = round(net * taxRate / 100, 2);
+    }
+    return { gross: gross, discount: discount, tax: tax, total: net + (line.taxInclusive ? 0 : tax) };
   }
 
   function rowProblem(line, c) {
@@ -171,6 +180,41 @@
     renderTotals();
   }
 
+  /* ------------------------------------------------------------------ supplier balance */
+
+  function loadSupplierBalance(supplierId) {
+    var $box = $('#supplierBalanceBox');
+    var $amt = $('#supplierBalanceAmount');
+    var $badge = $('#supplierBalanceNote');
+    if (!supplierId || supplierId <= 0 || !balanceUrl) {
+      $box.addClass('d-none');
+      return;
+    }
+    A.getJson(balanceUrl, { supplierId: supplierId }).done(function (res) {
+      if (!res) {
+        $box.addClass('d-none');
+        return;
+      }
+      var bal = num(res.currentBalance);
+      $box.removeClass('d-none');
+      $amt.text('₹' + Math.abs(bal).toFixed(2));
+      $badge.removeClass('bg-danger-subtle text-danger bg-success-subtle text-success bg-secondary-subtle text-secondary');
+      if (bal < 0) {
+        $badge.addClass('bg-danger-subtle text-danger').text('Payable (We Owe)');
+      } else if (bal > 0) {
+        $badge.addClass('bg-success-subtle text-success').text('Advance / Credit');
+      } else {
+        $badge.addClass('bg-secondary-subtle text-secondary').text('Settled (₹0.00)');
+      }
+    });
+  }
+
+  if ($supplierSelect.length) {
+    $supplierSelect.on('change', function () {
+      loadSupplierBalance(parseInt($(this).val(), 10) || 0);
+    });
+  }
+
   /* ------------------------------------------------------------------ lines */
 
   function addLine(data) {
@@ -184,7 +228,8 @@
       quantity: data.quantity != null ? data.quantity : 1,
       unitCost: data.unitCost != null ? data.unitCost : 0,
       discountAmount: data.discountAmount != null ? data.discountAmount : 0,
-      taxRate: num(data.taxRate)
+      taxRate: num(data.taxRate),
+      taxInclusive: !!data.taxInclusive
     };
     lines.push(line);
 
@@ -194,7 +239,6 @@
     return { line: line, $tr: $tr };
   }
 
-  /** Picking a product that is already on the order adds 1 to its quantity (the server rejects duplicate lines). */
   function addOrIncrement(product) {
     var variant = product.fkProductVariant || 0;
     var existing = null;
@@ -223,7 +267,8 @@
         quantity: 1,
         unitCost: product.unitCost,
         discountAmount: 0,
-        taxRate: product.taxRate
+        taxRate: product.taxRate,
+        taxInclusive: false
       }).$tr;
     }
 
@@ -253,7 +298,6 @@
   });
 
   $body.on('keydown', '[data-field]', function (e) {
-    // Enter moves on to the next product search instead of submitting anything.
     if (e.key === 'Enter') {
       e.preventDefault();
       $picker.trigger('focus');
@@ -267,7 +311,7 @@
   $form.on('submit', function (e) { e.preventDefault(); });
 
   $form.on('click', '[data-save]', function () {
-    submit($(this).attr('data-save') === 'draft', $(this));
+    submit($(this).attr('data-save'), $(this));
   });
 
   /* ------------------------------------------------------------------ product picker */
@@ -313,12 +357,12 @@
     }
   }
 
-  /** Quick checks that mirror the server messages; the server stays the authority. */
   function clientErrors() {
     var errors = {};
     var supplier = parseInt($form.find('[name="FkSupplier"]').val(), 10) || 0;
     if (supplier <= 0) errors.FkSupplier = ['Please select a Supplier.'];
     if (!$form.find('[name="PurchaseDate"]').val()) errors.PurchaseDate = ['The Purchase Date field is required.'];
+    if (!$.trim($form.find('[name="InvoiceNumber"]').val())) errors.InvoiceNumber = ['The Supplier Invoice # is required.'];
     if (!lines.length) errors.Lines = ['At least one purchase line is required.'];
     return errors;
   }
@@ -333,7 +377,6 @@
     return bad;
   }
 
-  /** Server errors keyed "Lines[i].Field" point at the i-th row of the posted array (same order as the grid). */
   function showLineErrors(res) {
     var errors = res && res.validationErrors;
     if (!errors) return;
@@ -355,7 +398,7 @@
     });
   }
 
-  function submit(saveAsDraft, $clicked) {
+  function submit(actionType, $clicked) {
     A.clearFieldErrors($form);
 
     var errors = clientErrors();
@@ -366,19 +409,27 @@
       return;
     }
 
+    var markAsApproved = actionType === 'approve' || $('#markAsApprovedSwitch').is(':checked');
+    if (actionType === 'pending') markAsApproved = false;
+
     var payload = {
       fkSupplier: parseInt($form.find('[name="FkSupplier"]').val(), 10) || 0,
       purchaseDate: $form.find('[name="PurchaseDate"]').val(),
-      invoiceNumber: $.trim($form.find('[name="InvoiceNumber"]').val()) || null,
+      invoiceNumber: $.trim($form.find('[name="InvoiceNumber"]').val()) || '',
+      invoiceDate: $form.find('[name="InvoiceDate"]').val() || $form.find('[name="PurchaseDate"]').val(),
+      markAsApproved: markAsApproved,
+      amountPaid: num($form.find('[name="AmountPaid"]').val()),
+      paymentMethod: $form.find('[name="PaymentMethod"]').val() || null,
       notes: $.trim($form.find('[name="Notes"]').val()) || null,
-      saveAsDraft: saveAsDraft,
       lines: lines.map(function (line) {
         return {
           fkProduct: line.fkProduct,
           fkProductVariant: line.fkProductVariant,
           quantity: num(line.quantity),
           unitCost: num(line.unitCost),
-          discountAmount: num(line.discountAmount)
+          discountAmount: num(line.discountAmount),
+          taxRate: num(line.taxRate),
+          taxInclusive: !!line.taxInclusive
         };
       })
     };
@@ -389,7 +440,6 @@
       $form: $form,
       silent: true,
       onSuccess: function (res) {
-        // postJson never redirects by itself: show the message on the next page and open the saved order.
         var redirect = res && res.data && res.data.redirectUrl;
         A.flash((res && res.message) || 'Saved.');
         if (redirect) {
@@ -418,5 +468,10 @@
 
     initial.forEach(addLine);
     refreshAll();
+
+    var initialSupplier = parseInt($supplierSelect.val(), 10) || 0;
+    if (initialSupplier > 0) {
+      loadSupplierBalance(initialSupplier);
+    }
   })();
 })(window, window.jQuery);

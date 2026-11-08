@@ -1,0 +1,129 @@
+@model OutputPurchaseOrderList
+@{
+    ViewData["Title"] = "Purchase Orders";
+    var f = Model.Filter;
+    var suppliers = ViewBag.Suppliers as IReadOnlyList<OutputSupplierSelect> ?? new List<OutputSupplierSelect>();
+    var canManage = await Access.CanAsync("purchaseorders.manage");
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><span class="text-muted">Purchase &amp; stock</span></li>
+        <li class="breadcrumb-item active" aria-current="page">Purchase Orders</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Purchase Orders</h1>
+        <p class="text-muted mb-0">Internal stock requirements and ordering lists (non-financial).</p>
+    </div>
+    @if (canManage)
+    {
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>New Requirement Order
+        </a>
+    }
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="search">Search</label>
+                <input id="search" name="Search" value="@f.Search" class="form-control form-control-sm" placeholder="Order #, Supplier…" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="supplier">Supplier</label>
+                <select id="supplier" name="FkSupplier" class="form-select form-select-sm">
+                    <option value="">All Suppliers</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.IdSupplier" selected="@(f.FkSupplier == s.IdSupplier)">@s.SupplierName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold" for="from">From</label>
+                <input id="from" name="From" type="date" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold" for="to">To</label>
+                <input id="to" name="To" type="date" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-outline-primary flex-grow-1">Filter</button>
+                <a asp-action="Index" asp-route-todayOnly="true" class="btn btn-sm @(f.TodayOnly ? "btn-primary" : "btn-outline-secondary")" title="Orders created today">Today</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Order #</th>
+                    <th>Date</th>
+                    <th>Supplier (Optional)</th>
+                    <th class="text-end">Items</th>
+                    <th class="text-end">Total Qty</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            No purchase order requirements found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var o in Model.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                <a asp-action="Details" asp-route-id="@o.IdPurchaseOrder" class="text-decoration-none">
+                                    @o.OrderNumber
+                                </a>
+                            </td>
+                            <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                            <td>@(string.IsNullOrWhiteSpace(o.SupplierName) ? "—" : o.SupplierName)</td>
+                            <td class="text-end">@o.LineCount</td>
+                            <td class="text-end fw-semibold">@o.TotalQuantity.ToString("0.###")</td>
+                            <td>
+                                <span class="badge @(o.Status == "Closed" ? "bg-secondary-subtle text-secondary" : "bg-primary-subtle text-primary")">
+                                    @o.Status
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@o.IdPurchaseOrder" class="btn btn-sm btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                @if (canManage)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@o.IdPurchaseOrder" class="btn btn-sm btn-outline-secondary ms-1" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@o.IdPurchaseOrder" method="post" class="d-inline" onsubmit="return confirm('Delete this purchase order requirement?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+

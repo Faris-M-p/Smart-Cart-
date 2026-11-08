@@ -14,34 +14,30 @@ public class PurchaseService : IPurchaseService
     private const decimal MaxAmount = 9_999_999_999.99m;
 
     private static readonly int[] PageSizes = { 10, 25, 50, 100 };
-    private static readonly string[] Statuses = { "draft", "posted", "partially_received", "received", "cancelled" };
+    private static readonly string[] Statuses = { "pending", "approved", "cancelled" };
     private static readonly string[] SortFields = { "id", "purchasedate", "supplier", "invoicenumber", "totalamount", "status" };
 
-    // In-process gates: edit / receive / cancel of the same purchase order never run side by side in this instance.
-    // (A multi-instance deployment would need a database lock or a concurrency token on the purchase row.)
     private static readonly SemaphoreSlim[] Gates = Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
 
     private readonly IPurchaseRepository _repo;
-    private readonly IDocumentNumberService _docNum;
 
-    public PurchaseService(IPurchaseRepository repo, IDocumentNumberService docNum)
+    public PurchaseService(IPurchaseRepository repo)
     {
         _repo = repo;
-        _docNum = docNum;
     }
+
+    #region Purchases
 
     public async Task<OutputPurchaseSelect?> GetPurchaseAsync(InputPurchaseSelect input, CancellationToken ct = default)
     {
-        var po = await _repo.GetPurchaseAsync(input, ct);
-        if (po is not null) ApplyRules(po);
-        return po;
+        RequireStore(input.FkStore);
+        return await _repo.GetPurchaseAsync(input, ct);
     }
 
     public async Task<OutputPurchaseList> ListPurchasesAsync(InputPurchaseList input, CancellationToken ct = default)
     {
         input.Search = Clean(input.Search);
         if (input.Search is { Length: > 100 }) input.Search = input.Search[..100];
-        input.SearchId = ParsePoNumber(input.Search);
 
         var status = (input.Status ?? string.Empty).Trim().ToLowerInvariant();
         input.Status = Array.IndexOf(Statuses, status) >= 0 ? status : null;
@@ -58,19 +54,11 @@ public class PurchaseService : IPurchaseService
 
         var result = await _repo.ListPurchasesAsync(input, ct);
 
-        // A stale link can point past the last page — show the last page instead of an empty one.
         var lastPage = Math.Max(1, (int)Math.Ceiling(result.TotalCount / (double)input.PageSize));
         if (input.Page > lastPage)
         {
             input.Page = lastPage;
             result = await _repo.ListPurchasesAsync(input, ct);
-        }
-
-        foreach (var item in result.Items)
-        {
-            item.CanEdit = item.Status is "draft" or "posted";
-            item.CanReceive = item.Status is "posted" or "partially_received";
-            item.CanCancel = item.Status is "draft" or "posted" or "partially_received";
         }
 
         result.Filter = input;
@@ -83,21 +71,21 @@ public class PurchaseService : IPurchaseService
 
         var errors = new Dictionary<string, List<string>>();
         ValidateHeader(input.PurchaseDate, "PurchaseDate", "Purchase Date", errors);
-        var totals = await PrepareLinesAsync(input.Lines, errors, ct);
+        if (input.InvoiceDate != default)
+            ValidateHeader(input.InvoiceDate, "InvoiceDate", "Invoice Date", errors);
+
+        var (subTotal, discountTotal, taxTotal, total, taxableTotal) = await PrepareLinesAsync(input.Lines, errors, ct);
         ThrowIfInvalid(errors);
 
-        input.InvoiceNumber = Clean(input.InvoiceNumber);
+        input.InvoiceNumber = Clean(input.InvoiceNumber) ?? string.Empty;
         input.Notes = Clean(input.Notes);
-        input.SubTotal = totals.SubTotal;
-        input.DiscountAmount = totals.Discount;
-        input.TaxAmount = totals.Tax;
-        input.TotalAmount = totals.Total;
+        input.SubTotal = subTotal;
+        input.DiscountAmount = discountTotal;
+        input.TaxableAmount = taxableTotal;
+        input.TaxAmount = taxTotal;
+        input.TotalAmount = total + input.Charges + input.RoundOff;
 
-        var result = await _repo.CreatePurchaseAsync(input, ct);
-        if (!result.Ok)
-            throw Failure(result.StatusCode, result.ResponseMsg, "Unable to create the purchase order.", "FkSupplier");
-
-        return result;
+        return await _repo.CreatePurchaseAsync(input, ct);
     }
 
     public async Task<OutputPurchaseUpdate> UpdatePurchaseAsync(InputPurchaseUpdate input, CancellationToken ct = default)
@@ -106,25 +94,25 @@ public class PurchaseService : IPurchaseService
 
         var errors = new Dictionary<string, List<string>>();
         ValidateHeader(input.PurchaseDate, "PurchaseDate", "Purchase Date", errors);
-        var totals = await PrepareLinesAsync(input.Lines, errors, ct);
+        if (input.InvoiceDate != default)
+            ValidateHeader(input.InvoiceDate, "InvoiceDate", "Invoice Date", errors);
+
+        var (subTotal, discountTotal, taxTotal, total, taxableTotal) = await PrepareLinesAsync(input.Lines, errors, ct);
         ThrowIfInvalid(errors);
 
-        input.InvoiceNumber = Clean(input.InvoiceNumber);
+        input.InvoiceNumber = Clean(input.InvoiceNumber) ?? string.Empty;
         input.Notes = Clean(input.Notes);
-        input.SubTotal = totals.SubTotal;
-        input.DiscountAmount = totals.Discount;
-        input.TaxAmount = totals.Tax;
-        input.TotalAmount = totals.Total;
+        input.SubTotal = subTotal;
+        input.DiscountAmount = discountTotal;
+        input.TaxableAmount = taxableTotal;
+        input.TaxAmount = taxTotal;
+        input.TotalAmount = total + input.Charges + input.RoundOff;
 
         var gate = GateFor(input.IdPurchase);
         await gate.WaitAsync(ct);
         try
         {
-            var result = await _repo.UpdatePurchaseAsync(input, ct);
-            if (!result.Ok)
-                throw Failure(result.StatusCode, result.ResponseMsg, "Unable to update the purchase order.", "FkSupplier");
-
-            return result;
+            return await _repo.UpdatePurchaseAsync(input, ct);
         }
         finally
         {
@@ -132,93 +120,14 @@ public class PurchaseService : IPurchaseService
         }
     }
 
-    public async Task<OutputGoodsReceipt> ReceiveGoodsAsync(InputGoodsReceipt input, CancellationToken ct = default)
+    public async Task ApprovePurchaseAsync(int id, int storeId, int userId, CancellationToken ct = default)
     {
-        RequireStore(input.FkStore);
-
-        var gate = GateFor(input.IdPurchase);
+        RequireStore(storeId);
+        var gate = GateFor(id);
         await gate.WaitAsync(ct);
         try
         {
-            var select = new InputPurchaseSelect { IdPurchase = input.IdPurchase, FkStore = input.FkStore };
-            var po = await GetPurchaseAsync(select, ct);
-            if (po is null)
-                throw new ResourceNotFoundException("Purchase order not found.", $"Purchase {input.IdPurchase} was not found in store {input.FkStore}.");
-
-            if (!po.CanReceive)
-                throw new ConflictException(
-                    "Goods can only be received against a posted or partially received purchase order that still has pending quantities.",
-                    $"Purchase {po.IdPurchase} has status '{po.Status}' (cancelled: {po.Cancelled}).");
-
-            var errors = new Dictionary<string, List<string>>();
-            ValidateHeader(input.ReceiptDate, "ReceiptDate", "Receipt Date", errors);
-
-            var byDetail = po.Lines.ToDictionary(l => l.IdPurchaseDetail);
-            var seen = new HashSet<int>();
-            var resolved = new List<InputGrnLine>();
-
-            for (var i = 0; i < input.Lines.Count; i++)
-            {
-                var line = input.Lines[i];
-                var prefix = $"Lines[{i}]";
-                var label = $"Line {i + 1}";
-
-                if (!byDetail.TryGetValue(line.IdPurchaseDetail, out var poLine))
-                {
-                    AddError(errors, $"{prefix}.IdPurchaseDetail", $"{label}: this line does not belong to the purchase order.");
-                    continue;
-                }
-
-                if (!seen.Add(line.IdPurchaseDetail))
-                {
-                    AddError(errors, $"{prefix}.IdPurchaseDetail", $"{label}: this line is listed more than once.");
-                    continue;
-                }
-
-                var qty = Math.Round(line.ReceiveQty, 3, MidpointRounding.AwayFromZero);
-                if (qty < 0)
-                {
-                    AddError(errors, $"{prefix}.ReceiveQty", $"{label}: the receive quantity cannot be negative.");
-                    continue;
-                }
-
-                if (qty == 0) continue;
-
-                if (qty > poLine.PendingQty)
-                {
-                    AddError(errors, $"{prefix}.ReceiveQty", $"{label}: only {Format(poLine.PendingQty)} is still pending (you entered {Format(qty)}).");
-                    continue;
-                }
-
-                // Product and variant always come from the purchase order line, never from the client.
-                resolved.Add(new InputGrnLine
-                {
-                    IdPurchaseDetail = poLine.IdPurchaseDetail,
-                    ReceiveQty = qty,
-                    FkProduct = poLine.FkProduct,
-                    FkProductVariant = poLine.FkProductVariant
-                });
-            }
-
-            if (resolved.Count == 0 && errors.Count == 0)
-                AddError(errors, "Lines", "Enter a receive quantity for at least one line.");
-
-            ThrowIfInvalid(errors);
-
-            var receivedNow = resolved.ToDictionary(r => r.IdPurchaseDetail, r => r.ReceiveQty);
-            var allReceived = po.Lines.All(l =>
-                l.ReceivedQty + (receivedNow.TryGetValue(l.IdPurchaseDetail, out var now) ? now : 0m) >= l.Quantity);
-
-            input.Lines = resolved;
-            input.Notes = Clean(input.Notes);
-            input.NewStatus = allReceived ? "received" : "partially_received";
-            input.GrnNumber = await _docNum.NextAsync(input.FkStore, "GRN", ct);
-
-            var result = await _repo.ReceiveGoodsAsync(input, ct);
-            if (!result.Ok)
-                throw Failure(result.StatusCode, result.ResponseMsg, "Unable to record the goods receipt.");
-
-            return result;
+            await _repo.ApprovePurchaseAsync(id, storeId, userId, ct);
         }
         finally
         {
@@ -241,11 +150,7 @@ public class PurchaseService : IPurchaseService
         await gate.WaitAsync(ct);
         try
         {
-            var result = await _repo.CancelPurchaseAsync(input, ct);
-            if (!result.Ok)
-                throw Failure(result.StatusCode, result.ResponseMsg, "Unable to cancel the purchase order.");
-
-            return result;
+            return await _repo.CancelPurchaseAsync(input, ct);
         }
         finally
         {
@@ -257,43 +162,202 @@ public class PurchaseService : IPurchaseService
     {
         var term = Clean(input.Search);
         if (term is null || term.Length < 2)
-            return Array.Empty<OutputPurchaseProductSelect>();
+        {
+            if (input.ProductIds == null || input.ProductIds.Count == 0)
+                return Array.Empty<OutputPurchaseProductSelect>();
+        }
 
-        input.Search = term.Length > 100 ? term[..100] : term;
-        input.ProductIds = null;
-        input.Limit = input.Limit is > 0 and <= 20 ? input.Limit : 10;
+        if (term != null)
+            input.Search = term.Length > 100 ? term[..100] : term;
+        input.Limit = input.Limit is > 0 and <= 50 ? input.Limit : 10;
 
         return await _repo.ListProductsAsync(input, ct);
     }
 
-    // ───────────────────────── helpers ─────────────────────────
+    #endregion
 
-    /// <summary>Which actions are allowed on a purchase order — the single source of truth for views and guards.</summary>
-    private static void ApplyRules(OutputPurchaseSelect po)
+    #region Purchase Returns
+
+    public async Task<OutputPurchaseReturnSelect?> GetReturnAsync(int id, int storeId, CancellationToken ct = default)
     {
-        var open = !po.Cancelled && po.Status != "cancelled";
-
-        // Normally identical to the stored status. If a goods receipt was interrupted after its stock movements were
-        // saved, the received quantities (derived from stock movements) are the truth — show them instead of a stale status.
-        if (open && (po.Status is "posted" or "partially_received") && po.Lines.Count > 0)
-        {
-            if (po.Lines.All(l => l.PendingQty <= 0)) po.Status = "received";
-            else if (po.Lines.Any(l => l.ReceivedQty > 0)) po.Status = "partially_received";
-        }
-
-        var hasReceipts = po.Lines.Any(l => l.ReceivedQty > 0);
-        var hasPending = po.Lines.Any(l => l.PendingQty > 0);
-
-        po.CanEdit = open && !hasReceipts && (po.Status is "draft" or "posted");
-        po.CanReceive = open && hasPending && (po.Status is "posted" or "partially_received");
-        po.CanCancel = open && po.Status != "received";
+        RequireStore(storeId);
+        return await _repo.GetReturnAsync(id, storeId, ct);
     }
 
-    /// <summary>
-    /// Validates the lines against master data and recomputes every amount: product must be active, tax comes from the
-    /// product's tax profile, discount cannot exceed the line amount. Client-side totals are never trusted.
-    /// </summary>
-    private async Task<(decimal SubTotal, decimal Discount, decimal Tax, decimal Total)> PrepareLinesAsync(
+    public async Task<OutputPurchaseReturnList> ListReturnsAsync(InputPurchaseReturnList input, CancellationToken ct = default)
+    {
+        if (input.FkStore is not null && input.FkStore > 0)
+            RequireStore(input.FkStore.Value);
+        input.Page = Math.Max(1, input.Page);
+        input.PageSize = Math.Clamp(input.PageSize, 1, 100);
+        return await _repo.ListReturnsAsync(input, ct);
+    }
+
+    public async Task<int> CreateReturnAsync(InPurchaseReturnCreateView input, int storeId, int userId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (input.FkPurchase <= 0)
+            throw new ValidationException("FkPurchase", "A valid purchase reference is required.");
+        if (input.Lines == null || input.Lines.Count == 0)
+            throw new ValidationException("Lines", "At least one item must be returned.");
+
+        foreach (var line in input.Lines)
+        {
+            if (line.Quantity <= 0)
+                throw new ValidationException("Lines", "Return quantity must be greater than zero.");
+        }
+
+        return await _repo.CreateReturnAsync(input, storeId, userId, ct);
+    }
+
+    public async Task ApproveReturnAsync(int id, int storeId, int userId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        var gate = GateFor(id);
+        await gate.WaitAsync(ct);
+        try
+        {
+            await _repo.ApproveReturnAsync(id, storeId, userId, ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task CancelReturnAsync(int id, int storeId, string reason, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 2)
+            throw new ValidationException("Reason", "Please enter a valid cancellation reason.");
+
+        var gate = GateFor(id);
+        await gate.WaitAsync(ct);
+        try
+        {
+            await _repo.CancelReturnAsync(id, storeId, reason.Trim(), ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task<IReadOnlyList<OutputPurchaseListItem>> ListReturnSourcesAsync(int storeId, string? search = null, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        return await _repo.ListReturnSourcePurchasesAsync(storeId, search, ct);
+    }
+
+    #endregion
+
+    #region Purchase Orders
+
+    public async Task<OutputPurchaseOrderSelect?> GetOrderAsync(int id, int storeId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        return await _repo.GetOrderAsync(id, storeId, ct);
+    }
+
+    public async Task<OutputPurchaseOrderList> ListOrdersAsync(InputPurchaseOrderList input, CancellationToken ct = default)
+    {
+        if (input.FkStore is not null && input.FkStore > 0)
+            RequireStore(input.FkStore.Value);
+        input.Page = Math.Max(1, input.Page);
+        input.PageSize = Math.Clamp(input.PageSize, 1, 100);
+        return await _repo.ListOrdersAsync(input, ct);
+    }
+
+    public async Task<int> SaveOrderAsync(InPurchaseOrderView input, int storeId, int userId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (input.Lines == null || input.Lines.Count == 0)
+            throw new ValidationException("Lines", "At least one requirement line is required.");
+
+        foreach (var l in input.Lines)
+        {
+            if (l.FkProduct <= 0)
+                throw new ValidationException("Lines", "Please select a valid product for each line.");
+            if (l.Quantity <= 0)
+                throw new ValidationException("Lines", "Quantity must be greater than zero.");
+        }
+
+        return await _repo.SaveOrderAsync(input, storeId, userId, ct);
+    }
+
+    public async Task DeleteOrderAsync(int id, int storeId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        await _repo.DeleteOrderAsync(id, storeId, ct);
+    }
+
+    #endregion
+
+    #region Supplier Financials & Balance
+
+    public async Task<OutputSupplierBalance> GetSupplierBalanceAsync(int supplierId, int storeId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (supplierId <= 0)
+            throw new ValidationException("SupplierId", "Invalid supplier ID.");
+        return await _repo.GetSupplierBalanceAsync(supplierId, storeId, ct);
+    }
+
+    public async Task<OutputSupplierStatement> GetSupplierStatementAsync(int supplierId, int storeId, DateOnly? from = null, DateOnly? to = null, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (supplierId <= 0)
+            throw new ValidationException("SupplierId", "Invalid supplier ID.");
+        return await _repo.GetSupplierStatementAsync(supplierId, storeId, from, to, ct);
+    }
+
+    public async Task<OutputSupplierTransactionList> ListSupplierTransactionsAsync(InputSupplierTransactionList input, CancellationToken ct = default)
+    {
+        if (input.FkStore is not null && input.FkStore > 0)
+            RequireStore(input.FkStore.Value);
+        input.Page = Math.Max(1, input.Page);
+        input.PageSize = Math.Clamp(input.PageSize, 1, 100);
+        return await _repo.ListSupplierTransactionsAsync(input, ct);
+    }
+
+    public async Task<int> RecordSupplierTransactionAsync(InSupplierPaymentView input, int storeId, int userId, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (input.FkSupplier <= 0)
+            throw new ValidationException("FkSupplier", "Please select a valid supplier.");
+        if (input.Amount <= 0)
+            throw new ValidationException("Amount", "Amount must be greater than zero.");
+        if (string.IsNullOrWhiteSpace(input.TransactionType))
+            input.TransactionType = "Payment";
+        if (string.IsNullOrWhiteSpace(input.PaymentMethod))
+            input.PaymentMethod = "Cash";
+
+        return await _repo.RecordSupplierTransactionAsync(input, storeId, userId, ct);
+    }
+
+    public async Task ReverseSupplierTransactionAsync(int id, int storeId, int userId, string reason, CancellationToken ct = default)
+    {
+        RequireStore(storeId);
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 2)
+            throw new ValidationException("Reason", "Please enter a valid reversal reason.");
+
+        var gate = GateFor(id);
+        await gate.WaitAsync(ct);
+        try
+        {
+            await _repo.ReverseSupplierTransactionAsync(id, storeId, userId, reason.Trim(), ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    #endregion
+
+    #region Private Helpers
+
+    private async Task<(decimal SubTotal, decimal Discount, decimal Tax, decimal Total, decimal Taxable)> PrepareLinesAsync(
         List<InputPurchaseLine> lines,
         Dictionary<string, List<string>> errors,
         CancellationToken ct)
@@ -306,7 +370,7 @@ public class PurchaseService : IPurchaseService
 
         if (lines.Count > MaxLines)
         {
-            AddError(errors, "Lines", $"A purchase order can have at most {MaxLines} lines.");
+            AddError(errors, "Lines", $"A purchase can have at most {MaxLines} lines.");
             return default;
         }
 
@@ -319,7 +383,7 @@ public class PurchaseService : IPurchaseService
             : (await _repo.ListProductsAsync(new InputPurchaseProductList { ProductIds = productIds, Limit = productIds.Count }, ct)).ToList();
         var byKey = picks.ToDictionary(p => (p.FkProduct, p.FkProductVariant ?? 0));
 
-        decimal subTotal = 0m, discountTotal = 0m, taxTotal = 0m;
+        decimal subTotal = 0m, discountTotal = 0m, taxTotal = 0m, taxableTotal = 0m;
         var firstLineOf = new Dictionary<(int, int), int>();
 
         for (var i = 0; i < lines.Count; i++)
@@ -389,15 +453,30 @@ public class PurchaseService : IPurchaseService
                 continue;
             }
 
-            // Tax is calculated on the discounted amount (tax-exclusive), the same way sales are taxed.
             var net = gross - line.DiscountAmount;
-            var lineTax = Math.Round(net * pick.TaxRate / 100m, 2, MidpointRounding.AwayFromZero);
+            var taxRate = line.TaxRate > 0 ? line.TaxRate : pick.TaxRate;
+            line.TaxRate = taxRate;
 
+            decimal lineTax;
+            decimal taxable;
+            if (line.TaxInclusive)
+            {
+                taxable = Math.Round(net / (1m + (taxRate / 100m)), 2, MidpointRounding.AwayFromZero);
+                lineTax = net - taxable;
+            }
+            else
+            {
+                taxable = net;
+                lineTax = Math.Round(taxable * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
+            }
+
+            line.TaxableAmount = taxable;
             line.TaxAmount = lineTax;
-            line.LineTotal = net + lineTax;
+            line.LineTotal = taxable + lineTax;
 
             subTotal += gross;
             discountTotal += line.DiscountAmount;
+            taxableTotal += taxable;
             taxTotal += lineTax;
         }
 
@@ -405,7 +484,7 @@ public class PurchaseService : IPurchaseService
         if (subTotal > MaxAmount || total > MaxAmount)
             AddError(errors, "Lines", "The purchase total is too large.");
 
-        return (subTotal, discountTotal, taxTotal, total);
+        return (subTotal, discountTotal, taxTotal, total, taxableTotal);
     }
 
     private static void ValidateHeader(DateOnly date, string field, string label, Dictionary<string, List<string>> errors)
@@ -423,7 +502,7 @@ public class PurchaseService : IPurchaseService
                 "fk_store is 0: platform accounts are not tied to a store.");
     }
 
-    private static SemaphoreSlim GateFor(int idPurchase) => Gates[(int)((uint)idPurchase % (uint)Gates.Length)];
+    private static SemaphoreSlim GateFor(int id) => Gates[(int)((uint)id % (uint)Gates.Length)];
 
     private static void AddError(Dictionary<string, List<string>> errors, string key, string message)
     {
@@ -444,33 +523,7 @@ public class PurchaseService : IPurchaseService
         throw new ValidationException(summary, summary, fieldErrors);
     }
 
-    private static AppException Failure(int statusCode, string? message, string fallback, string? field = null)
-    {
-        var text = string.IsNullOrWhiteSpace(message) ? fallback : message;
-        var developer = $"Purchase repository returned {statusCode}: {text}";
-
-        return statusCode switch
-        {
-            404 => new ResourceNotFoundException(text, developer),
-            409 => new ConflictException(text, developer),
-            422 => new ValidationException(text, developer,
-                field is null ? null : new Dictionary<string, string[]> { [field] = new[] { text } }),
-            _ => new UpdateFailedException(text, developer)
-        };
-    }
-
-    private static int? ParsePoNumber(string? search)
-    {
-        if (string.IsNullOrWhiteSpace(search)) return null;
-
-        var text = search.Trim();
-        if (text.StartsWith("PO", StringComparison.OrdinalIgnoreCase))
-            text = text[2..].TrimStart('-', ' ');
-
-        return int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 ? id : null;
-    }
-
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static string Format(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+    #endregion
 }

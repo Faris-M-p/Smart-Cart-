@@ -1,0 +1,136 @@
+@model OutputPurchaseOrderSelect
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.OrderNumber · Purchase Order Requirement</title>
+    <style>
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 13px; line-height: 1.45; color: #1f2937; background: #fff; }
+        .sheet { max-width: 850px; margin: 0 auto; }
+        .toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 16px; }
+        .toolbar button { font: inherit; padding: 6px 14px; border: 1px solid #9ca3af; border-radius: 6px; background: #fff; cursor: pointer; }
+        .toolbar button.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+        header.doc { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 16px; }
+        header.doc h1 { margin: 0; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; }
+        header.doc .po { font-size: 16px; font-weight: 600; }
+        .muted { color: #6b7280; }
+        .cols { display: flex; gap: 24px; margin-bottom: 16px; }
+        .cols > div { flex: 1; min-width: 0; }
+        h2 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; }
+        dl { margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 2px 8px; }
+        dt { color: #6b7280; }
+        dd { margin: 0; overflow-wrap: anywhere; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; margin-top: 12px; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid #d1d5db; text-align: left; vertical-align: top; }
+        thead th { border-bottom: 2px solid #111827; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+        .num { text-align: right; white-space: nowrap; }
+        .notes { margin: 12px 0 24px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; }
+        .signatures { display: flex; gap: 48px; margin-top: 48px; }
+        .signatures div { flex: 1; border-top: 1px solid #111827; padding-top: 4px; font-size: 11px; color: #6b7280; }
+        footer.doc { margin-top: 24px; font-size: 11px; color: #6b7280; text-align: center; }
+        @@media print {
+            body { padding: 0; }
+            .toolbar { display: none; }
+            .sheet { max-width: none; }
+            thead { display: table-header-group; }
+            tr { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="toolbar">
+            <button type="button" class="primary" onclick="window.print()">Print</button>
+            <button type="button" onclick="window.close()">Close</button>
+        </div>
+
+        <header class="doc">
+            <div>
+                <h1>Purchase Order Requirement</h1>
+                <div class="muted">@Model.StoreName</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="po">@Model.OrderNumber</div>
+                <div class="muted">@Model.OrderDate.ToString("dd MMM yyyy")</div>
+            </div>
+        </header>
+
+        <div class="cols">
+            <div>
+                <h2>Order Info</h2>
+                <dl>
+                    <dt>Date</dt>
+                    <dd>@Model.OrderDate.ToString("dd MMM yyyy")</dd>
+                    <dt>Created By</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.CreatorName) ? "Staff" : Model.CreatorName)</dd>
+                    <dt>Store</dt>
+                    <dd>@Model.StoreName</dd>
+                </dl>
+            </div>
+            <div>
+                <h2>Supplier Info</h2>
+                <dl>
+                    <dt>Target Supplier</dt>
+                    <dd><strong>@(string.IsNullOrWhiteSpace(Model.SupplierName) ? "General / Open Requirement" : Model.SupplierName)</strong></dd>
+                    <dt>Total Items</dt>
+                    <dd>@Model.Lines.Count lines (@Model.Lines.Sum(l => l.Quantity).ToString("0.###") total qty)</dd>
+                </dl>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px;">#</th>
+                    <th>Product Description</th>
+                    <th>Product Code</th>
+                    <th class="num">Required Qty</th>
+                    <th class="num">Est. Cost</th>
+                    <th>Line Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var n = 0; }
+                @foreach (var line in Model.Lines)
+                {
+                    n++;
+                    <tr>
+                        <td>@n</td>
+                        <td>
+                            <strong>@line.ProductName</strong>
+                            @if (!string.IsNullOrWhiteSpace(line.VariantName))
+                            {
+                                <span class="muted"> — @line.VariantName</span>
+                            }
+                        </td>
+                        <td>@(string.IsNullOrWhiteSpace(line.ProductCode) ? "—" : line.ProductCode)</td>
+                        <td class="num"><strong>@line.Quantity.ToString("0.###")</strong></td>
+                        <td class="num">@(line.UnitCost > 0 ? "₹" + line.UnitCost.ToString("N2") : "—")</td>
+                        <td>@(string.IsNullOrWhiteSpace(line.Notes) ? "—" : line.Notes)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <h2>Remarks / Instructions</h2>
+            <div class="notes">@Model.Notes</div>
+        }
+
+        <div class="signatures">
+            <div>Requested by</div>
+            <div>Authorized by</div>
+        </div>
+
+        <footer class="doc">Generated on @DateTime.Now.ToString("dd MMM yyyy HH:mm")</footer>
+    </div>
+</body>
+</html>
+
