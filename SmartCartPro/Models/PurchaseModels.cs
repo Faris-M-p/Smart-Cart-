@@ -21,10 +21,9 @@ public sealed class InPurchaseCreateView
     public DateOnly PurchaseDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
     [Display(Name = "Supplier Invoice #")]
-    [Required(ErrorMessage = "The Supplier Invoice # is required.")]
-    [StringLengthValidation(1, 100, ErrorMessage = "The Supplier Invoice # cannot exceed 100 characters.")]
+    [StringLengthValidation(0, 100, ErrorMessage = "The Supplier Invoice # cannot exceed 100 characters.")]
     [NoScriptTags(ErrorMessage = "The Supplier Invoice # cannot contain script tags.")]
-    public string InvoiceNumber { get; set; } = string.Empty;
+    public string? InvoiceNumber { get; set; }
 
     [Display(Name = "Invoice Date")]
     [Required(ErrorMessage = "The Invoice Date is required.")]
@@ -84,7 +83,7 @@ public sealed class InputPurchaseCreate
     public int FkStore { get; set; }
     public int FkSupplier { get; set; }
     public DateOnly PurchaseDate { get; set; }
-    public string InvoiceNumber { get; set; } = string.Empty;
+    public string? InvoiceNumber { get; set; }
     public DateOnly InvoiceDate { get; set; }
     public bool MarkAsApproved { get; set; }
     public decimal AmountPaid { get; set; }
@@ -141,10 +140,9 @@ public sealed class InPurchaseUpdateView
     public DateOnly PurchaseDate { get; set; }
 
     [Display(Name = "Supplier Invoice #")]
-    [Required]
-    [StringLengthValidation(1, 100)]
+    [StringLengthValidation(0, 100)]
     [NoScriptTags]
-    public string InvoiceNumber { get; set; } = string.Empty;
+    public string? InvoiceNumber { get; set; }
 
     [Display(Name = "Invoice Date")]
     [Required]
@@ -166,7 +164,7 @@ public sealed class InputPurchaseUpdate
     public int FkStore { get; set; }
     public int FkSupplier { get; set; }
     public DateOnly PurchaseDate { get; set; }
-    public string InvoiceNumber { get; set; } = string.Empty;
+    public string? InvoiceNumber { get; set; }
     public DateOnly InvoiceDate { get; set; }
     public string? Notes { get; set; }
     public List<InputPurchaseLine> Lines { get; set; } = new();

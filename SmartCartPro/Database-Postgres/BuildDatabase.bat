@@ -1,6 +1,38 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 
+echo ========================================
+echo  SmartCartPro PostgreSQL Database Setup
+echo ========================================
+echo.
+echo 1. Local PostgreSQL
+echo 2. Aiven Cloud PostgreSQL
+echo.
+set "TARGET_CHOICE=1"
+set /p "TARGET_CHOICE=Select database target (1 or 2) [default: 1]: "
+
+if "%TARGET_CHOICE%"=="2" (
+    echo.
+    echo Target: Aiven Cloud PostgreSQL
+    echo Host:   pg-3b6aeb4c-smartcartpro.d.aivencloud.com:15307
+    echo User:   avnadmin
+    echo Target: smartcartpro
+    echo SSL:    require
+    echo.
+    set "SC_TARGET_ENV=Aiven"
+    set "SC_PGHOST=pg-3b6aeb4c-smartcartpro.d.aivencloud.com"
+    set "SC_PGPORT=15307"
+    set "SC_PGUSER=avnadmin"
+    set "SC_PGMAINTENANCEDATABASE=defaultdb"
+    set "SC_PGDATABASE=smartcartpro"
+    set "SC_PGSSLMODE=require"
+    set "PGSSLMODE=require"
+) else (
+    echo.
+    echo Target: Local PostgreSQL
+    set "SC_TARGET_ENV=Local"
+)
+
 REM Double-click entry point. Paths are always resolved beside this file.
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0DatabaseRunner.ps1" -Action BuildDatabase
 set "RUNNER_EXIT_CODE=%ERRORLEVEL%"

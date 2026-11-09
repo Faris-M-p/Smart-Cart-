@@ -68,7 +68,7 @@ public class PurchaseController : Controller
             FkStore = StoreId,
             FkSupplier = model.FkSupplier,
             PurchaseDate = model.PurchaseDate,
-            InvoiceNumber = model.InvoiceNumber,
+            InvoiceNumber = string.IsNullOrWhiteSpace(model.InvoiceNumber) ? null : model.InvoiceNumber.Trim(),
             InvoiceDate = model.InvoiceDate,
             MarkAsApproved = model.MarkAsApproved,
             AmountPaid = model.AmountPaid,
@@ -160,7 +160,7 @@ public class PurchaseController : Controller
             FkStore = StoreId,
             FkSupplier = model.FkSupplier,
             PurchaseDate = model.PurchaseDate,
-            InvoiceNumber = model.InvoiceNumber,
+            InvoiceNumber = string.IsNullOrWhiteSpace(model.InvoiceNumber) ? null : model.InvoiceNumber.Trim(),
             InvoiceDate = model.InvoiceDate,
             Notes = model.Notes,
             Lines = model.Lines.Select(l => new InputPurchaseLine

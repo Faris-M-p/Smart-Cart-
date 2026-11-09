@@ -39,7 +39,7 @@
                     Cancelling a pending purchase will permanently drop it. Once cancelled, it cannot be edited, approved, or reopened.
                 </div>
 
-                <form id="cancelPurchaseForm" asp-action="Cancel" asp-route-id="@Model.IdPurchase" method="post">
+                <form id="purchaseCancelForm" asp-action="Cancel" asp-route-id="@Model.IdPurchase" method="post">
                     @Html.AntiForgeryToken()
                     <div class="alert alert-danger d-none" data-sc-form-summary role="alert"></div>
 
@@ -64,3 +64,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/purchasing/purchase.js" asp-append-version="true"></script>
+}

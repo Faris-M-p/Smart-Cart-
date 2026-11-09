@@ -24,6 +24,7 @@ $script:TargetDatabase = $null
 $script:MaintenanceDatabase = $null
 $script:PsqlPath = $null
 $script:SecurePassword = $null
+$script:SslMode = $null
 
 function New-RunnerException {
     param(
@@ -39,7 +40,7 @@ function New-RunnerException {
 function Get-ConfiguredValue {
     param(
         [Parameter(Mandatory = $true)][string]$EnvironmentName,
-        [Parameter(Mandatory = $true)][string]$Default
+        [Parameter(Mandatory = $false)][AllowEmptyString()][string]$Default = ''
     )
 
     $value = [Environment]::GetEnvironmentVariable($EnvironmentName, 'Process')
@@ -66,6 +67,11 @@ function Initialize-ConnectionSettings {
     $script:TargetDatabase = $databaseValue
 
     $script:MaintenanceDatabase = Get-ConfiguredValue 'SC_PGMAINTENANCEDATABASE' $script:DefaultSettings.MaintenanceDatabase
+
+    $script:SslMode = Get-ConfiguredValue 'SC_PGSSLMODE' ''
+    if ([string]::IsNullOrWhiteSpace($script:SslMode)) {
+        $script:SslMode = Get-ConfiguredValue 'PGSSLMODE' ''
+    }
 }
 
 function Resolve-PsqlPath {
@@ -210,6 +216,10 @@ function Start-Psql {
             }
         }
 
+        if (-not [string]::IsNullOrWhiteSpace($script:SslMode)) {
+            $startInfo.EnvironmentVariables['PGSSLMODE'] = $script:SslMode
+        }
+
         if (-not $process.Start()) {
             throw (New-RunnerException 'Windows could not start psql.exe.')
         }
@@ -235,6 +245,9 @@ function Start-Psql {
     finally {
         if ($null -ne $script:SecurePassword) {
             $null = $startInfo.EnvironmentVariables.Remove('PGPASSWORD')
+        }
+        if (-not [string]::IsNullOrWhiteSpace($script:SslMode)) {
+            $null = $startInfo.EnvironmentVariables.Remove('PGSSLMODE')
         }
         $passwordBuffer = $null
         $process.Dispose()
@@ -293,14 +306,31 @@ function Invoke-BuildDatabase {
     $databaseLiteral = Escape-SqlLiteral $script:TargetDatabase
     $exists = Get-PsqlScalar -Database $script:MaintenanceDatabase -Sql "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_database WHERE datname = '$databaseLiteral') THEN '1' ELSE '0' END;" -Operation 'checking whether the target database already exists'
     if ($exists -eq '1') {
-        Write-Host "Database '$script:TargetDatabase' already exists. It was not changed." -ForegroundColor Yellow
-        Write-Host 'To update an existing SmartCartPro database, double-click ApplyPatches.bat.'
-        return
+        Write-Host "Database '$script:TargetDatabase' already exists." -ForegroundColor Yellow
+        $historyExists = Get-PsqlScalar -Database $script:TargetDatabase -Sql "SELECT to_regclass('public.patch_history') IS NOT NULL;" -Operation 'checking for patch_history'
+        if ($historyExists -eq 't') {
+            $hasBaseline = Get-PsqlScalar -Database $script:TargetDatabase -Sql "SELECT CASE WHEN EXISTS (SELECT 1 FROM public.patch_history WHERE version = 'V001' AND success = TRUE) THEN '1' ELSE '0' END;" -Operation 'checking V001 baseline marker'
+            if ($hasBaseline -eq '1') {
+                Write-Host "Database '$script:TargetDatabase' already contains the SmartCartPro V001 baseline. Existing tables were not modified." -ForegroundColor Yellow
+                Write-Host 'Checking for any pending patches...'
+                Invoke-ApplyPatches
+                return
+            }
+        }
+        Write-Host "Database '$script:TargetDatabase' exists and has no baseline. Applying the V001 baseline..."
     }
-
-    Write-Host "Creating new database '$script:TargetDatabase'..."
-    $quotedIdentifier = '"' + $script:TargetDatabase.Replace('"', '""') + '"'
-    $null = Invoke-PsqlChecked -Database $script:MaintenanceDatabase -TailArguments @('-c', "CREATE DATABASE $quotedIdentifier;") -Operation "creating database '$script:TargetDatabase'"
+    else {
+        Write-Host "Creating new database '$script:TargetDatabase'..."
+        $quotedIdentifier = '"' + $script:TargetDatabase.Replace('"', '""') + '"'
+        try {
+            $null = Invoke-PsqlChecked -Database $script:MaintenanceDatabase -TailArguments @('-c', "CREATE DATABASE $quotedIdentifier;") -Operation "creating database '$script:TargetDatabase'"
+        }
+        catch {
+            Write-Host "NOTE: Could not create database '$script:TargetDatabase': $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "If Aiven restricts CREATE DATABASE over direct SQL, create database '$script:TargetDatabase' in the Aiven web console, or set SC_PGDATABASE=defaultdb." -ForegroundColor Yellow
+            throw
+        }
+    }
 
     $baselinePath = Join-Path $PSScriptRoot '03_Patches\V001__Baseline.sql'
     if (-not (Test-Path -LiteralPath $baselinePath -PathType Leaf)) {
@@ -310,6 +340,9 @@ function Invoke-BuildDatabase {
     Write-Host 'Applying the V001 baseline: tables, required system seeds, and patch history...'
     $null = Invoke-PsqlChecked -Database $script:TargetDatabase -TailArguments @('-f', $baselinePath) -Operation 'applying 03_Patches\V001__Baseline.sql'
     Write-Host "SUCCESS: V001 baseline installed in '$script:TargetDatabase'. Optional dummy data was not run." -ForegroundColor Green
+
+    Write-Host 'Checking for pending V002+ patches...'
+    Invoke-ApplyPatches
 }
 
 function Invoke-ApplyPatches {
@@ -367,7 +400,8 @@ function Invoke-RunDummyData {
     $dummyFiles = @(
         '001_DevelopmentPlatformSuperAdmin.sql',
         '002_DevelopmentTrialLicense.sql',
-        '003_GreenBasketSupermarket.sql'
+        '003_GreenBasketSupermarket.sql',
+        'product_catalog_dummy_data.sql'
     )
     $dummyDirectory = Join-Path $PSScriptRoot '06_DummyData'
     foreach ($fileName in $dummyFiles) {
@@ -390,7 +424,12 @@ try {
     Read-DatabasePassword
 
     Write-Host "Using PostgreSQL client: $script:PsqlPath"
-    Write-Host "Connection: $script:HostName`:$script:Port as $script:UserName"
+    if (-not [string]::IsNullOrWhiteSpace($script:SslMode)) {
+        Write-Host "Connection: $script:HostName`:$script:Port as $script:UserName (Target DB: $script:TargetDatabase, SSL: $script:SslMode)"
+    }
+    else {
+        Write-Host "Connection: $script:HostName`:$script:Port as $script:UserName (Target DB: $script:TargetDatabase)"
+    }
 
     switch ($Action) {
         'BuildDatabase' { Invoke-BuildDatabase }

@@ -362,7 +362,6 @@
     var supplier = parseInt($form.find('[name="FkSupplier"]').val(), 10) || 0;
     if (supplier <= 0) errors.FkSupplier = ['Please select a Supplier.'];
     if (!$form.find('[name="PurchaseDate"]').val()) errors.PurchaseDate = ['The Purchase Date field is required.'];
-    if (!$.trim($form.find('[name="InvoiceNumber"]').val())) errors.InvoiceNumber = ['The Supplier Invoice # is required.'];
     if (!lines.length) errors.Lines = ['At least one purchase line is required.'];
     return errors;
   }
@@ -415,7 +414,7 @@
     var payload = {
       fkSupplier: parseInt($form.find('[name="FkSupplier"]').val(), 10) || 0,
       purchaseDate: $form.find('[name="PurchaseDate"]').val(),
-      invoiceNumber: $.trim($form.find('[name="InvoiceNumber"]').val()) || '',
+      invoiceNumber: $.trim($form.find('[name="InvoiceNumber"]').val()) || null,
       invoiceDate: $form.find('[name="InvoiceDate"]').val() || $form.find('[name="PurchaseDate"]').val(),
       markAsApproved: markAsApproved,
       amountPaid: num($form.find('[name="AmountPaid"]').val()),

@@ -160,9 +160,13 @@ public class PurchaseRepository : IPurchaseRepository
         if (supplier is null)
             throw new ValidationException("Supplier", "Selected supplier does not exist or is inactive.");
 
-        var existingInvoice = await _db.Purchases.AnyAsync(p => p.FkSupplier == input.FkSupplier && p.InvoiceNumber != null && p.InvoiceNumber.ToLower() == input.InvoiceNumber.Trim().ToLower(), ct);
-        if (existingInvoice)
-            throw new ConflictException($"Invoice number '{input.InvoiceNumber}' has already been recorded for this supplier.");
+        var invoiceNo = string.IsNullOrWhiteSpace(input.InvoiceNumber) ? null : input.InvoiceNumber.Trim();
+        if (invoiceNo != null)
+        {
+            var existingInvoice = await _db.Purchases.AnyAsync(p => p.FkSupplier == input.FkSupplier && p.InvoiceNumber != null && p.InvoiceNumber.ToLower() == invoiceNo.ToLower(), ct);
+            if (existingInvoice)
+                throw new ConflictException($"Invoice number '{invoiceNo}' has already been recorded for this supplier.");
+        }
 
         var now = DateTime.UtcNow;
         var purchase = new Purchase
@@ -170,7 +174,7 @@ public class PurchaseRepository : IPurchaseRepository
             FkStore = input.FkStore,
             FkSupplier = input.FkSupplier,
             PurchaseDate = input.PurchaseDate,
-            InvoiceNumber = input.InvoiceNumber.Trim(),
+            InvoiceNumber = invoiceNo,
             InvoiceDate = input.InvoiceDate,
             SubTotal = input.SubTotal,
             DiscountAmount = input.DiscountAmount,
@@ -228,7 +232,9 @@ public class PurchaseRepository : IPurchaseRepository
                     ReferenceId = purchase.IdPurchase,
                     UnitCost = d.UnitCost,
                     CreatedBy = input.CreatedBy,
-                    Notes = $"Purchase PUR-{purchase.IdPurchase:D6} (Inv: {purchase.InvoiceNumber})"
+                    Notes = string.IsNullOrWhiteSpace(purchase.InvoiceNumber)
+                        ? $"Purchase PUR-{purchase.IdPurchase:D6}"
+                        : $"Purchase PUR-{purchase.IdPurchase:D6} (Inv: {purchase.InvoiceNumber})"
                 }, ct);
             }
 
@@ -301,10 +307,18 @@ public class PurchaseRepository : IPurchaseRepository
         if (supplier is null)
             throw new ValidationException("Supplier", "Selected supplier does not exist or is inactive.");
 
+        var invoiceNo = string.IsNullOrWhiteSpace(input.InvoiceNumber) ? null : input.InvoiceNumber.Trim();
+        if (invoiceNo != null)
+        {
+            var existingInvoice = await _db.Purchases.AnyAsync(p => p.IdPurchase != input.IdPurchase && p.FkSupplier == input.FkSupplier && p.InvoiceNumber != null && p.InvoiceNumber.ToLower() == invoiceNo.ToLower(), ct);
+            if (existingInvoice)
+                throw new ConflictException($"Invoice number '{invoiceNo}' has already been recorded for this supplier.");
+        }
+
         var now = DateTime.UtcNow;
         purchase.FkSupplier = input.FkSupplier;
         purchase.PurchaseDate = input.PurchaseDate;
-        purchase.InvoiceNumber = input.InvoiceNumber.Trim();
+        purchase.InvoiceNumber = invoiceNo;
         purchase.InvoiceDate = input.InvoiceDate;
         purchase.SubTotal = input.SubTotal;
         purchase.DiscountAmount = input.DiscountAmount;

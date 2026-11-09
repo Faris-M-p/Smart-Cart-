@@ -77,7 +77,7 @@ public class PurchaseService : IPurchaseService
         var (subTotal, discountTotal, taxTotal, total, taxableTotal) = await PrepareLinesAsync(input.Lines, errors, ct);
         ThrowIfInvalid(errors);
 
-        input.InvoiceNumber = Clean(input.InvoiceNumber) ?? string.Empty;
+        input.InvoiceNumber = Clean(input.InvoiceNumber);
         input.Notes = Clean(input.Notes);
         input.SubTotal = subTotal;
         input.DiscountAmount = discountTotal;
@@ -100,7 +100,7 @@ public class PurchaseService : IPurchaseService
         var (subTotal, discountTotal, taxTotal, total, taxableTotal) = await PrepareLinesAsync(input.Lines, errors, ct);
         ThrowIfInvalid(errors);
 
-        input.InvoiceNumber = Clean(input.InvoiceNumber) ?? string.Empty;
+        input.InvoiceNumber = Clean(input.InvoiceNumber);
         input.Notes = Clean(input.Notes);
         input.SubTotal = subTotal;
         input.DiscountAmount = discountTotal;
